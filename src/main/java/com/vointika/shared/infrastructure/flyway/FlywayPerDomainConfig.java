@@ -30,7 +30,10 @@ public class FlywayPerDomainConfig {
     // keys. Adding a new domain: append it after every domain whose schema it
     // FKs into. (notification owns no tables, so it is absent here.)
     private static final List<String> DOMAINS = List.of(
-            "identity"
+            "identity",
+            // reference is self-contained (no cross-schema FKs), so its position
+            // relative to identity is unconstrained.
+            "reference"
     );
 
     @Bean
