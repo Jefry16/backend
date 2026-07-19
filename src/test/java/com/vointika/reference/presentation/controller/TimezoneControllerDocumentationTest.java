@@ -1,5 +1,6 @@
 package com.vointika.reference.presentation.controller;
 
+import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.reference.application.usecase.ListTimezonesUseCase;
@@ -20,6 +21,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -46,6 +48,9 @@ class TimezoneControllerDocumentationTest {
     @MockitoBean
     private AccessTokenValidatorPort accessTokenValidator;
 
+    @MockitoBean
+    private MediaUrlResolver mediaUrlResolver;
+
 
     @BeforeEach
     void setUp(WebApplicationContext context, RestDocumentationContextProvider restDocumentation) {
@@ -63,7 +68,11 @@ class TimezoneControllerDocumentationTest {
         when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
         when(accessTokenValidator.extractUserId("test-access-token"))
                 .thenReturn("550e8400-e29b-41d4-a716-446655440000");
-        Country spain = new Country(UUID.fromString("11111111-1111-1111-1111-111111111111"), "ES", "Spain");
+        when(mediaUrlResolver.toUrl(any())).thenAnswer(inv -> {
+            String key = inv.getArgument(0);
+            return key == null ? null : "https://media.example/" + key;
+        });
+        Country spain = new Country(UUID.fromString("11111111-1111-1111-1111-111111111111"), "ES", "Spain", "flags/es.svg");
         when(listTimezonesUseCase.execute()).thenReturn(List.of(
                 new Timezone(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                         "Africa/Ceuta", "Ceuta", spain),
@@ -78,6 +87,7 @@ class TimezoneControllerDocumentationTest {
                 .andExpect(jsonPath("$[0].type").value("timezones"))
                 .andExpect(jsonPath("$[0].name").value("Africa/Ceuta"))
                 .andExpect(jsonPath("$[0].country.code").value("ES"))
+                .andExpect(jsonPath("$[0].country.flagUrl").value("https://media.example/flags/es.svg"))
                 .andDo(document("timezones/list",
                         requestHeaders(
                                 headerWithName("Authorization").description("Bearer access token")
@@ -90,7 +100,8 @@ class TimezoneControllerDocumentationTest {
                                 fieldWithPath("[].country.id").description("The country's UUID"),
                                 fieldWithPath("[].country.type").description("Resource type (always 'countries')"),
                                 fieldWithPath("[].country.code").description("ISO 3166-1 alpha-2 country code"),
-                                fieldWithPath("[].country.name").description("Human-readable country name")
+                                fieldWithPath("[].country.name").description("Human-readable country name"),
+                                fieldWithPath("[].country.flagUrl").description("Resolved URL of the country's flag image")
                         )));
     }
 }

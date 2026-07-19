@@ -6,9 +6,10 @@ public record CountryResponse(
         UUID id,
         String type,
         String code,
-        String name
+        String name,
+        String flagUrl
 ) {
-    public CountryResponse(UUID id, String code, String name) {
-        this(id, "countries", code, name);
+    public CountryResponse(UUID id, String code, String name, String flagUrl) {
+        this(id, "countries", code, name, flagUrl);
     }
 }

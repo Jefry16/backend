@@ -9,7 +9,8 @@ public class CountryMapper {
         return new Country(
                 jpa.getId(),
                 jpa.getCode(),
-                jpa.getName()
+                jpa.getName(),
+                jpa.getFlagKey()
         );
     }
 }
