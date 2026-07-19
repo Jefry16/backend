@@ -89,6 +89,8 @@ app:
   ses:
     region: ${APP_SES_REGION:eu-north-1}
     from-address: ${APP_SES_FROM_ADDRESS:noreply@example.com}
+    # Optional SESv2 endpoint override — a local mock in dev; blank → real SES.
+    endpoint: ${APP_SES_ENDPOINT:}
   notification:
     verification-base-url: ${APP_NOTIFICATION_VERIFICATION_BASE_URL:http://localhost:3000/auth/verify}
     password-reset-base-url: ${APP_NOTIFICATION_PASSWORD_RESET_BASE_URL:http://localhost:3000/auth/reset-password}

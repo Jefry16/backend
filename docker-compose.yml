@@ -71,6 +71,14 @@ services:
       "
     restart: "no"
 
+  # Local SESv2 mock (dev only). The notification SES adapter is pointed here via
+  # APP_SES_ENDPOINT; "sent" mail is captured and readable at GET :8005/store.
+  ses:
+    image: node:22.23.1-alpine
+    command: npx --yes aws-ses-v2-local@2.10.0
+    ports:
+      - "8005:8005"
+
   app:
     build: .
     ports:
@@ -89,11 +97,12 @@ services:
       APP_JWT_SECRET: super-secret-key-change-me-in-production-must-be-at-least-32-chars
       APP_JWT_ACCESS_TOKEN_EXPIRATION_MS: 900000
       APP_INTERNAL_SHARED_SECRET: ${APP_INTERNAL_SHARED_SECRET:-dev-internal-secret-change-me-in-production}
-      # SES sends real email — set these to actually deliver. Without them the
-      # async send logs a failure and the flow still completes; verification /
-      # reset tokens are readable from the identity.*_tokens tables in dev.
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      # Dev email → the local SESv2 mock (the `ses` service). Dummy AWS creds
+      # satisfy the SDK signer; the mock ignores them. Set APP_SES_ENDPOINT blank
+      # + real creds to route to actual SES instead.
+      APP_SES_ENDPOINT: ${APP_SES_ENDPOINT:-http://ses:8005}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       APP_SES_REGION: ${APP_SES_REGION:-eu-north-1}
       APP_SES_FROM_ADDRESS: ${APP_SES_FROM_ADDRESS:-noreply@example.com}
       # Avatars → MinIO in dev. endpoint is the in-network address (app→minio);
@@ -109,6 +118,7 @@ services:
       - minio
       - redis
       - kafka
+      - ses
     develop:
       watch:
         - action: rebuild

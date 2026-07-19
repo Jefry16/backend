@@ -31,9 +31,13 @@ public class SesEmailSenderPortImpl implements EmailSenderPort {
     private final String fromAddress;
 
     public SesEmailSenderPortImpl(SesProperties sesProperties) {
-        this.sesClient = SesV2Client.builder()
-                .region(Region.of(sesProperties.region()))
-                .build();
+        var builder = SesV2Client.builder()
+                .region(Region.of(sesProperties.region()));
+        // Dev: point at a local SESv2 mock (app.ses.endpoint); blank in prod → real SES.
+        if (sesProperties.endpoint() != null && !sesProperties.endpoint().isBlank()) {
+            builder.endpointOverride(java.net.URI.create(sesProperties.endpoint()));
+        }
+        this.sesClient = builder.build();
         this.fromAddress = sesProperties.fromAddress();
     }
 
