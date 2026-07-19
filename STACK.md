@@ -1,13 +1,20 @@
 # Vointika Backend — Stack & Docs Registry
 
-**Every pinned dependency → its exact version → the official documentation for
-that version.** Read the docs here before implementing or deciding anything
-version-specific (autoconfiguration, API shapes, config keys, wiring). This
-exists because version-specific behavior is **not** reliably recallable from
-training data — especially across a major-version boundary (see the Boot 4
-gotcha below). Constitution §4 makes consulting these a rule.
+**Every version-specific / load-bearing dependency → its exact version → the
+official documentation for that version.** Read the docs here before implementing
+or deciding anything version-specific (autoconfiguration, API shapes, config
+keys, wiring). This exists because version-specific behavior is **not** reliably
+recallable from training data — especially across a major-version boundary (see
+the Boot 4 gotcha below). Constitution §4 makes consulting these a rule.
 
-When you add or bump a dependency, add/adjust its row here in the same change.
+When you add or bump a listed dependency, add/adjust its row here in the same
+change.
+
+Not every jar in `pom.xml` gets a row: framework starters pulled at the Boot-BOM
+version with no independent behavior (`spring-boot-starter-validation`,
+`flyway-database-postgresql`, the `postgresql` JDBC driver) and pure build/dev
+tooling (`lombok`, `spring-boot-devtools`) are intentionally omitted — add one
+only if it develops a version-specific gotcha.
 
 ## Runtime services (docker-compose, pinned tags)
 
