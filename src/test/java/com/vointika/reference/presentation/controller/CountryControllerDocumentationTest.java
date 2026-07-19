@@ -1,5 +1,6 @@
 package com.vointika.reference.presentation.controller;
 
+import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.reference.application.usecase.ListCountriesUseCase;
@@ -19,6 +20,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -45,6 +47,9 @@ class CountryControllerDocumentationTest {
     @MockitoBean
     private AccessTokenValidatorPort accessTokenValidator;
 
+    @MockitoBean
+    private MediaUrlResolver mediaUrlResolver;
+
 
     @BeforeEach
     void setUp(WebApplicationContext context, RestDocumentationContextProvider restDocumentation) {
@@ -62,11 +67,16 @@ class CountryControllerDocumentationTest {
         when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
         when(accessTokenValidator.extractUserId("test-access-token"))
                 .thenReturn("550e8400-e29b-41d4-a716-446655440000");
+        // Flag storage key → resolved URL at read time; null stays null.
+        when(mediaUrlResolver.toUrl(any())).thenAnswer(inv -> {
+            String key = inv.getArgument(0);
+            return key == null ? null : "https://media.example/" + key;
+        });
         when(listCountriesUseCase.execute()).thenReturn(List.of(
                 new Country(UUID.fromString("33333333-3333-3333-3333-333333333333"),
-                        "DO", "Dominican Republic"),
+                        "DO", "Dominican Republic", null),
                 new Country(UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                        "ES", "Spain")
+                        "ES", "Spain", "flags/es.svg")
         ));
 
         mockMvc.perform(get("/api/countries")
@@ -74,6 +84,7 @@ class CountryControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].type").value("countries"))
                 .andExpect(jsonPath("$[0].code").value("DO"))
+                .andExpect(jsonPath("$[1].flagUrl").value("https://media.example/flags/es.svg"))
                 .andDo(document("countries/list",
                         requestHeaders(
                                 headerWithName("Authorization").description("Bearer access token")
@@ -82,7 +93,8 @@ class CountryControllerDocumentationTest {
                                 fieldWithPath("[].id").description("The country's UUID"),
                                 fieldWithPath("[].type").description("Resource type (always 'countries')"),
                                 fieldWithPath("[].code").description("ISO 3166-1 alpha-2 country code (e.g. ES, US, DO)"),
-                                fieldWithPath("[].name").description("Human-readable country name")
+                                fieldWithPath("[].name").description("Human-readable country name"),
+                                fieldWithPath("[].flagUrl").description("Resolved URL of the country's flag image, or null if unset").optional()
                         )));
     }
 }

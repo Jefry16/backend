@@ -23,4 +23,8 @@ public class CountryJpaEntity {
 
     @Column(nullable = false)
     private String name;
+
+    // Storage key for the flag image; nullable until flags are uploaded.
+    @Column(name = "flag_key", length = 500)
+    private String flagKey;
 }

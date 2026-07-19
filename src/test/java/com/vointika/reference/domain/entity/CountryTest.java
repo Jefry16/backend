@@ -12,10 +12,11 @@ class CountryTest {
     void shouldExposeAllConstructorArguments() {
         UUID id = UUID.randomUUID();
 
-        Country country = new Country(id, "ES", "Spain");
+        Country country = new Country(id, "ES", "Spain", "flags/es.svg");
 
         assertEquals(id, country.getId());
         assertEquals("ES", country.getCode());
         assertEquals("Spain", country.getName());
+        assertEquals("flags/es.svg", country.getFlagKey());
     }
 }
