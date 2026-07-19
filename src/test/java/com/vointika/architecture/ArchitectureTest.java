@@ -38,7 +38,8 @@ public class ArchitectureTest {
                     .should().dependOnClassesThat()
                     .resideInAnyPackage(
                             "com.vointika.identity..",
-                            "com.vointika.notification.."
+                            "com.vointika.notification..",
+                            "com.vointika.reference.."
                     )
                     .because("shared is the base module — it must not know about any bounded context");
 
@@ -57,6 +58,16 @@ public class ArchitectureTest {
                     .should().dependOnClassesThat()
                     .resideInAnyPackage("com.vointika.identity..")
                     .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
+
+    // reference is a read-mostly, shared-kernel-like module (countries, timezones):
+    // other contexts may import it, but it depends on none of them.
+    @ArchTest
+    static final ArchRule reference_does_not_depend_on_other_bounded_contexts =
+            noClasses()
+                    .that().resideInAPackage("com.vointika.reference..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.notification..")
+                    .because("reference feeds other contexts (shared kernel), never the other way");
 
     // The Kafka client (producer/consumer/admin) is infrastructure for the event
     // backbone — confined to the shared producer/config package and the
