@@ -35,7 +35,6 @@ a version-specific gotcha.
 | Spring Framework | (via Boot 4.0.5) | https://docs.spring.io/spring-framework/reference/ |
 | Spring Security | (via Boot 4.0.5) | https://docs.spring.io/spring-security/reference/ |
 | Spring Web MVC | (via Boot 4.0.5) | https://docs.spring.io/spring-framework/reference/web/webmvc.html |
-| Bean Validation (Hibernate Validator) | (via Boot 4.0.5) | https://docs.spring.io/spring-boot/reference/io/validation.html · https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html |
 | Spring Data JPA / Hibernate | (via Boot 4.0.5) | https://docs.spring.io/spring-data/jpa/reference/ |
 | Spring Data Redis (Lettuce) | (via Boot 4.0.5) | https://docs.spring.io/spring-data/redis/reference/index.html |
 | Spring for Apache Kafka | `4.0.4` (via `spring-boot-starter-kafka`) | https://docs.spring.io/spring-kafka/reference/ |
