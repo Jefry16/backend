@@ -190,6 +190,15 @@ public class UseCaseConfig {
     }
 
     @Bean
+    public ListUiLanguagesUseCase listUiLanguagesUseCase(UiLanguageProperties uiLanguageProperties) {
+        java.util.List<String> languages = uiLanguageProperties.uiLanguages().stream()
+                .map(l -> l.trim().toLowerCase(java.util.Locale.ROOT))
+                .distinct()
+                .toList();
+        return new ListUiLanguagesUseCase(languages);
+    }
+
+    @Bean
     public GetProfileUseCase getProfileUseCase(
             UserRepository userRepository,
             UserTourOperatorMembershipsQuery userTourOperatorMembershipsQuery) {
