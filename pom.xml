@@ -54,10 +54,13 @@
 
         <!-- Kafka — the event backbone (producer in shared, consumers in
              notification). Confined to shared.infrastructure.kafka.* +
-             notification.infrastructure.* (ArchUnit-enforced). -->
+             notification.infrastructure.* (ArchUnit-enforced). The Boot starter
+             brings spring-kafka + the spring-boot-kafka autoconfiguration
+             (KafkaTemplate / producer + consumer factories from spring.kafka.*);
+             the raw spring-kafka library alone has no autoconfiguration in Boot 4. -->
         <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka</artifactId>
         </dependency>
 
         <dependency>
@@ -103,8 +106,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka-test</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
 
