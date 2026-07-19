@@ -1,0 +1,101 @@
+logging:
+  pattern:
+    level: "%5p [req=%X{requestId:-none}] [user=%X{userId:-anon}]"
+
+spring:
+  application:
+    name: vointika
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/vointika}
+    username: ${SPRING_DATASOURCE_USERNAME:vointika}
+    password: ${SPRING_DATASOURCE_PASSWORD:vointika}
+    hikari:
+      data-source-properties:
+        reWriteBatchedInserts: true
+  data:
+    redis:
+      # Backs auth rate limiting (fixed-window, fail-open). Lettuce connects
+      # lazily, so the app boots even if Redis is down — the limiter then simply
+      # allows requests (fail-open) until Redis is back.
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  kafka:
+    # The event backbone. Identity produces domain events; notification consumes
+    # them and sends email. JSON payloads; producer stamps a type header that the
+    # consumer uses to reconstruct the event record (trusted package below).
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:vointika-notification}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.vointika.shared.event
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        query:
+          in_clause_parameter_padding: true
+  flyway:
+    enabled: true
+    placeholder-replacement: false
+  servlet:
+    multipart:
+      max-file-size: 510MB
+      max-request-size: 510MB
+
+server:
+  tomcat:
+    max-http-form-post-size: 1MB
+    max-swallow-size: 1MB
+    relaxed-query-chars: "[,]"
+
+app:
+  rate-limit:
+    # Per-IP limits on the public auth endpoints (AuthRateLimitFilter) + per-
+    # account throttles in the identity use cases. Redis-backed, fail-open.
+    # Disable only for load testing.
+    enabled: ${APP_RATE_LIMIT_ENABLED:true}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  identity:
+    # Admin-UI languages a user may pick as their profile preference — lowercase
+    # locale codes matching the frontend's message catalogs. Growing a language =
+    # add the code here + ship the frontend catalog; no schema or code change.
+    ui-languages: ${APP_IDENTITY_UI_LANGUAGES:en,es}
+  security:
+    refresh-cookie:
+      name: ${APP_REFRESH_COOKIE_NAME:vointika_refresh}
+      path: ${APP_REFRESH_COOKIE_PATH:/api/auth}
+      secure: ${APP_REFRESH_COOKIE_SECURE:true}
+      same-site: ${APP_REFRESH_COOKIE_SAME_SITE:Strict}
+      max-age: ${APP_REFRESH_COOKIE_MAX_AGE:30d}
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    access-token-expiration-ms: ${APP_JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
+  internal:
+    shared-secret: ${APP_INTERNAL_SHARED_SECRET}
+  ses:
+    region: ${APP_SES_REGION:eu-north-1}
+    from-address: ${APP_SES_FROM_ADDRESS:noreply@example.com}
+  notification:
+    verification-base-url: ${APP_NOTIFICATION_VERIFICATION_BASE_URL:http://localhost:3000/auth/verify}
+    password-reset-base-url: ${APP_NOTIFICATION_PASSWORD_RESET_BASE_URL:http://localhost:3000/auth/reset-password}
+  s3:
+    region: ${APP_S3_REGION:eu-north-1}
+    bucket: ${APP_S3_BUCKET:vointika-media-dev}
+    public-base-url: ${APP_S3_PUBLIC_BASE_URL:https://vointika-media-dev.s3.eu-north-1.amazonaws.com}
+    endpoint: ${APP_S3_ENDPOINT:}
+    access-key: ${APP_S3_ACCESS_KEY:}
+    secret-key: ${APP_S3_SECRET_KEY:}

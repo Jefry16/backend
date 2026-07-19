@@ -1,0 +1,22 @@
+package com.vointika.notification.infrastructure.config;
+
+import com.vointika.notification.application.port.EmailSenderPort;
+import com.vointika.notification.application.port.TemplateCatalog;
+import com.vointika.notification.application.port.TemplateRendererPort;
+import com.vointika.notification.application.usecase.SendNotificationUseCase;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration("notificationUseCaseConfig")
+@EnableConfigurationProperties({SesProperties.class, NotificationProperties.class})
+public class UseCaseConfig {
+
+    @Bean
+    public SendNotificationUseCase sendNotificationUseCase(
+            TemplateCatalog templateCatalog,
+            TemplateRendererPort templateRenderer,
+            EmailSenderPort emailSender) {
+        return new SendNotificationUseCase(templateCatalog, templateRenderer, emailSender);
+    }
+}
