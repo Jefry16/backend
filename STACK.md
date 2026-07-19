@@ -10,11 +10,11 @@ the Boot 4 gotcha below). Constitution §4 makes consulting these a rule.
 When you add or bump a listed dependency, add/adjust its row here in the same
 change.
 
-Not every jar in `pom.xml` gets a row: framework starters pulled at the Boot-BOM
-version with no independent behavior (`spring-boot-starter-validation`,
-`flyway-database-postgresql`, the `postgresql` JDBC driver) and pure build/dev
-tooling (`lombok`, `spring-boot-devtools`) are intentionally omitted — add one
-only if it develops a version-specific gotcha.
+Not every jar in `pom.xml` gets a row: transitive libraries we never call
+directly (`flyway-database-postgresql`, the `postgresql` JDBC driver) and pure
+build/dev tooling (`lombok`, `spring-boot-devtools`) are intentionally omitted.
+A dependency earns a row when we write code against its API, or when it develops
+a version-specific gotcha.
 
 ## Runtime services (docker-compose, pinned tags)
 
@@ -34,7 +34,10 @@ only if it develops a version-specific gotcha.
 | Spring Boot | `4.0.5` | https://docs.spring.io/spring-boot/reference/ |
 | Spring Framework | (via Boot 4.0.5) | https://docs.spring.io/spring-framework/reference/ |
 | Spring Security | (via Boot 4.0.5) | https://docs.spring.io/spring-security/reference/ |
+| Spring Web MVC | (via Boot 4.0.5) | https://docs.spring.io/spring-framework/reference/web/webmvc.html |
+| Bean Validation (Hibernate Validator) | (via Boot 4.0.5) | https://docs.spring.io/spring-boot/reference/io/validation.html · https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html |
 | Spring Data JPA / Hibernate | (via Boot 4.0.5) | https://docs.spring.io/spring-data/jpa/reference/ |
+| Spring Data Redis (Lettuce) | (via Boot 4.0.5) | https://docs.spring.io/spring-data/redis/reference/index.html |
 | Spring for Apache Kafka | `4.0.4` (via `spring-boot-starter-kafka`) | https://docs.spring.io/spring-kafka/reference/ |
 | Kafka clients | `4.1.2` (via Boot BOM) | https://kafka.apache.org/documentation/ |
 | Flyway | (via Boot 4.0.5) | https://documentation.red-gate.com/fd |
