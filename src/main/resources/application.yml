@@ -94,8 +94,10 @@ app:
     password-reset-base-url: ${APP_NOTIFICATION_PASSWORD_RESET_BASE_URL:http://localhost:3000/auth/reset-password}
   s3:
     region: ${APP_S3_REGION:eu-north-1}
-    bucket: ${APP_S3_BUCKET:vointika-media-dev}
-    public-base-url: ${APP_S3_PUBLIC_BASE_URL:https://vointika-media-dev.s3.eu-north-1.amazonaws.com}
+    bucket: ${APP_S3_BUCKET:avatars}
+    # Base for read-time avatar URL resolution (MediaUrlResolver). Dev default is
+    # the host-reachable MinIO URL; prod overrides via env.
+    public-base-url: ${APP_S3_PUBLIC_BASE_URL:http://localhost:9000/avatars}
     endpoint: ${APP_S3_ENDPOINT:}
     access-key: ${APP_S3_ACCESS_KEY:}
     secret-key: ${APP_S3_SECRET_KEY:}
