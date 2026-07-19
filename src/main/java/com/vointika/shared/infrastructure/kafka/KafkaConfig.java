@@ -7,6 +7,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaTemplate;
 
+// The autoconfigured KafkaTemplate is declared KafkaTemplate<?, ?>, so it is
+// injected here by raw type (single candidate) — a concrete <String, Object>
+// parameter would not match it.
+
 /**
  * Wires the Kafka event backbone: the {@link EventPublisherPort} producer adapter,
  * the correlation-restoring consumer interceptor, and the dev topic definitions.
@@ -17,7 +21,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 public class KafkaConfig {
 
     @Bean
-    public EventPublisherPort kafkaEventPublisher(KafkaTemplate<String, Object> kafkaTemplate) {
+    @SuppressWarnings("rawtypes")
+    public EventPublisherPort kafkaEventPublisher(KafkaTemplate kafkaTemplate) {
         return new KafkaEventPublisher(kafkaTemplate, EventTopics.BY_EVENT_TYPE);
     }
 

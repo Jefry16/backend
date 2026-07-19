@@ -18,17 +18,22 @@ import java.util.Map;
  * condition). The partition key is the event's {@code email()} when present, so a
  * given recipient's events stay ordered; the request correlation id rides a
  * header so consumer-side logs correlate to the originating request.
+ *
+ * <p>Holds the <b>raw</b> {@link KafkaTemplate} that Spring Boot autoconfigures
+ * (declared {@code KafkaTemplate<?, ?>}). The producer is heterogeneous — the
+ * value is any event type — so a concrete {@code <String, Object>} parameter
+ * would not match the autoconfigured bean, and raw is the honest type here.
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class KafkaEventPublisher implements EventPublisherPort {
 
     static final String CORRELATION_HEADER = "X-Correlation-Id";
     private static final String MDC_KEY = "requestId";
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate kafkaTemplate;
     private final Map<Class<?>, String> topicsByEventType;
 
-    public KafkaEventPublisher(KafkaTemplate<String, Object> kafkaTemplate,
-                               Map<Class<?>, String> topicsByEventType) {
+    public KafkaEventPublisher(KafkaTemplate kafkaTemplate, Map<Class<?>, String> topicsByEventType) {
         this.kafkaTemplate = kafkaTemplate;
         this.topicsByEventType = topicsByEventType;
     }
@@ -40,8 +45,7 @@ public class KafkaEventPublisher implements EventPublisherPort {
             throw new IllegalStateException(
                     "No Kafka topic mapped for event " + event.getClass().getName());
         }
-        ProducerRecord<String, Object> record =
-                new ProducerRecord<>(topic, partitionKey(event), event);
+        ProducerRecord record = new ProducerRecord(topic, partitionKey(event), event);
         String correlationId = MDC.get(MDC_KEY);
         if (correlationId != null && !correlationId.isBlank()) {
             record.headers().add(new RecordHeader(
