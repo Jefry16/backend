@@ -19,8 +19,8 @@ class ListCountriesUseCaseTest {
 
     @Test
     void returnsRepositoryFindAll() {
-        Country spain = new Country(UUID.randomUUID(), "ES", "Spain", null);
-        Country us = new Country(UUID.randomUUID(), "US", "United States", null);
+        Country spain = new Country(UUID.randomUUID(), "ES", "Spain", "flags/es.svg");
+        Country us = new Country(UUID.randomUUID(), "US", "United States", "flags/us.svg");
         when(repository.findAll()).thenReturn(List.of(spain, us));
 
         List<Country> result = useCase.execute();

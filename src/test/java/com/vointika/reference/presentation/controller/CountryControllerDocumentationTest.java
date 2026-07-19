@@ -74,7 +74,7 @@ class CountryControllerDocumentationTest {
         });
         when(listCountriesUseCase.execute()).thenReturn(List.of(
                 new Country(UUID.fromString("33333333-3333-3333-3333-333333333333"),
-                        "DO", "Dominican Republic", null),
+                        "DO", "Dominican Republic", "flags/do.svg"),
                 new Country(UUID.fromString("11111111-1111-1111-1111-111111111111"),
                         "ES", "Spain", "flags/es.svg")
         ));
@@ -94,7 +94,7 @@ class CountryControllerDocumentationTest {
                                 fieldWithPath("[].type").description("Resource type (always 'countries')"),
                                 fieldWithPath("[].code").description("ISO 3166-1 alpha-2 country code (e.g. ES, US, DO)"),
                                 fieldWithPath("[].name").description("Human-readable country name"),
-                                fieldWithPath("[].flagUrl").description("Resolved URL of the country's flag image, or null if unset").optional()
+                                fieldWithPath("[].flagUrl").description("Resolved URL of the country's flag image")
                         )));
     }
 }

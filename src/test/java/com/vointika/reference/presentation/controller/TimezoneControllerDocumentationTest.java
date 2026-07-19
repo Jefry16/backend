@@ -101,7 +101,7 @@ class TimezoneControllerDocumentationTest {
                                 fieldWithPath("[].country.type").description("Resource type (always 'countries')"),
                                 fieldWithPath("[].country.code").description("ISO 3166-1 alpha-2 country code"),
                                 fieldWithPath("[].country.name").description("Human-readable country name"),
-                                fieldWithPath("[].country.flagUrl").description("Resolved URL of the country's flag image, or null if unset").optional()
+                                fieldWithPath("[].country.flagUrl").description("Resolved URL of the country's flag image")
                         )));
     }
 }

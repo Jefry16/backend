@@ -21,9 +21,9 @@ class ListTimezonesUseCaseTest {
     @Test
     void returnsRepositoryFindAll() {
         Timezone madrid = new Timezone(UUID.randomUUID(), "Europe/Madrid", "Madrid",
-                new Country(UUID.randomUUID(), "ES", "Spain", null));
+                new Country(UUID.randomUUID(), "ES", "Spain", "flags/es.svg"));
         Timezone newYork = new Timezone(UUID.randomUUID(), "America/New_York", "New York",
-                new Country(UUID.randomUUID(), "US", "United States", null));
+                new Country(UUID.randomUUID(), "US", "United States", "flags/us.svg"));
         when(repository.findAll()).thenReturn(List.of(madrid, newYork));
 
         List<Timezone> result = useCase.execute();

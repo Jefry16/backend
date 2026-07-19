@@ -11,7 +11,7 @@ class TimezoneTest {
     @Test
     void shouldExposeAllConstructorArguments() {
         UUID id = UUID.randomUUID();
-        Country country = new Country(UUID.randomUUID(), "ES", "Spain", null);
+        Country country = new Country(UUID.randomUUID(), "ES", "Spain", "flags/es.svg");
 
         Timezone timezone = new Timezone(id, "Europe/Madrid", "Madrid", country);
 
