@@ -40,6 +40,8 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.multipart;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
+import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
+import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -113,7 +115,9 @@ class AuthControllerDocumentationTest {
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(prettyPrint()))
+                        .withResponseDefaults(prettyPrint())
+                        .and()
+                        .snippets().withDefaults(httpRequest(), httpResponse()))
                 .apply(springSecurity())
                 .build();
     }
