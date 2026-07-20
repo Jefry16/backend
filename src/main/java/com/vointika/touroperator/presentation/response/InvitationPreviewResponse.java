@@ -4,7 +4,7 @@ import com.vointika.touroperator.application.usecase.GetInvitationPreviewUseCase
 
 /** What the accept page needs before the form: which operator, to which email. */
 public record InvitationPreviewResponse(
-        String type,
+        String context,
         String operatorName,
         String email
 ) {

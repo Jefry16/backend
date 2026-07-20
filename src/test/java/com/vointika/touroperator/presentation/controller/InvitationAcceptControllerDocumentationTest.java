@@ -75,11 +75,11 @@ class InvitationAcceptControllerDocumentationTest {
 
         mockMvc.perform(get("/api/invitations/{token}/preview", "the-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.type").value("invitation-previews"))
+                .andExpect(jsonPath("$.context").value("invitation-previews"))
                 .andExpect(jsonPath("$.operatorName").value("Acme Tours"))
                 .andDo(document("invitations/preview",
                         responseFields(
-                                fieldWithPath("type").description("The resource type"),
+                                fieldWithPath("context").description("The entity's collection (always 'invitation-previews')"),
                                 fieldWithPath("operatorName").description("The operator that invited you"),
                                 fieldWithPath("email").description("The email the invitation was issued to"))));
     }
@@ -105,7 +105,8 @@ class InvitationAcceptControllerDocumentationTest {
                                 fieldWithPath("name").description("New user's name (anonymous accept only)"),
                                 fieldWithPath("password").description("New user's password (anonymous accept only)")),
                         responseFields(
-                                fieldWithPath("tourOperatorId").description("The operator joined"),
+                                fieldWithPath("id").description("The operator joined"),
+                                fieldWithPath("context").description("The entity's collection (always 'tour-operators')"),
                                 fieldWithPath("operatorName").description("The operator's display name"),
                                 fieldWithPath("accessToken").description("Access token for a newly provisioned user; null when already authenticated"))));
     }

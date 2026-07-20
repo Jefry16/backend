@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record ProfileResponse(
         UUID id,
-        String type,
+        String context,
         String name,
         String avatarUrl,
         String language,

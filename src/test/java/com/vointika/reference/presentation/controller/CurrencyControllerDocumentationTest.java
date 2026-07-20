@@ -75,14 +75,14 @@ class CurrencyControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].code").value("DOP"))
-                .andExpect(jsonPath("$[0].type").value("currencies"))
+                .andExpect(jsonPath("$[0].context").value("currencies"))
                 .andDo(document("currencies/list",
                         requestHeaders(
                                 headerWithName("Authorization").description("Bearer access token")
                         ),
                         responseFields(
                                 fieldWithPath("[].id").description("The currency's UUID"),
-                                fieldWithPath("[].type").description("Resource type (always 'currencies')"),
+                                fieldWithPath("[].context").description("The entity's collection (always 'currencies')"),
                                 fieldWithPath("[].code").description("ISO 4217 alpha-3 currency code (e.g. USD, EUR, DOP)"),
                                 fieldWithPath("[].name").description("Human-readable currency name"),
                                 fieldWithPath("[].symbol").description("Currency symbol for UI display")

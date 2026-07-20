@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record TimezoneResponse(
         UUID id,
-        String type,
+        String context,
         String name,
         String cityName,
         CountryResponse country
