@@ -9,8 +9,8 @@ import javax.sql.DataSource;
 import java.util.List;
 
 /**
- * Runs Flyway once per bounded context, each with its own
- * {@code flyway_schema_history_<domain>} table. This lets every context
+ * Runs Flyway once per bounded context, each with its own history table
+ * ({@code <domain>.flyway_schema_history}, isolated by schema). This lets every context
  * own an independent version sequence ({@code V1__}, {@code V2__}, …)
  * and ship migrations without coordinating global version numbers.
  *
@@ -33,7 +33,10 @@ public class FlywayPerDomainConfig {
             "identity",
             // reference is self-contained (no cross-schema FKs), so its position
             // relative to identity is unconstrained.
-            "reference"
+            "reference",
+            // touroperator FKs into identity.users + reference.timezones/currencies,
+            // so it must come after both.
+            "touroperator"
     );
 
     @Bean

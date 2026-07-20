@@ -159,9 +159,6 @@ next `V`. Curated reference/seed data lives in the migration.
 
 ## 11. Recurring gotchas (check before you trip)
 
-- Copied `*ControllerDocumentationTest` files carry a stray
-  `@MockitoBean TourOperatorMembershipCheck` — strip the import + field until the
-  touroperator context provides it.
 - Boot 4 autoconfiguration is per-starter: depend on the **Boot starter**
   (`spring-boot-starter-kafka`), not the raw library (`STACK.md` §gotchas).
 - The autoconfigured `KafkaTemplate` is typed `<?, ?>` — inject the **raw**
