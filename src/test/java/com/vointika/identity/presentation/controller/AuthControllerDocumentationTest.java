@@ -335,7 +335,7 @@ class AuthControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("550e8400-e29b-41d4-a716-446655440000"))
-                .andExpect(jsonPath("$.type").value("users"))
+                .andExpect(jsonPath("$.context").value("users"))
                 .andExpect(jsonPath("$.name").value("John Doe"))
                 .andExpect(jsonPath("$.avatarUrl").value("users/550e8400-e29b-41d4-a716-446655440000/0198a5c0-avatar.png"))
                 .andExpect(jsonPath("$.language").value("en"))
@@ -353,7 +353,7 @@ class AuthControllerDocumentationTest {
                         ),
                         responseFields(
                                 fieldWithPath("id").description("The user's unique identifier"),
-                                fieldWithPath("type").description("The resource type"),
+                                fieldWithPath("context").description("The entity's collection (always 'users')"),
                                 fieldWithPath("name").description("The user's display name"),
                                 fieldWithPath("avatarUrl").description("Public URL of the user's avatar image (nullable; resolved at read time from the stored storage key)"),
                                 fieldWithPath("language").description("The user's admin-UI language — a lowercase locale code (currently `en` or `es`)"),

@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record CountryResponse(
         UUID id,
-        String type,
+        String context,
         String code,
         String name,
         String flagUrl

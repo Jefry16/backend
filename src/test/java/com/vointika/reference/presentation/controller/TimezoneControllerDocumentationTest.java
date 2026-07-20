@@ -84,7 +84,7 @@ class TimezoneControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").exists())
-                .andExpect(jsonPath("$[0].type").value("timezones"))
+                .andExpect(jsonPath("$[0].context").value("timezones"))
                 .andExpect(jsonPath("$[0].name").value("Africa/Ceuta"))
                 .andExpect(jsonPath("$[0].country.code").value("ES"))
                 .andExpect(jsonPath("$[0].country.flagUrl").value("https://media.example/flags/es.svg"))
@@ -94,11 +94,11 @@ class TimezoneControllerDocumentationTest {
                         ),
                         responseFields(
                                 fieldWithPath("[].id").description("The timezone's UUID"),
-                                fieldWithPath("[].type").description("Resource type (always 'timezones')"),
+                                fieldWithPath("[].context").description("The entity's collection (always 'timezones')"),
                                 fieldWithPath("[].name").description("IANA timezone identifier (e.g. Europe/Madrid)"),
                                 fieldWithPath("[].cityName").description("Human-readable city label"),
                                 fieldWithPath("[].country.id").description("The country's UUID"),
-                                fieldWithPath("[].country.type").description("Resource type (always 'countries')"),
+                                fieldWithPath("[].country.context").description("The entity's collection (always 'countries')"),
                                 fieldWithPath("[].country.code").description("ISO 3166-1 alpha-2 country code"),
                                 fieldWithPath("[].country.name").description("Human-readable country name"),
                                 fieldWithPath("[].country.flagUrl").description("Resolved URL of the country's flag image")
