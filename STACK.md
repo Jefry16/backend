@@ -50,7 +50,9 @@ a version-specific gotcha.
 | uuid-creator | `6.1.1` | https://github.com/f4b6a3/uuid-creator |
 | Thymeleaf (thymeleaf-spring6) | (via Boot 4.0.5) | https://www.thymeleaf.org/documentation.html |
 | ArchUnit (test) | `1.4.1` | https://www.archunit.org/userguide/html/000_Index.html |
-| Spring REST Docs (test) | (via Boot 4.0.5) | https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/ |
+| Spring REST Docs (test) | `4.0.0` (mockmvc via Boot 4.0.5) | https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/ |
+| spring-restdocs-asciidoctor (build) | `4.0.0` | https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/#working-with-asciidoctor |
+| asciidoctor-maven-plugin (build) | `3.1.1` | https://docs.asciidoctor.org/maven-tools/latest/plugin/ |
 
 ## Version-specific gotchas (grows as we hit them)
 
