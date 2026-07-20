@@ -27,7 +27,7 @@ class KafkaEventPublisherTest {
 
     @Test
     void routesEventToItsTopicKeyedByEmail() {
-        var event = new VerificationEmailRequestedEvent("user@example.com", "Ada", "tok123");
+        var event = new VerificationEmailRequestedEvent("user@example.com", "Ada", "tok123", "en");
 
         publisher.publish(event);
 
@@ -43,7 +43,7 @@ class KafkaEventPublisherTest {
     void carriesTheCorrelationIdFromMdcAsAHeader() {
         MDC.put("requestId", "corr-42");
         try {
-            publisher.publish(new PasswordChangedEvent("a@b.com", "Ada"));
+            publisher.publish(new PasswordChangedEvent("a@b.com", "Ada", "en"));
         } finally {
             MDC.remove("requestId");
         }

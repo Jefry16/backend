@@ -6,7 +6,8 @@ package com.vointika.shared.event;
  * (no enumeration, §7.6); this event routes the truthful signal to the one
  * party allowed to learn it — the mailbox owner — as an "you already have an
  * account" notice. {@code name} is the EXISTING user's name, not whatever
- * the prospective registrant typed.
+ * the prospective registrant typed; {@code locale} is the EXISTING user's UI
+ * language.
  */
-public record AccountAlreadyRegisteredEvent(String email, String name) {
+public record AccountAlreadyRegisteredEvent(String email, String name, String locale) {
 }

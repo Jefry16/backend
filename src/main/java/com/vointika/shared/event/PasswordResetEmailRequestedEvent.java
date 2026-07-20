@@ -1,3 +1,3 @@
 package com.vointika.shared.event;
 
-public record PasswordResetEmailRequestedEvent(String email, String name, String token) {}
+public record PasswordResetEmailRequestedEvent(String email, String name, String token, String locale) {}

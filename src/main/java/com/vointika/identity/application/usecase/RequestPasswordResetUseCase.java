@@ -81,7 +81,7 @@ public class RequestPasswordResetUseCase {
 
         // 4. Publish password reset email event — AFTER commit
         eventPublisher.publish(new PasswordResetEmailRequestedEvent(
-                user.getEmail().value(), user.getName().value(), rawToken));
+                user.getEmail().value(), user.getName().value(), rawToken, user.getLanguage()));
     }
 
     /** The not-found counterpart of the exists path's token gen + hash + tx. */

@@ -35,7 +35,7 @@ public class PasswordResetEmailConsumer {
             Map<String, Object> variables = Map.of(
                     "name", event.name(),
                     "link", notificationProperties.passwordResetBaseUrl() + "?token=" + event.token());
-            sendNotificationUseCase.execute("PASSWORD_RESET_EMAIL", event.email(), variables);
+            sendNotificationUseCase.execute("PASSWORD_RESET_EMAIL", event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send password reset email to {}: {}", event.email(), e.getMessage(), e);
         }

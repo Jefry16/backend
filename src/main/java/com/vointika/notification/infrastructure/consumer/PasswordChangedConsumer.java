@@ -30,7 +30,7 @@ public class PasswordChangedConsumer {
     public void handle(PasswordChangedEvent event) {
         try {
             Map<String, Object> variables = Map.of("name", event.name());
-            sendNotificationUseCase.execute("PASSWORD_CHANGED_EMAIL", event.email(), variables);
+            sendNotificationUseCase.execute("PASSWORD_CHANGED_EMAIL", event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send password changed email to {}: {}", event.email(), e.getMessage(), e);
         }
