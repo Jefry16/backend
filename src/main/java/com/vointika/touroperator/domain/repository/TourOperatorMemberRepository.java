@@ -3,6 +3,7 @@ package com.vointika.touroperator.domain.repository;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,4 +18,21 @@ public interface TourOperatorMemberRepository {
 
     /** The user's role in THIS operator, if a member (the role policy's tier check). */
     Optional<MemberRole> findRoleByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
+
+    /** The operator's full team — the roster + the source for owner-invariant reasoning. */
+    List<TourOperatorMember> findByTourOperatorId(UUID tourOperatorId);
+
+    /** How many members hold a given role — the last-OWNER guard counts on {@code OWNER}. */
+    long countByTourOperatorIdAndRole(UUID tourOperatorId, MemberRole role);
+
+    /** Removes one membership (self-leave / remove-member); authorization is the use case's job. */
+    void deleteByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
+
+    /**
+     * Persists an ownership transfer, flushing the demotion before the promotion so
+     * the single-owner partial unique index never momentarily sees two OWNERs.
+     * {@code demotedOwner} must already be re-roled to ADMIN and {@code promotedMember}
+     * to OWNER by the caller.
+     */
+    void transferOwnership(TourOperatorMember demotedOwner, TourOperatorMember promotedMember);
 }

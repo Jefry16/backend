@@ -11,9 +11,12 @@ import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.application.service.SlugGenerator;
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
+import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.GetInvitationPreviewUseCase;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
+import com.vointika.touroperator.application.usecase.ListMembersUseCase;
+import com.vointika.touroperator.application.usecase.RemoveTeamMemberUseCase;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
@@ -91,5 +94,29 @@ public class TourOperatorUseCaseConfig {
             InvitationTokenPort invitationTokenPort) {
         return new GetInvitationPreviewUseCase(
                 invitationRepository, tourOperatorRepository, invitationTokenPort);
+    }
+
+    @Bean
+    public ListMembersUseCase listMembersUseCase(
+            TourOperatorMemberRepository memberRepository,
+            UserAccountQuery userAccountQuery,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListMembersUseCase(memberRepository, userAccountQuery, membershipCheck);
+    }
+
+    @Bean
+    public ChangeMemberRoleUseCase changeMemberRoleUseCase(
+            TourOperatorMemberRepository memberRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner) {
+        return new ChangeMemberRoleUseCase(memberRepository, membershipCheck, transactionRunner);
+    }
+
+    @Bean
+    public RemoveTeamMemberUseCase removeTeamMemberUseCase(
+            TourOperatorMemberRepository memberRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner) {
+        return new RemoveTeamMemberUseCase(memberRepository, membershipCheck, transactionRunner);
     }
 }

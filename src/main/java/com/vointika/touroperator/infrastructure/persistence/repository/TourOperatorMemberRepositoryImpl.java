@@ -6,7 +6,9 @@ import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorMemberJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.mapper.TourOperatorMemberMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,5 +42,33 @@ public class TourOperatorMemberRepositoryImpl implements TourOperatorMemberRepos
     public Optional<MemberRole> findRoleByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId) {
         return jpaRepository.findByTourOperatorIdAndUserId(tourOperatorId, userId)
                 .map(TourOperatorMemberJpaEntity::getRole);
+    }
+
+    @Override
+    public List<TourOperatorMember> findByTourOperatorId(UUID tourOperatorId) {
+        return jpaRepository.findByTourOperatorId(tourOperatorId).stream()
+                .map(TourOperatorMemberMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public long countByTourOperatorIdAndRole(UUID tourOperatorId, MemberRole role) {
+        return jpaRepository.countByTourOperatorIdAndRole(tourOperatorId, role);
+    }
+
+    @Override
+    @Transactional
+    public void deleteByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId) {
+        jpaRepository.deleteByTourOperatorIdAndUserId(tourOperatorId, userId);
+    }
+
+    @Override
+    @Transactional
+    public void transferOwnership(TourOperatorMember demotedOwner, TourOperatorMember promotedMember) {
+        // Flush the demotion (OWNER → ADMIN) to the DB BEFORE the promotion, so at
+        // no statement boundary do two rows carry role='OWNER'. saveAndFlush forces
+        // the ordering that hibernate.order_updates=true would otherwise scramble.
+        jpaRepository.saveAndFlush(TourOperatorMemberMapper.toJpa(demotedOwner));
+        jpaRepository.saveAndFlush(TourOperatorMemberMapper.toJpa(promotedMember));
     }
 }

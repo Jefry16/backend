@@ -76,8 +76,8 @@ persistence recipe (§3) **plus**:
 - `application/usecase/ListFoosUseCase` — returns `repository.findAll()`.
 - `presentation/controller/FooController` — `GET /api/foos`, **authenticated**
   (no public route), maps domain → `FooResponse`.
-- `presentation/response/FooResponse` — a record carrying a `type` discriminator
-  (`"currencies"`).
+- `presentation/response/FooResponse` — a record following the response identity
+  convention below (§4a).
 - `db/migration/<ctx>/V?__*.sql` — seeds the curated launch set.
 
 **Nested-only variant:** a reference type used *only* inside another response
@@ -86,6 +86,25 @@ Response and **drops** the repository / use case / controller. Don't add a
 standalone endpoint until something needs it.
 
 Canonical: `reference` — `Timezone`/`Currency` full, `Country` nested-only.
+
+## 4a. Response identity — `id` + `context` (HOUSE RULE)
+
+Every resource-representing response record identifies itself with exactly two
+meta fields:
+
+- **`id`** — the entity's id. **Never** a prefixed name (`userId`, `operatorId`,
+  `tourOperatorId`, …). Just `id`, always.
+- **`context`** — a string naming the collection the entity belongs to
+  (`"users"`, `"currencies"`, `"timezones"`). Set via the two-constructor pattern
+  so callers never pass it. (This is the discriminator; it is **not** called `type`.)
+
+The `context` is the entity's *own* collection: a team-member row is a user with a
+role, so it is `id` = the user's id + `context: "users"` (not `"members"`).
+Action-result responses that aren't a resource (e.g. `LoginUserResponse`,
+`SetAvatarResponse`) carry neither field.
+
+Canonical: `CurrencyResponse` (`id`, `context:"currencies"`), `MemberResponse`
+(`id`, `context:"users"`).
 
 ## 5. Read-time URL resolution (never store URLs)
 
