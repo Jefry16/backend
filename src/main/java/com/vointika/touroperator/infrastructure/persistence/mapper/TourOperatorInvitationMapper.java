@@ -1,0 +1,38 @@
+package com.vointika.touroperator.infrastructure.persistence.mapper;
+
+import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
+import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorInvitationJpaEntity;
+
+public class TourOperatorInvitationMapper {
+
+    public static TourOperatorInvitationJpaEntity toJpa(TourOperatorInvitation invitation) {
+        return new TourOperatorInvitationJpaEntity(
+                invitation.getId(),
+                invitation.getTourOperatorId(),
+                invitation.getEmail().value(),
+                invitation.getRole(),
+                invitation.getTokenHash(),
+                invitation.getStatus(),
+                invitation.getInvitedByUserId(),
+                invitation.getCreatedAt(),
+                invitation.getExpiresAt(),
+                invitation.getAcceptedAt()
+        );
+    }
+
+    public static TourOperatorInvitation toDomain(TourOperatorInvitationJpaEntity jpa) {
+        return new TourOperatorInvitation(
+                jpa.getId(),
+                jpa.getTourOperatorId(),
+                new InviteeEmail(jpa.getEmail()),
+                jpa.getRole(),
+                jpa.getTokenHash(),
+                jpa.getStatus(),
+                jpa.getInvitedByUserId(),
+                jpa.getCreatedAt(),
+                jpa.getExpiresAt(),
+                jpa.getAcceptedAt()
+        );
+    }
+}

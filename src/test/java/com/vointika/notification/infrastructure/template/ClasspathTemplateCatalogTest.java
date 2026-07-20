@@ -21,7 +21,8 @@ class ClasspathTemplateCatalogTest {
 
     private static final List<String> TYPES = List.of(
             "VERIFICATION_EMAIL", "PASSWORD_RESET_EMAIL", "PASSWORD_CHANGED_EMAIL",
-            "ACCOUNT_ALREADY_REGISTERED_EMAIL", "TOUR_OPERATOR_WELCOME_EMAIL");
+            "ACCOUNT_ALREADY_REGISTERED_EMAIL", "TOUR_OPERATOR_WELCOME_EMAIL",
+            "TEAM_INVITATION_EMAIL");
     private static final List<String> LOCALES = List.of("en", "es");
 
     @Test
