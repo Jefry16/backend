@@ -4,6 +4,7 @@ import com.vointika.identity.infrastructure.persistence.entity.UserJpaEntity;
 import com.vointika.identity.infrastructure.persistence.repository.UserJpaRepository;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserAccountView;
+import com.vointika.shared.port.UserContactView;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -28,6 +29,12 @@ public class UserAccountQueryImpl implements UserAccountQuery {
     @Override
     public Optional<String> findEmailByUserId(UUID userId) {
         return jpa.findById(userId).map(UserJpaEntity::getEmail);
+    }
+
+    @Override
+    public Optional<UserContactView> findContact(UUID userId) {
+        return jpa.findById(userId)
+                .map(u -> new UserContactView(u.getEmail(), u.getName(), u.getLanguage()));
     }
 
     @Override

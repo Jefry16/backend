@@ -7,7 +7,11 @@ import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.UnauthorizedException;
+import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
+import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
@@ -27,6 +31,7 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,6 +48,8 @@ class CreateTourOperatorUseCaseTest {
     private TimezoneRepository timezoneRepository;
     private CurrencyRepository currencyRepository;
     private IdGenerator idGenerator;
+    private UserAccountQuery userAccountQuery;
+    private EventPublisherPort eventPublisher;
     private CreateTourOperatorUseCase useCase;
 
     private final UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -56,6 +63,8 @@ class CreateTourOperatorUseCaseTest {
         timezoneRepository = mock(TimezoneRepository.class);
         currencyRepository = mock(CurrencyRepository.class);
         idGenerator = mock(IdGenerator.class);
+        userAccountQuery = mock(UserAccountQuery.class);
+        eventPublisher = mock(EventPublisherPort.class);
         TransactionRunner transactionRunner = new TransactionRunner() {
             @Override public <T> T call(Supplier<T> work) { return work.get(); }
             @Override public void run(Runnable work) { work.run(); }
@@ -63,7 +72,8 @@ class CreateTourOperatorUseCaseTest {
         useCase = new CreateTourOperatorUseCase(
                 tourOperatorRepository, memberRepository,
                 timezoneRepository, currencyRepository,
-                new SlugGenerator(), transactionRunner, idGenerator);
+                new SlugGenerator(), transactionRunner, idGenerator,
+                userAccountQuery, eventPublisher);
 
         // Happy-path defaults; individual tests override.
         when(timezoneRepository.findById(any())).thenReturn(Optional.of(mock(Timezone.class)));
@@ -71,6 +81,8 @@ class CreateTourOperatorUseCaseTest {
         when(idGenerator.newId()).thenReturn(UUID.randomUUID(), UUID.randomUUID());
         when(tourOperatorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(memberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(userAccountQuery.findContact(any()))
+                .thenReturn(Optional.of(new UserContactView("owner@example.com", "Ada Owner", "es")));
     }
 
     private CreateTourOperatorInput input() {
@@ -96,6 +108,31 @@ class CreateTourOperatorUseCaseTest {
         assertEquals(userId, member.getUserId());
         assertEquals(saved.getId(), member.getTourOperatorId());
         assertTrue(member.isDefault(), "the user's first operator is their default");
+    }
+
+    @Test
+    void publishesWelcomeEmailToTheCreatorAfterCreate() {
+        useCase.execute(input());
+
+        ArgumentCaptor<TourOperatorWelcomeEmailRequestedEvent> captor =
+                ArgumentCaptor.forClass(TourOperatorWelcomeEmailRequestedEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        TourOperatorWelcomeEmailRequestedEvent event = captor.getValue();
+        assertEquals("owner@example.com", event.email());
+        assertEquals("Ada Owner", event.name());
+        assertEquals("Acme Tours", event.operatorName());
+        assertEquals("es", event.locale(), "welcome email uses the creator's UI language");
+    }
+
+    @Test
+    void doesNotFailCreateWhenWelcomeEmailCannotBeEnqueued() {
+        // A creator-contact lookup blip must not fail an operator that committed.
+        when(userAccountQuery.findContact(any())).thenThrow(new RuntimeException("query down"));
+
+        CreateTourOperatorOutput out = useCase.execute(input());
+
+        assertNotNull(out.id(), "create still succeeds when the welcome email fails");
+        verify(tourOperatorRepository).save(any());
     }
 
     @Test

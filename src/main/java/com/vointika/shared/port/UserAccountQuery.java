@@ -17,6 +17,14 @@ public interface UserAccountQuery {
     Optional<UUID> findUserIdByEmail(String email);
 
     /**
+     * The user's contact fields (email + name + language) for a transactional
+     * email — e.g. the touroperator welcome email resolves the creator's
+     * recipient info here before publishing, so the notification consumer never
+     * queries identity. Empty if no account has this id.
+     */
+    Optional<UserContactView> findContact(UUID userId);
+
+    /**
      * The user's (normalized, lowercased) email — the accept flow's
      * email-match check and the pending-invitations lookup key.
      */

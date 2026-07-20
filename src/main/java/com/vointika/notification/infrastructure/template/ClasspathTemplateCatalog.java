@@ -54,7 +54,8 @@ public class ClasspathTemplateCatalog implements TemplateCatalog {
             "VERIFICATION_EMAIL", LOCALES,
             "PASSWORD_RESET_EMAIL", LOCALES,
             "PASSWORD_CHANGED_EMAIL", LOCALES,
-            "ACCOUNT_ALREADY_REGISTERED_EMAIL", LOCALES);
+            "ACCOUNT_ALREADY_REGISTERED_EMAIL", LOCALES,
+            "TOUR_OPERATOR_WELCOME_EMAIL", LOCALES);
 
     private final Map<String, EmailTemplate> templates;
 

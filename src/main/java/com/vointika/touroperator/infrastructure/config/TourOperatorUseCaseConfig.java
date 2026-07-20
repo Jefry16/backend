@@ -2,7 +2,9 @@ package com.vointika.touroperator.infrastructure.config;
 
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
+import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.service.SlugGenerator;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
@@ -27,7 +29,9 @@ public class TourOperatorUseCaseConfig {
             CurrencyRepository currencyRepository,
             SlugGenerator slugGenerator,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            UserAccountQuery userAccountQuery,
+            EventPublisherPort eventPublisher) {
         return new CreateTourOperatorUseCase(
                 tourOperatorRepository,
                 tourOperatorMemberRepository,
@@ -35,7 +39,9 @@ public class TourOperatorUseCaseConfig {
                 currencyRepository,
                 slugGenerator,
                 transactionRunner,
-                idGenerator
+                idGenerator,
+                userAccountQuery,
+                eventPublisher
         );
     }
 }

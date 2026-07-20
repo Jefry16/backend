@@ -5,8 +5,13 @@ import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.UnauthorizedException;
+import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
+import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.service.IdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.touroperator.application.service.SlugGenerator;
@@ -35,6 +40,8 @@ import java.util.UUID;
  */
 public class CreateTourOperatorUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(CreateTourOperatorUseCase.class);
+
     /** Bounded slug-collision retries; each attempt regenerates the slug in a fresh tx. */
     private static final int MAX_SLUG_ATTEMPTS = 5;
 
@@ -45,6 +52,8 @@ public class CreateTourOperatorUseCase {
     private final SlugGenerator slugGenerator;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
+    private final UserAccountQuery userAccountQuery;
+    private final EventPublisherPort eventPublisher;
 
     public CreateTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
@@ -53,7 +62,9 @@ public class CreateTourOperatorUseCase {
             CurrencyRepository currencyRepository,
             SlugGenerator slugGenerator,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            UserAccountQuery userAccountQuery,
+            EventPublisherPort eventPublisher) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.memberRepository = memberRepository;
         this.timezoneRepository = timezoneRepository;
@@ -61,6 +72,8 @@ public class CreateTourOperatorUseCase {
         this.slugGenerator = slugGenerator;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
+        this.userAccountQuery = userAccountQuery;
+        this.eventPublisher = eventPublisher;
     }
 
     public CreateTourOperatorOutput execute(CreateTourOperatorInput input) {
@@ -133,6 +146,21 @@ public class CreateTourOperatorUseCase {
                     "Could not generate a unique slug — try a different name");
         }
 
+        // 6. Welcome the creator. After-commit + fire-and-forget: an email
+        //    hiccup must never fail an operator that was created successfully.
+        publishWelcomeEmail(createdBy, tourOperator.getName().value());
+
         return new CreateTourOperatorOutput(tourOperator.getId());
+    }
+
+    private void publishWelcomeEmail(UUID createdBy, String operatorName) {
+        try {
+            userAccountQuery.findContact(createdBy).ifPresent(contact ->
+                    eventPublisher.publish(new TourOperatorWelcomeEmailRequestedEvent(
+                            contact.email(), contact.name(), operatorName, contact.language())));
+        } catch (Exception e) {
+            log.warn("Failed to enqueue welcome email for operator '{}' (creator {}): {}",
+                    operatorName, createdBy, e.getMessage(), e);
+        }
     }
 }
