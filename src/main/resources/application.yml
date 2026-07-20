@@ -94,6 +94,7 @@ app:
   notification:
     verification-base-url: ${APP_NOTIFICATION_VERIFICATION_BASE_URL:http://localhost:3000/auth/verify}
     password-reset-base-url: ${APP_NOTIFICATION_PASSWORD_RESET_BASE_URL:http://localhost:3000/auth/reset-password}
+    invitation-accept-base-url: ${APP_NOTIFICATION_INVITATION_ACCEPT_BASE_URL:http://localhost:3000/invitations/accept}
   s3:
     region: ${APP_S3_REGION:eu-north-1}
     bucket: ${APP_S3_BUCKET:avatars}

@@ -4,10 +4,15 @@ import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorM
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TourOperatorMemberJpaRepository extends JpaRepository<TourOperatorMemberJpaEntity, UUID> {
     boolean existsByUserId(UUID userId);
 
     List<TourOperatorMemberJpaEntity> findByUserId(UUID userId);
+
+    boolean existsByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
+
+    Optional<TourOperatorMemberJpaEntity> findByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
 }

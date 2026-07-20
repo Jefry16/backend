@@ -5,6 +5,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.infrastructure.persistence.mapper.TourOperatorMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -21,6 +22,11 @@ public class TourOperatorRepositoryImpl implements TourOperatorRepository {
         return TourOperatorMapper.toDomain(
                 jpaRepository.save(TourOperatorMapper.toJpa(tourOperator))
         );
+    }
+
+    @Override
+    public Optional<TourOperator> findById(UUID id) {
+        return jpaRepository.findById(id).map(TourOperatorMapper::toDomain);
     }
 
     @Override

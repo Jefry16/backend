@@ -3,6 +3,7 @@ package com.vointika.shared.infrastructure.kafka;
 import com.vointika.shared.event.AccountAlreadyRegisteredEvent;
 import com.vointika.shared.event.PasswordChangedEvent;
 import com.vointika.shared.event.PasswordResetEmailRequestedEvent;
+import com.vointika.shared.event.TeamInvitationRequestedEvent;
 import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
 import com.vointika.shared.event.VerificationEmailRequestedEvent;
 
@@ -21,6 +22,7 @@ public final class EventTopics {
     public static final String PASSWORD_CHANGED = "identity.password-changed";
     public static final String PASSWORD_RESET_REQUESTED = "identity.password-reset-requested";
     public static final String TOUR_OPERATOR_WELCOME_EMAIL_REQUESTED = "touroperator.welcome-email-requested";
+    public static final String TEAM_INVITATION_REQUESTED = "touroperator.team-invitation-requested";
 
     /** Immutable event-class → topic map consumed by {@link KafkaEventPublisher}. */
     public static final Map<Class<?>, String> BY_EVENT_TYPE = Map.of(
@@ -28,7 +30,8 @@ public final class EventTopics {
             AccountAlreadyRegisteredEvent.class, ACCOUNT_ALREADY_REGISTERED,
             PasswordChangedEvent.class, PASSWORD_CHANGED,
             PasswordResetEmailRequestedEvent.class, PASSWORD_RESET_REQUESTED,
-            TourOperatorWelcomeEmailRequestedEvent.class, TOUR_OPERATOR_WELCOME_EMAIL_REQUESTED);
+            TourOperatorWelcomeEmailRequestedEvent.class, TOUR_OPERATOR_WELCOME_EMAIL_REQUESTED,
+            TeamInvitationRequestedEvent.class, TEAM_INVITATION_REQUESTED);
 
     private EventTopics() {}
 }
