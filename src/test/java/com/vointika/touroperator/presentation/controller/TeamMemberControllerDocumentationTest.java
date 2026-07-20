@@ -88,13 +88,13 @@ class TeamMemberControllerDocumentationTest {
         mockMvc.perform(get("/api/tour-operators/{id}/members", OP)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].type").value("members"))
+                .andExpect(jsonPath("$[0].context").value("users"))
                 .andExpect(jsonPath("$[0].role").value("OWNER"))
                 .andDo(document("tour-operators/members/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
-                                fieldWithPath("[].userId").description("The member's user id"),
-                                fieldWithPath("[].type").description("The resource type"),
+                                fieldWithPath("[].id").description("The member's user id"),
+                                fieldWithPath("[].context").description("The entity's collection — \"users\""),
                                 fieldWithPath("[].role").description("OWNER, ADMIN, or STAFF"),
                                 fieldWithPath("[].joinedAt").description("When they joined"),
                                 fieldWithPath("[].name").description("Display name (best-effort; may be null)"),
