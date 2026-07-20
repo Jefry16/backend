@@ -1,7 +1,6 @@
 package com.vointika.identity.presentation.controller;
 
 import com.vointika.identity.application.usecase.ListUiLanguagesUseCase;
-import com.vointika.identity.infrastructure.security.IdentityPublicRoutes;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +18,8 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
@@ -31,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(UiLanguagesController.class)
 @ExtendWith(RestDocumentationExtension.class)
-@Import({SecurityConfig.class, IdentityPublicRoutes.class})
+@Import(SecurityConfig.class)
 class UiLanguagesControllerDocumentationTest {
 
     private MockMvc mockMvc;
@@ -55,14 +56,20 @@ class UiLanguagesControllerDocumentationTest {
 
     @Test
     void listUiLanguages() throws Exception {
+        when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
+        when(accessTokenValidator.extractUserId("test-access-token"))
+                .thenReturn("550e8400-e29b-41d4-a716-446655440000");
         when(listUiLanguagesUseCase.execute()).thenReturn(List.of("en", "es"));
 
-        // Public route — no Authorization header.
-        mockMvc.perform(get("/api/ui-languages"))
+        mockMvc.perform(get("/api/ui-languages")
+                        .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0]").value("en"))
                 .andExpect(jsonPath("$[1]").value("es"))
                 .andDo(document("ui-languages/list",
+                        requestHeaders(
+                                headerWithName("Authorization").description("Bearer access token")
+                        ),
                         responseFields(
                                 fieldWithPath("[]").description(
                                         "Supported admin-UI language codes (lowercase locale codes), in configured order; the first is the default. Labels are derived on the client via Intl.DisplayNames.")

@@ -19,10 +19,7 @@ public class IdentityPublicRoutes implements PublicRouteRegistrar {
                 new PublicRoute(HttpMethod.POST, "/api/auth/login"),
                 new PublicRoute(HttpMethod.POST, "/api/auth/refresh"),
                 new PublicRoute(HttpMethod.POST, "/api/auth/request-password-reset"),
-                new PublicRoute(HttpMethod.POST, "/api/auth/reset-password"),
-                // The supported UI-language list drives the frontend picker,
-                // including on pre-login pages — non-sensitive.
-                new PublicRoute(HttpMethod.GET, "/api/ui-languages")
+                new PublicRoute(HttpMethod.POST, "/api/auth/reset-password")
         );
     }
 }

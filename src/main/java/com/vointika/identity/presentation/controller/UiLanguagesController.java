@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * The supported admin-UI languages. Public — the frontend renders its language
- * picker from this (including on the pre-login pages); the list is non-sensitive.
+ * The supported admin-UI languages — the frontend renders its language picker
+ * from this. Authenticated (a logged-in, post-login concern).
  */
 @RestController
 @RequestMapping("/api/ui-languages")
