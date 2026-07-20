@@ -122,6 +122,14 @@ A context never imports another's types. Two channels only:
   header (correlation id).
 - Canonical: identity events → notification consumers.
 
+> **Fire-and-forget is non-critical-only.** This shape suits *drop-tolerant*
+> notifications — recoverable by the user, and the SES adapter already retries
+> transient failures. A **must-not-drop** event (payment, refund, booking state)
+> must **not** log-and-swallow: it needs a different shape — at-least-once +
+> idempotent consumer + retry/DLQ — whose decided direction is in the **MAP
+> backlog** ("Critical-event delivery"). Build that shape when the first such event
+> lands, not before (§2.3).
+
 ## 8. Config-driven capability (grow by config, not code)
 
 A capability whose *set* grows over time (UI languages, email locales) is a
