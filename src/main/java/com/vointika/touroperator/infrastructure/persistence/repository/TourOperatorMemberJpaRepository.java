@@ -1,5 +1,6 @@
 package com.vointika.touroperator.infrastructure.persistence.repository;
 
+import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorMemberJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,4 +16,10 @@ public interface TourOperatorMemberJpaRepository extends JpaRepository<TourOpera
     boolean existsByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
 
     Optional<TourOperatorMemberJpaEntity> findByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
+
+    List<TourOperatorMemberJpaEntity> findByTourOperatorId(UUID tourOperatorId);
+
+    long countByTourOperatorIdAndRole(UUID tourOperatorId, MemberRole role);
+
+    void deleteByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
 }
