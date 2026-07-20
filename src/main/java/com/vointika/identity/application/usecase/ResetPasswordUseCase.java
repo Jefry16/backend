@@ -78,6 +78,6 @@ public class ResetPasswordUseCase {
 
         // 8. Publish password changed event — AFTER commit
         eventPublisher.publish(new PasswordChangedEvent(
-                user.getEmail().value(), user.getName().value()));
+                user.getEmail().value(), user.getName().value(), user.getLanguage()));
     }
 }

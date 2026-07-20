@@ -126,7 +126,8 @@ class AuthControllerDocumentationTest {
                                 {
                                     "email": "user@example.com",
                                     "name": "John Doe",
-                                    "password": "Password1!"
+                                    "password": "Password1!",
+                                    "language": "es"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -134,7 +135,8 @@ class AuthControllerDocumentationTest {
                         requestFields(
                                 fieldWithPath("email").description("The user's email address (max 255 chars, valid email format; normalized to lower case and trimmed)"),
                                 fieldWithPath("name").description("The user's display name (2-100 chars after trimming)"),
-                                fieldWithPath("password").description("The user's password (8 chars min, 72 bytes max; must include uppercase, lowercase, digit, and special character)")
+                                fieldWithPath("password").description("The user's password (8 chars min, 72 bytes max; must include uppercase, lowercase, digit, and special character)"),
+                                fieldWithPath("language").description("Optional: the frontend's current UI language (locale code, e.g. \"es\"); stored as the new user's preference and used to localize the verification email. Unsupported or absent defaults to \"en\".").optional()
                         )));
     }
 

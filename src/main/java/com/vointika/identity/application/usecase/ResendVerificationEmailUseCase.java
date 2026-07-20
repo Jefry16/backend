@@ -86,7 +86,7 @@ public class ResendVerificationEmailUseCase {
 
         // 4. Publish verification email event — AFTER commit
         eventPublisher.publish(new VerificationEmailRequestedEvent(
-                user.getEmail().value(), user.getName().value(), rawToken));
+                user.getEmail().value(), user.getName().value(), rawToken, user.getLanguage()));
     }
 
     /** The no-op counterpart of the real path's token gen + hash + tx. */

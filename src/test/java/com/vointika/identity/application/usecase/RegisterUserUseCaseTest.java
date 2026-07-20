@@ -59,7 +59,7 @@ class RegisterUserUseCaseTest {
     void setUp() {
         useCase = new RegisterUserUseCase(userRepository, verificationTokenRepository,
                 passwordHasher, tokenGenerator, tokenHasher, eventPublisher, transactionRunner, idGenerator,
-                rateLimiter);
+                rateLimiter, java.util.Set.of("en", "es"));
     }
 
     private void allowNotification() {
@@ -78,7 +78,7 @@ class RegisterUserUseCaseTest {
         when(tokenGenerator.generateVerificationToken()).thenReturn("raw-token");
         when(tokenHasher.hash("raw-token")).thenReturn("hashed-token");
 
-        useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!"));
+        useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!", null));
 
         verify(userRepository).save(any(User.class));
 
@@ -101,7 +101,7 @@ class RegisterUserUseCaseTest {
         when(passwordHasher.hash("Password1!")).thenReturn("hashed");
 
         assertDoesNotThrow(
-                () -> useCase.execute(new RegisterUserInput("test@example.com", "Attacker Name", "Password1!")));
+                () -> useCase.execute(new RegisterUserInput("test@example.com", "Attacker Name", "Password1!", null)));
 
         // Timing parity (§7.5): the hash runs even when the email is taken
         verify(passwordHasher).hash("Password1!");
@@ -132,7 +132,7 @@ class RegisterUserUseCaseTest {
                 .when(userRepository).save(any(User.class));
 
         assertDoesNotThrow(
-                () -> useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!")));
+                () -> useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!", null)));
 
         verify(verificationTokenRepository, never()).save(any());
 
@@ -153,7 +153,7 @@ class RegisterUserUseCaseTest {
         when(passwordHasher.hash("Password1!")).thenReturn("hashed");
 
         assertDoesNotThrow(
-                () -> useCase.execute(new RegisterUserInput("test@example.com", "Attacker Name", "Password1!")));
+                () -> useCase.execute(new RegisterUserInput("test@example.com", "Attacker Name", "Password1!", null)));
 
         verify(rateLimiter).tryAcquire("rl:register:email:test@example.com", 3, Duration.ofHours(1));
         verifyNoInteractions(eventPublisher);
@@ -170,7 +170,7 @@ class RegisterUserUseCaseTest {
         when(tokenGenerator.generateVerificationToken()).thenReturn("raw-token");
         when(tokenHasher.hash("raw-token")).thenReturn("hashed-token");
 
-        useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!"));
+        useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!", null));
 
         verify(userRepository).save(any(User.class));
         verify(eventPublisher).publish(any(VerificationEmailRequestedEvent.class));
@@ -187,7 +187,7 @@ class RegisterUserUseCaseTest {
                 .when(userRepository).save(any(User.class));
 
         assertDoesNotThrow(
-                () -> useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!")));
+                () -> useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!", null)));
 
         verifyNoInteractions(eventPublisher);
     }
@@ -195,18 +195,53 @@ class RegisterUserUseCaseTest {
     @Test
     void shouldThrowWhenEmailIsInvalid() {
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new RegisterUserInput("invalid", "Test User", "Password1!")));
+                () -> useCase.execute(new RegisterUserInput("invalid", "Test User", "Password1!", null)));
     }
 
     @Test
     void shouldThrowWhenPasswordIsWeak() {
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new RegisterUserInput("test@example.com", "Test User", "weak")));
+                () -> useCase.execute(new RegisterUserInput("test@example.com", "Test User", "weak", null)));
     }
 
     @Test
     void shouldThrowWhenNameIsBlank() {
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new RegisterUserInput("test@example.com", "", "Password1!")));
+                () -> useCase.execute(new RegisterUserInput("test@example.com", "", "Password1!", null)));
+    }
+
+    @Test
+    void capturesSupportedLanguageOntoUserAndVerificationEvent() {
+        allowNotification();
+        when(userRepository.findByEmail(any(Email.class))).thenReturn(Optional.empty());
+        when(passwordHasher.hash("Password1!")).thenReturn("hashed");
+        when(tokenGenerator.generateVerificationToken()).thenReturn("raw-token");
+        when(tokenHasher.hash("raw-token")).thenReturn("hashed-token");
+
+        useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!", "es"));
+
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedUser.capture());
+        assertEquals("es", savedUser.getValue().getLanguage());
+
+        ArgumentCaptor<VerificationEmailRequestedEvent> event =
+                ArgumentCaptor.forClass(VerificationEmailRequestedEvent.class);
+        verify(eventPublisher).publish(event.capture());
+        assertEquals("es", event.getValue().locale());
+    }
+
+    @Test
+    void unsupportedOrAbsentLanguageDefaultsToEn() {
+        allowNotification();
+        when(userRepository.findByEmail(any(Email.class))).thenReturn(Optional.empty());
+        when(passwordHasher.hash("Password1!")).thenReturn("hashed");
+        when(tokenGenerator.generateVerificationToken()).thenReturn("raw-token");
+        when(tokenHasher.hash("raw-token")).thenReturn("hashed-token");
+
+        useCase.execute(new RegisterUserInput("test@example.com", "Test User", "Password1!", "de"));
+
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedUser.capture());
+        assertEquals("en", savedUser.getValue().getLanguage());
     }
 }

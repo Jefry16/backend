@@ -76,7 +76,8 @@ public class AuthController {
         registerUserUseCase.execute(new RegisterUserInput(
                 request.email(),
                 request.name(),
-                request.password()
+                request.password(),
+                request.language()
         ));
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

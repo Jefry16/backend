@@ -33,7 +33,11 @@ public class UseCaseConfig {
             EventPublisherPort eventPublisher,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
-            RateLimiterPort rateLimiter) {
+            RateLimiterPort rateLimiter,
+            UiLanguageProperties uiLanguageProperties) {
+        java.util.Set<String> supported = uiLanguageProperties.uiLanguages().stream()
+                .map(l -> l.trim().toLowerCase(java.util.Locale.ROOT))
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
         return new RegisterUserUseCase(
                 userRepository,
                 verificationTokenRepository,
@@ -43,7 +47,8 @@ public class UseCaseConfig {
                 eventPublisher,
                 transactionRunner,
                 idGenerator,
-                rateLimiter
+                rateLimiter,
+                supported
         );
     }
 

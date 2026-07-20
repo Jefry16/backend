@@ -20,7 +20,9 @@ import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.service.IdGenerator;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 public class RegisterUserUseCase {
 
@@ -33,6 +35,7 @@ public class RegisterUserUseCase {
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
     private final RateLimiterPort rateLimiter;
+    private final Set<String> supportedLanguages;
 
     public RegisterUserUseCase(
             UserRepository userRepository,
@@ -43,7 +46,8 @@ public class RegisterUserUseCase {
             EventPublisherPort eventPublisher,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
-            RateLimiterPort rateLimiter
+            RateLimiterPort rateLimiter,
+            Set<String> supportedLanguages
     ) {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
@@ -54,6 +58,7 @@ public class RegisterUserUseCase {
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
         this.rateLimiter = rateLimiter;
+        this.supportedLanguages = supportedLanguages;
     }
 
     public void execute(RegisterUserInput input) {
@@ -85,13 +90,15 @@ public class RegisterUserUseCase {
         if (existing.isPresent()) {
             if (notifyOwnerAllowed) {
                 eventPublisher.publish(new AccountAlreadyRegisteredEvent(
-                        existing.get().getEmail().value(), existing.get().getName().value()));
+                        existing.get().getEmail().value(), existing.get().getName().value(),
+                        existing.get().getLanguage()));
             }
             return;
         }
 
         // 4. Build user + verification token. Raw token never persists — only its hash.
         User user = new User(idGenerator.newId(), email, name, hashedPassword);
+        user.changeLanguage(resolveLanguage(input.language()));
         String rawToken = tokenGenerator.generateVerificationToken();
         VerificationToken verificationToken = VerificationToken.issue(
                 idGenerator.newId(), user.getId(), tokenHasher.hash(rawToken));
@@ -111,7 +118,8 @@ public class RegisterUserUseCase {
             if (notifyOwnerAllowed) {
                 userRepository.findByEmail(email).ifPresent(winner ->
                         eventPublisher.publish(new AccountAlreadyRegisteredEvent(
-                                winner.getEmail().value(), winner.getName().value())));
+                                winner.getEmail().value(), winner.getName().value(),
+                                winner.getLanguage())));
             }
             return;
         }
@@ -119,6 +127,15 @@ public class RegisterUserUseCase {
         // 6. Publish verification email event — AFTER the tx commits, so we don't
         //    enqueue an email for a registration that was rolled back.
         eventPublisher.publish(new VerificationEmailRequestedEvent(
-                email.value(), name.value(), rawToken));
+                email.value(), name.value(), rawToken, user.getLanguage()));
+    }
+
+    /** The requested UI language if provided and supported, else "en". Never fails registration. */
+    private String resolveLanguage(String requested) {
+        if (requested == null || requested.isBlank()) {
+            return "en";
+        }
+        String lang = requested.trim().toLowerCase(Locale.ROOT);
+        return supportedLanguages.contains(lang) ? lang : "en";
     }
 }

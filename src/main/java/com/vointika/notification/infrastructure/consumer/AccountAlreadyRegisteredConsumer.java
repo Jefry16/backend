@@ -30,7 +30,7 @@ public class AccountAlreadyRegisteredConsumer {
     public void handle(AccountAlreadyRegisteredEvent event) {
         try {
             Map<String, Object> variables = Map.of("name", event.name());
-            sendNotificationUseCase.execute("ACCOUNT_ALREADY_REGISTERED_EMAIL", event.email(), variables);
+            sendNotificationUseCase.execute("ACCOUNT_ALREADY_REGISTERED_EMAIL", event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send account-already-registered email to {}: {}",
                     event.email(), e.getMessage(), e);

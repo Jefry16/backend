@@ -67,6 +67,6 @@ public class ChangePasswordUseCase {
 
         // 7. Publish password changed event — AFTER commit
         eventPublisher.publish(new PasswordChangedEvent(
-                user.getEmail().value(), user.getName().value()));
+                user.getEmail().value(), user.getName().value(), user.getLanguage()));
     }
 }

@@ -40,17 +40,21 @@ public class ClasspathTemplateCatalog implements TemplateCatalog {
     private static final Logger log = LoggerFactory.getLogger(ClasspathTemplateCatalog.class);
 
     private static final String BASE_PATH = "templates/email/";
-    private static final List<String> ENGLISH_ONLY = List.of("en");
 
     /**
-     * The declared template universe. The identity emails are English-only;
-     * localized shopper emails arrive with their contexts.
+     * Locales every identity email ships in — these should track the platform's
+     * UI languages ({@code app.identity.ui-languages}). Growing a language means
+     * adding its code here AND the matching {@code {type}_{locale}} files, or the
+     * fail-fast loader below refuses to start.
      */
+    private static final List<String> LOCALES = List.of("en", "es");
+
+    /** The declared template universe: every identity email, in every platform locale. */
     private static final Map<String, List<String>> KNOWN_TEMPLATES = Map.of(
-            "VERIFICATION_EMAIL", ENGLISH_ONLY,
-            "PASSWORD_RESET_EMAIL", ENGLISH_ONLY,
-            "PASSWORD_CHANGED_EMAIL", ENGLISH_ONLY,
-            "ACCOUNT_ALREADY_REGISTERED_EMAIL", ENGLISH_ONLY);
+            "VERIFICATION_EMAIL", LOCALES,
+            "PASSWORD_RESET_EMAIL", LOCALES,
+            "PASSWORD_CHANGED_EMAIL", LOCALES,
+            "ACCOUNT_ALREADY_REGISTERED_EMAIL", LOCALES);
 
     private final Map<String, EmailTemplate> templates;
 
