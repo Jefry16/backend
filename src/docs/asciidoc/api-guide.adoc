@@ -1,0 +1,268 @@
+= Vointika API Guide
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 2
+:sectlinks:
+:table-caption!:
+
+Vointika's HTTP API. Requests and responses are JSON. Every example below is
+generated from the controller documentation tests, so the guide never drifts
+from the running service.
+
+[[overview]]
+== Overview
+
+[[overview-http-status-codes]]
+=== HTTP Status Codes
+
+|===
+| Status code | Usage
+
+| `200 OK`
+| The request completed successfully.
+
+| `201 Created`
+| A new resource was created; its location is in the `Location` header.
+
+| `204 No Content`
+| The request completed successfully with no response body.
+
+| `401 Unauthorized`
+| Missing or invalid authentication credentials.
+
+| `403 Forbidden`
+| Authenticated, but not permitted (e.g. an insufficient tour-operator role).
+
+| `404 Not Found`
+| The resource was not found — or is hidden for tenant isolation (a non-member sees the same 404 as a missing operator).
+
+| `409 Conflict`
+| The request conflicts with current state (e.g. a duplicate, or an already-accepted invitation).
+
+| `410 Gone`
+| The resource is no longer available (e.g. a revoked or expired invitation).
+
+| `422 Unprocessable Content`
+| The request body contains invalid fields.
+
+| `429 Too Many Requests`
+| A rate limit was exceeded (see <<overview-rate-limiting>>).
+
+| `500 Internal Server Error`
+| An unexpected error occurred.
+|===
+
+[[overview-errors]]
+=== Error Responses
+
+Every error response has the same shape:
+
+|===
+| Field | Type | Description
+
+| `status`
+| Number
+| The HTTP status code.
+
+| `error`
+| String
+| The HTTP status reason phrase.
+
+| `message`
+| String
+| A human-readable error message.
+
+| `code`
+| String
+| Optional stable, machine-readable error code. Present only when the throw site supplies one (certain `422`/`409` errors); omitted otherwise. Clients that branch on a specific cause should match this rather than the human-readable `message`.
+
+| `timestamp`
+| String
+| When the error occurred (ISO 8601).
+|===
+
+[[overview-resource-identity]]
+=== Resource Identity
+
+Every resource-representing response identifies itself with two meta fields:
+
+* `id` — the entity's id. Always literally `id`, never a prefixed name.
+* `context` — the collection the entity belongs to (`"users"`, `"currencies"`,
+  `"timezones"`, …). A team member is a user with a role, so a member row is
+  `id` (the user's id) + `context: "users"`.
+
+[[overview-authentication]]
+=== Authentication
+
+Authenticated endpoints require a `Bearer` access token:
+
+----
+Authorization: Bearer <access-token>
+----
+
+Obtain one from <<resources-login>>. A short-lived access token is refreshed via
+<<resources-refresh>> using the `httpOnly` refresh cookie. Endpoints under
+`/api/tour-operators/{id}/**` additionally require membership of that operator
+(a non-member is indistinguishable from a missing operator — both `404`); the
+role each action needs (member / ADMIN+ / OWNER) is noted per endpoint.
+
+[[overview-rate-limiting]]
+=== Rate Limiting
+
+The public authentication endpoints are rate-limited per IP, with additional
+per-account throttles inside the identity flows. Exceeding a limit returns
+`429 Too Many Requests`.
+
+[[resources]]
+== Resources
+
+[[resources-identity]]
+=== Identity
+
+[[resources-register]]
+==== Register
+
+Creates an account and emails a verification link. Optional `language` sets the
+account's UI locale.
+
+operation::auth/register[]
+
+[[resources-verify]]
+==== Verify Account
+
+operation::auth/verify[]
+
+[[resources-resend-verification]]
+==== Resend Verification Email
+
+operation::auth/resend-verification[]
+
+[[resources-login]]
+==== Login
+
+Returns an access token in the body and the refresh token as an `httpOnly` cookie.
+
+operation::auth/login[]
+
+[[resources-refresh]]
+==== Refresh Access Token
+
+operation::auth/refresh[]
+
+[[resources-logout]]
+==== Logout
+
+operation::auth/logout[]
+
+[[resources-change-password]]
+==== Change Password
+
+operation::auth/change-password[]
+
+[[resources-request-password-reset]]
+==== Request Password Reset
+
+operation::auth/request-password-reset[]
+
+[[resources-reset-password]]
+==== Reset Password
+
+operation::auth/reset-password[]
+
+[[resources-profile]]
+==== Get Profile
+
+Returns the authenticated user plus the tour operators they belong to.
+
+operation::auth/profile[]
+
+[[resources-set-avatar]]
+==== Set Avatar
+
+operation::auth/set-avatar[]
+
+[[resources-clear-avatar]]
+==== Clear Avatar
+
+operation::auth/clear-avatar[]
+
+[[resources-change-language]]
+==== Change UI Language
+
+operation::auth/change-language[]
+
+[[resources-ui-languages]]
+==== List UI Languages
+
+operation::ui-languages/list[]
+
+[[resources-reference]]
+=== Reference Data
+
+[[resources-currencies]]
+==== List Currencies
+
+operation::currencies/list[]
+
+[[resources-timezones]]
+==== List Timezones
+
+Each timezone carries its country nested.
+
+operation::timezones/list[]
+
+[[resources-touroperator]]
+=== Tour Operators
+
+[[resources-create-operator]]
+==== Create Tour Operator
+
+The authenticated caller becomes the operator's OWNER.
+
+operation::tour-operators/create[]
+
+[[resources-invite]]
+==== Invite a Team Member
+
+ADMIN+ only. Invites an email as ADMIN or STAFF (never OWNER) and sends an
+accept link.
+
+operation::tour-operators/invitations/create[]
+
+[[resources-invitation-preview]]
+==== Preview an Invitation
+
+Public — validates the emailed token before the accept form.
+
+operation::invitations/preview[]
+
+[[resources-invitation-accept]]
+==== Accept an Invitation
+
+Public. A new invitee provides a name + password and is auto-logged-in; an
+already-authenticated user (matching email) simply joins.
+
+operation::invitations/accept[]
+
+[[resources-members-list]]
+==== List Team Members
+
+ADMIN+. The roster, owner first.
+
+operation::tour-operators/members/list[]
+
+[[resources-members-change-role]]
+==== Change a Member's Role
+
+ADMIN+. Promoting to OWNER is an owner-only ownership transfer.
+
+operation::tour-operators/members/change-role[]
+
+[[resources-members-remove]]
+==== Remove a Member
+
+Self = leave; other = ADMIN+. The last owner cannot be removed.
+
+operation::tour-operators/members/remove[]

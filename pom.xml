@@ -224,12 +224,58 @@
                 </executions>
             </plugin>
             <!--
-              REST Docs snippet generation stays on (the AuthController
-              documentation test is our behavior spec). The asciidoctor + resource
-              -copy plugins that assemble the published HTML API guide are deferred
-              until we reproduce api-guide.adoc — dropping them keeps `package`
-              free of a doc-source dependency. Reintroduce with the guide.
+              REST Docs → published HTML API guide. The documentation tests emit
+              snippets into target/generated-snippets during `test`; asciidoctor
+              renders src/docs/asciidoc/api-guide.adoc (which includes those
+              snippets) at prepare-package; the resources plugin then copies the
+              rendered HTML into static/docs so the packaged app serves it at
+              /docs/api-guide.html. Both run after `test`, so the snippets exist.
             -->
+            <plugin>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctor-maven-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>generate-docs</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>process-asciidoc</goal>
+                        </goals>
+                        <configuration>
+                            <backend>html</backend>
+                            <doctype>book</doctype>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.springframework.restdocs</groupId>
+                        <artifactId>spring-restdocs-asciidoctor</artifactId>
+                        <version>4.0.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-api-guide</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static/docs</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/generated-docs</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
