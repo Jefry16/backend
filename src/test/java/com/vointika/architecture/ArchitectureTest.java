@@ -13,9 +13,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *
  * <p>Bounded contexts are isolated from each other — they communicate via events
  * (Kafka, over {@code shared}) or shared query ports, never direct imports. Only
- * {@code shared} may be imported by every context. New per-context isolation
- * rules are added here as contexts land; today only {@code identity} and
- * {@code notification} exist.
+ * {@code shared} may be imported by every context, and {@code reference} is a
+ * shared-kernel-like read module other contexts may import (it imports none).
+ * New per-context isolation rules are added here as contexts land:
+ * {@code identity}, {@code notification}, {@code reference}, {@code touroperator}.
  *
  * <p>Within a bounded context, layers form a DAG:
  * {@code domain} ← {@code application} ← {@code infrastructure} / {@code presentation}
@@ -39,7 +40,8 @@ public class ArchitectureTest {
                     .resideInAnyPackage(
                             "com.vointika.identity..",
                             "com.vointika.notification..",
-                            "com.vointika.reference.."
+                            "com.vointika.reference..",
+                            "com.vointika.touroperator.."
                     )
                     .because("shared is the base module — it must not know about any bounded context");
 
@@ -48,7 +50,7 @@ public class ArchitectureTest {
             noClasses()
                     .that().resideInAPackage("com.vointika.identity..")
                     .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.notification..")
+                    .resideInAnyPackage("com.vointika.notification..", "com.vointika.touroperator..")
                     .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
 
     @ArchTest
@@ -56,7 +58,18 @@ public class ArchitectureTest {
             noClasses()
                     .that().resideInAPackage("com.vointika.notification..")
                     .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.identity..")
+                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.touroperator..")
+                    .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
+
+    // touroperator owns the tenant aggregate. It may import the shared kernel and
+    // the reference module (timezone/currency validation), but not identity or
+    // notification — it reaches those via shared query ports / events.
+    @ArchTest
+    static final ArchRule touroperator_does_not_depend_on_other_bounded_contexts =
+            noClasses()
+                    .that().resideInAPackage("com.vointika.touroperator..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.notification..")
                     .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
 
     // reference is a read-mostly, shared-kernel-like module (countries, timezones):
@@ -66,7 +79,7 @@ public class ArchitectureTest {
             noClasses()
                     .that().resideInAPackage("com.vointika.reference..")
                     .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.notification..")
+                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.notification..", "com.vointika.touroperator..")
                     .because("reference feeds other contexts (shared kernel), never the other way");
 
     // The Kafka client (producer/consumer/admin) is infrastructure for the event
