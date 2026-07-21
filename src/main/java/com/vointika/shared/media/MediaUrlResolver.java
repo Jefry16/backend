@@ -1,7 +1,5 @@
 package com.vointika.shared.media;
 
-import java.util.List;
-
 /**
  * Resolves a stored media reference to an absolute public URL against the
  * <em>current</em> media bucket base URL ({@code app.s3.public-base-url}).
@@ -35,14 +33,6 @@ public class MediaUrlResolver {
             return stored;
         }
         return baseNoTrailingSlash + "/" + toKey(stored);
-    }
-
-    /** Same as {@link #toUrl} over a list; {@code null} list passes through. */
-    public List<String> toUrls(List<String> stored) {
-        if (stored == null) {
-            return null;
-        }
-        return stored.stream().map(this::toUrl).toList();
     }
 
     /**
