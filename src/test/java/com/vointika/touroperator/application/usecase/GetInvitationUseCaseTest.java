@@ -1,6 +1,5 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.application.dto.output.InvitationView;
@@ -52,14 +51,15 @@ class GetInvitationUseCaseTest {
     }
 
     @Test
-    void returnsTheInvitationDetailForAnAdmin() {
+    void returnsTheInvitationDetailForAnyMember() {
         when(invitationRepository.findByIdAndTourOperatorId(invitationId, operatorId))
                 .thenReturn(Optional.of(invitation(InvitationStatus.PENDING,
                         Instant.parse("2999-01-01T00:00:00Z"))));
 
         InvitationView view = useCase.execute(operatorId, invitationId, callerId);
 
-        verify(membershipCheck).ensureAdmin(callerId, operatorId);
+        // Any member may view (STAFF included) — the gate is ensureMember, not ensureAdmin.
+        verify(membershipCheck).ensureMember(callerId, operatorId);
         assertEquals(invitationId, view.id());
         assertEquals("teammate@example.com", view.email());
         assertEquals(MemberRole.STAFF, view.role());
@@ -92,11 +92,12 @@ class GetInvitationUseCaseTest {
     }
 
     @Test
-    void nonAdminIsRejectedBeforeAnyLookup() {
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
-                .when(membershipCheck).ensureAdmin(callerId, operatorId);
+    void nonMemberIs404BeforeAnyLookup() {
+        doThrow(new ResourceNotFoundException("Tour operator not found"))
+                .when(membershipCheck).ensureMember(callerId, operatorId);
 
-        assertThrows(ForbiddenException.class, () -> useCase.execute(operatorId, invitationId, callerId));
+        assertThrows(ResourceNotFoundException.class,
+                () -> useCase.execute(operatorId, invitationId, callerId));
         verify(invitationRepository, never()).findByIdAndTourOperatorId(any(), any());
     }
 
