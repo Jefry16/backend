@@ -213,6 +213,15 @@ Each timezone carries its country nested.
 
 operation::timezones/list[]
 
+[[resources-languages]]
+==== List Languages
+
+The platform's supported content languages (the master list operators enable a
+subset of for storefront/experience content). Distinct from the admin-UI
+language. Authenticated.
+
+operation::languages/list[]
+
 [[resources-touroperator]]
 === Tour Operators
 
@@ -319,6 +328,22 @@ operation::tour-operators/logo/set[]
 ADMIN+ only. Removes the logo. Idempotent.
 
 operation::tour-operators/logo/clear[]
+
+[[resources-operator-locales-get]]
+==== Get the Operator's Languages
+
+Any member. The operator's default/primary content locale + its supported set.
+
+operation::tour-operators/locales/get[]
+
+[[resources-operator-locales-update]]
+==== Set the Operator's Languages
+
+ADMIN+ only. Replaces the primary + supported set. Each code must be a supported
+platform language (`GET /api/languages`) or → 422; the primary must be one of the
+supported locales or → 422.
+
+operation::tour-operators/locales/update[]
 
 === Media
 

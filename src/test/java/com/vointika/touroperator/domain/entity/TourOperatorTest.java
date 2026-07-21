@@ -10,6 +10,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TourOperatorTest {
 
@@ -68,5 +69,40 @@ class TourOperatorTest {
         op.clearLogo();
 
         assertNull(op.getLogoMediaId());
+    }
+
+    @Test
+    void brandNewOperatorDefaultsToEnglish() {
+        TourOperator op = operator();
+        assertEquals("en", op.getPrimaryLocale().value());
+        assertEquals(java.util.Set.of(com.vointika.shared.valueobject.LocaleCode.of("en")),
+                op.getSupportedLocales());
+    }
+
+    @Test
+    void updateLocalesReplacesPrimaryAndSupported() {
+        TourOperator op = operator();
+        var en = com.vointika.shared.valueobject.LocaleCode.of("en");
+        var es = com.vointika.shared.valueobject.LocaleCode.of("es");
+
+        op.updateLocales(es, new java.util.LinkedHashSet<>(java.util.List.of(en, es)));
+
+        assertEquals("es", op.getPrimaryLocale().value());
+        assertEquals(java.util.Set.of(en, es), op.getSupportedLocales());
+    }
+
+    @Test
+    void updateLocalesRejectsEmptySupported() {
+        TourOperator op = operator();
+        assertThrows(com.vointika.shared.exception.InvalidFieldException.class,
+                () -> op.updateLocales(com.vointika.shared.valueobject.LocaleCode.of("en"), java.util.Set.of()));
+    }
+
+    @Test
+    void updateLocalesRejectsPrimaryNotInSupported() {
+        TourOperator op = operator();
+        assertThrows(com.vointika.shared.exception.InvalidFieldException.class,
+                () -> op.updateLocales(com.vointika.shared.valueobject.LocaleCode.of("de"),
+                        java.util.Set.of(com.vointika.shared.valueobject.LocaleCode.of("en"))));
     }
 }
