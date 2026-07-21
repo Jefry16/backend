@@ -106,6 +106,30 @@ Action-result responses that aren't a resource (e.g. `LoginUserResponse`,
 Canonical: `CurrencyResponse` (`id`, `context:"currencies"`), `MemberResponse`
 (`id`, `context:"users"`).
 
+## 4b. Paginated list endpoints (cursor + filter + sort)
+
+Any list over **tenant or growable data** (members, bookings, orders, audit) MUST
+use the shared list framework — **never an unbounded array** (the roster shipped
+that way once and it was the recorded mistake this fixes). The recipe:
+
+1. **Schema** — a `public static final ListSchema SCHEMA` on the use case:
+   `.tenantScoped()` (scopes to the entity's `tourOperatorId`), `.set/text/number/
+   instant(...)` for each filterable field, `.sortable(...)` + `.defaultSort(...)`.
+2. **Repository** — `CursorPage<Foo> list(ListQuery query)`, delegating to the
+   shared `CriteriaListExecutor.list(FooJpaEntity.class, SCHEMA, query, Mapper::toDomain)`.
+   The executor does keyset cursor pagination (page size 20, tie-broken on `id`),
+   the filter predicates, and the sort.
+3. **Use case** — `execute(ListQuery, callerId)`: gate (e.g. `ensureMember`), call
+   `repository.list`, enrich the page's rows (batched, no N+1), return the
+   `CursorPage` with its `nextCursor` unchanged.
+4. **Controller** — inject `ListQueryParser`, `parse(request, SCHEMA, tenantId)` →
+   `ListQuery`, return `CursorPageResponse.of(page, FooResponse::from)` →
+   `{ "data": [...], "nextCursor": "..." }`.
+
+Query shape: `?filter[role][in]=OWNER,ADMIN&sort=-joinedAt&cursor=…`. The cursor is
+opaque (base64, keyset on sort-field + id); `nextCursor` is null on the last page.
+Canonical: `ListMembersUseCase` + `GET /api/tour-operators/{id}/members`.
+
 ## 5. Read-time URL resolution (never store URLs)
 
 Store a bucket-relative **storage key** on the row; resolve it to an absolute

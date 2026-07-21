@@ -1,5 +1,7 @@
 package com.vointika.touroperator.domain.repository;
 
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.ListQuery;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 
@@ -9,6 +11,9 @@ import java.util.UUID;
 
 public interface TourOperatorMemberRepository {
     TourOperatorMember save(TourOperatorMember member);
+
+    /** Cursor-paginated roster (shared list framework), tenant-scoped to the operator. */
+    CursorPage<TourOperatorMember> list(ListQuery query);
 
     /** Whether the user is already a member of any operator — drives the isDefault flag. */
     boolean existsByUserId(UUID userId);

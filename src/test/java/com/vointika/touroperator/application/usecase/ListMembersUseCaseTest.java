@@ -1,6 +1,11 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.FilterSpec;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.list.SortDirection;
+import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserAccountView;
@@ -14,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -23,6 +27,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ListMembersUseCaseTest {
@@ -43,47 +49,76 @@ class ListMembersUseCaseTest {
         useCase = new ListMembersUseCase(memberRepository, userAccountQuery, membershipCheck);
     }
 
+    private ListQuery query() {
+        return new ListQuery(op, FilterSpec.empty(), new SortSpec("joinedAt", SortDirection.ASC), null);
+    }
+
     private TourOperatorMember member(UUID userId, MemberRole role, Instant joinedAt) {
         return new TourOperatorMember(UUID.randomUUID(), op, userId, role, false, joinedAt);
     }
 
     @Test
-    void staffCallerIsForbidden() {
-        doThrow(new ForbiddenException("admin only")).when(membershipCheck).ensureAdmin(eq(caller), eq(op));
-        assertThrows(ForbiddenException.class, () -> useCase.execute(op, caller));
+    void nonMemberGets404_memberOnly() {
+        doThrow(new ResourceNotFoundException("Tour operator not found"))
+                .when(membershipCheck).ensureMember(eq(caller), eq(op));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(query(), caller));
+        verify(memberRepository, never()).list(any());
     }
 
     @Test
-    void ordersByJoinedAtAndEnrichesFromIdentity() {
-        UUID owner = UUID.randomUUID(); // joined first
-        UUID staff = UUID.randomUUID(); // joined later
-        when(memberRepository.findByTourOperatorId(op)).thenReturn(List.of(
-                member(staff, MemberRole.STAFF, Instant.parse("2026-02-01T00:00:00Z")),
-                member(owner, MemberRole.OWNER, Instant.parse("2026-01-01T00:00:00Z"))));
+    void anyMemberMayView_notJustAdmins() {
+        // A STAFF caller (member) must NOT be blocked — the roster is member-visible.
+        // ensureMember passes; ensureAdmin must never be consulted.
+        when(memberRepository.list(any()))
+                .thenReturn(new CursorPage<>(List.of(member(UUID.randomUUID(), MemberRole.STAFF, Instant.now())), null));
+        when(userAccountQuery.findAccounts(any())).thenReturn(List.of());
+
+        useCase.execute(query(), caller);
+
+        verify(membershipCheck).ensureMember(caller, op);
+        verify(membershipCheck, never()).ensureAdmin(any(), any());
+    }
+
+    @Test
+    void enrichesRowsAndCarriesTheCursorThrough() {
+        UUID owner = UUID.randomUUID();
+        UUID staff = UUID.randomUUID();
+        when(memberRepository.list(any())).thenReturn(new CursorPage<>(List.of(
+                member(owner, MemberRole.OWNER, Instant.parse("2026-01-01T00:00:00Z")),
+                member(staff, MemberRole.STAFF, Instant.parse("2026-02-01T00:00:00Z"))),
+                "next-cursor"));
         when(userAccountQuery.findAccounts(any())).thenReturn(List.of(
                 new UserAccountView(owner, "owner@example.com", "Olive Owner"),
                 new UserAccountView(staff, "staff@example.com", "Sam Staff")));
 
-        List<MemberListView> rows = useCase.execute(op, caller);
+        CursorPage<MemberListView> page = useCase.execute(query(), caller);
 
-        assertEquals(2, rows.size());
-        assertEquals(owner, rows.get(0).userId(), "owner (earliest joinedAt) leads");
-        assertEquals("Olive Owner", rows.get(0).name());
-        assertEquals("staff@example.com", rows.get(1).email());
+        assertEquals("next-cursor", page.nextCursor(), "the repo's cursor is passed through unchanged");
+        assertEquals(2, page.data().size());
+        assertEquals(owner, page.data().get(0).userId(), "order preserved from the paginated query");
+        assertEquals("Olive Owner", page.data().get(0).name());
+        assertEquals("staff@example.com", page.data().get(1).email());
     }
 
     @Test
     void nullSafeWhenAnAccountCannotBeResolved() {
         UUID ghost = UUID.randomUUID();
-        when(memberRepository.findByTourOperatorId(op)).thenReturn(List.of(
-                member(ghost, MemberRole.STAFF, Instant.now())));
-        when(userAccountQuery.findAccounts(any())).thenReturn(List.of()); // resolves nothing
+        when(memberRepository.list(any()))
+                .thenReturn(new CursorPage<>(List.of(member(ghost, MemberRole.STAFF, Instant.now())), null));
+        when(userAccountQuery.findAccounts(any())).thenReturn(List.of());
 
-        List<MemberListView> rows = useCase.execute(op, caller);
+        CursorPage<MemberListView> page = useCase.execute(query(), caller);
 
-        assertEquals(1, rows.size());
-        assertNull(rows.get(0).name());
-        assertNull(rows.get(0).email());
-        assertEquals(MemberRole.STAFF, rows.get(0).role());
+        assertNull(page.data().get(0).name());
+        assertNull(page.data().get(0).email());
+        assertEquals(MemberRole.STAFF, page.data().get(0).role());
+    }
+
+    @Test
+    void emptyPageReturnsEmptyWithCursor() {
+        when(memberRepository.list(any())).thenReturn(CursorPage.empty());
+        CursorPage<MemberListView> page = useCase.execute(query(), caller);
+        assertEquals(0, page.data().size());
+        assertNull(page.nextCursor());
     }
 }
