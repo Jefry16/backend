@@ -303,3 +303,39 @@ operation::tour-operators/members/change-role[]
 Self = leave; other = ADMIN+. The last owner cannot be removed.
 
 operation::tour-operators/members/remove[]
+
+=== Media
+
+The operator's media library. Reads are member-visible; uploads and deletes are
+ADMIN+. Files are stored in object storage; responses carry the absolute `url`
+resolved from the stored key at read time (URLs are never persisted).
+
+[[resources-media-upload]]
+==== Upload Media
+
+ADMIN+ only. Multipart (`file` part). Allowed: `image/jpeg`, `image/png`,
+`image/webp`, `application/pdf`, ≤ 25 MB. Bad type or oversize → 422.
+
+operation::media/upload[]
+
+[[resources-media-list]]
+==== List Media
+
+Any member. Cursor-paginated, tenant-scoped. Filter by `contentType`; sort by
+`createdAt` (default, newest first) or `id`; page with `cursor`.
+
+operation::media/list[]
+
+[[resources-media-get]]
+==== Get Media
+
+Any member. A single media record; 404 if the id isn't under this operator.
+
+operation::media/get[]
+
+[[resources-media-delete]]
+==== Delete Media
+
+ADMIN+ only. Removes the record and its stored object. 204.
+
+operation::media/delete[]
