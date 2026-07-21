@@ -4,7 +4,6 @@ import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
-import com.vointika.experience.domain.valueobject.ExperienceStatus;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -71,7 +70,7 @@ class CreateExperienceUseCaseTest {
         verify(mediaValidator).validate(eq(operatorId), any(), any());
         ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
         verify(repository).save(saved.capture());
-        assertEquals(ExperienceStatus.DRAFT, saved.getValue().getStatus());
+        org.junit.jupiter.api.Assertions.assertFalse(saved.getValue().isPublished());
         assertEquals("dive-trip", saved.getValue().getSlug().value());
         assertEquals(callerId, saved.getValue().getCreatedBy());
     }

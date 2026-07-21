@@ -4,7 +4,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.ExperienceStatus;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
@@ -19,7 +18,9 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExperienceTest {
 
@@ -32,17 +33,17 @@ class ExperienceTest {
     }
 
     @Test
-    void newExperienceStartsDraft() {
-        assertEquals(ExperienceStatus.DRAFT, create(List.of(), null).getStatus());
+    void newExperienceStartsUnpublished() {
+        assertFalse(create(List.of(), null).isPublished());
     }
 
     @Test
     void publishAndUnpublishTransition() {
         Experience e = create(List.of(), null);
         e.publish();
-        assertEquals(ExperienceStatus.PUBLISHED, e.getStatus());
+        assertTrue(e.isPublished());
         e.unpublish();
-        assertEquals(ExperienceStatus.DRAFT, e.getStatus());
+        assertFalse(e.isPublished());
     }
 
     @Test

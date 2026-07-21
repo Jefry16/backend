@@ -3,7 +3,6 @@ package com.vointika.experience.application.usecase;
 import com.vointika.experience.application.dto.output.ExperienceView;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
-import com.vointika.experience.domain.valueobject.ExperienceStatus;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.ListSchema;
@@ -18,7 +17,7 @@ import java.util.UUID;
 
 /**
  * Lists an operator's experiences — cursor-paginated, tenant-scoped. Any member
- * may view; non-member → 404. Filter by {@code status} and/or {@code featured};
+ * may view; non-member → 404. Filter by {@code published} and/or {@code featured};
  * sort by {@code createdAt} (default, newest first), {@code name}, or {@code id}.
  *
  * <p>Media across the whole page is resolved in ONE batched lookup (no N+1) —
@@ -28,7 +27,7 @@ public class ListExperiencesUseCase {
 
     public static final ListSchema SCHEMA = ListSchema.builder()
             .tenantScoped()
-            .set("status", ExperienceStatus.class)
+            .bool("published")
             .bool("featured")
             .instant("createdAt")
             .sortable("createdAt")

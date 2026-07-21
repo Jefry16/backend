@@ -27,7 +27,7 @@ public record ExperienceResponse(
         List<String> galleryUrls,
         int durationMinutes,
         int bookingCutoffHours,
-        String status,
+        boolean published,
         UUID createdBy,
         Instant createdAt) {
 
@@ -36,6 +36,6 @@ public record ExperienceResponse(
                 v.id(), "experiences", v.name(), v.slug(), v.description(), v.longDescription(),
                 v.featured(), v.tags(), v.included(), v.notIncluded(), v.highlights(),
                 v.thumbnailUrl(), v.galleryUrls(), v.durationMinutes(), v.bookingCutoffHours(),
-                v.status(), v.createdBy(), v.createdAt());
+                v.published(), v.createdBy(), v.createdAt());
     }
 }

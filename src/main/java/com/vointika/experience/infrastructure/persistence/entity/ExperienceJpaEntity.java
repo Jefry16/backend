@@ -1,10 +1,7 @@
 package com.vointika.experience.infrastructure.persistence.entity;
 
-import com.vointika.experience.domain.valueobject.ExperienceStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -78,9 +75,8 @@ public class ExperienceJpaEntity {
     @Column(nullable = false)
     private int bookingCutoffHours;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ExperienceStatus status;
+    private boolean published;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
