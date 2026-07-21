@@ -1,5 +1,7 @@
 package com.vointika.touroperator.domain.repository;
 
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.ListQuery;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 
 import java.util.Optional;
@@ -7,6 +9,9 @@ import java.util.UUID;
 
 public interface TourOperatorInvitationRepository {
     TourOperatorInvitation save(TourOperatorInvitation invitation);
+
+    /** All invitations for an operator (any status), cursor-paginated + filtered. */
+    CursorPage<TourOperatorInvitation> list(ListQuery query);
 
     /** Lookup by the at-rest token hash — the accept-link capability. */
     Optional<TourOperatorInvitation> findByTokenHash(String tokenHash);
