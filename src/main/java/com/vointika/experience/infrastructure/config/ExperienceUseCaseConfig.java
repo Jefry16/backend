@@ -2,14 +2,20 @@ package com.vointika.experience.infrastructure.config;
 
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.application.usecase.CreateExperienceUseCase;
+import com.vointika.experience.application.usecase.DeleteExperienceTranslationUseCase;
+import com.vointika.experience.application.usecase.GetExperienceTranslationUseCase;
 import com.vointika.experience.application.usecase.GetExperienceUseCase;
+import com.vointika.experience.application.usecase.ListExperienceTranslationsUseCase;
 import com.vointika.experience.application.usecase.ListExperiencesUseCase;
 import com.vointika.experience.application.usecase.PublishExperienceUseCase;
 import com.vointika.experience.application.usecase.UnpublishExperienceUseCase;
 import com.vointika.experience.application.usecase.UpdateExperienceUseCase;
+import com.vointika.experience.application.usecase.UpsertExperienceTranslationUseCase;
 import com.vointika.experience.domain.repository.ExperienceRepository;
+import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -73,5 +79,40 @@ public class ExperienceUseCaseConfig {
             ExperienceRepository experienceRepository,
             TourOperatorMembershipCheck membershipCheck) {
         return new UnpublishExperienceUseCase(experienceRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpsertExperienceTranslationUseCase upsertExperienceTranslationUseCase(
+            ExperienceRepository experienceRepository,
+            ExperienceTranslationRepository translationRepository,
+            OperatorLocalesQuery operatorLocalesQuery,
+            SlugGenerator slugGenerator,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
+                operatorLocalesQuery, slugGenerator, membershipCheck);
+    }
+
+    @Bean
+    public GetExperienceTranslationUseCase getExperienceTranslationUseCase(
+            ExperienceRepository experienceRepository,
+            ExperienceTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetExperienceTranslationUseCase(experienceRepository, translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public ListExperienceTranslationsUseCase listExperienceTranslationsUseCase(
+            ExperienceRepository experienceRepository,
+            ExperienceTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListExperienceTranslationsUseCase(experienceRepository, translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public DeleteExperienceTranslationUseCase deleteExperienceTranslationUseCase(
+            ExperienceRepository experienceRepository,
+            ExperienceTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new DeleteExperienceTranslationUseCase(experienceRepository, translationRepository, membershipCheck);
     }
 }
