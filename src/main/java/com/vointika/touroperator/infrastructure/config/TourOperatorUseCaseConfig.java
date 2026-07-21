@@ -4,6 +4,7 @@ import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.InvitedUserProvisioning;
+import com.vointika.shared.port.MediaKeyBatchQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
@@ -12,6 +13,7 @@ import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.application.service.SlugGenerator;
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
+import com.vointika.touroperator.application.usecase.ClearOperatorLogoUseCase;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.GetInvitationPreviewUseCase;
 import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
@@ -21,6 +23,7 @@ import com.vointika.touroperator.application.usecase.ListMembersUseCase;
 import com.vointika.touroperator.application.usecase.RemoveTeamMemberUseCase;
 import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
+import com.vointika.touroperator.application.usecase.SetOperatorLogoUseCase;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
@@ -98,6 +101,21 @@ public class TourOperatorUseCaseConfig {
             InvitationTokenPort invitationTokenPort) {
         return new GetInvitationPreviewUseCase(
                 invitationRepository, tourOperatorRepository, invitationTokenPort);
+    }
+
+    @Bean
+    public SetOperatorLogoUseCase setOperatorLogoUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            MediaKeyBatchQuery mediaKeyBatchQuery,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new SetOperatorLogoUseCase(tourOperatorRepository, mediaKeyBatchQuery, membershipCheck);
+    }
+
+    @Bean
+    public ClearOperatorLogoUseCase clearOperatorLogoUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ClearOperatorLogoUseCase(tourOperatorRepository, membershipCheck);
     }
 
     @Bean
