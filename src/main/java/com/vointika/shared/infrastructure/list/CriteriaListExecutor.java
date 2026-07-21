@@ -38,62 +38,6 @@ public class CriteriaListExecutor {
     @PersistenceContext
     private EntityManager em;
 
-    /**
-     * Top-N path — same predicate/sort building as {@link #list}, but with no
-     * cursor pagination and no {@code +1} lookahead. The SQL caps results at
-     * {@code limit} via {@code setMaxResults}; the caller never sees a cursor.
-     *
-     * <p>Use when the caller has a fixed display cap (e.g. "the 10 newest
-     * featured experiences for the homepage hero strip") and pagination is
-     * meaningless. {@link #list} stays the right choice for any endpoint where
-     * the client can walk pages.
-     */
-    public <E, P> java.util.List<P> top(
-            Class<E> entityClass,
-            ListSchema schema,
-            ListQuery query,
-            Function<E, P> toProjection,
-            int limit
-    ) {
-        if (limit <= 0) {
-            throw new IllegalArgumentException("limit must be positive, got " + limit);
-        }
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<E> cq = cb.createQuery(entityClass);
-        Root<E> root = cq.from(entityClass);
-
-        List<Predicate> predicates = new ArrayList<>();
-
-        if (schema.tenantScoped()) {
-            predicates.add(cb.equal(root.get(TENANT_FIELD), query.tenantId()));
-        }
-
-        for (var entry : query.scope().entrySet()) {
-            predicates.add(cb.equal(root.get(entry.getKey()), entry.getValue()));
-        }
-
-        for (Filter f : query.filters().filters()) {
-            FilterType type = schema.filters().get(f.field()).type();
-            predicates.add(buildFilterPredicate(cb, root, f, type));
-        }
-
-        cq.where(predicates.toArray(new Predicate[0]));
-
-        SortSpec sort = query.sort();
-        Order primary = orderFor(cb, root.get(sort.field()), sort.direction());
-        if (ID_FIELD.equals(sort.field())) {
-            cq.orderBy(primary);
-        } else {
-            cq.orderBy(primary, orderFor(cb, root.get(ID_FIELD), sort.direction()));
-        }
-
-        List<E> rows = em.createQuery(cq)
-                .setMaxResults(limit)
-                .getResultList();
-
-        return rows.stream().map(toProjection).toList();
-    }
-
     public <E, P> CursorPage<P> list(
             Class<E> entityClass,
             ListSchema schema,
