@@ -17,6 +17,8 @@ import com.vointika.touroperator.application.usecase.GetInvitationPreviewUseCase
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
 import com.vointika.touroperator.application.usecase.ListMembersUseCase;
 import com.vointika.touroperator.application.usecase.RemoveTeamMemberUseCase;
+import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
+import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
@@ -94,6 +96,25 @@ public class TourOperatorUseCaseConfig {
             InvitationTokenPort invitationTokenPort) {
         return new GetInvitationPreviewUseCase(
                 invitationRepository, tourOperatorRepository, invitationTokenPort);
+    }
+
+    @Bean
+    public RevokeInvitationUseCase revokeInvitationUseCase(
+            TourOperatorInvitationRepository invitationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new RevokeInvitationUseCase(invitationRepository, membershipCheck);
+    }
+
+    @Bean
+    public ResendInvitationUseCase resendInvitationUseCase(
+            TourOperatorInvitationRepository invitationRepository,
+            TourOperatorRepository tourOperatorRepository,
+            UserAccountQuery userAccountQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            InvitationTokenPort invitationTokenPort,
+            EventPublisherPort eventPublisher) {
+        return new ResendInvitationUseCase(invitationRepository, tourOperatorRepository,
+                userAccountQuery, membershipCheck, invitationTokenPort, eventPublisher);
     }
 
     @Bean
