@@ -1,7 +1,6 @@
 package com.vointika.shared.web.exception;
 
 import com.vointika.shared.web.response.ApiErrorResponse;
-import com.vointika.shared.web.response.FieldValidationErrorResponse;
 import com.vointika.shared.exception.*;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -29,19 +28,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidFieldException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidField(InvalidFieldException ex) {
         return build(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), ex.getErrorCode());
-    }
-
-    @ExceptionHandler(ValidationFailedException.class)
-    public ResponseEntity<FieldValidationErrorResponse> handleValidationFailed(
-            ValidationFailedException ex) {
-        HttpStatus status = HttpStatus.UNPROCESSABLE_CONTENT;
-        return ResponseEntity.status(status).body(new FieldValidationErrorResponse(
-                status.value(),
-                status.getReasonPhrase(),
-                ex.getMessage(),
-                Instant.now(),
-                ex.getErrors()
-        ));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
