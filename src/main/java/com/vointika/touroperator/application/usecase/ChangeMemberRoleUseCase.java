@@ -11,8 +11,6 @@ import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -65,29 +63,31 @@ public class ChangeMemberRoleUseCase {
     }
 
     private void apply(UUID tourOperatorId, UUID targetUserId, MemberRole newRole, UUID callerUserId) {
-        List<TourOperatorMember> team = memberRepository.findByTourOperatorId(tourOperatorId);
-        TourOperatorMember target = find(team, targetUserId)
+        // Targeted reads (no full-team load): the target member, the owner count,
+        // and — only when needed — the caller's role/entity.
+        TourOperatorMember target = memberRepository.findByTourOperatorIdAndUserId(tourOperatorId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
 
         if (targetUserId.equals(callerUserId)) {
-            throw new ConflictException(
-                    (target.getRole() == MemberRole.OWNER && ownerCount(team) <= 1)
-                            ? "Transfer ownership to another member before changing your own role"
-                            : "You cannot change your own role");
+            boolean lastOwner = target.getRole() == MemberRole.OWNER && soleOwner(tourOperatorId);
+            throw new ConflictException(lastOwner
+                    ? "Transfer ownership to another member before changing your own role"
+                    : "You cannot change your own role");
         }
 
         if (newRole == MemberRole.OWNER) {
-            transferOwnership(team, target, callerUserId);
+            transferOwnership(tourOperatorId, target, callerUserId);
             return;
         }
 
         // Demotion / lateral to ADMIN or STAFF.
         if (target.getRole() == MemberRole.OWNER) {
-            TourOperatorMember caller = find(team, callerUserId).orElseThrow();
-            if (caller.getRole() != MemberRole.OWNER) {
+            MemberRole callerRole = memberRepository
+                    .findRoleByTourOperatorIdAndUserId(tourOperatorId, callerUserId).orElse(null);
+            if (callerRole != MemberRole.OWNER) {
                 throw new ForbiddenException("Only the owner can change the owner's role");
             }
-            if (ownerCount(team) <= 1) {
+            if (soleOwner(tourOperatorId)) {
                 throw new ConflictException(
                         "Transfer ownership to another member before demoting the owner");
             }
@@ -100,8 +100,8 @@ public class ChangeMemberRoleUseCase {
     }
 
     /** Promote {@code target} to OWNER and demote the acting owner to ADMIN, atomically. */
-    private void transferOwnership(List<TourOperatorMember> team, TourOperatorMember target, UUID callerUserId) {
-        TourOperatorMember caller = find(team, callerUserId)
+    private void transferOwnership(UUID tourOperatorId, TourOperatorMember target, UUID callerUserId) {
+        TourOperatorMember caller = memberRepository.findByTourOperatorIdAndUserId(tourOperatorId, callerUserId)
                 .orElseThrow(() -> new ForbiddenException("Only the owner can transfer ownership"));
         caller.changeRole(MemberRole.ADMIN);
         target.changeRole(MemberRole.OWNER);
@@ -110,12 +110,8 @@ public class ChangeMemberRoleUseCase {
         memberRepository.transferOwnership(caller, target);
     }
 
-    private static Optional<TourOperatorMember> find(List<TourOperatorMember> team, UUID userId) {
-        return team.stream().filter(m -> m.getUserId().equals(userId)).findFirst();
-    }
-
-    private static long ownerCount(List<TourOperatorMember> team) {
-        return team.stream().filter(m -> m.getRole() == MemberRole.OWNER).count();
+    private boolean soleOwner(UUID tourOperatorId) {
+        return memberRepository.countByTourOperatorIdAndRole(tourOperatorId, MemberRole.OWNER) <= 1;
     }
 
     private static MemberRole parseRole(String rawRole) {

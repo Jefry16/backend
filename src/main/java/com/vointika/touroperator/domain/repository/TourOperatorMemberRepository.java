@@ -5,7 +5,6 @@ import com.vointika.shared.list.ListQuery;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,8 +23,8 @@ public interface TourOperatorMemberRepository {
     /** The user's role in THIS operator, if a member (the role policy's tier check). */
     Optional<MemberRole> findRoleByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
 
-    /** The operator's full team — the roster + the source for owner-invariant reasoning. */
-    List<TourOperatorMember> findByTourOperatorId(UUID tourOperatorId);
+    /** A single membership by (operator, user) — owner-invariant reasoning on a role change. */
+    Optional<TourOperatorMember> findByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
 
     /** How many members hold a given role — the last-OWNER guard counts on {@code OWNER}. */
     long countByTourOperatorIdAndRole(UUID tourOperatorId, MemberRole role);

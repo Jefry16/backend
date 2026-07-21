@@ -14,8 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -56,8 +55,19 @@ class ChangeMemberRoleUseCaseTest {
         return new TourOperatorMember(UUID.randomUUID(), op, userId, role, false, Instant.now());
     }
 
+    /** Stubs the targeted reads the use case makes: per-user member/role lookups + the OWNER count. */
     private void team(TourOperatorMember... members) {
-        when(memberRepository.findByTourOperatorId(op)).thenReturn(new ArrayList<>(List.of(members)));
+        when(memberRepository.findByTourOperatorIdAndUserId(eq(op), any())).thenReturn(Optional.empty());
+        when(memberRepository.findRoleByTourOperatorIdAndUserId(eq(op), any())).thenReturn(Optional.empty());
+        long owners = 0;
+        for (TourOperatorMember m : members) {
+            when(memberRepository.findByTourOperatorIdAndUserId(op, m.getUserId())).thenReturn(Optional.of(m));
+            when(memberRepository.findRoleByTourOperatorIdAndUserId(op, m.getUserId())).thenReturn(Optional.of(m.getRole()));
+            if (m.getRole() == MemberRole.OWNER) {
+                owners++;
+            }
+        }
+        when(memberRepository.countByTourOperatorIdAndRole(op, MemberRole.OWNER)).thenReturn(owners);
     }
 
     @Test
