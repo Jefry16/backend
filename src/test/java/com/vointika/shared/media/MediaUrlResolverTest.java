@@ -2,8 +2,6 @@ package com.vointika.shared.media;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -49,16 +47,5 @@ class MediaUrlResolverTest {
     void nullAndBlankPassThrough() {
         assertNull(resolver.toUrl(null));
         assertEquals("", resolver.toUrl(""));
-        assertNull(resolver.toUrls(null));
-    }
-
-    @Test
-    void mapsListOfReferences() {
-        List<String> out = resolver.toUrls(List.of(
-                "tour-operators/op/a.jpg",
-                "https://pub-old.r2.dev/tour-operators/op/b.jpg"));
-        assertEquals(
-                List.of(BASE + "/tour-operators/op/a.jpg", BASE + "/tour-operators/op/b.jpg"),
-                out);
     }
 }

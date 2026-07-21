@@ -110,7 +110,6 @@ class AuthControllerDocumentationTest {
     @BeforeEach
     void setUp(WebApplicationContext context, RestDocumentationContextProvider restDocumentation) {
         lenient().when(mediaUrlResolver.toUrl(any())).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(mediaUrlResolver.toUrls(any())).thenAnswer(inv -> inv.getArgument(0));
         this.mockMvc = MockMvcBuilders.webAppContextSetup(context)
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
