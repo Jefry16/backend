@@ -434,3 +434,43 @@ ADMIN+ only. Sets `published: false` (pulls it from the storefront). 204;
 already unpublished → 409.
 
 operation::experiences/unpublish[]
+
+=== Experience Translations
+
+Per-locale overlays on an experience — translated `name`/`description`/
+`longDescription`/`highlights`/`included`/`notIncluded` plus an optional
+localized `slug`. Every content field is nullable (falls back to the canonical
+experience). `tags` are not translated; media is shared. Reads are
+member-visible; upsert/delete are ADMIN+. A translation's locale must be one the
+operator supports (`PATCH /locales`) or → 422.
+
+[[resources-experience-translations-list]]
+==== List Translations
+
+Any member. One overlay per translated locale.
+
+operation::experiences/translations/list[]
+
+[[resources-experience-translations-get]]
+==== Get a Translation
+
+Any member. One locale's overlay; an untranslated locale returns an empty
+overlay (all fields null) for the editor form.
+
+operation::experiences/translations/get[]
+
+[[resources-experience-translations-upsert]]
+==== Upsert a Translation
+
+ADMIN+ only. Creates or replaces a locale's overlay. Unsupported locale → 422; a
+localized slug already used for this operator+locale → 409. If `slug` is omitted
+but `name` is given, a localized slug is derived from the name.
+
+operation::experiences/translations/upsert[]
+
+[[resources-experience-translations-delete]]
+==== Delete a Translation
+
+ADMIN+ only. Removes a locale's overlay. Idempotent. 204.
+
+operation::experiences/translations/delete[]

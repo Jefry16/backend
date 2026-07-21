@@ -1,0 +1,214 @@
+package com.vointika.experience.presentation.controller;
+
+import com.vointika.experience.application.dto.output.ExperienceTranslationView;
+import com.vointika.experience.application.usecase.DeleteExperienceTranslationUseCase;
+import com.vointika.experience.application.usecase.GetExperienceTranslationUseCase;
+import com.vointika.experience.application.usecase.ListExperienceTranslationsUseCase;
+import com.vointika.experience.application.usecase.UpsertExperienceTranslationUseCase;
+import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.web.security.SecurityConfig;
+import com.vointika.touroperator.infrastructure.web.WebConfig;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.restdocs.RestDocumentationContextProvider;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
+import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(ExperienceTranslationController.class)
+@ExtendWith(RestDocumentationExtension.class)
+@Import({SecurityConfig.class, WebConfig.class})
+class ExperienceTranslationControllerDocumentationTest {
+
+    private static final String OP = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
+    private static final String EXP = "aaaaaaaa-0000-4000-8000-000000000001";
+    private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
+
+    private MockMvc mockMvc;
+
+    @MockitoBean private UpsertExperienceTranslationUseCase upsertUseCase;
+    @MockitoBean private GetExperienceTranslationUseCase getUseCase;
+    @MockitoBean private ListExperienceTranslationsUseCase listUseCase;
+    @MockitoBean private DeleteExperienceTranslationUseCase deleteUseCase;
+    @MockitoBean private TourOperatorMembershipCheck membershipCheck;
+    @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
+
+    @BeforeEach
+    void setUp(WebApplicationContext context, RestDocumentationContextProvider restDocumentation) {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(documentationConfiguration(restDocumentation)
+                        .operationPreprocessors()
+                        .withRequestDefaults(prettyPrint())
+                        .withResponseDefaults(prettyPrint())
+                        .and()
+                        .snippets().withDefaults(httpRequest(), httpResponse()))
+                .apply(springSecurity())
+                .build();
+    }
+
+    private void authenticated() {
+        when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
+        when(accessTokenValidator.extractUserId("test-access-token")).thenReturn(USER);
+    }
+
+    private ExperienceTranslationView esView() {
+        return new ExperienceTranslationView("es", "Buceo al atardecer", "Buceo en el arrecife",
+                "Descripción larga…", List.of("Grupos pequeños"), List.of("Equipo"), List.of(),
+                "buceo-al-atardecer");
+    }
+
+    private static final String BODY = """
+            {
+              "name": "Buceo al atardecer",
+              "description": "Buceo en el arrecife",
+              "longDescription": "Descripción larga…",
+              "highlights": ["Grupos pequeños"],
+              "included": ["Equipo"],
+              "notIncluded": [],
+              "slug": "buceo-al-atardecer"
+            }""";
+
+    @Test
+    void list() throws Exception {
+        authenticated();
+        when(listUseCase.execute(any(), any(), any())).thenReturn(List.of(esView()));
+
+        mockMvc.perform(get("/api/tour-operators/{id}/experiences/{experienceId}/translations", OP, EXP)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].locale").value("es"))
+                .andDo(document("experiences/translations/list",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("experienceId").description("The experience id"))));
+    }
+
+    @Test
+    void getTranslation() throws Exception {
+        authenticated();
+        when(getUseCase.execute(any(), any(), any(), any())).thenReturn(esView());
+
+        mockMvc.perform(get("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "es")
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.locale").value("es"))
+                .andDo(document("experiences/translations/get",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("experienceId").description("The experience id"),
+                                parameterWithName("locale").description("BCP-47 locale code"))));
+    }
+
+    @Test
+    void upsert() throws Exception {
+        authenticated();
+        mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "es")
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isNoContent())
+                .andDo(document("experiences/translations/upsert",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("experienceId").description("The experience id"),
+                                parameterWithName("locale").description("A locale the operator supports (else 422)")),
+                        requestFields(
+                                fieldWithPath("name").description("Translated name (null = fall back to canonical)").optional(),
+                                fieldWithPath("description").description("Translated short description").optional(),
+                                fieldWithPath("longDescription").description("Translated long description").optional(),
+                                fieldWithPath("highlights").description("Translated highlights").optional(),
+                                fieldWithPath("included").description("Translated included list").optional(),
+                                fieldWithPath("notIncluded").description("Translated not-included list").optional(),
+                                fieldWithPath("slug").description("Optional localized slug; unique per operator+locale (409 on dup). If omitted, derived from name").optional())));
+    }
+
+    @Test
+    void deleteTranslation() throws Exception {
+        authenticated();
+        mockMvc.perform(delete("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "es")
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(document("experiences/translations/delete",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("experienceId").description("The experience id"),
+                                parameterWithName("locale").description("BCP-47 locale code"))));
+    }
+
+    @Test
+    void upsertRequiresAuthentication() throws Exception {
+        mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "es")
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void staffCannotUpsert() throws Exception {
+        authenticated();
+        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+                .when(upsertUseCase).execute(any(), any(), any(), any(), any());
+        mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "es")
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unsupportedLocaleIsUnprocessable() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException("Locale 'de' is not supported by this operator"))
+                .when(upsertUseCase).execute(any(), any(), any(), any(), any());
+        mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "de")
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void nonMemberGets404FromTheInterceptor() throws Exception {
+        authenticated();
+        doThrow(new ResourceNotFoundException("Tour operator not found"))
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(OP)));
+        mockMvc.perform(get("/api/tour-operators/{id}/experiences/{experienceId}/translations", OP, EXP)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isNotFound());
+    }
+}
