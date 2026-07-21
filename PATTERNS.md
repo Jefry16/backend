@@ -157,6 +157,30 @@ exposed via a read endpoint when the frontend needs the list. Growing it = add a
 config key (+ any assets like a template file); zero code, zero migration.
 Canonical: `app.identity.ui-languages` + `GET /api/ui-languages`.
 
+## 8a. Rate limiting (three layers)
+
+One primitive — `RateLimiterPort.tryAcquire(key, limit, window)` (fixed-window,
+**fail-open**, Redis-backed). Keys are `rl:{dimension}:…`; callers own their
+namespace. Pick the layer by what you're defending:
+
+- **A — per-IP endpoint rules** (pre-handler, `EndpointRateLimitFilter`): abuse
+  defense on public/unauthenticated routes. Declare per-context via the
+  `RateLimitRuleRegistrar` SPI (mirrors `PublicRouteRegistrar`) — a
+  `RateLimitRule(method, pathPattern, limit, window)`. Matched by Spring
+  `PathPattern`, keyed **`rl:ip:{METHOD}:{pattern}:{ip}`**. Canonical:
+  `IdentityRateLimitRoutes`, `TourOperatorRateLimitRoutes`.
+- **B — per-identity in-use-case throttles**: input-dependent keys the filter
+  can't see (email, account). Inject `RateLimiterPort`, call
+  `tryAcquire("rl:{action}:{scope}:{value}", n, window)`. Canonical:
+  `RegisterUserUseCase` (`rl:register:email:{email}`).
+- **C — blanket per-user cap** (`ApiRateLimitFilter`, per authenticated user): a
+  runaway-script backstop, automatic on the authed API. Nothing to add.
+
+**The keying gotcha:** layer A keys on the matched **pattern**, never the concrete
+URI — else a path-variable route (`/api/invitations/*/accept`) buckets per token
+value and never limits. Rules live with the context that owns the endpoint (SPI),
+never in a central hardcoded map.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,
