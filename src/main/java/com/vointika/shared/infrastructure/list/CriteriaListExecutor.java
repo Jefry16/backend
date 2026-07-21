@@ -54,10 +54,6 @@ public class CriteriaListExecutor {
             predicates.add(cb.equal(root.get(TENANT_FIELD), query.tenantId()));
         }
 
-        for (var entry : query.scope().entrySet()) {
-            predicates.add(cb.equal(root.get(entry.getKey()), entry.getValue()));
-        }
-
         for (Filter f : query.filters().filters()) {
             FilterType type = schema.filters().get(f.field()).type();
             predicates.add(buildFilterPredicate(cb, root, f, type));

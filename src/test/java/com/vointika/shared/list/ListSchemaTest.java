@@ -56,18 +56,4 @@ class ListSchemaTest {
                 FilterOp.ENDS_WITH
         );
     }
-
-    @Test
-    void parseSortTokenAscendingByDefault() {
-        SortSpec spec = ListSchema.parseSortToken("name");
-        assertThat(spec.field()).isEqualTo("name");
-        assertThat(spec.direction()).isEqualTo(SortDirection.ASC);
-    }
-
-    @Test
-    void parseSortTokenDescendingWithMinusPrefix() {
-        SortSpec spec = ListSchema.parseSortToken("-createdAt");
-        assertThat(spec.field()).isEqualTo("createdAt");
-        assertThat(spec.direction()).isEqualTo(SortDirection.DESC);
-    }
 }

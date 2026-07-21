@@ -1,6 +1,5 @@
 package com.vointika.shared.list;
 
-import com.vointika.shared.exception.InvalidFieldException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -109,15 +108,5 @@ public final class ListSchema {
             }
             return new SortSpec(token, SortDirection.ASC);
         }
-    }
-
-    public static SortSpec parseSortToken(String token) {
-        if (token == null || token.isEmpty()) {
-            throw new InvalidFieldException("Invalid sort: empty value");
-        }
-        if (token.charAt(0) == '-') {
-            return new SortSpec(token.substring(1), SortDirection.DESC);
-        }
-        return new SortSpec(token, SortDirection.ASC);
     }
 }
