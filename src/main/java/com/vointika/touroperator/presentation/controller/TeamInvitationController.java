@@ -1,12 +1,16 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.touroperator.application.dto.output.InvitationView;
+import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
 import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
 import com.vointika.touroperator.presentation.request.InviteTeamMemberRequest;
+import com.vointika.touroperator.presentation.response.InvitationResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,13 +31,16 @@ import java.util.UUID;
 public class TeamInvitationController {
 
     private final InviteTeamMemberUseCase inviteTeamMemberUseCase;
+    private final GetInvitationUseCase getInvitationUseCase;
     private final ResendInvitationUseCase resendInvitationUseCase;
     private final RevokeInvitationUseCase revokeInvitationUseCase;
 
     public TeamInvitationController(InviteTeamMemberUseCase inviteTeamMemberUseCase,
+                                    GetInvitationUseCase getInvitationUseCase,
                                     ResendInvitationUseCase resendInvitationUseCase,
                                     RevokeInvitationUseCase revokeInvitationUseCase) {
         this.inviteTeamMemberUseCase = inviteTeamMemberUseCase;
+        this.getInvitationUseCase = getInvitationUseCase;
         this.resendInvitationUseCase = resendInvitationUseCase;
         this.revokeInvitationUseCase = revokeInvitationUseCase;
     }
@@ -49,6 +56,17 @@ public class TeamInvitationController {
                 .created(URI.create("/api/tour-operators/" + tourOperatorId
                         + "/invitations/" + invitationId))
                 .build();
+    }
+
+    /** A single invitation's admin detail (status + expiry). ADMIN+; 404 if not under this operator. */
+    @GetMapping("/{invitationId}")
+    public ResponseEntity<InvitationResponse> get(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID invitationId,
+            @AuthenticationPrincipal String userIdStr) {
+        InvitationView view = getInvitationUseCase.execute(
+                tourOperatorId, invitationId, UUID.fromString(userIdStr));
+        return ResponseEntity.ok(InvitationResponse.from(view));
     }
 
     /** Re-issues the accept link (fresh token + renewed expiry) and re-sends the email. */

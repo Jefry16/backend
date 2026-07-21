@@ -14,6 +14,7 @@ import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.GetInvitationPreviewUseCase;
+import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
 import com.vointika.touroperator.application.usecase.ListMembersUseCase;
 import com.vointika.touroperator.application.usecase.RemoveTeamMemberUseCase;
@@ -96,6 +97,13 @@ public class TourOperatorUseCaseConfig {
             InvitationTokenPort invitationTokenPort) {
         return new GetInvitationPreviewUseCase(
                 invitationRepository, tourOperatorRepository, invitationTokenPort);
+    }
+
+    @Bean
+    public GetInvitationUseCase getInvitationUseCase(
+            TourOperatorInvitationRepository invitationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetInvitationUseCase(invitationRepository, membershipCheck);
     }
 
     @Bean

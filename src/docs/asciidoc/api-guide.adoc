@@ -231,6 +231,15 @@ accept link.
 
 operation::tour-operators/invitations/create[]
 
+[[resources-invitation-get]]
+==== Get an Invitation
+
+ADMIN+ only. A single invitation's detail — lifecycle `status` plus a computed
+`expired` flag (a PENDING invitation past its window). 404 if the id isn't under
+this operator.
+
+operation::tour-operators/invitations/get[]
+
 [[resources-invitation-resend]]
 ==== Resend an Invitation
 

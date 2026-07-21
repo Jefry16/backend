@@ -4,9 +4,13 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.web.security.SecurityConfig;
+import com.vointika.touroperator.application.dto.output.InvitationView;
+import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
 import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
+import com.vointika.touroperator.domain.enums.InvitationStatus;
+import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +38,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.responseH
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
@@ -58,6 +64,9 @@ class TeamInvitationControllerDocumentationTest {
 
     @MockitoBean
     private InviteTeamMemberUseCase inviteTeamMemberUseCase;
+
+    @MockitoBean
+    private GetInvitationUseCase getInvitationUseCase;
 
     @MockitoBean
     private ResendInvitationUseCase resendInvitationUseCase;
@@ -120,6 +129,43 @@ class TeamInvitationControllerDocumentationTest {
     }
 
     private static final String INVITATION_ID = "aaaaaaaa-0000-4000-8000-000000000001";
+
+    @Test
+    void getInvitation() throws Exception {
+        authenticated();
+        when(getInvitationUseCase.execute(any(), any(), any())).thenReturn(new InvitationView(
+                UUID.fromString(INVITATION_ID), "teammate@example.com", MemberRole.STAFF,
+                InvitationStatus.PENDING, false,
+                java.time.Instant.parse("2026-07-21T10:00:00Z"),
+                java.time.Instant.parse("2026-07-28T10:00:00Z"), null));
+
+        mockMvc.perform(get("/api/tour-operators/{id}/invitations/{invitationId}",
+                        OPERATOR_ID, INVITATION_ID)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isOk())
+                .andDo(document("tour-operators/invitations/get",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("invitationId").description("The invitation id")),
+                        responseFields(
+                                fieldWithPath("id").description("The invitation id"),
+                                fieldWithPath("context").description("The entity's collection: \"invitations\""),
+                                fieldWithPath("email").description("The invitee's email address"),
+                                fieldWithPath("role").description("The invited role: ADMIN or STAFF"),
+                                fieldWithPath("status").description("Lifecycle state: PENDING, ACCEPTED or REVOKED"),
+                                fieldWithPath("expired").description("True when a PENDING invitation is past its expiry window"),
+                                fieldWithPath("createdAt").description("When the invitation was issued"),
+                                fieldWithPath("expiresAt").description("When the accept link lapses"),
+                                fieldWithPath("acceptedAt").description("When it was accepted, or null").optional())));
+    }
+
+    @Test
+    void getInvitationRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/tour-operators/{id}/invitations/{invitationId}",
+                        OPERATOR_ID, INVITATION_ID))
+                .andExpect(status().isUnauthorized());
+    }
 
     @Test
     void resend() throws Exception {
