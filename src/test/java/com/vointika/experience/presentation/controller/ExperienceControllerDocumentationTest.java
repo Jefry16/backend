@@ -101,7 +101,7 @@ class ExperienceControllerDocumentationTest {
                 true, List.of("diving", "reef"), List.of("Gear", "Guide"), List.of("Meals"),
                 List.of("Small groups"), "https://media.staging.vointika.com/thumb.jpg",
                 List.of("https://media.staging.vointika.com/1.jpg"),
-                120, 24, "DRAFT", Instant.parse("2026-07-21T10:00:00Z"));
+                120, 24, false, Instant.parse("2026-07-21T10:00:00Z"));
     }
 
     private static final String CREATE_BODY = """
@@ -158,7 +158,7 @@ class ExperienceControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].context").value("experiences"))
-                .andExpect(jsonPath("$.data[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$.data[0].published").value(false))
                 .andDo(document("experiences/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
@@ -177,7 +177,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].galleryUrls").description("Resolved gallery URLs (media-id order)"),
                                 fieldWithPath("data[].durationMinutes").description("Duration in minutes"),
                                 fieldWithPath("data[].bookingCutoffHours").description("Advance-notice hours"),
-                                fieldWithPath("data[].status").description("DRAFT or PUBLISHED"),
+                                fieldWithPath("data[].published").description("Whether the experience is published (shopper-visible)"),
                                 fieldWithPath("data[].createdBy").description("Creator user id"),
                                 fieldWithPath("data[].createdAt").description("When created"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page"))));

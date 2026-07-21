@@ -32,7 +32,7 @@ public class ExperienceMapper {
                 e.getThumbnailMediaId(),
                 e.getDurationMinutes().value(),
                 e.getBookingCutoffHours().value(),
-                e.getStatus(),
+                e.isPublished(),
                 e.getCreatedAt());
     }
 
@@ -55,7 +55,7 @@ public class ExperienceMapper {
                 jpa.getThumbnailMediaId(),
                 new DurationMinutes(jpa.getDurationMinutes()),
                 new BookingCutoffHours(jpa.getBookingCutoffHours()),
-                jpa.getStatus());
+                jpa.isPublished());
     }
 
     private ExperienceMapper() {}

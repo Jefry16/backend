@@ -6,7 +6,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.ExperienceStatus;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
@@ -66,7 +65,7 @@ class PublishUnpublishExperienceUseCaseTest {
         verify(membershipCheck).ensureAdmin(callerId, operatorId);
         ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
         verify(repository).save(saved.capture());
-        assertEquals(ExperienceStatus.PUBLISHED, saved.getValue().getStatus());
+        org.junit.jupiter.api.Assertions.assertTrue(saved.getValue().isPublished());
     }
 
     @Test
@@ -87,7 +86,7 @@ class PublishUnpublishExperienceUseCaseTest {
 
         ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
         verify(repository).save(saved.capture());
-        assertEquals(ExperienceStatus.DRAFT, saved.getValue().getStatus());
+        org.junit.jupiter.api.Assertions.assertFalse(saved.getValue().isPublished());
     }
 
     @Test

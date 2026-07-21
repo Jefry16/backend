@@ -391,7 +391,7 @@ publish are ADMIN+. Media ids must belong to the operator's own library
 [[resources-experiences-list]]
 ==== List Experiences
 
-Any member. Cursor-paginated, tenant-scoped. Filter by `status` and/or
+Any member. Cursor-paginated, tenant-scoped. Filter by `published` and/or
 `featured`; sort by `createdAt` (default, newest first), `name`, or `id`.
 
 operation::experiences/list[]
@@ -407,30 +407,30 @@ operation::experiences/get[]
 [[resources-experiences-create]]
 ==== Create an Experience
 
-ADMIN+ only. Creates a DRAFT experience. A media id not in the operator's
-library → 422; a thumbnail not among `mediaIds` → 422.
+ADMIN+ only. Creates an unpublished experience (`published: false`). A media id
+not in the operator's library → 422; a thumbnail not among `mediaIds` → 422.
 
 operation::experiences/create[]
 
 [[resources-experiences-update]]
 ==== Update an Experience
 
-ADMIN+ only. Replaces the editable fields (slug and status are not changed
-here). 204.
+ADMIN+ only. Replaces the editable fields (slug and the published flag are not
+changed here). 204.
 
 operation::experiences/update[]
 
 [[resources-experiences-publish]]
 ==== Publish an Experience
 
-ADMIN+ only. DRAFT → PUBLISHED. 204; already published → 409.
+ADMIN+ only. Sets `published: true`. 204; already published → 409.
 
 operation::experiences/publish[]
 
 [[resources-experiences-unpublish]]
 ==== Unpublish an Experience
 
-ADMIN+ only. PUBLISHED → DRAFT (pulls it from the storefront). 204; already a
-draft → 409.
+ADMIN+ only. Sets `published: false` (pulls it from the storefront). 204;
+already unpublished → 409.
 
 operation::experiences/unpublish[]

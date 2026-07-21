@@ -4,7 +4,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.ExperienceStatus;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
@@ -52,9 +51,9 @@ public class Experience {
     private UUID thumbnailMediaId;
     private DurationMinutes durationMinutes;
     private BookingCutoffHours bookingCutoffHours;
-    private ExperienceStatus status;
+    private boolean published;
 
-    /** A brand-new experience — always DRAFT. */
+    /** A brand-new experience — always unpublished (a draft). */
     public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Slug slug,
                                     ExperienceName name, Description description, LongDescription longDescription,
                                     boolean featured, List<Tag> tags, List<InclusionItem> included,
@@ -63,7 +62,7 @@ public class Experience {
                                     DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours) {
         Experience e = new Experience(id, tourOperatorId, createdBy, slug, Instant.now(),
                 name, description, longDescription, featured, tags, included, notIncluded, highlights,
-                mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, ExperienceStatus.DRAFT);
+                mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false);
         e.validateInvariants();
         return e;
     }
@@ -75,7 +74,7 @@ public class Experience {
                       List<InclusionItem> notIncluded, List<Highlight> highlights,
                       List<UUID> mediaIds, UUID thumbnailMediaId,
                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
-                      ExperienceStatus status) {
+                      boolean published) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.createdBy = createdBy;
@@ -93,7 +92,7 @@ public class Experience {
         this.thumbnailMediaId = thumbnailMediaId;
         this.durationMinutes = durationMinutes;
         this.bookingCutoffHours = bookingCutoffHours;
-        this.status = status;
+        this.published = published;
     }
 
     /** Replaces the editable fields (everything but id/operator/slug/status/createdAt). */
@@ -117,20 +116,20 @@ public class Experience {
         validateInvariants();
     }
 
-    /** DRAFT → PUBLISHED. Idempotent-safe: publishing a published experience conflicts. */
+    /** Publishes (unpublished → published). Publishing an already-published experience conflicts. */
     public void publish() {
-        if (status == ExperienceStatus.PUBLISHED) {
+        if (published) {
             throw new ConflictException("Experience is already published");
         }
-        this.status = ExperienceStatus.PUBLISHED;
+        this.published = true;
     }
 
-    /** PUBLISHED → DRAFT. */
+    /** Unpublishes (published → draft). Unpublishing a draft conflicts. */
     public void unpublish() {
-        if (status == ExperienceStatus.DRAFT) {
+        if (!published) {
             throw new ConflictException("Experience is already a draft");
         }
-        this.status = ExperienceStatus.DRAFT;
+        this.published = false;
     }
 
     private void validateInvariants() {
@@ -168,5 +167,5 @@ public class Experience {
     public UUID getThumbnailMediaId() { return thumbnailMediaId; }
     public DurationMinutes getDurationMinutes() { return durationMinutes; }
     public BookingCutoffHours getBookingCutoffHours() { return bookingCutoffHours; }
-    public ExperienceStatus getStatus() { return status; }
+    public boolean isPublished() { return published; }
 }

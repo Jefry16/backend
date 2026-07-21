@@ -33,7 +33,7 @@ public record ExperienceView(
         List<String> galleryUrls,
         int durationMinutes,
         int bookingCutoffHours,
-        String status,
+        boolean published,
         Instant createdAt) {
 
     /** @param urlsById resolved media id → url (from MediaUrlBatchResolver). */
@@ -53,6 +53,6 @@ public record ExperienceView(
                 e.getHighlights().stream().map(Highlight::value).toList(),
                 thumbnailUrl, gallery,
                 e.getDurationMinutes().value(), e.getBookingCutoffHours().value(),
-                e.getStatus().name(), e.getCreatedAt());
+                e.isPublished(), e.getCreatedAt());
     }
 }
