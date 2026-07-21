@@ -380,3 +380,57 @@ operation::media/get[]
 ADMIN+ only. Removes the record and its stored object. 204.
 
 operation::media/delete[]
+
+=== Experiences
+
+The operator's sellable products. Reads are member-visible; create / update /
+publish are ADMIN+. Media ids must belong to the operator's own library
+(validated on write); responses resolve them to absolute URLs. The canonical
+`slug` is generated from the name, unique per operator, and immutable.
+
+[[resources-experiences-list]]
+==== List Experiences
+
+Any member. Cursor-paginated, tenant-scoped. Filter by `status` and/or
+`featured`; sort by `createdAt` (default, newest first), `name`, or `id`.
+
+operation::experiences/list[]
+
+[[resources-experiences-get]]
+==== Get an Experience
+
+Any member. A single experience with resolved media URLs. 404 if not under this
+operator.
+
+operation::experiences/get[]
+
+[[resources-experiences-create]]
+==== Create an Experience
+
+ADMIN+ only. Creates a DRAFT experience. A media id not in the operator's
+library → 422; a thumbnail not among `mediaIds` → 422.
+
+operation::experiences/create[]
+
+[[resources-experiences-update]]
+==== Update an Experience
+
+ADMIN+ only. Replaces the editable fields (slug and status are not changed
+here). 204.
+
+operation::experiences/update[]
+
+[[resources-experiences-publish]]
+==== Publish an Experience
+
+ADMIN+ only. DRAFT → PUBLISHED. 204; already published → 409.
+
+operation::experiences/publish[]
+
+[[resources-experiences-unpublish]]
+==== Unpublish an Experience
+
+ADMIN+ only. PUBLISHED → DRAFT (pulls it from the storefront). 204; already a
+draft → 409.
+
+operation::experiences/unpublish[]

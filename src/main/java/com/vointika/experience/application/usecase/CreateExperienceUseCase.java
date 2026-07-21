@@ -1,0 +1,90 @@
+package com.vointika.experience.application.usecase;
+
+import com.vointika.experience.application.dto.input.ExperienceInput;
+import com.vointika.experience.application.service.ExperienceInputMapper;
+import com.vointika.experience.application.service.MediaReferenceValidator;
+import com.vointika.experience.domain.entity.Experience;
+import com.vointika.experience.domain.repository.ExperienceRepository;
+import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.valueobject.Slug;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.util.UUID;
+
+/**
+ * Creates a DRAFT experience. ADMIN+ only; membership enforced by the route
+ * interceptor. Field validation is via the value objects
+ * ({@link ExperienceInputMapper}); media references are validated against the
+ * operator's library ({@link MediaReferenceValidator}, 422 on a foreign id).
+ *
+ * <p>The canonical slug is generated per-operator; on a slug race the tx rolls
+ * back and we retry with a fresh slug (mirrors CreateTourOperatorUseCase). No
+ * audit entry (no audit context yet).
+ */
+public class CreateExperienceUseCase {
+
+    private static final int MAX_SLUG_ATTEMPTS = 5;
+
+    private final ExperienceRepository experienceRepository;
+    private final MediaReferenceValidator mediaReferenceValidator;
+    private final TourOperatorMembershipCheck membershipCheck;
+    private final SlugGenerator slugGenerator;
+    private final IdGenerator idGenerator;
+    private final TransactionRunner transactionRunner;
+
+    public CreateExperienceUseCase(ExperienceRepository experienceRepository,
+                                   MediaReferenceValidator mediaReferenceValidator,
+                                   TourOperatorMembershipCheck membershipCheck,
+                                   SlugGenerator slugGenerator,
+                                   IdGenerator idGenerator,
+                                   TransactionRunner transactionRunner) {
+        this.experienceRepository = experienceRepository;
+        this.mediaReferenceValidator = mediaReferenceValidator;
+        this.membershipCheck = membershipCheck;
+        this.slugGenerator = slugGenerator;
+        this.idGenerator = idGenerator;
+        this.transactionRunner = transactionRunner;
+    }
+
+    public UUID execute(UUID tourOperatorId, UUID callerUserId, ExperienceInput input) {
+        membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
+
+        var name = ExperienceInputMapper.name(input);
+        var description = ExperienceInputMapper.description(input);
+        var longDescription = ExperienceInputMapper.longDescription(input);
+        var tags = ExperienceInputMapper.tags(input);
+        var included = ExperienceInputMapper.included(input);
+        var notIncluded = ExperienceInputMapper.notIncluded(input);
+        var highlights = ExperienceInputMapper.highlights(input);
+        var mediaIds = ExperienceInputMapper.mediaIds(input);
+        var duration = ExperienceInputMapper.durationMinutes(input);
+        var cutoff = ExperienceInputMapper.bookingCutoffHours(input);
+
+        mediaReferenceValidator.validate(tourOperatorId, mediaIds, input.thumbnailMediaId());
+
+        Experience saved = null;
+        for (int attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+            Slug slug = slugGenerator.generateUnique(name.value(),
+                    candidate -> experienceRepository.existsByTourOperatorIdAndSlug(tourOperatorId, candidate));
+            Experience experience = Experience.create(
+                    idGenerator.newId(), tourOperatorId, callerUserId, slug,
+                    name, description, longDescription, input.featured(),
+                    tags, included, notIncluded, highlights,
+                    mediaIds, input.thumbnailMediaId(), duration, cutoff);
+            try {
+                saved = transactionRunner.call(() -> experienceRepository.save(experience));
+                break;
+            } catch (DataIntegrityViolationException e) {
+                // slug race — regenerate and retry
+            }
+        }
+        if (saved == null) {
+            throw new InvalidFieldException("Could not generate a unique slug — please retry");
+        }
+        return saved.getId();
+    }
+}

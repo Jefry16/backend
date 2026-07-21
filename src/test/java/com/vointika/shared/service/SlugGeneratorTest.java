@@ -1,4 +1,4 @@
-package com.vointika.touroperator.application.service;
+package com.vointika.shared.service;
 
 import com.vointika.shared.exception.InvalidFieldException;
 import org.junit.jupiter.api.Test;

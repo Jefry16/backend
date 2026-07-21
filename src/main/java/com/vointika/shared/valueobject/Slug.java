@@ -1,10 +1,13 @@
-package com.vointika.touroperator.domain.valueobject;
+package com.vointika.shared.valueobject;
 
 import com.vointika.shared.exception.InvalidFieldException;
 
 /**
- * A URL-safe operator handle. Lives in touroperator (its only consumer today);
- * promote to a shared kernel when a second context needs slugs.
+ * A URL-safe handle: lowercase alphanumerics separated by single dashes, ≤170
+ * chars. Shared kernel — used by tour operators (global handle) and experiences
+ * (canonical slug, unique per operator). Generated from a name via
+ * {@link com.vointika.shared.service.SlugGenerator}; the uniqueness scope is the
+ * caller's concern.
  */
 public record Slug(String value) {
 

@@ -1,6 +1,6 @@
 package com.vointika.touroperator.domain.entity;
 
-import com.vointika.touroperator.domain.valueobject.Slug;
+import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.Test;

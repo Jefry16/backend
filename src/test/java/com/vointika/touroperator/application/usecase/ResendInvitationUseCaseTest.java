@@ -16,7 +16,7 @@ import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
-import com.vointika.touroperator.domain.valueobject.Slug;
+import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package com.vointika.touroperator.domain.valueobject;
+package com.vointika.shared.valueobject;
 
 import com.vointika.shared.exception.InvalidFieldException;
 import org.junit.jupiter.api.Test;

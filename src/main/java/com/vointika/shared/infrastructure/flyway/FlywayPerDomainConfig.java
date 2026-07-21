@@ -39,7 +39,10 @@ public class FlywayPerDomainConfig {
             "touroperator",
             // media FKs into touroperator.tour_operators + identity.users, so it
             // must come after both.
-            "media"
+            "media",
+            // experience FKs into touroperator.tour_operators + identity.users
+            // (media ids are bare, no FK), so it must come after both.
+            "experience"
     );
 
     @Bean

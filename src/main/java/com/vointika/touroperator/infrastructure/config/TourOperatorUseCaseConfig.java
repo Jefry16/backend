@@ -11,7 +11,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
-import com.vointika.touroperator.application.service.SlugGenerator;
+import com.vointika.shared.service.SlugGenerator;
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
 import com.vointika.touroperator.application.usecase.ClearOperatorLogoUseCase;
@@ -35,11 +35,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration("tourOperatorUseCaseConfig")
 public class TourOperatorUseCaseConfig {
-
-    @Bean
-    public SlugGenerator slugGenerator() {
-        return new SlugGenerator();
-    }
 
     @Bean
     public CreateTourOperatorUseCase createTourOperatorUseCase(
