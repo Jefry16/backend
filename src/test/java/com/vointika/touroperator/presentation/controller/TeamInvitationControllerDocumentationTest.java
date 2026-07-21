@@ -139,6 +139,7 @@ class TeamInvitationControllerDocumentationTest {
     }
 
     private static final String INVITATION_ID = "aaaaaaaa-0000-4000-8000-000000000001";
+    private static final String INVITER_ID = "bbbbbbbb-0000-4000-8000-000000000002";
 
     @Test
     void list() throws Exception {
@@ -147,7 +148,8 @@ class TeamInvitationControllerDocumentationTest {
                 new InvitationView(UUID.fromString(INVITATION_ID), "teammate@example.com",
                         MemberRole.STAFF, InvitationStatus.PENDING, false,
                         Instant.parse("2026-07-21T10:00:00Z"),
-                        Instant.parse("2026-07-28T10:00:00Z"), null)),
+                        Instant.parse("2026-07-28T10:00:00Z"), null,
+                        UUID.fromString(INVITER_ID), "Olive Owner")),
                 "eyJ2MSI6Im5leHQifQ"));
 
         mockMvc.perform(get("/api/tour-operators/{id}/invitations", OPERATOR_ID)
@@ -155,6 +157,8 @@ class TeamInvitationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].context").value("invitations"))
                 .andExpect(jsonPath("$.data[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data[0].invitedBy.context").value("users"))
+                .andExpect(jsonPath("$.data[0].invitedBy.name").value("Olive Owner"))
                 .andExpect(jsonPath("$.nextCursor").value("eyJ2MSI6Im5leHQifQ"))
                 .andDo(document("tour-operators/invitations/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -168,6 +172,9 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("data[].createdAt").description("When the invitation was issued"),
                                 fieldWithPath("data[].expiresAt").description("When the accept link lapses"),
                                 fieldWithPath("data[].acceptedAt").description("When it was accepted, or null").optional(),
+                                fieldWithPath("data[].invitedBy.id").description("The inviting user's id"),
+                                fieldWithPath("data[].invitedBy.context").description("The entity's collection: \"users\""),
+                                fieldWithPath("data[].invitedBy.name").description("The inviter's display name (best-effort; may be null)").optional(),
                                 fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
     }
 
@@ -178,12 +185,15 @@ class TeamInvitationControllerDocumentationTest {
                 UUID.fromString(INVITATION_ID), "teammate@example.com", MemberRole.STAFF,
                 InvitationStatus.PENDING, false,
                 java.time.Instant.parse("2026-07-21T10:00:00Z"),
-                java.time.Instant.parse("2026-07-28T10:00:00Z"), null));
+                java.time.Instant.parse("2026-07-28T10:00:00Z"), null,
+                UUID.fromString(INVITER_ID), "Olive Owner"));
 
         mockMvc.perform(get("/api/tour-operators/{id}/invitations/{invitationId}",
                         OPERATOR_ID, INVITATION_ID)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.invitedBy.context").value("users"))
+                .andExpect(jsonPath("$.invitedBy.name").value("Olive Owner"))
                 .andDo(document("tour-operators/invitations/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
@@ -198,7 +208,10 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("expired").description("True when a PENDING invitation is past its expiry window"),
                                 fieldWithPath("createdAt").description("When the invitation was issued"),
                                 fieldWithPath("expiresAt").description("When the accept link lapses"),
-                                fieldWithPath("acceptedAt").description("When it was accepted, or null").optional())));
+                                fieldWithPath("acceptedAt").description("When it was accepted, or null").optional(),
+                                fieldWithPath("invitedBy.id").description("The inviting user's id"),
+                                fieldWithPath("invitedBy.context").description("The entity's collection: \"users\""),
+                                fieldWithPath("invitedBy.name").description("The inviter's display name (best-effort; may be null)").optional())));
     }
 
     @Test

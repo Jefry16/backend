@@ -22,9 +22,16 @@ public record InvitationView(
         boolean expired,
         Instant createdAt,
         Instant expiresAt,
-        Instant acceptedAt) {
+        Instant acceptedAt,
+        UUID invitedByUserId,
+        String invitedByName) {
 
-    public static InvitationView from(TourOperatorInvitation invitation, Instant now) {
+    /**
+     * @param invitedByName the inviter's display name, resolved from identity;
+     *                      best-effort — null if the account can't be resolved
+     *                      (the id is always present).
+     */
+    public static InvitationView from(TourOperatorInvitation invitation, Instant now, String invitedByName) {
         return new InvitationView(
                 invitation.getId(),
                 invitation.getEmail().value(),
@@ -33,6 +40,8 @@ public record InvitationView(
                 invitation.getStatus() == InvitationStatus.PENDING && invitation.isExpired(now),
                 invitation.getCreatedAt(),
                 invitation.getExpiresAt(),
-                invitation.getAcceptedAt());
+                invitation.getAcceptedAt(),
+                invitation.getInvitedByUserId(),
+                invitedByName);
     }
 }
