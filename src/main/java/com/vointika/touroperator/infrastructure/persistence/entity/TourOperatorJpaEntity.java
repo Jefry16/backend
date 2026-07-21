@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -46,4 +47,15 @@ public class TourOperatorJpaEntity {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    /** The operator's default content locale (a code from reference.languages). */
+    @Column(nullable = false)
+    private String primaryLocale;
+
+    /** The content locales this operator supports — child table, eager (small set). */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(schema = "touroperator", name = "tour_operator_locales",
+            joinColumns = @JoinColumn(name = "tour_operator_id"))
+    @Column(name = "locale", nullable = false)
+    private Set<String> supportedLocales;
 }
