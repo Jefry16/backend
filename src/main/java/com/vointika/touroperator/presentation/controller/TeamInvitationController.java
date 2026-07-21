@@ -58,7 +58,7 @@ public class TeamInvitationController {
                 .build();
     }
 
-    /** A single invitation's admin detail (status + expiry). ADMIN+; 404 if not under this operator. */
+    /** A single invitation's detail (status + expiry). Any member may view; 404 if not under this operator. */
     @GetMapping("/{invitationId}")
     public ResponseEntity<InvitationResponse> get(
             @PathVariable UUID tourOperatorId,
