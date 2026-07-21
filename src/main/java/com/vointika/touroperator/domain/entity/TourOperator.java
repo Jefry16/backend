@@ -2,7 +2,7 @@ package com.vointika.touroperator.domain.entity;
 
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.touroperator.domain.valueobject.Slug;
+import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 

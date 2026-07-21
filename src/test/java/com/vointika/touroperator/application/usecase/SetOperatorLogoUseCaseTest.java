@@ -7,7 +7,7 @@ import com.vointika.shared.port.MediaKeyBatchQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.touroperator.domain.valueobject.Slug;
+import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;

@@ -15,7 +15,7 @@ import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
-import com.vointika.touroperator.application.service.SlugGenerator;
+import com.vointika.shared.service.SlugGenerator;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;

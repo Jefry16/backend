@@ -3,6 +3,9 @@ package com.vointika.shared.media;
 import com.vointika.shared.port.MediaKeyBatchQuery;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,5 +38,20 @@ public class MediaUrlBatchResolver {
         }
         String key = mediaKeyBatchQuery.findKeysByIds(tourOperatorId, Set.of(mediaId)).get(mediaId);
         return key == null ? null : mediaUrlResolver.toUrl(key);
+    }
+
+    /**
+     * id → absolute URL for many media ids of ONE operator, in a single lookup —
+     * the N+1-free path for galleries (an experience's media, a page of
+     * experiences' media). Ids not owned by the operator are absent.
+     */
+    public Map<UUID, String> resolve(UUID tourOperatorId, Collection<UUID> mediaIds) {
+        if (mediaIds == null || mediaIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, String> keys = mediaKeyBatchQuery.findKeysByIds(tourOperatorId, Set.copyOf(mediaIds));
+        Map<UUID, String> urls = new HashMap<>(keys.size());
+        keys.forEach((id, key) -> urls.put(id, mediaUrlResolver.toUrl(key)));
+        return urls;
     }
 }
