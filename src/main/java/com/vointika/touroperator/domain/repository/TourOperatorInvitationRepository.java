@@ -11,6 +11,13 @@ public interface TourOperatorInvitationRepository {
     /** Lookup by the at-rest token hash — the accept-link capability. */
     Optional<TourOperatorInvitation> findByTokenHash(String tokenHash);
 
+    /**
+     * Loads an invitation scoped to its operator — an id belonging to a
+     * different operator resolves empty, so admin actions can't reach across
+     * tenants via a guessed invitation id.
+     */
+    Optional<TourOperatorInvitation> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
+
     /** Whether a live (PENDING) invitation already exists for this operator + email. */
     boolean existsPendingByTourOperatorIdAndEmail(UUID tourOperatorId, String email);
 }

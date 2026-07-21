@@ -231,6 +231,23 @@ accept link.
 
 operation::tour-operators/invitations/create[]
 
+[[resources-invitation-resend]]
+==== Resend an Invitation
+
+ADMIN+ only. Mints a fresh accept link (the previous one stops working),
+renews the expiry, and re-sends the email. Only a pending invitation can be
+resent (accepted or revoked → 409); a lapsed pending invitation can.
+
+operation::tour-operators/invitations/resend[]
+
+[[resources-invitation-revoke]]
+==== Revoke an Invitation
+
+ADMIN+ only. Cancels a pending invitation — the accept link stops working.
+Only a pending invitation can be revoked (accepted or already-revoked → 409).
+
+operation::tour-operators/invitations/revoke[]
+
 [[resources-invitation-preview]]
 ==== Preview an Invitation
 

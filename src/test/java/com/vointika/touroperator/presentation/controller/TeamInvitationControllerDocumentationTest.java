@@ -5,6 +5,8 @@ import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
+import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
+import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,10 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
 import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
@@ -53,6 +58,12 @@ class TeamInvitationControllerDocumentationTest {
 
     @MockitoBean
     private InviteTeamMemberUseCase inviteTeamMemberUseCase;
+
+    @MockitoBean
+    private ResendInvitationUseCase resendInvitationUseCase;
+
+    @MockitoBean
+    private RevokeInvitationUseCase revokeInvitationUseCase;
 
     @MockitoBean
     private TourOperatorMembershipCheck membershipCheck;
@@ -105,6 +116,52 @@ class TeamInvitationControllerDocumentationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "email": "teammate@example.com", "role": "STAFF" }"""))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private static final String INVITATION_ID = "aaaaaaaa-0000-4000-8000-000000000001";
+
+    @Test
+    void resend() throws Exception {
+        authenticated();
+
+        mockMvc.perform(post("/api/tour-operators/{id}/invitations/{invitationId}/resend",
+                        OPERATOR_ID, INVITATION_ID)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(document("tour-operators/invitations/resend",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("invitationId").description("The pending invitation to re-send"))));
+    }
+
+    @Test
+    void revoke() throws Exception {
+        authenticated();
+
+        mockMvc.perform(delete("/api/tour-operators/{id}/invitations/{invitationId}",
+                        OPERATOR_ID, INVITATION_ID)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(document("tour-operators/invitations/revoke",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("invitationId").description("The pending invitation to revoke"))));
+    }
+
+    @Test
+    void resendRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/api/tour-operators/{id}/invitations/{invitationId}/resend",
+                        OPERATOR_ID, INVITATION_ID))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void revokeRequiresAuthentication() throws Exception {
+        mockMvc.perform(delete("/api/tour-operators/{id}/invitations/{invitationId}",
+                        OPERATOR_ID, INVITATION_ID))
                 .andExpect(status().isUnauthorized());
     }
 

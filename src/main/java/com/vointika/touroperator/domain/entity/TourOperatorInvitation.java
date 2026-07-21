@@ -77,6 +77,24 @@ public class TourOperatorInvitation {
         this.acceptedAt = Instant.now();
     }
 
+    /** Cancels a still-pending invitation (PENDING → REVOKED); the accept link dies. */
+    public void revoke() {
+        requirePending("revoked");
+        this.status = InvitationStatus.REVOKED;
+    }
+
+    /**
+     * Re-issues the accept link: swaps in a fresh token hash and extends the
+     * window by {@link #VALIDITY} from now — the previous link stops working. A
+     * lapsed-but-PENDING invitation can be renewed (that's the point of resend);
+     * an accepted or revoked one cannot ({@link ConflictException}, 409).
+     */
+    public void renew(String newTokenHash) {
+        requirePending("resent");
+        this.tokenHash = newTokenHash;
+        this.expiresAt = Instant.now().plus(VALIDITY);
+    }
+
     /** Whether the accept link has lapsed (EXPIRED is judged on access). */
     public boolean isExpired(Instant now) {
         return now.isAfter(expiresAt);

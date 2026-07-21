@@ -32,6 +32,12 @@ public class TourOperatorInvitationRepositoryImpl implements TourOperatorInvitat
     }
 
     @Override
+    public Optional<TourOperatorInvitation> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId) {
+        return jpaRepository.findByIdAndTourOperatorId(id, tourOperatorId)
+                .map(TourOperatorInvitationMapper::toDomain);
+    }
+
+    @Override
     public boolean existsPendingByTourOperatorIdAndEmail(UUID tourOperatorId, String email) {
         return jpaRepository.existsByTourOperatorIdAndEmailAndStatus(
                 tourOperatorId, email, InvitationStatus.PENDING);

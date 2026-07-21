@@ -12,5 +12,7 @@ public interface TourOperatorInvitationJpaRepository
 
     Optional<TourOperatorInvitationJpaEntity> findByTokenHash(String tokenHash);
 
+    Optional<TourOperatorInvitationJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
+
     boolean existsByTourOperatorIdAndEmailAndStatus(UUID tourOperatorId, String email, InvitationStatus status);
 }
