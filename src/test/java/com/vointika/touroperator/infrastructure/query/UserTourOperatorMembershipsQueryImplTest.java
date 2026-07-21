@@ -28,6 +28,7 @@ class UserTourOperatorMembershipsQueryImplTest {
     private TourOperatorMemberJpaRepository memberRepository;
     private TourOperatorJpaRepository operatorRepository;
     private TimezoneRepository timezoneRepository;
+    private com.vointika.shared.media.MediaUrlBatchResolver mediaUrlBatchResolver;
     private UserTourOperatorMembershipsQueryImpl query;
 
     private final UUID userId = UUID.randomUUID();
@@ -38,8 +39,9 @@ class UserTourOperatorMembershipsQueryImplTest {
         memberRepository = mock(TourOperatorMemberJpaRepository.class);
         operatorRepository = mock(TourOperatorJpaRepository.class);
         timezoneRepository = mock(TimezoneRepository.class);
+        mediaUrlBatchResolver = mock(com.vointika.shared.media.MediaUrlBatchResolver.class);
         query = new UserTourOperatorMembershipsQueryImpl(
-                memberRepository, operatorRepository, timezoneRepository);
+                memberRepository, operatorRepository, timezoneRepository, mediaUrlBatchResolver);
         when(timezoneRepository.findAll()).thenReturn(List.of(
                 new Timezone(tzId, "America/Santo_Domingo", "Santo Domingo", null)));
     }
@@ -50,8 +52,12 @@ class UserTourOperatorMembershipsQueryImplTest {
     }
 
     private TourOperatorJpaEntity operator(UUID id, String name, String slug) {
+        return operator(id, name, slug, null);
+    }
+
+    private TourOperatorJpaEntity operator(UUID id, String name, String slug, UUID logoMediaId) {
         return new TourOperatorJpaEntity(
-                id, name, slug, tzId, UUID.randomUUID(), "some address",
+                id, name, slug, tzId, UUID.randomUUID(), "some address", logoMediaId,
                 UUID.randomUUID(), Instant.now(), Instant.now());
     }
 
@@ -82,7 +88,7 @@ class UserTourOperatorMembershipsQueryImplTest {
         assertTrue(first.isDefault());
         assertEquals("OWNER", first.role());
         assertEquals("America/Santo_Domingo", first.timezone());
-        assertNull(first.logoUrl(), "no operator logo in the model yet");
+        assertNull(first.logoUrl(), "no logo set → resolver returns null");
 
         assertEquals("Acme Tours", views.get(1).name());
         assertFalse(views.get(1).isDefault());
@@ -104,5 +110,20 @@ class UserTourOperatorMembershipsQueryImplTest {
                 .map(TourOperatorMembershipView::name).toList();
 
         assertEquals(List.of("Acme Tours", "Beta Excursions"), names);
+    }
+
+    @Test
+    void resolvesLogoUrlThroughTheMediaSeamWhenSet() {
+        UUID op = UUID.randomUUID();
+        UUID logoId = UUID.randomUUID();
+        when(memberRepository.findByUserId(userId)).thenReturn(List.of(member(op, MemberRole.OWNER, true)));
+        when(operatorRepository.findByIdIn(any()))
+                .thenReturn(List.of(operator(op, "Logo Co", "logo-co", logoId)));
+        when(mediaUrlBatchResolver.resolveOne(op, logoId))
+                .thenReturn("https://media.example.com/tour-operators/x/logo.png");
+
+        TourOperatorMembershipView view = query.findForUser(userId).get(0);
+
+        assertEquals("https://media.example.com/tour-operators/x/logo.png", view.logoUrl());
     }
 }

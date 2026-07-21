@@ -2,6 +2,7 @@ package com.vointika.touroperator.infrastructure.query;
 
 import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.TimezoneRepository;
+import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorMemberJpaEntity;
@@ -34,14 +35,17 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
     private final TourOperatorMemberJpaRepository memberRepository;
     private final TourOperatorJpaRepository operatorRepository;
     private final TimezoneRepository timezoneRepository;
+    private final MediaUrlBatchResolver mediaUrlBatchResolver;
 
     public UserTourOperatorMembershipsQueryImpl(
             TourOperatorMemberJpaRepository memberRepository,
             TourOperatorJpaRepository operatorRepository,
-            TimezoneRepository timezoneRepository) {
+            TimezoneRepository timezoneRepository,
+            MediaUrlBatchResolver mediaUrlBatchResolver) {
         this.memberRepository = memberRepository;
         this.operatorRepository = operatorRepository;
         this.timezoneRepository = timezoneRepository;
+        this.mediaUrlBatchResolver = mediaUrlBatchResolver;
     }
 
     @Override
@@ -69,7 +73,8 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
                     return new TourOperatorMembershipView(
                             op.getId(),
                             op.getName(),
-                            null, // logoUrl — no operator logo in the model yet
+                            // logo id → url through the media seam; null if unset or since-deleted
+                            mediaUrlBatchResolver.resolveOne(op.getId(), op.getLogoMediaId()),
                             timezoneNames.get(op.getTimezoneId()),
                             m.isDefault(),
                             m.getRole().name());

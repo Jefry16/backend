@@ -9,8 +9,19 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class TourOperatorTest {
+
+    private TourOperator operator() {
+        return new TourOperator(
+                UUID.randomUUID(),
+                new TourOperatorName("Acme Tours"),
+                new Slug("acme-tours"),
+                UUID.randomUUID(), UUID.randomUUID(),
+                new TourOperatorAddress("123 Beach Rd"),
+                UUID.randomUUID());
+    }
 
     @Test
     void brandNewOperatorSetsFieldsAndTimestamps() {
@@ -36,5 +47,26 @@ class TourOperatorTest {
         assertEquals(owner, op.getCreatedBy());
         assertNotNull(op.getCreatedAt());
         assertNotNull(op.getUpdatedAt());
+        assertNull(op.getLogoMediaId(), "a brand-new operator has no logo");
+    }
+
+    @Test
+    void setLogoPointsAtTheMediaId() {
+        TourOperator op = operator();
+        UUID logoId = UUID.randomUUID();
+
+        op.setLogo(logoId);
+
+        assertEquals(logoId, op.getLogoMediaId());
+    }
+
+    @Test
+    void clearLogoRemovesIt() {
+        TourOperator op = operator();
+        op.setLogo(UUID.randomUUID());
+
+        op.clearLogo();
+
+        assertNull(op.getLogoMediaId());
     }
 }

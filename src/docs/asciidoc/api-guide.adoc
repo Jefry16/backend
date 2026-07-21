@@ -304,6 +304,22 @@ Self = leave; other = ADMIN+. The last owner cannot be removed.
 
 operation::tour-operators/members/remove[]
 
+[[resources-operator-logo-set]]
+==== Set the Operator Logo
+
+ADMIN+ only. Points the operator's logo at a media id from its own library
+(upload via the Media API first). A media id not owned by this operator → 422.
+The resolved logo URL surfaces on the operator in the profile's operator list.
+
+operation::tour-operators/logo/set[]
+
+[[resources-operator-logo-clear]]
+==== Clear the Operator Logo
+
+ADMIN+ only. Removes the logo. Idempotent.
+
+operation::tour-operators/logo/clear[]
+
 === Media
 
 The operator's media library. Reads are member-visible; uploads and deletes are

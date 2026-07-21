@@ -16,6 +16,7 @@ public class TourOperatorMapper {
                 operator.getTimezoneId(),
                 operator.getCurrencyId(),
                 operator.getAddress().value(),
+                operator.getLogoMediaId(),
                 operator.getCreatedBy(),
                 operator.getCreatedAt(),
                 operator.getUpdatedAt()
@@ -32,7 +33,8 @@ public class TourOperatorMapper {
                 new TourOperatorAddress(jpa.getAddress()),
                 jpa.getCreatedBy(),
                 jpa.getCreatedAt(),
-                jpa.getUpdatedAt()
+                jpa.getUpdatedAt(),
+                jpa.getLogoMediaId()
         );
     }
 }

@@ -34,6 +34,10 @@ public class TourOperatorJpaEntity {
     @Column(nullable = false)
     private String address;
 
+    /** Nullable reference to one of this operator's media records (bare id, no FK). */
+    @Column
+    private UUID logoMediaId;
+
     @Column(nullable = false, updatable = false)
     private UUID createdBy;
 
