@@ -11,9 +11,10 @@ import java.time.Duration;
  * never fail because Redis is down. Consistent with the inventory-hold
  * adapter's fail-open philosophy (§2).
  *
- * <p>Consumed by the platform's {@code AuthRateLimitFilter} (per-IP) and by
- * identity use cases (per-account throttles). Keys are plain namespaced
- * strings (e.g. {@code rl:login:ip:1.2.3.4}); callers own their namespace.
+ * <p>Consumed by the three rate-limiting layers (see {@code PATTERNS.md}): the
+ * per-IP {@code EndpointRateLimitFilter}, the coarse per-user
+ * {@code ApiRateLimitFilter}, and per-account throttles in the use cases. Keys are
+ * plain namespaced strings ({@code rl:{dimension}:…}); callers own their namespace.
  */
 public interface RateLimiterPort {
 
