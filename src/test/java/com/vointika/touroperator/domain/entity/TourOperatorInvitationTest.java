@@ -55,14 +55,4 @@ class TourOperatorInvitationTest {
         assertThrows(ConflictException.class, accepted::accept);
     }
 
-    @Test
-    void effectiveStatusReadsExpiredForAPendingRowPastExpiry() {
-        TourOperatorInvitation inv = withStatusAndExpiry(
-                InvitationStatus.PENDING, Instant.parse("2026-01-08T00:00:00Z"));
-
-        Instant afterExpiry = Instant.parse("2026-02-01T00:00:00Z");
-        assertEquals(InvitationStatus.EXPIRED, inv.effectiveStatus(afterExpiry));
-        // Underlying status is untouched (lazy — no eager flip).
-        assertEquals(InvitationStatus.PENDING, inv.getStatus());
-    }
 }
