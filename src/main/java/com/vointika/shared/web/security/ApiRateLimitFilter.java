@@ -33,7 +33,7 @@ import java.time.Instant;
  * <p>Scoped to JWT-authenticated requests only: {@code /api/internal/**}
  * (worker traffic, shared-secret auth) and unauthenticated/public routes
  * pass through untouched. Same fail-open posture and 429 shape as
- * {@link AuthRateLimitFilter}.
+ * {@link EndpointRateLimitFilter}.
  */
 public class ApiRateLimitFilter extends OncePerRequestFilter {
 
@@ -74,7 +74,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            // ASCII-only: bypasses Jackson (see AuthRateLimitFilter).
+            // ASCII-only: bypasses Jackson (see EndpointRateLimitFilter).
             String body = "{\"status\":429,\"error\":\"Too Many Requests\","
                     + "\"message\":\"Too many requests, try again later\","
                     + "\"timestamp\":\"" + Instant.now() + "\"}";
