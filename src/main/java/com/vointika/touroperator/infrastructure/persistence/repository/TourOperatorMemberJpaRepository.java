@@ -17,8 +17,6 @@ public interface TourOperatorMemberJpaRepository extends JpaRepository<TourOpera
 
     Optional<TourOperatorMemberJpaEntity> findByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);
 
-    List<TourOperatorMemberJpaEntity> findByTourOperatorId(UUID tourOperatorId);
-
     long countByTourOperatorIdAndRole(UUID tourOperatorId, MemberRole role);
 
     void deleteByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId);

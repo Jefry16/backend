@@ -12,7 +12,6 @@ import com.vointika.touroperator.infrastructure.persistence.mapper.TourOperatorM
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,10 +60,9 @@ public class TourOperatorMemberRepositoryImpl implements TourOperatorMemberRepos
     }
 
     @Override
-    public List<TourOperatorMember> findByTourOperatorId(UUID tourOperatorId) {
-        return jpaRepository.findByTourOperatorId(tourOperatorId).stream()
-                .map(TourOperatorMemberMapper::toDomain)
-                .toList();
+    public Optional<TourOperatorMember> findByTourOperatorIdAndUserId(UUID tourOperatorId, UUID userId) {
+        return jpaRepository.findByTourOperatorIdAndUserId(tourOperatorId, userId)
+                .map(TourOperatorMemberMapper::toDomain);
     }
 
     @Override
