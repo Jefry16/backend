@@ -17,7 +17,7 @@ import java.util.UUID;
  * <p>The token is held HASHED (the raw token exists only in the emailed accept
  * link — identity's verification-token posture). Transitions are PENDING-only;
  * a current-state conflict raises {@link ConflictException} (409). Expiry is
- * judged lazily on access ({@link #effectiveStatus}), never flipped by a job.
+ * judged lazily on access ({@link #isExpired}), never flipped by a job.
  */
 public class TourOperatorInvitation {
 
@@ -80,14 +80,6 @@ public class TourOperatorInvitation {
     /** Whether the accept link has lapsed (EXPIRED is judged on access). */
     public boolean isExpired(Instant now) {
         return now.isAfter(expiresAt);
-    }
-
-    /** A PENDING row past its expiry reads as EXPIRED (lazily judged, not eagerly flipped). */
-    public InvitationStatus effectiveStatus(Instant now) {
-        if (status == InvitationStatus.PENDING && isExpired(now)) {
-            return InvitationStatus.EXPIRED;
-        }
-        return status;
     }
 
     private void requirePending(String verb) {
