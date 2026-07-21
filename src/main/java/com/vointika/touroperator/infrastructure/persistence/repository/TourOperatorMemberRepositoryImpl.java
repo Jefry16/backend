@@ -1,5 +1,9 @@
 package com.vointika.touroperator.infrastructure.persistence.repository;
 
+import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.touroperator.application.usecase.ListMembersUseCase;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
@@ -16,9 +20,21 @@ import java.util.UUID;
 public class TourOperatorMemberRepositoryImpl implements TourOperatorMemberRepository {
 
     private final TourOperatorMemberJpaRepository jpaRepository;
+    private final CriteriaListExecutor listExecutor;
 
-    public TourOperatorMemberRepositoryImpl(TourOperatorMemberJpaRepository jpaRepository) {
+    public TourOperatorMemberRepositoryImpl(TourOperatorMemberJpaRepository jpaRepository,
+                                            CriteriaListExecutor listExecutor) {
         this.jpaRepository = jpaRepository;
+        this.listExecutor = listExecutor;
+    }
+
+    @Override
+    public CursorPage<TourOperatorMember> list(ListQuery query) {
+        return listExecutor.list(
+                TourOperatorMemberJpaEntity.class,
+                ListMembersUseCase.SCHEMA,
+                query,
+                TourOperatorMemberMapper::toDomain);
     }
 
     @Override

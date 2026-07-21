@@ -1,8 +1,10 @@
 package com.vointika.touroperator.presentation.controller;
 
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.MemberListView;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
@@ -27,6 +29,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -49,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(TeamMemberController.class)
 @ExtendWith(RestDocumentationExtension.class)
-@Import({SecurityConfig.class, WebConfig.class})
+@Import({SecurityConfig.class, WebConfig.class, ListQueryParser.class})
 class TeamMemberControllerDocumentationTest {
 
     private static final String OP = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
@@ -84,25 +87,28 @@ class TeamMemberControllerDocumentationTest {
     @Test
     void listMembers() throws Exception {
         authenticated();
-        when(listMembersUseCase.execute(eq(UUID.fromString(OP)), eq(UUID.fromString(USER))))
-                .thenReturn(List.of(new MemberListView(
+        when(listMembersUseCase.execute(any(), eq(UUID.fromString(USER))))
+                .thenReturn(new CursorPage<>(List.of(new MemberListView(
                         UUID.fromString(USER), MemberRole.OWNER,
-                        Instant.parse("2026-01-01T00:00:00Z"), "Olive Owner", "owner@example.com")));
+                        Instant.parse("2026-01-01T00:00:00Z"), "Olive Owner", "owner@example.com")),
+                        "eyJ2MSI6Im5leHQifQ"));
 
         mockMvc.perform(get("/api/tour-operators/{id}/members", OP)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].context").value("users"))
-                .andExpect(jsonPath("$[0].role").value("OWNER"))
+                .andExpect(jsonPath("$.data[0].context").value("users"))
+                .andExpect(jsonPath("$.data[0].role").value("OWNER"))
+                .andExpect(jsonPath("$.nextCursor").value("eyJ2MSI6Im5leHQifQ"))
                 .andDo(document("tour-operators/members/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
-                                fieldWithPath("[].id").description("The member's user id"),
-                                fieldWithPath("[].context").description("The entity's collection — \"users\""),
-                                fieldWithPath("[].role").description("OWNER, ADMIN, or STAFF"),
-                                fieldWithPath("[].joinedAt").description("When they joined"),
-                                fieldWithPath("[].name").description("Display name (best-effort; may be null)"),
-                                fieldWithPath("[].email").description("Email (best-effort; may be null)"))));
+                                fieldWithPath("data[].id").description("The member's user id"),
+                                fieldWithPath("data[].context").description("The entity's collection — \"users\""),
+                                fieldWithPath("data[].role").description("OWNER, ADMIN, or STAFF"),
+                                fieldWithPath("data[].joinedAt").description("When they joined"),
+                                fieldWithPath("data[].name").description("Display name (best-effort; may be null)"),
+                                fieldWithPath("data[].email").description("Email (best-effort; may be null)"),
+                                fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
     }
 
     @Test
