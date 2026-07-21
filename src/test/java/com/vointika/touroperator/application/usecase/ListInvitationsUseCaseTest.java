@@ -7,6 +7,8 @@ import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.SortDirection;
 import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserAccountView;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
@@ -34,17 +36,22 @@ import static org.mockito.Mockito.when;
 class ListInvitationsUseCaseTest {
 
     private TourOperatorInvitationRepository invitationRepository;
+    private UserAccountQuery userAccountQuery;
     private TourOperatorMembershipCheck membershipCheck;
     private ListInvitationsUseCase useCase;
 
     private final UUID operatorId = UUID.randomUUID();
     private final UUID callerId = UUID.randomUUID();
+    private final UUID inviterId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         invitationRepository = mock(TourOperatorInvitationRepository.class);
+        userAccountQuery = mock(UserAccountQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new ListInvitationsUseCase(invitationRepository, membershipCheck);
+        useCase = new ListInvitationsUseCase(invitationRepository, userAccountQuery, membershipCheck);
+        when(userAccountQuery.findAccounts(any()))
+                .thenReturn(List.of(new UserAccountView(inviterId, "inviter@example.com", "Ivy Inviter")));
     }
 
     private ListQuery query() {
@@ -55,7 +62,7 @@ class ListInvitationsUseCaseTest {
     private TourOperatorInvitation invitation(InvitationStatus status, Instant expiresAt) {
         return new TourOperatorInvitation(
                 UUID.randomUUID(), operatorId, new InviteeEmail("teammate@example.com"),
-                MemberRole.STAFF, "hash", status, UUID.randomUUID(),
+                MemberRole.STAFF, "hash", status, inviterId,
                 Instant.parse("2026-01-01T00:00:00Z"), expiresAt, null);
     }
 
@@ -74,6 +81,9 @@ class ListInvitationsUseCaseTest {
         assertEquals(InvitationStatus.PENDING, page.data().get(0).status());
         // ACCEPTED past its window is NOT flagged expired.
         assertFalse(page.data().get(1).expired());
+        // Inviter name batch-resolved onto each row.
+        assertEquals(inviterId, page.data().get(0).invitedByUserId());
+        assertEquals("Ivy Inviter", page.data().get(0).invitedByName());
     }
 
     @Test

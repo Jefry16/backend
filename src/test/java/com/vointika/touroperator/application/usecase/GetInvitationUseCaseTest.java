@@ -2,6 +2,8 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
@@ -17,6 +19,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,24 +32,29 @@ import static org.mockito.Mockito.when;
 class GetInvitationUseCaseTest {
 
     private TourOperatorInvitationRepository invitationRepository;
+    private UserAccountQuery userAccountQuery;
     private TourOperatorMembershipCheck membershipCheck;
     private GetInvitationUseCase useCase;
 
     private final UUID operatorId = UUID.randomUUID();
     private final UUID invitationId = UUID.randomUUID();
     private final UUID callerId = UUID.randomUUID();
+    private final UUID inviterId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         invitationRepository = mock(TourOperatorInvitationRepository.class);
+        userAccountQuery = mock(UserAccountQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new GetInvitationUseCase(invitationRepository, membershipCheck);
+        useCase = new GetInvitationUseCase(invitationRepository, userAccountQuery, membershipCheck);
+        when(userAccountQuery.findContact(inviterId))
+                .thenReturn(Optional.of(new UserContactView("inviter@example.com", "Ivy Inviter", "en")));
     }
 
     private TourOperatorInvitation invitation(InvitationStatus status, Instant expiresAt) {
         return new TourOperatorInvitation(
                 invitationId, operatorId, new InviteeEmail("teammate@example.com"),
-                MemberRole.STAFF, "hash", status, UUID.randomUUID(),
+                MemberRole.STAFF, "hash", status, inviterId,
                 Instant.parse("2026-01-01T00:00:00Z"), expiresAt, null);
     }
 
@@ -65,6 +73,21 @@ class GetInvitationUseCaseTest {
         assertEquals(MemberRole.STAFF, view.role());
         assertEquals(InvitationStatus.PENDING, view.status());
         assertFalse(view.expired());
+        assertEquals(inviterId, view.invitedByUserId());
+        assertEquals("Ivy Inviter", view.invitedByName());
+    }
+
+    @Test
+    void inviterNameIsNullWhenTheAccountCannotBeResolved() {
+        when(invitationRepository.findByIdAndTourOperatorId(invitationId, operatorId))
+                .thenReturn(Optional.of(invitation(InvitationStatus.PENDING,
+                        Instant.parse("2999-01-01T00:00:00Z"))));
+        when(userAccountQuery.findContact(inviterId)).thenReturn(Optional.empty());
+
+        InvitationView view = useCase.execute(operatorId, invitationId, callerId);
+
+        assertEquals(inviterId, view.invitedByUserId());
+        assertNull(view.invitedByName());
     }
 
     @Test
