@@ -36,7 +36,10 @@ public class FlywayPerDomainConfig {
             "reference",
             // touroperator FKs into identity.users + reference.timezones/currencies,
             // so it must come after both.
-            "touroperator"
+            "touroperator",
+            // media FKs into touroperator.tour_operators + identity.users, so it
+            // must come after both.
+            "media"
     );
 
     @Bean
