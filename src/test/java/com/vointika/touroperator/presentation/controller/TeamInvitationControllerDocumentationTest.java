@@ -1,12 +1,15 @@
 package com.vointika.touroperator.presentation.controller;
 
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
+import com.vointika.touroperator.application.usecase.ListInvitationsUseCase;
 import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
@@ -50,11 +53,15 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.Instant;
+import java.util.List;
 
 @WebMvcTest(TeamInvitationController.class)
 @ExtendWith(RestDocumentationExtension.class)
-@Import({SecurityConfig.class, WebConfig.class})
+@Import({SecurityConfig.class, WebConfig.class, ListQueryParser.class})
 class TeamInvitationControllerDocumentationTest {
 
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
@@ -64,6 +71,9 @@ class TeamInvitationControllerDocumentationTest {
 
     @MockitoBean
     private InviteTeamMemberUseCase inviteTeamMemberUseCase;
+
+    @MockitoBean
+    private ListInvitationsUseCase listInvitationsUseCase;
 
     @MockitoBean
     private GetInvitationUseCase getInvitationUseCase;
@@ -129,6 +139,37 @@ class TeamInvitationControllerDocumentationTest {
     }
 
     private static final String INVITATION_ID = "aaaaaaaa-0000-4000-8000-000000000001";
+
+    @Test
+    void list() throws Exception {
+        authenticated();
+        when(listInvitationsUseCase.execute(any(), any())).thenReturn(new CursorPage<>(List.of(
+                new InvitationView(UUID.fromString(INVITATION_ID), "teammate@example.com",
+                        MemberRole.STAFF, InvitationStatus.PENDING, false,
+                        Instant.parse("2026-07-21T10:00:00Z"),
+                        Instant.parse("2026-07-28T10:00:00Z"), null)),
+                "eyJ2MSI6Im5leHQifQ"));
+
+        mockMvc.perform(get("/api/tour-operators/{id}/invitations", OPERATOR_ID)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].context").value("invitations"))
+                .andExpect(jsonPath("$.data[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.nextCursor").value("eyJ2MSI6Im5leHQifQ"))
+                .andDo(document("tour-operators/invitations/list",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(
+                                fieldWithPath("data[].id").description("The invitation id"),
+                                fieldWithPath("data[].context").description("The entity's collection: \"invitations\""),
+                                fieldWithPath("data[].email").description("The invitee's email address"),
+                                fieldWithPath("data[].role").description("The invited role: ADMIN or STAFF"),
+                                fieldWithPath("data[].status").description("Lifecycle state: PENDING, ACCEPTED or REVOKED"),
+                                fieldWithPath("data[].expired").description("True when a PENDING invitation is past its expiry window"),
+                                fieldWithPath("data[].createdAt").description("When the invitation was issued"),
+                                fieldWithPath("data[].expiresAt").description("When the accept link lapses"),
+                                fieldWithPath("data[].acceptedAt").description("When it was accepted, or null").optional(),
+                                fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
+    }
 
     @Test
     void getInvitation() throws Exception {

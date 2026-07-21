@@ -1,12 +1,18 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.web.list.CursorPageResponse;
+import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
 import com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase;
+import com.vointika.touroperator.application.usecase.ListInvitationsUseCase;
 import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
 import com.vointika.touroperator.presentation.request.InviteTeamMemberRequest;
 import com.vointika.touroperator.presentation.response.InvitationResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,18 +37,40 @@ import java.util.UUID;
 public class TeamInvitationController {
 
     private final InviteTeamMemberUseCase inviteTeamMemberUseCase;
+    private final ListInvitationsUseCase listInvitationsUseCase;
     private final GetInvitationUseCase getInvitationUseCase;
     private final ResendInvitationUseCase resendInvitationUseCase;
     private final RevokeInvitationUseCase revokeInvitationUseCase;
+    private final ListQueryParser listQueryParser;
 
     public TeamInvitationController(InviteTeamMemberUseCase inviteTeamMemberUseCase,
+                                    ListInvitationsUseCase listInvitationsUseCase,
                                     GetInvitationUseCase getInvitationUseCase,
                                     ResendInvitationUseCase resendInvitationUseCase,
-                                    RevokeInvitationUseCase revokeInvitationUseCase) {
+                                    RevokeInvitationUseCase revokeInvitationUseCase,
+                                    ListQueryParser listQueryParser) {
         this.inviteTeamMemberUseCase = inviteTeamMemberUseCase;
+        this.listInvitationsUseCase = listInvitationsUseCase;
         this.getInvitationUseCase = getInvitationUseCase;
         this.resendInvitationUseCase = resendInvitationUseCase;
         this.revokeInvitationUseCase = revokeInvitationUseCase;
+        this.listQueryParser = listQueryParser;
+    }
+
+    /**
+     * All invitations for the operator — any status, cursor-paginated,
+     * tenant-scoped. Any member may view; a non-member is a 404. Filter by
+     * {@code status} and/or {@code role}, sort by {@code createdAt} (default,
+     * newest first) or {@code id}; page with {@code cursor}.
+     */
+    @GetMapping
+    public ResponseEntity<CursorPageResponse<InvitationResponse>> list(
+            @PathVariable UUID tourOperatorId,
+            @AuthenticationPrincipal String callerUserId,
+            HttpServletRequest request) {
+        ListQuery query = listQueryParser.parse(request, ListInvitationsUseCase.SCHEMA, tourOperatorId);
+        CursorPage<InvitationView> page = listInvitationsUseCase.execute(query, UUID.fromString(callerUserId));
+        return ResponseEntity.ok(CursorPageResponse.of(page, InvitationResponse::from));
     }
 
     @PostMapping

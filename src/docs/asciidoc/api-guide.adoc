@@ -231,6 +231,16 @@ accept link.
 
 operation::tour-operators/invitations/create[]
 
+[[resources-invitations-list]]
+==== List Invitations
+
+Any member may view (STAFF included) — read-only. All invitations for the
+operator, ANY status (PENDING / ACCEPTED / REVOKED), cursor-paginated and
+tenant-scoped. Filter by `status` and/or `role`; sort by `createdAt` (default,
+newest first) or `id`; page with `cursor`. Non-member → 404.
+
+operation::tour-operators/invitations/list[]
+
 [[resources-invitation-get]]
 ==== Get an Invitation
 
