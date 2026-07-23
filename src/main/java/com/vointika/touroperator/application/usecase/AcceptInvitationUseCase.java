@@ -9,6 +9,7 @@ import com.vointika.shared.port.InvitedUserProvisioning;
 import com.vointika.shared.port.InvitedUserProvisioning.SessionTokens;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.domain.entity.TourOperator;
@@ -88,13 +89,14 @@ public class AcceptInvitationUseCase {
         String inviteeEmail = invitation.getEmail().value();
 
         if (authenticatedUserId != null) {
-            String callerEmail = userAccountQuery.findEmailByUserId(authenticatedUserId)
+            UserContactView caller = userAccountQuery.findContact(authenticatedUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
-            if (!inviteeEmail.equals(callerEmail)) {
+            if (!inviteeEmail.equals(caller.email())) {
                 throw new ForbiddenException("This invitation was issued to a different email address");
             }
             try {
-                transactionRunner.run(() -> complete(invitation, authenticatedUserId));
+                transactionRunner.run(() -> complete(
+                        invitation, authenticatedUserId, caller.name(), caller.email()));
             } catch (DataIntegrityViolationException e) {
                 // Overlapping double-accept by the same invitee — the membership
                 // already exists. Idempotent success, not a 500.
@@ -121,7 +123,7 @@ public class AcceptInvitationUseCase {
                     throw new ConflictException(
                             "An account with this email already exists — log in to accept the invitation");
                 }
-                complete(invitation, provisioned.userId());
+                complete(invitation, provisioned.userId(), name, inviteeEmail);
                 return invitedUserProvisioning.issueSession(provisioned.userId());
             });
         } catch (DataIntegrityViolationException e) {
@@ -132,12 +134,12 @@ public class AcceptInvitationUseCase {
         return new Result(operator.getId(), operator.getName().value(), tokens);
     }
 
-    private void complete(TourOperatorInvitation invitation, UUID userId) {
+    private void complete(TourOperatorInvitation invitation, UUID userId, String name, String email) {
         if (!memberRepository.existsByTourOperatorIdAndUserId(invitation.getTourOperatorId(), userId)) {
             boolean isFirstMembership = !memberRepository.existsByUserId(userId);
             memberRepository.save(new TourOperatorMember(
                     idGenerator.newId(), invitation.getTourOperatorId(), userId,
-                    invitation.getRole(), isFirstMembership));
+                    invitation.getRole(), isFirstMembership, name, email));
         }
         invitation.accept();
         invitationRepository.save(invitation);

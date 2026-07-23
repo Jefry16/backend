@@ -9,6 +9,7 @@ import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
 import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +110,12 @@ public class CreateTourOperatorUseCase {
                     "You already have an operator named \"" + name.value() + "\"");
         }
 
+        // Resolve the creator's display fields — required to populate the OWNER
+        // member row's denormalized name/email. The creator is the authenticated
+        // caller, so their account must exist.
+        UserContactView ownerContact = userAccountQuery.findContact(createdBy)
+                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+
         // 5. Generate a slug + save operator and OWNER member in one tx. On a
         //    slug collision (DIV at commit) the whole tx rolls back and we retry
         //    with a fresh slug.
@@ -126,7 +133,8 @@ public class CreateTourOperatorUseCase {
                     boolean isFirst = !memberRepository.existsByUserId(createdBy);
                     memberRepository.save(new TourOperatorMember(
                             idGenerator.newId(), candidate.getId(), createdBy,
-                            MemberRole.OWNER, isFirst));
+                            MemberRole.OWNER, isFirst,
+                            ownerContact.name(), ownerContact.email()));
                     return candidate;
                 });
                 break;
@@ -148,19 +156,18 @@ public class CreateTourOperatorUseCase {
 
         // 6. Welcome the creator. After-commit + fire-and-forget: an email
         //    hiccup must never fail an operator that was created successfully.
-        publishWelcomeEmail(createdBy, tourOperator.getName().value());
+        publishWelcomeEmail(ownerContact, tourOperator.getName().value());
 
         return new CreateTourOperatorOutput(tourOperator.getId());
     }
 
-    private void publishWelcomeEmail(UUID createdBy, String operatorName) {
+    private void publishWelcomeEmail(UserContactView contact, String operatorName) {
         try {
-            userAccountQuery.findContact(createdBy).ifPresent(contact ->
-                    eventPublisher.publish(new TourOperatorWelcomeEmailRequestedEvent(
-                            contact.email(), contact.name(), operatorName, contact.language())));
+            eventPublisher.publish(new TourOperatorWelcomeEmailRequestedEvent(
+                    contact.email(), contact.name(), operatorName, contact.language()));
         } catch (Exception e) {
-            log.warn("Failed to enqueue welcome email for operator '{}' (creator {}): {}",
-                    operatorName, createdBy, e.getMessage(), e);
+            log.warn("Failed to enqueue welcome email for operator '{}': {}",
+                    operatorName, e.getMessage(), e);
         }
     }
 }

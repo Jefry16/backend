@@ -12,7 +12,9 @@ public class TourOperatorMemberMapper {
                 member.getUserId(),
                 member.getRole(),
                 member.isDefault(),
-                member.getJoinedAt()
+                member.getJoinedAt(),
+                member.getName(),
+                member.getEmail()
         );
     }
 
@@ -23,7 +25,9 @@ public class TourOperatorMemberMapper {
                 jpa.getUserId(),
                 jpa.getRole(),
                 jpa.isDefault(),
-                jpa.getJoinedAt()
+                jpa.getJoinedAt(),
+                jpa.getName(),
+                jpa.getEmail()
         );
     }
 }

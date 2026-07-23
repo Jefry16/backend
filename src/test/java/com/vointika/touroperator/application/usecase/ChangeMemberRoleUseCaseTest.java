@@ -52,7 +52,8 @@ class ChangeMemberRoleUseCaseTest {
     }
 
     private TourOperatorMember member(UUID userId, MemberRole role) {
-        return new TourOperatorMember(UUID.randomUUID(), op, userId, role, false, Instant.now());
+        return new TourOperatorMember(UUID.randomUUID(), op, userId, role, false, Instant.now(),
+                "Test User", "test@example.test");
     }
 
     /** Stubs the targeted reads the use case makes: per-user member/role lookups + the OWNER count. */

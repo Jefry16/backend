@@ -10,6 +10,7 @@ import com.vointika.shared.port.InvitedUserProvisioning.ProvisionedUser;
 import com.vointika.shared.port.InvitedUserProvisioning.SessionTokens;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.domain.entity.TourOperator;
@@ -125,7 +126,8 @@ class AcceptInvitationUseCaseTest {
     void authenticatedWithAMismatchedEmailIs403() {
         validPendingToken();
         UUID caller = UUID.randomUUID();
-        when(userAccountQuery.findEmailByUserId(caller)).thenReturn(Optional.of("someone.else@example.com"));
+        when(userAccountQuery.findContact(caller))
+                .thenReturn(Optional.of(new UserContactView("someone.else@example.com", "Someone Else", "en")));
         assertThrows(ForbiddenException.class, () -> useCase.execute("raw", caller, null, null));
     }
 
@@ -133,7 +135,8 @@ class AcceptInvitationUseCaseTest {
     void authenticatedMatchingEmailJoinsWithNoNewSession() {
         validPendingToken();
         UUID caller = UUID.randomUUID();
-        when(userAccountQuery.findEmailByUserId(caller)).thenReturn(Optional.of(INVITEE));
+        when(userAccountQuery.findContact(caller))
+                .thenReturn(Optional.of(new UserContactView(INVITEE, "Invited User", "en")));
         when(memberRepository.existsByTourOperatorIdAndUserId(operatorId, caller)).thenReturn(false);
         when(memberRepository.existsByUserId(caller)).thenReturn(false);
 

@@ -48,7 +48,8 @@ class UserTourOperatorMembershipsQueryImplTest {
 
     private TourOperatorMemberJpaEntity member(UUID operatorId, MemberRole role, boolean isDefault) {
         return new TourOperatorMemberJpaEntity(
-                UUID.randomUUID(), operatorId, userId, role, isDefault, Instant.now());
+                UUID.randomUUID(), operatorId, userId, role, isDefault, Instant.now(),
+                "Test User", "test@example.test");
     }
 
     private TourOperatorJpaEntity operator(UUID id, String name, String slug) {
