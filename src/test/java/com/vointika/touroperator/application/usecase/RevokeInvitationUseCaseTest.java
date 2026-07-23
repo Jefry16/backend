@@ -49,7 +49,7 @@ class RevokeInvitationUseCaseTest {
     private TourOperatorInvitation invitationWith(InvitationStatus status) {
         return new TourOperatorInvitation(
                 invitationId, operatorId, new InviteeEmail("teammate@example.com"), new InviteeName("Test Invitee"),
-                MemberRole.STAFF, "hash", status, UUID.randomUUID(),
+                MemberRole.STAFF, "hash", status, UUID.randomUUID(), "Olive Inviter",
                 Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2030-01-01T00:00:00Z"), null);
     }
 

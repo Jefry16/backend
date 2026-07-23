@@ -83,7 +83,7 @@ class AcceptInvitationUseCaseTest {
     private void tokenResolvesTo(InvitationStatus status, Instant expiresAt) {
         TourOperatorInvitation invitation = new TourOperatorInvitation(
                 UUID.randomUUID(), operatorId, new InviteeEmail(INVITEE), new InviteeName("Test Invitee"), MemberRole.STAFF,
-                "hash", status, UUID.randomUUID(),
+                "hash", status, UUID.randomUUID(), "Olive Inviter",
                 Instant.parse("2026-01-01T00:00:00Z"), expiresAt, null);
         when(invitationRepository.findByTokenHash("hash")).thenReturn(Optional.of(invitation));
     }

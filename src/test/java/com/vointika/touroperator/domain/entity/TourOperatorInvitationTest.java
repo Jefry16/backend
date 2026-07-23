@@ -24,7 +24,7 @@ class TourOperatorInvitationTest {
         return new TourOperatorInvitation(
                 UUID.randomUUID(), UUID.randomUUID(),
                 new InviteeEmail("invitee@example.com"), new InviteeName("Test Invitee"), MemberRole.STAFF,
-                "hash", status, UUID.randomUUID(), created, expiresAt, null);
+                "hash", status, UUID.randomUUID(), "Olive Inviter", created, expiresAt, null);
     }
 
     @Test
@@ -32,7 +32,7 @@ class TourOperatorInvitationTest {
         TourOperatorInvitation inv = TourOperatorInvitation.issue(
                 UUID.randomUUID(), UUID.randomUUID(),
                 new InviteeEmail("invitee@example.com"), new InviteeName("Test Invitee"), MemberRole.ADMIN,
-                "hash", UUID.randomUUID());
+                "hash", UUID.randomUUID(), "Olive Inviter");
 
         assertEquals(InvitationStatus.PENDING, inv.getStatus());
         assertNull(inv.getAcceptedAt());

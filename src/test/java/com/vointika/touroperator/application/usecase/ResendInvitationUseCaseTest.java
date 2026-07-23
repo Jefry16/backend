@@ -79,7 +79,7 @@ class ResendInvitationUseCaseTest {
     private TourOperatorInvitation invitationWith(InvitationStatus status) {
         return new TourOperatorInvitation(
                 invitationId, operatorId, new InviteeEmail("teammate@example.com"), new InviteeName("Test Invitee"),
-                MemberRole.ADMIN, "old-hash", status, UUID.randomUUID(),
+                MemberRole.ADMIN, "old-hash", status, UUID.randomUUID(), "Olive Inviter",
                 Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2020-01-01T00:00:00Z"), null);
     }
 

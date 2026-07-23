@@ -18,6 +18,12 @@ CREATE TABLE touroperator.tour_operator_invitations (
     status               VARCHAR(20)   NOT NULL
         CHECK (status IN ('PENDING', 'ACCEPTED', 'REVOKED', 'EXPIRED')),
     invited_by_user_id   UUID          NOT NULL REFERENCES identity.users (id),
+    -- Frozen snapshot of the inviter's name at invite time — lets the list
+    -- sort/filter by "who invited" (a cross-context field otherwise resolved from
+    -- identity post-pagination, which can't be sorted, §3.5). NOT NULL: the
+    -- inviter is the authenticated admin, always resolvable; a later rename does
+    -- not rewrite old invitations.
+    invited_by_name      VARCHAR(255)  NOT NULL,
     created_at           TIMESTAMPTZ   NOT NULL,
     expires_at           TIMESTAMPTZ   NOT NULL,
     accepted_at          TIMESTAMPTZ

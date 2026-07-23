@@ -45,6 +45,9 @@ public class TourOperatorInvitationJpaEntity {
     private UUID invitedByUserId;
 
     @Column(nullable = false, updatable = false)
+    private String invitedByName;
+
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(nullable = false)

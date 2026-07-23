@@ -29,8 +29,9 @@ public record InvitationResponse(
     /**
      * The user who issued the invitation: {@code id} is that user's id and
      * {@code context} is {@code "users"} (house convention for a nested actor
-     * reference). {@code name} is best-effort from identity — null if the
-     * account can't be resolved.
+     * reference). {@code name} is the inviter's name frozen onto the invitation
+     * at issue time — always present, and stable even if the account is later
+     * renamed or removed.
      */
     public record InvitedBy(UUID id, String context, String name) {
         public InvitedBy(UUID id, String name) {

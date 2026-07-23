@@ -2,8 +2,6 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.port.UserAccountQuery;
-import com.vointika.shared.port.UserContactView;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
@@ -25,14 +23,11 @@ import java.util.UUID;
 public class GetInvitationUseCase {
 
     private final TourOperatorInvitationRepository invitationRepository;
-    private final UserAccountQuery userAccountQuery;
     private final TourOperatorMembershipCheck membershipCheck;
 
     public GetInvitationUseCase(TourOperatorInvitationRepository invitationRepository,
-                                UserAccountQuery userAccountQuery,
                                 TourOperatorMembershipCheck membershipCheck) {
         this.invitationRepository = invitationRepository;
-        this.userAccountQuery = userAccountQuery;
         this.membershipCheck = membershipCheck;
     }
 
@@ -41,9 +36,7 @@ public class GetInvitationUseCase {
         TourOperatorInvitation invitation = invitationRepository
                 .findByIdAndTourOperatorId(invitationId, tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
-        // Best-effort inviter name (id is always present); null if unresolvable.
-        String invitedByName = userAccountQuery.findContact(invitation.getInvitedByUserId())
-                .map(UserContactView::name).orElse(null);
-        return InvitationView.from(invitation, Instant.now(), invitedByName);
+        // Inviter name is snapshotted on the invitation — no identity lookup.
+        return InvitationView.from(invitation, Instant.now());
     }
 }
