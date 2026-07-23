@@ -27,12 +27,7 @@ public record InvitationView(
         UUID invitedByUserId,
         String invitedByName) {
 
-    /**
-     * @param invitedByName the inviter's display name, resolved from identity;
-     *                      best-effort — null if the account can't be resolved
-     *                      (the id is always present).
-     */
-    public static InvitationView from(TourOperatorInvitation invitation, Instant now, String invitedByName) {
+    public static InvitationView from(TourOperatorInvitation invitation, Instant now) {
         return new InvitationView(
                 invitation.getId(),
                 invitation.getEmail().value(),
@@ -44,6 +39,6 @@ public record InvitationView(
                 invitation.getExpiresAt(),
                 invitation.getAcceptedAt(),
                 invitation.getInvitedByUserId(),
-                invitedByName);
+                invitation.getInvitedByName());
     }
 }

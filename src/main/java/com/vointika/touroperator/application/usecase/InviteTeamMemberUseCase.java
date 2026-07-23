@@ -81,10 +81,16 @@ public class InviteTeamMemberUseCase {
             throw new ResourceAlreadyExistsException("A pending invitation for this email already exists");
         }
 
+        // The inviter's contact: their name is snapshotted on the invitation, and
+        // the invite email goes in their UI language (the invitee has no account
+        // yet). They're the authenticated admin, so the account always resolves.
+        UserContactView inviter = userAccountQuery.findContact(invitedByUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inviting user not found"));
+
         String rawToken = invitationTokenPort.generate();
         TourOperatorInvitation invitation = TourOperatorInvitation.issue(
                 idGenerator.newId(), tourOperatorId, email, name, role,
-                invitationTokenPort.hash(rawToken), invitedByUserId);
+                invitationTokenPort.hash(rawToken), invitedByUserId, inviter.name());
         try {
             invitationRepository.save(invitation);
         } catch (DataIntegrityViolationException e) {
@@ -92,12 +98,9 @@ public class InviteTeamMemberUseCase {
             throw new ResourceAlreadyExistsException("A pending invitation for this email already exists");
         }
 
-        // The invite email is sent in the inviting user's UI language (the invitee
-        // has no account/language yet).
-        String locale = userAccountQuery.findContact(invitedByUserId)
-                .map(UserContactView::language).orElse("en");
         eventPublisher.publish(new TeamInvitationRequestedEvent(
-                email.value(), name.value(), operator.getName().value(), role.name(), rawToken, locale));
+                email.value(), name.value(), operator.getName().value(),
+                role.name(), rawToken, inviter.language()));
         return invitation.getId();
     }
 

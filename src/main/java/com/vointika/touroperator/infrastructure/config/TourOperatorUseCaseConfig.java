@@ -134,17 +134,15 @@ public class TourOperatorUseCaseConfig {
     @Bean
     public ListInvitationsUseCase listInvitationsUseCase(
             TourOperatorInvitationRepository invitationRepository,
-            UserAccountQuery userAccountQuery,
             TourOperatorMembershipCheck membershipCheck) {
-        return new ListInvitationsUseCase(invitationRepository, userAccountQuery, membershipCheck);
+        return new ListInvitationsUseCase(invitationRepository, membershipCheck);
     }
 
     @Bean
     public GetInvitationUseCase getInvitationUseCase(
             TourOperatorInvitationRepository invitationRepository,
-            UserAccountQuery userAccountQuery,
             TourOperatorMembershipCheck membershipCheck) {
-        return new GetInvitationUseCase(invitationRepository, userAccountQuery, membershipCheck);
+        return new GetInvitationUseCase(invitationRepository, membershipCheck);
     }
 
     @Bean

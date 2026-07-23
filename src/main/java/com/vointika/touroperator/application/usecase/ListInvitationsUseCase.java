@@ -4,8 +4,6 @@ import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.ListSchema;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.port.UserAccountQuery;
-import com.vointika.shared.port.UserAccountView;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
@@ -13,12 +11,7 @@ import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Lists a tour operator's invitations — ALL statuses (PENDING / ACCEPTED /
@@ -26,36 +19,43 @@ import java.util.stream.Collectors;
  * the operator. **Any member** may view (read-only, like the roster; the
  * mutating actions invite/resend/revoke stay ADMIN+); a non-member is a 404
  * ({@code ensureMember} is the defense-in-depth gate behind the interceptor).
- * Filter by {@code status} and/or {@code role}; sort by {@code createdAt}
- * (default, newest first) or {@code id}; page with {@code cursor}.
+ * Every display column filters (as a set) and sorts: {@code name}, {@code email},
+ * {@code role}, {@code status}, {@code invitedByName} and {@code createdAt} (the
+ * default sort, newest first); {@code id} sorts too.
  *
- * <p>Each row's {@code expired} flag is computed against a single {@code now}
- * for the page; the inviter's display name is enriched via ONE batched
- * {@link UserAccountQuery#findAccounts} over the page's inviter ids (no N+1,
- * best-effort — an unresolvable account carries a null name, never dropping the
- * row). The invitee email needs no lookup — the invitation carries it.
+ * <p>Each row's {@code expired} flag is computed against a single {@code now} for
+ * the page. Invitee email/name AND the inviter's name are all carried on the
+ * invitation row (the inviter name is a snapshot from invite time), so there is
+ * no post-pagination identity enrichment — which is exactly what makes every
+ * column sortable/filterable off the single root (§3.5 forbids the alternative
+ * join).
  */
 public class ListInvitationsUseCase {
 
     public static final ListSchema SCHEMA = ListSchema.builder()
             .tenantScoped()
-            .set("status", InvitationStatus.class)
+            .set("name", String.class)
+            .sortable("name")
+            .set("email", String.class)
+            .sortable("email")
             .set("role", MemberRole.class)
+            .sortable("role")
+            .set("status", InvitationStatus.class)
+            .sortable("status")
             .instant("createdAt")
             .sortable("createdAt")
+            .set("invitedByName", String.class)
+            .sortable("invitedByName")
             .sortable("id")
             .defaultSort("-createdAt")
             .build();
 
     private final TourOperatorInvitationRepository invitationRepository;
-    private final UserAccountQuery userAccountQuery;
     private final TourOperatorMembershipCheck membershipCheck;
 
     public ListInvitationsUseCase(TourOperatorInvitationRepository invitationRepository,
-                                  UserAccountQuery userAccountQuery,
                                   TourOperatorMembershipCheck membershipCheck) {
         this.invitationRepository = invitationRepository;
-        this.userAccountQuery = userAccountQuery;
         this.membershipCheck = membershipCheck;
     }
 
@@ -64,23 +64,10 @@ public class ListInvitationsUseCase {
         membershipCheck.ensureMember(callerUserId, query.tenantId());
 
         CursorPage<TourOperatorInvitation> page = invitationRepository.list(query);
-        if (page.data().isEmpty()) {
-            return new CursorPage<>(List.of(), page.nextCursor());
-        }
-
-        Set<UUID> inviterIds = page.data().stream()
-                .map(TourOperatorInvitation::getInvitedByUserId)
-                .collect(Collectors.toSet());
-        // HashMap, not Collectors.toMap: a name may be null, and toMap rejects null values.
-        Map<UUID, String> nameByUserId = new HashMap<>();
-        for (UserAccountView account : userAccountQuery.findAccounts(inviterIds)) {
-            nameByUserId.put(account.userId(), account.name());
-        }
-
         Instant now = Instant.now();
         return new CursorPage<>(
                 page.data().stream()
-                        .map(inv -> InvitationView.from(inv, now, nameByUserId.get(inv.getInvitedByUserId())))
+                        .map(inv -> InvitationView.from(inv, now))
                         .toList(),
                 page.nextCursor());
     }

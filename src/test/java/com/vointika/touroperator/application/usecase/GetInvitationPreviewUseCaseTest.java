@@ -48,7 +48,7 @@ class GetInvitationPreviewUseCaseTest {
     private TourOperatorInvitation invitation(InvitationStatus status, Instant expiresAt) {
         return new TourOperatorInvitation(
                 UUID.randomUUID(), operatorId, new InviteeEmail("invitee@example.com"), new InviteeName("Test Invitee"),
-                MemberRole.STAFF, "hash", status, UUID.randomUUID(),
+                MemberRole.STAFF, "hash", status, UUID.randomUUID(), "Olive Inviter",
                 Instant.parse("2026-01-01T00:00:00Z"), expiresAt, null);
     }
 

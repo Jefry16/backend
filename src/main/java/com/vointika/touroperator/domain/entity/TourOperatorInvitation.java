@@ -34,6 +34,9 @@ public class TourOperatorInvitation {
     private String tokenHash;
     private InvitationStatus status;
     private final UUID invitedByUserId;
+    // Frozen snapshot of the inviter's name at invite time — so the list can
+    // sort/filter by who invited without resolving identity (§3.5).
+    private final String invitedByName;
     private final Instant createdAt;
     private Instant expiresAt;
     private Instant acceptedAt;
@@ -45,10 +48,12 @@ public class TourOperatorInvitation {
                                                InviteeName name,
                                                MemberRole role,
                                                String tokenHash,
-                                               UUID invitedByUserId) {
+                                               UUID invitedByUserId,
+                                               String invitedByName) {
         Instant now = Instant.now();
         return new TourOperatorInvitation(id, tourOperatorId, email, name, role, tokenHash,
-                InvitationStatus.PENDING, invitedByUserId, now, now.plus(VALIDITY), null);
+                InvitationStatus.PENDING, invitedByUserId, invitedByName,
+                now, now.plus(VALIDITY), null);
     }
 
     // Reconstitution from persistence.
@@ -60,6 +65,7 @@ public class TourOperatorInvitation {
                                   String tokenHash,
                                   InvitationStatus status,
                                   UUID invitedByUserId,
+                                  String invitedByName,
                                   Instant createdAt,
                                   Instant expiresAt,
                                   Instant acceptedAt) {
@@ -71,6 +77,7 @@ public class TourOperatorInvitation {
         this.tokenHash = tokenHash;
         this.status = status;
         this.invitedByUserId = invitedByUserId;
+        this.invitedByName = invitedByName;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
         this.acceptedAt = acceptedAt;
@@ -120,6 +127,7 @@ public class TourOperatorInvitation {
     public String getTokenHash() { return tokenHash; }
     public InvitationStatus getStatus() { return status; }
     public UUID getInvitedByUserId() { return invitedByUserId; }
+    public String getInvitedByName() { return invitedByName; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getExpiresAt() { return expiresAt; }
     public Instant getAcceptedAt() { return acceptedAt; }

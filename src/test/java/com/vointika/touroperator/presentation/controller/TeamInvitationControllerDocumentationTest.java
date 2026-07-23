@@ -176,7 +176,7 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("data[].acceptedAt").description("When it was accepted, or null").optional(),
                                 fieldWithPath("data[].invitedBy.id").description("The inviting user's id"),
                                 fieldWithPath("data[].invitedBy.context").description("The entity's collection: \"users\""),
-                                fieldWithPath("data[].invitedBy.name").description("The inviter's display name (best-effort; may be null)").optional(),
+                                fieldWithPath("data[].invitedBy.name").description("The inviter's display name, frozen at issue time (always present)"),
                                 fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
     }
 
@@ -214,7 +214,7 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("acceptedAt").description("When it was accepted, or null").optional(),
                                 fieldWithPath("invitedBy.id").description("The inviting user's id"),
                                 fieldWithPath("invitedBy.context").description("The entity's collection: \"users\""),
-                                fieldWithPath("invitedBy.name").description("The inviter's display name (best-effort; may be null)").optional())));
+                                fieldWithPath("invitedBy.name").description("The inviter's display name, frozen at issue time (always present)"))));
     }
 
     @Test

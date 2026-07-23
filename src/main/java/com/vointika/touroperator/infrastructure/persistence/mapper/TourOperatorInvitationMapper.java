@@ -17,6 +17,7 @@ public class TourOperatorInvitationMapper {
                 invitation.getTokenHash(),
                 invitation.getStatus(),
                 invitation.getInvitedByUserId(),
+                invitation.getInvitedByName(),
                 invitation.getCreatedAt(),
                 invitation.getExpiresAt(),
                 invitation.getAcceptedAt()
@@ -33,6 +34,7 @@ public class TourOperatorInvitationMapper {
                 jpa.getTokenHash(),
                 jpa.getStatus(),
                 jpa.getInvitedByUserId(),
+                jpa.getInvitedByName(),
                 jpa.getCreatedAt(),
                 jpa.getExpiresAt(),
                 jpa.getAcceptedAt()
