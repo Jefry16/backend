@@ -169,9 +169,8 @@ public class TourOperatorUseCaseConfig {
     @Bean
     public ListMembersUseCase listMembersUseCase(
             TourOperatorMemberRepository memberRepository,
-            UserAccountQuery userAccountQuery,
             TourOperatorMembershipCheck membershipCheck) {
-        return new ListMembersUseCase(memberRepository, userAccountQuery, membershipCheck);
+        return new ListMembersUseCase(memberRepository, membershipCheck);
     }
 
     @Bean

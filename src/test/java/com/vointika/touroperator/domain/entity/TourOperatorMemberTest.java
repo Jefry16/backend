@@ -18,7 +18,7 @@ class TourOperatorMemberTest {
         UUID userId = UUID.randomUUID();
 
         TourOperatorMember member = new TourOperatorMember(
-                id, operatorId, userId, MemberRole.OWNER, true);
+                id, operatorId, userId, MemberRole.OWNER, true, "Ada Owner", "ada@example.test");
 
         assertEquals(id, member.getId());
         assertEquals(operatorId, member.getTourOperatorId());
@@ -26,12 +26,15 @@ class TourOperatorMemberTest {
         assertEquals(MemberRole.OWNER, member.getRole());
         assertTrue(member.isDefault());
         assertNotNull(member.getJoinedAt());
+        assertEquals("Ada Owner", member.getName());
+        assertEquals("ada@example.test", member.getEmail());
     }
 
     @Test
     void changeRoleUpdatesTheRole() {
         TourOperatorMember member = new TourOperatorMember(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), MemberRole.OWNER, false);
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), MemberRole.OWNER, false,
+                "Ada Owner", "ada@example.test");
 
         member.changeRole(MemberRole.ADMIN);
 

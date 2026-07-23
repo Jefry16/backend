@@ -7,8 +7,6 @@ import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.SortDirection;
 import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.port.UserAccountQuery;
-import com.vointika.shared.port.UserAccountView;
 import com.vointika.touroperator.application.dto.output.MemberListView;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
@@ -34,7 +32,6 @@ import static org.mockito.Mockito.when;
 class ListMembersUseCaseTest {
 
     private TourOperatorMemberRepository memberRepository;
-    private UserAccountQuery userAccountQuery;
     private TourOperatorMembershipCheck membershipCheck;
     private ListMembersUseCase useCase;
 
@@ -44,17 +41,17 @@ class ListMembersUseCaseTest {
     @BeforeEach
     void setUp() {
         memberRepository = mock(TourOperatorMemberRepository.class);
-        userAccountQuery = mock(UserAccountQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new ListMembersUseCase(memberRepository, userAccountQuery, membershipCheck);
+        useCase = new ListMembersUseCase(memberRepository, membershipCheck);
     }
 
     private ListQuery query() {
         return new ListQuery(op, FilterSpec.empty(), new SortSpec("joinedAt", SortDirection.ASC), null);
     }
 
-    private TourOperatorMember member(UUID userId, MemberRole role, Instant joinedAt) {
-        return new TourOperatorMember(UUID.randomUUID(), op, userId, role, false, joinedAt);
+    private TourOperatorMember member(UUID userId, MemberRole role, Instant joinedAt,
+                                      String name, String email) {
+        return new TourOperatorMember(UUID.randomUUID(), op, userId, role, false, joinedAt, name, email);
     }
 
     @Test
@@ -69,9 +66,8 @@ class ListMembersUseCaseTest {
     void anyMemberMayView_notJustAdmins() {
         // A STAFF caller (member) must NOT be blocked — the roster is member-visible.
         // ensureMember passes; ensureAdmin must never be consulted.
-        when(memberRepository.list(any()))
-                .thenReturn(new CursorPage<>(List.of(member(UUID.randomUUID(), MemberRole.STAFF, Instant.now())), null));
-        when(userAccountQuery.findAccounts(any())).thenReturn(List.of());
+        when(memberRepository.list(any())).thenReturn(new CursorPage<>(List.of(
+                member(UUID.randomUUID(), MemberRole.STAFF, Instant.now(), "Sam Staff", "sam@example.test")), null));
 
         useCase.execute(query(), caller);
 
@@ -80,38 +76,22 @@ class ListMembersUseCaseTest {
     }
 
     @Test
-    void enrichesRowsAndCarriesTheCursorThrough() {
+    void mapsRowFieldsAndCarriesTheCursorThrough() {
         UUID owner = UUID.randomUUID();
         UUID staff = UUID.randomUUID();
         when(memberRepository.list(any())).thenReturn(new CursorPage<>(List.of(
-                member(owner, MemberRole.OWNER, Instant.parse("2026-01-01T00:00:00Z")),
-                member(staff, MemberRole.STAFF, Instant.parse("2026-02-01T00:00:00Z"))),
+                member(owner, MemberRole.OWNER, Instant.parse("2026-01-01T00:00:00Z"), "Olive Owner", "owner@example.com"),
+                member(staff, MemberRole.STAFF, Instant.parse("2026-02-01T00:00:00Z"), "Sam Staff", "staff@example.com")),
                 "next-cursor"));
-        when(userAccountQuery.findAccounts(any())).thenReturn(List.of(
-                new UserAccountView(owner, "owner@example.com", "Olive Owner"),
-                new UserAccountView(staff, "staff@example.com", "Sam Staff")));
 
         CursorPage<MemberListView> page = useCase.execute(query(), caller);
 
         assertEquals("next-cursor", page.nextCursor(), "the repo's cursor is passed through unchanged");
         assertEquals(2, page.data().size());
         assertEquals(owner, page.data().get(0).userId(), "order preserved from the paginated query");
+        // name/email come straight off the denormalized member row (no enrichment).
         assertEquals("Olive Owner", page.data().get(0).name());
         assertEquals("staff@example.com", page.data().get(1).email());
-    }
-
-    @Test
-    void nullSafeWhenAnAccountCannotBeResolved() {
-        UUID ghost = UUID.randomUUID();
-        when(memberRepository.list(any()))
-                .thenReturn(new CursorPage<>(List.of(member(ghost, MemberRole.STAFF, Instant.now())), null));
-        when(userAccountQuery.findAccounts(any())).thenReturn(List.of());
-
-        CursorPage<MemberListView> page = useCase.execute(query(), caller);
-
-        assertNull(page.data().get(0).name());
-        assertNull(page.data().get(0).email());
-        assertEquals(MemberRole.STAFF, page.data().get(0).role());
     }
 
     @Test

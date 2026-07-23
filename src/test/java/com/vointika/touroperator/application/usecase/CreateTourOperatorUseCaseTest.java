@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -126,13 +127,26 @@ class CreateTourOperatorUseCaseTest {
 
     @Test
     void doesNotFailCreateWhenWelcomeEmailCannotBeEnqueued() {
-        // A creator-contact lookup blip must not fail an operator that committed.
-        when(userAccountQuery.findContact(any())).thenThrow(new RuntimeException("query down"));
+        // Publishing the welcome email is fire-and-forget: a broker blip must not
+        // fail an operator that committed. (The contact LOOKUP is now required —
+        // it populates the owner member's name/email — so it stays on the happy
+        // path, stubbed in @BeforeEach.)
+        doThrow(new RuntimeException("broker down")).when(eventPublisher).publish(any());
 
         CreateTourOperatorOutput out = useCase.execute(input());
 
-        assertNotNull(out.id(), "create still succeeds when the welcome email fails");
+        assertNotNull(out.id(), "create still succeeds when the welcome email fails to publish");
         verify(tourOperatorRepository).save(any());
+    }
+
+    @Test
+    void failsWhenCreatorContactCannotBeResolved() {
+        // The owner member's name/email are NOT NULL, so the creator's contact
+        // MUST resolve. An unresolvable creator (never happens for a real
+        // authenticated caller) fails closed rather than persisting a bad row.
+        when(userAccountQuery.findContact(any())).thenReturn(Optional.empty());
+
+        assertThrows(UnauthorizedException.class, () -> useCase.execute(input()));
     }
 
     @Test

@@ -27,6 +27,19 @@ CREATE TABLE touroperator.tour_operator_members (
     role              VARCHAR(20)   NOT NULL,
     is_default        BOOLEAN       NOT NULL DEFAULT FALSE,
     joined_at         TIMESTAMPTZ   NOT NULL,
+    -- Denormalized read-fields: copies of the member's identity name/email,
+    -- carried on the pivot so the roster list can sort/filter by them directly.
+    -- The list framework sorts only a row's own columns, and identity is a
+    -- separate bounded context whose tables can't be joined (§3.5) — so the
+    -- read-side copy lives here (the pivot already holds both source ids, making
+    -- it the natural home). NOT NULL: every member is a real identity user (FK)
+    -- whose name/email are themselves NOT NULL, so the copy is always set at
+    -- insert by the member-write use cases and kept current by an identity-change
+    -- sync (backfilled in Java via UserAccountQuery — never a cross-schema join).
+    -- This is the pattern every list follows to make a cross-context column
+    -- sortable/filterable.
+    name              VARCHAR(255)  NOT NULL,
+    email             VARCHAR(255)  NOT NULL,
     CONSTRAINT tour_operator_members_unique UNIQUE (tour_operator_id, user_id)
 );
 
@@ -43,3 +56,10 @@ CREATE UNIQUE INDEX tour_operator_members_single_owner
 CREATE UNIQUE INDEX tour_operator_members_one_default_per_user
     ON touroperator.tour_operator_members (user_id)
     WHERE is_default = TRUE;
+
+-- Sort/filter the roster by the denormalized name/email within an operator (the
+-- list is always tenant-scoped, so lead the index with tour_operator_id).
+CREATE INDEX idx_tour_operator_members_name
+    ON touroperator.tour_operator_members (tour_operator_id, name);
+CREATE INDEX idx_tour_operator_members_email
+    ON touroperator.tour_operator_members (tour_operator_id, email);

@@ -35,4 +35,12 @@ public class TourOperatorMemberJpaEntity {
 
     @Column(nullable = false, updatable = false)
     private Instant joinedAt;
+
+    // Denormalized read-fields (see V1 members-table comment). Updatable — an
+    // identity name/email change syncs onto the row.
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String email;
 }

@@ -23,15 +23,24 @@ public class TourOperatorMember {
     private MemberRole role;
     private boolean isDefault;
     private final Instant joinedAt;
+    // Denormalized display copies of the member's identity name/email (owned by
+    // the identity context, resolved via UserAccountQuery at member-write time).
+    // Carried on the row so the roster list can sort/filter by them directly —
+    // identity's tables can't be joined (§3.5). See the V1 members-table comment.
+    private final String name;
+    private final String email;
 
     // Constructor for creating a new membership
-    public TourOperatorMember(UUID id, UUID tourOperatorId, UUID userId, MemberRole role, boolean isDefault) {
+    public TourOperatorMember(UUID id, UUID tourOperatorId, UUID userId, MemberRole role,
+                              boolean isDefault, String name, String email) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.userId = userId;
         this.role = role;
         this.isDefault = isDefault;
         this.joinedAt = Instant.now();
+        this.name = name;
+        this.email = email;
     }
 
     // Constructor for reconstituting from persistence
@@ -40,13 +49,17 @@ public class TourOperatorMember {
                               UUID userId,
                               MemberRole role,
                               boolean isDefault,
-                              Instant joinedAt) {
+                              Instant joinedAt,
+                              String name,
+                              String email) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.userId = userId;
         this.role = role;
         this.isDefault = isDefault;
         this.joinedAt = joinedAt;
+        this.name = name;
+        this.email = email;
     }
 
     /**
@@ -67,4 +80,6 @@ public class TourOperatorMember {
     public MemberRole getRole() { return role; }
     public boolean isDefault() { return isDefault; }
     public Instant getJoinedAt() { return joinedAt; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
 }
