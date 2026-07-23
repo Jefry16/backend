@@ -6,6 +6,7 @@ import com.vointika.shared.web.list.CursorPageResponse;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.touroperator.application.dto.output.MemberListView;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
+import com.vointika.touroperator.application.usecase.GetMemberUseCase;
 import com.vointika.touroperator.application.usecase.ListMembersUseCase;
 import com.vointika.touroperator.application.usecase.RemoveTeamMemberUseCase;
 import com.vointika.touroperator.presentation.request.ChangeMemberRoleRequest;
@@ -33,15 +34,18 @@ import java.util.UUID;
 public class TeamMemberController {
 
     private final ListMembersUseCase listMembersUseCase;
+    private final GetMemberUseCase getMemberUseCase;
     private final ChangeMemberRoleUseCase changeMemberRoleUseCase;
     private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
     private final ListQueryParser listQueryParser;
 
     public TeamMemberController(ListMembersUseCase listMembersUseCase,
+                                GetMemberUseCase getMemberUseCase,
                                 ChangeMemberRoleUseCase changeMemberRoleUseCase,
                                 RemoveTeamMemberUseCase removeTeamMemberUseCase,
                                 ListQueryParser listQueryParser) {
         this.listMembersUseCase = listMembersUseCase;
+        this.getMemberUseCase = getMemberUseCase;
         this.changeMemberRoleUseCase = changeMemberRoleUseCase;
         this.removeTeamMemberUseCase = removeTeamMemberUseCase;
         this.listQueryParser = listQueryParser;
@@ -60,6 +64,20 @@ public class TeamMemberController {
         ListQuery query = listQueryParser.parse(request, ListMembersUseCase.SCHEMA, tourOperatorId);
         CursorPage<MemberListView> page = listMembersUseCase.execute(query, UUID.fromString(callerUserId));
         return ResponseEntity.ok(CursorPageResponse.of(page, MemberResponse::from));
+    }
+
+    /**
+     * A single member's detail. Any member may view; a non-member is a 404, as is
+     * a user who isn't a member of this operator.
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<MemberResponse> get(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal String callerUserId) {
+        MemberListView view = getMemberUseCase.execute(
+                tourOperatorId, userId, UUID.fromString(callerUserId));
+        return ResponseEntity.ok(MemberResponse.from(view));
     }
 
     /**
