@@ -25,12 +25,6 @@ public interface UserAccountQuery {
     Optional<UserContactView> findContact(UUID userId);
 
     /**
-     * The user's (normalized, lowercased) email — the accept flow's
-     * email-match check and the pending-invitations lookup key.
-     */
-    Optional<String> findEmailByUserId(UUID userId);
-
-    /**
      * Batch account lookup — one query for a set of user ids, returning
      * {@link UserAccountView} (id + email + name) per resolvable account. An id
      * with no account is simply absent from the result (callers key by id and
