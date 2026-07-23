@@ -27,11 +27,6 @@ public class UserAccountQueryImpl implements UserAccountQuery {
     }
 
     @Override
-    public Optional<String> findEmailByUserId(UUID userId) {
-        return jpa.findById(userId).map(UserJpaEntity::getEmail);
-    }
-
-    @Override
     public Optional<UserContactView> findContact(UUID userId) {
         return jpa.findById(userId)
                 .map(u -> new UserContactView(u.getEmail(), u.getName(), u.getLanguage()));
