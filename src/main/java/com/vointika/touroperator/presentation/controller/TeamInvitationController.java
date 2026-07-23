@@ -79,7 +79,7 @@ public class TeamInvitationController {
             @RequestBody InviteTeamMemberRequest body,
             @AuthenticationPrincipal String userIdStr) {
         UUID invitationId = inviteTeamMemberUseCase.execute(
-                tourOperatorId, UUID.fromString(userIdStr), body.email(), body.role());
+                tourOperatorId, UUID.fromString(userIdStr), body.email(), body.name(), body.role());
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId
                         + "/invitations/" + invitationId))

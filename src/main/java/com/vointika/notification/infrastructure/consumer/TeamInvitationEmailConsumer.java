@@ -35,6 +35,7 @@ public class TeamInvitationEmailConsumer {
     public void handle(TeamInvitationRequestedEvent event) {
         try {
             Map<String, Object> variables = Map.of(
+                    "name", event.name(),
                     "operatorName", event.operatorName(),
                     "role", event.role(),
                     "link", notificationProperties.invitationAcceptBaseUrl() + "?token=" + event.token());

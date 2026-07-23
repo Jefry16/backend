@@ -111,20 +111,21 @@ class TeamInvitationControllerDocumentationTest {
     @Test
     void invite() throws Exception {
         authenticated();
-        when(inviteTeamMemberUseCase.execute(any(), any(), any(), any()))
+        when(inviteTeamMemberUseCase.execute(any(), any(), any(), any(), any()))
                 .thenReturn(UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001"));
 
         mockMvc.perform(post("/api/tour-operators/{id}/invitations", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "teammate@example.com", "role": "STAFF" }"""))
+                                { "email": "teammate@example.com", "name": "Teammate", "role": "STAFF" }"""))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andDo(document("tour-operators/invitations/create",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("email").description("The invitee's email address"),
+                                fieldWithPath("name").description("The invitee's display name (greets them in the invite email)"),
                                 fieldWithPath("role").description("The role to grant: ADMIN or STAFF (never OWNER)")),
                         responseHeaders(headerWithName("Location").description("URI of the created invitation"))));
     }
@@ -134,7 +135,7 @@ class TeamInvitationControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/invitations", OPERATOR_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "teammate@example.com", "role": "STAFF" }"""))
+                                { "email": "teammate@example.com", "name": "Teammate", "role": "STAFF" }"""))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -145,7 +146,7 @@ class TeamInvitationControllerDocumentationTest {
     void list() throws Exception {
         authenticated();
         when(listInvitationsUseCase.execute(any(), any())).thenReturn(new CursorPage<>(List.of(
-                new InvitationView(UUID.fromString(INVITATION_ID), "teammate@example.com",
+                new InvitationView(UUID.fromString(INVITATION_ID), "teammate@example.com", "Teammate",
                         MemberRole.STAFF, InvitationStatus.PENDING, false,
                         Instant.parse("2026-07-21T10:00:00Z"),
                         Instant.parse("2026-07-28T10:00:00Z"), null,
@@ -166,6 +167,7 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("data[].id").description("The invitation id"),
                                 fieldWithPath("data[].context").description("The entity's collection: \"invitations\""),
                                 fieldWithPath("data[].email").description("The invitee's email address"),
+                                fieldWithPath("data[].name").description("The invitee's display name"),
                                 fieldWithPath("data[].role").description("The invited role: ADMIN or STAFF"),
                                 fieldWithPath("data[].status").description("Lifecycle state: PENDING, ACCEPTED or REVOKED"),
                                 fieldWithPath("data[].expired").description("True when a PENDING invitation is past its expiry window"),
@@ -182,7 +184,7 @@ class TeamInvitationControllerDocumentationTest {
     void getInvitation() throws Exception {
         authenticated();
         when(getInvitationUseCase.execute(any(), any(), any())).thenReturn(new InvitationView(
-                UUID.fromString(INVITATION_ID), "teammate@example.com", MemberRole.STAFF,
+                UUID.fromString(INVITATION_ID), "teammate@example.com", "Teammate", MemberRole.STAFF,
                 InvitationStatus.PENDING, false,
                 java.time.Instant.parse("2026-07-21T10:00:00Z"),
                 java.time.Instant.parse("2026-07-28T10:00:00Z"), null,
@@ -203,6 +205,7 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("id").description("The invitation id"),
                                 fieldWithPath("context").description("The entity's collection: \"invitations\""),
                                 fieldWithPath("email").description("The invitee's email address"),
+                                fieldWithPath("name").description("The invitee's display name"),
                                 fieldWithPath("role").description("The invited role: ADMIN or STAFF"),
                                 fieldWithPath("status").description("Lifecycle state: PENDING, ACCEPTED or REVOKED"),
                                 fieldWithPath("expired").description("True when a PENDING invitation is past its expiry window"),
@@ -275,7 +278,7 @@ class TeamInvitationControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "teammate@example.com", "role": "STAFF" }"""))
+                                { "email": "teammate@example.com", "name": "Teammate", "role": "STAFF" }"""))
                 .andExpect(status().isNotFound());
 
         Mockito.verifyNoInteractions(inviteTeamMemberUseCase);

@@ -17,6 +17,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorInvitationReposit
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.touroperator.domain.valueobject.InviteeName;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
@@ -62,9 +63,11 @@ public class InviteTeamMemberUseCase {
         this.eventPublisher = eventPublisher;
     }
 
-    public UUID execute(UUID tourOperatorId, UUID invitedByUserId, String rawEmail, String rawRole) {
+    public UUID execute(UUID tourOperatorId, UUID invitedByUserId,
+                        String rawEmail, String rawName, String rawRole) {
         membershipCheck.ensureAdmin(invitedByUserId, tourOperatorId);
         InviteeEmail email = new InviteeEmail(rawEmail);
+        InviteeName name = new InviteeName(rawName);
         MemberRole role = parseRole(rawRole);
         TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
@@ -80,7 +83,7 @@ public class InviteTeamMemberUseCase {
 
         String rawToken = invitationTokenPort.generate();
         TourOperatorInvitation invitation = TourOperatorInvitation.issue(
-                idGenerator.newId(), tourOperatorId, email, role,
+                idGenerator.newId(), tourOperatorId, email, name, role,
                 invitationTokenPort.hash(rawToken), invitedByUserId);
         try {
             invitationRepository.save(invitation);
@@ -94,7 +97,7 @@ public class InviteTeamMemberUseCase {
         String locale = userAccountQuery.findContact(invitedByUserId)
                 .map(UserContactView::language).orElse("en");
         eventPublisher.publish(new TeamInvitationRequestedEvent(
-                email.value(), operator.getName().value(), role.name(), rawToken, locale));
+                email.value(), name.value(), operator.getName().value(), role.name(), rawToken, locale));
         return invitation.getId();
     }
 

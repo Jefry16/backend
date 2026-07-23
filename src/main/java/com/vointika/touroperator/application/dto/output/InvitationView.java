@@ -17,6 +17,7 @@ import java.util.UUID;
 public record InvitationView(
         UUID id,
         String email,
+        String name,
         MemberRole role,
         InvitationStatus status,
         boolean expired,
@@ -35,6 +36,7 @@ public record InvitationView(
         return new InvitationView(
                 invitation.getId(),
                 invitation.getEmail().value(),
+                invitation.getName().value(),
                 invitation.getRole(),
                 invitation.getStatus(),
                 invitation.getStatus() == InvitationStatus.PENDING && invitation.isExpired(now),

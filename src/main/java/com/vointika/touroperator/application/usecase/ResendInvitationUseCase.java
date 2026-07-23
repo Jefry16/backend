@@ -65,7 +65,7 @@ public class ResendInvitationUseCase {
         String locale = userAccountQuery.findContact(callerUserId)
                 .map(UserContactView::language).orElse("en");
         eventPublisher.publish(new TeamInvitationRequestedEvent(
-                invitation.getEmail().value(), operator.getName().value(),
-                invitation.getRole().name(), rawToken, locale));
+                invitation.getEmail().value(), invitation.getName().value(),
+                operator.getName().value(), invitation.getRole().name(), rawToken, locale));
     }
 }

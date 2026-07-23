@@ -4,6 +4,7 @@ import com.vointika.shared.exception.ConflictException;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.touroperator.domain.valueobject.InviteeName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -22,7 +23,7 @@ class TourOperatorInvitationTest {
         Instant created = Instant.parse("2026-01-01T00:00:00Z");
         return new TourOperatorInvitation(
                 UUID.randomUUID(), UUID.randomUUID(),
-                new InviteeEmail("invitee@example.com"), MemberRole.STAFF,
+                new InviteeEmail("invitee@example.com"), new InviteeName("Test Invitee"), MemberRole.STAFF,
                 "hash", status, UUID.randomUUID(), created, expiresAt, null);
     }
 
@@ -30,7 +31,7 @@ class TourOperatorInvitationTest {
     void issueStartsPendingValidForSevenDays() {
         TourOperatorInvitation inv = TourOperatorInvitation.issue(
                 UUID.randomUUID(), UUID.randomUUID(),
-                new InviteeEmail("invitee@example.com"), MemberRole.ADMIN,
+                new InviteeEmail("invitee@example.com"), new InviteeName("Test Invitee"), MemberRole.ADMIN,
                 "hash", UUID.randomUUID());
 
         assertEquals(InvitationStatus.PENDING, inv.getStatus());
