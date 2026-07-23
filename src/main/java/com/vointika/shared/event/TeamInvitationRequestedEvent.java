@@ -8,4 +8,4 @@ package com.vointika.shared.event;
  * user's UI language, since the invitee has no account/language yet.
  */
 public record TeamInvitationRequestedEvent(
-        String email, String operatorName, String role, String token, String locale) {}
+        String email, String name, String operatorName, String role, String token, String locale) {}

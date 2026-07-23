@@ -82,7 +82,7 @@ class InviteTeamMemberUseCaseTest {
         when(invitationRepository.existsPendingByTourOperatorIdAndEmail(operatorId, "invitee@example.com"))
                 .thenReturn(false);
 
-        useCase.execute(operatorId, inviterId, "Invitee@Example.com", "STAFF");
+        useCase.execute(operatorId, inviterId, "Invitee@Example.com", "Test Invitee", "STAFF");
 
         verify(invitationRepository).save(any());
         ArgumentCaptor<TeamInvitationRequestedEvent> captor =
@@ -100,7 +100,7 @@ class InviteTeamMemberUseCaseTest {
     void staffCallerIsForbidden() {
         doThrow(new ForbiddenException("nope")).when(membershipCheck).ensureAdmin(inviterId, operatorId);
         assertThrows(ForbiddenException.class,
-                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "STAFF"));
+                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "Test Invitee", "STAFF"));
         verify(invitationRepository, never()).save(any());
         verify(eventPublisher, never()).publish(any());
     }
@@ -108,7 +108,13 @@ class InviteTeamMemberUseCaseTest {
     @Test
     void invitingAnOwnerIsRejected() {
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "OWNER"));
+                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "Test Invitee", "OWNER"));
+    }
+
+    @Test
+    void invitingWithABlankNameIsRejected() {
+        assertThrows(InvalidFieldException.class,
+                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "  ", "STAFF"));
     }
 
     @Test
@@ -118,7 +124,7 @@ class InviteTeamMemberUseCaseTest {
         when(memberRepository.existsByTourOperatorIdAndUserId(operatorId, existing)).thenReturn(true);
 
         assertThrows(ResourceAlreadyExistsException.class,
-                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "STAFF"));
+                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "Test Invitee", "STAFF"));
     }
 
     @Test
@@ -128,6 +134,6 @@ class InviteTeamMemberUseCaseTest {
                 .thenReturn(true);
 
         assertThrows(ResourceAlreadyExistsException.class,
-                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "STAFF"));
+                () -> useCase.execute(operatorId, inviterId, "invitee@example.com", "Test Invitee", "STAFF"));
     }
 }

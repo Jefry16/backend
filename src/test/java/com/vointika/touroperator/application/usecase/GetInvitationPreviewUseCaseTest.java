@@ -11,6 +11,7 @@ import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.touroperator.domain.valueobject.InviteeName;
 import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
@@ -46,7 +47,7 @@ class GetInvitationPreviewUseCaseTest {
 
     private TourOperatorInvitation invitation(InvitationStatus status, Instant expiresAt) {
         return new TourOperatorInvitation(
-                UUID.randomUUID(), operatorId, new InviteeEmail("invitee@example.com"),
+                UUID.randomUUID(), operatorId, new InviteeEmail("invitee@example.com"), new InviteeName("Test Invitee"),
                 MemberRole.STAFF, "hash", status, UUID.randomUUID(),
                 Instant.parse("2026-01-01T00:00:00Z"), expiresAt, null);
     }

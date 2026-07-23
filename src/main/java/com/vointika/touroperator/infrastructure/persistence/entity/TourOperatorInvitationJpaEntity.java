@@ -27,6 +27,9 @@ public class TourOperatorInvitationJpaEntity {
     @Column(nullable = false, updatable = false)
     private String email;
 
+    @Column(nullable = false, updatable = false)
+    private String name;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
     private MemberRole role;

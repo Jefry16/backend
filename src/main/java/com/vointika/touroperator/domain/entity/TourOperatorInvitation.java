@@ -4,6 +4,7 @@ import com.vointika.shared.exception.ConflictException;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.touroperator.domain.valueobject.InviteeName;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -27,6 +28,8 @@ public class TourOperatorInvitation {
     private final UUID id;
     private final UUID tourOperatorId;
     private final InviteeEmail email;
+    // The inviter's label for the invitee (email greeting + pending-list display).
+    private final InviteeName name;
     private final MemberRole role;
     private String tokenHash;
     private InvitationStatus status;
@@ -39,11 +42,12 @@ public class TourOperatorInvitation {
     public static TourOperatorInvitation issue(UUID id,
                                                UUID tourOperatorId,
                                                InviteeEmail email,
+                                               InviteeName name,
                                                MemberRole role,
                                                String tokenHash,
                                                UUID invitedByUserId) {
         Instant now = Instant.now();
-        return new TourOperatorInvitation(id, tourOperatorId, email, role, tokenHash,
+        return new TourOperatorInvitation(id, tourOperatorId, email, name, role, tokenHash,
                 InvitationStatus.PENDING, invitedByUserId, now, now.plus(VALIDITY), null);
     }
 
@@ -51,6 +55,7 @@ public class TourOperatorInvitation {
     public TourOperatorInvitation(UUID id,
                                   UUID tourOperatorId,
                                   InviteeEmail email,
+                                  InviteeName name,
                                   MemberRole role,
                                   String tokenHash,
                                   InvitationStatus status,
@@ -61,6 +66,7 @@ public class TourOperatorInvitation {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.email = email;
+        this.name = name;
         this.role = role;
         this.tokenHash = tokenHash;
         this.status = status;
@@ -109,6 +115,7 @@ public class TourOperatorInvitation {
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
     public InviteeEmail getEmail() { return email; }
+    public InviteeName getName() { return name; }
     public MemberRole getRole() { return role; }
     public String getTokenHash() { return tokenHash; }
     public InvitationStatus getStatus() { return status; }

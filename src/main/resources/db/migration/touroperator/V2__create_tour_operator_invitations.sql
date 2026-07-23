@@ -7,6 +7,11 @@ CREATE TABLE touroperator.tour_operator_invitations (
     id                   UUID          NOT NULL PRIMARY KEY,
     tour_operator_id     UUID          NOT NULL REFERENCES touroperator.tour_operators (id) ON DELETE CASCADE,
     email                VARCHAR(255)  NOT NULL,
+    -- The inviter's label for the invitee: greets them in the invite email and
+    -- shows in the pending-invitations list before they have an account. NOT
+    -- NULL (the invite form requires it). Distinct from the eventual member name,
+    -- which comes from identity on accept.
+    name                 VARCHAR(255)  NOT NULL,
     role                 VARCHAR(20)   NOT NULL,
     token_hash           VARCHAR(64)   NOT NULL
         CONSTRAINT tour_operator_invitations_token_hash_unique UNIQUE,

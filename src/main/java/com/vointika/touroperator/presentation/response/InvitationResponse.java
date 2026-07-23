@@ -17,6 +17,7 @@ public record InvitationResponse(
         UUID id,
         String context,
         String email,
+        String name,
         MemberRole role,
         InvitationStatus status,
         boolean expired,
@@ -37,15 +38,15 @@ public record InvitationResponse(
         }
     }
 
-    public InvitationResponse(UUID id, String email, MemberRole role, InvitationStatus status,
+    public InvitationResponse(UUID id, String email, String name, MemberRole role, InvitationStatus status,
                               boolean expired, Instant createdAt, Instant expiresAt, Instant acceptedAt,
                               InvitedBy invitedBy) {
-        this(id, "invitations", email, role, status, expired, createdAt, expiresAt, acceptedAt, invitedBy);
+        this(id, "invitations", email, name, role, status, expired, createdAt, expiresAt, acceptedAt, invitedBy);
     }
 
     public static InvitationResponse from(InvitationView view) {
         return new InvitationResponse(
-                view.id(), view.email(), view.role(), view.status(),
+                view.id(), view.email(), view.name(), view.role(), view.status(),
                 view.expired(), view.createdAt(), view.expiresAt(), view.acceptedAt(),
                 new InvitedBy(view.invitedByUserId(), view.invitedByName()));
     }
