@@ -17,9 +17,10 @@ import java.util.UUID;
  * view the roster; a non-member is a 404 (the membership interceptor already
  * turns a non-member into "operator not found", and {@code ensureMember} here is
  * the defense-in-depth gate). Filterable by {@code role}, {@code name} and
- * {@code email}; sortable by {@code joinedAt} (default — owner first), {@code
- * name}, {@code email} and {@code role} (role sorts alphabetically on the stored
- * enum — ADMIN, OWNER, STAFF — not by hierarchy).
+ * {@code email} — all as exact-match {@code in} sets ({@code filter[name][in]=…},
+ * for a fetched multi-select picker); sortable by {@code joinedAt} (default —
+ * owner first), {@code name}, {@code email} and {@code role} (role sorts
+ * alphabetically on the stored enum — ADMIN, OWNER, STAFF — not by hierarchy).
  *
  * <p>name/email are denormalized onto the member row (see the V1 members-table
  * comment + {@link TourOperatorMember}), so the list reads them straight off the
@@ -35,9 +36,9 @@ public class ListMembersUseCase {
             .instant("joinedAt")
             .sortable("joinedAt")
             .sortable("id")
-            .text("name")
+            .set("name", String.class)
             .sortable("name")
-            .text("email")
+            .set("email", String.class)
             .sortable("email")
             .defaultSort("joinedAt")
             .build();
