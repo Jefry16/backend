@@ -8,6 +8,7 @@ import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.MemberListView;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
+import com.vointika.touroperator.application.usecase.GetMemberUseCase;
 import com.vointika.touroperator.application.usecase.ListMembersUseCase;
 import com.vointika.touroperator.application.usecase.RemoveTeamMemberUseCase;
 import com.vointika.touroperator.domain.enums.MemberRole;
@@ -61,6 +62,7 @@ class TeamMemberControllerDocumentationTest {
     private MockMvc mockMvc;
 
     @MockitoBean private ListMembersUseCase listMembersUseCase;
+    @MockitoBean private GetMemberUseCase getMemberUseCase;
     @MockitoBean private ChangeMemberRoleUseCase changeMemberRoleUseCase;
     @MockitoBean private RemoveTeamMemberUseCase removeTeamMemberUseCase;
     @MockitoBean private TourOperatorMembershipCheck membershipCheck;
@@ -109,6 +111,30 @@ class TeamMemberControllerDocumentationTest {
                                 fieldWithPath("data[].name").description("Display name (best-effort; may be null)"),
                                 fieldWithPath("data[].email").description("Email (best-effort; may be null)"),
                                 fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
+    }
+
+    @Test
+    void getMember() throws Exception {
+        authenticated();
+        when(getMemberUseCase.execute(any(), any(), eq(UUID.fromString(USER))))
+                .thenReturn(new MemberListView(
+                        UUID.fromString(USER), MemberRole.ADMIN,
+                        Instant.parse("2026-01-05T10:00:00Z"), "Grace Hopper", "grace@acme.test"));
+
+        mockMvc.perform(get("/api/tour-operators/{id}/members/{userId}", OP, USER)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.context").value("users"))
+                .andExpect(jsonPath("$.role").value("ADMIN"))
+                .andDo(document("tour-operators/members/get",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(
+                                fieldWithPath("id").description("The member's user id"),
+                                fieldWithPath("context").description("The entity's collection — \"users\""),
+                                fieldWithPath("role").description("OWNER, ADMIN, or STAFF"),
+                                fieldWithPath("joinedAt").description("When they joined"),
+                                fieldWithPath("name").description("Display name (best-effort; may be null)"),
+                                fieldWithPath("email").description("Email (best-effort; may be null)"))));
     }
 
     @Test
