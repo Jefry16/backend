@@ -10,8 +10,6 @@ import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.SortDirection;
 import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.port.UserAccountQuery;
-import com.vointika.shared.port.UserAccountView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +30,6 @@ import static org.mockito.Mockito.when;
 class ListMediaUseCaseTest {
 
     private MediaRepository mediaRepository;
-    private UserAccountQuery userAccountQuery;
     private TourOperatorMembershipCheck membershipCheck;
     private ListMediaUseCase useCase;
 
@@ -43,11 +40,8 @@ class ListMediaUseCaseTest {
     @BeforeEach
     void setUp() {
         mediaRepository = mock(MediaRepository.class);
-        userAccountQuery = mock(UserAccountQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new ListMediaUseCase(mediaRepository, userAccountQuery, membershipCheck);
-        when(userAccountQuery.findAccounts(any()))
-                .thenReturn(List.of(new UserAccountView(uploaderId, "up@example.com", "Uma Uploader")));
+        useCase = new ListMediaUseCase(mediaRepository, membershipCheck);
     }
 
     private ListQuery query() {
@@ -57,11 +51,12 @@ class ListMediaUseCaseTest {
 
     private Media media() {
         return new Media(UUID.randomUUID(), operatorId, "tour-operators/x/y.png",
-                "image/png", 100, "y.png", uploaderId, Instant.parse("2026-07-21T00:00:00Z"));
+                "image/png", 100, "y.png", uploaderId, "Uma Uploader",
+                Instant.parse("2026-07-21T00:00:00Z"));
     }
 
     @Test
-    void mapsRowsResolvesUploaderNameAndPropagatesCursor() {
+    void mapsRowsWithSnapshotUploaderNameAndPropagatesCursor() {
         when(mediaRepository.list(any()))
                 .thenReturn(new CursorPage<>(List.of(media(), media()), "next"));
 

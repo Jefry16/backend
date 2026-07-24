@@ -14,6 +14,7 @@ public class MediaMapper {
                 media.getSizeBytes(),
                 media.getOriginalName(),
                 media.getCreatedBy(),
+                media.getCreatedByName(),
                 media.getCreatedAt());
     }
 
@@ -26,6 +27,7 @@ public class MediaMapper {
                 jpa.getSizeBytes(),
                 jpa.getOriginalName(),
                 jpa.getCreatedBy(),
+                jpa.getCreatedByName(),
                 jpa.getCreatedAt());
     }
 

@@ -10,8 +10,8 @@ import java.util.UUID;
  * A media record for read APIs. {@code id} is the media id and {@code context}
  * is {@code "media"} (house convention). {@code url} is resolved from the stored
  * key at read time (never persisted). {@code uploadedBy} is the uploading user
- * (id + {@code context:"users"} + best-effort name), mirroring the invitation
- * {@code invitedBy}.
+ * (id + {@code context:"users"} + name), the name a snapshot frozen at upload
+ * time (always present), mirroring the invitation {@code invitedBy}.
  */
 public record MediaResponse(
         UUID id,

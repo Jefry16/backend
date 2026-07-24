@@ -5,8 +5,6 @@ import com.vointika.media.domain.entity.Media;
 import com.vointika.media.domain.repository.MediaRepository;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.port.UserAccountQuery;
-import com.vointika.shared.port.UserContactView;
 
 import java.util.UUID;
 
@@ -19,14 +17,11 @@ import java.util.UUID;
 public class GetMediaUseCase {
 
     private final MediaRepository mediaRepository;
-    private final UserAccountQuery userAccountQuery;
     private final TourOperatorMembershipCheck membershipCheck;
 
     public GetMediaUseCase(MediaRepository mediaRepository,
-                           UserAccountQuery userAccountQuery,
                            TourOperatorMembershipCheck membershipCheck) {
         this.mediaRepository = mediaRepository;
-        this.userAccountQuery = userAccountQuery;
         this.membershipCheck = membershipCheck;
     }
 
@@ -34,8 +29,7 @@ public class GetMediaUseCase {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
         Media media = mediaRepository.findByIdAndTourOperatorId(mediaId, tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
-        String uploaderName = userAccountQuery.findContact(media.getCreatedBy())
-                .map(UserContactView::name).orElse(null);
-        return MediaView.from(media, uploaderName);
+        // Uploader name is snapshotted on the row — no identity lookup.
+        return MediaView.from(media);
     }
 }

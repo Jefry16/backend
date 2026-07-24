@@ -8,7 +8,8 @@ import java.util.UUID;
 /**
  * A media record for read APIs. Carries the raw {@code storageKey} (the
  * presentation layer resolves it to an absolute URL) plus the uploader's id and
- * best-effort display name (resolved from identity, null if unresolvable).
+ * display name — a snapshot frozen onto the row at upload time (always present,
+ * stable even if the uploader is later renamed or removed).
  */
 public record MediaView(
         UUID id,
@@ -20,7 +21,7 @@ public record MediaView(
         UUID createdBy,
         String createdByName) {
 
-    public static MediaView from(Media media, String createdByName) {
+    public static MediaView from(Media media) {
         return new MediaView(
                 media.getId(),
                 media.getStorageKey(),
@@ -29,6 +30,6 @@ public record MediaView(
                 media.getOriginalName(),
                 media.getCreatedAt(),
                 media.getCreatedBy(),
-                createdByName);
+                media.getCreatedByName());
     }
 }

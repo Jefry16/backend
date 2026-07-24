@@ -22,24 +22,24 @@ public class MediaUseCaseConfig {
             MediaRepository mediaRepository,
             MediaStoragePort mediaStoragePort,
             TourOperatorMembershipCheck membershipCheck,
+            UserAccountQuery userAccountQuery,
             IdGenerator idGenerator) {
-        return new UploadMediaUseCase(mediaRepository, mediaStoragePort, membershipCheck, idGenerator);
+        return new UploadMediaUseCase(
+                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator);
     }
 
     @Bean
     public ListMediaUseCase listMediaUseCase(
             MediaRepository mediaRepository,
-            UserAccountQuery userAccountQuery,
             TourOperatorMembershipCheck membershipCheck) {
-        return new ListMediaUseCase(mediaRepository, userAccountQuery, membershipCheck);
+        return new ListMediaUseCase(mediaRepository, membershipCheck);
     }
 
     @Bean
     public GetMediaUseCase getMediaUseCase(
             MediaRepository mediaRepository,
-            UserAccountQuery userAccountQuery,
             TourOperatorMembershipCheck membershipCheck) {
-        return new GetMediaUseCase(mediaRepository, userAccountQuery, membershipCheck);
+        return new GetMediaUseCase(mediaRepository, membershipCheck);
     }
 
     @Bean

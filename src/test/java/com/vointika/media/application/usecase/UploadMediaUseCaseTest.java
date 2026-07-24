@@ -6,6 +6,8 @@ import com.vointika.media.domain.repository.MediaRepository;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.mockito.InOrder;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +39,7 @@ class UploadMediaUseCaseTest {
     private MediaRepository mediaRepository;
     private MediaStoragePort mediaStoragePort;
     private TourOperatorMembershipCheck membershipCheck;
+    private UserAccountQuery userAccountQuery;
     private UploadMediaUseCase useCase;
 
     private final UUID operatorId = UUID.randomUUID();
@@ -51,9 +55,13 @@ class UploadMediaUseCaseTest {
         mediaRepository = mock(MediaRepository.class);
         mediaStoragePort = mock(MediaStoragePort.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
+        userAccountQuery = mock(UserAccountQuery.class);
+        when(userAccountQuery.findContact(callerId))
+                .thenReturn(Optional.of(new UserContactView("up@example.com", "Uma Uploader", "en")));
         IdGenerator idGenerator = mock(IdGenerator.class);
         when(idGenerator.newId()).thenReturn(newId);
-        useCase = new UploadMediaUseCase(mediaRepository, mediaStoragePort, membershipCheck, idGenerator);
+        useCase = new UploadMediaUseCase(
+                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator);
     }
 
     @Test
@@ -78,6 +86,8 @@ class UploadMediaUseCaseTest {
         assertEquals(storageKey, saved.getValue().getStorageKey());
         assertEquals("image/png", saved.getValue().getContentType());
         assertEquals(callerId, saved.getValue().getCreatedBy());
+        // The uploader's name is snapshotted onto the row.
+        assertEquals("Uma Uploader", saved.getValue().getCreatedByName());
     }
 
     @Test
