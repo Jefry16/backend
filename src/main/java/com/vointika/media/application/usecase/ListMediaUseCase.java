@@ -7,32 +7,32 @@ import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.ListSchema;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.port.UserAccountQuery;
-import com.vointika.shared.port.UserAccountView;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Lists a tour operator's media library — cursor-paginated via the shared list
  * framework, tenant-scoped. <b>Any member</b> may view; a non-member is a 404
  * ({@code ensureMember} is the defense-in-depth gate behind the interceptor).
- * Filter by {@code contentType} (SET); sort by {@code createdAt} (default,
- * newest first) or {@code id}; page with {@code cursor}.
+ * Filter by {@code contentType} and {@code createdByName} (SET); sort by
+ * {@code originalName}, {@code contentType}, {@code sizeBytes},
+ * {@code createdByName}, {@code createdAt} (default, newest first) or {@code id}.
  *
- * <p>Each page's uploader names are enriched via ONE batched
- * {@link UserAccountQuery#findAccounts} (no N+1, best-effort — a null name never
- * drops a row).
+ * <p>The uploader's name is a snapshot on the media row (frozen at upload), so
+ * there is no post-pagination identity enrichment — which is exactly what makes
+ * {@code createdByName} sortable/filterable off the single root (§3.5 forbids the
+ * alternative join).
  */
 public class ListMediaUseCase {
 
     public static final ListSchema SCHEMA = ListSchema.builder()
             .tenantScoped()
             .set("contentType", String.class)
+            .sortable("contentType")
+            .set("createdByName", String.class)
+            .sortable("createdByName")
+            .sortable("originalName")
+            .sortable("sizeBytes")
             .instant("createdAt")
             .sortable("createdAt")
             .sortable("id")
@@ -40,14 +40,11 @@ public class ListMediaUseCase {
             .build();
 
     private final MediaRepository mediaRepository;
-    private final UserAccountQuery userAccountQuery;
     private final TourOperatorMembershipCheck membershipCheck;
 
     public ListMediaUseCase(MediaRepository mediaRepository,
-                            UserAccountQuery userAccountQuery,
                             TourOperatorMembershipCheck membershipCheck) {
         this.mediaRepository = mediaRepository;
-        this.userAccountQuery = userAccountQuery;
         this.membershipCheck = membershipCheck;
     }
 
@@ -55,23 +52,8 @@ public class ListMediaUseCase {
         membershipCheck.ensureMember(callerUserId, query.tenantId());
 
         CursorPage<Media> page = mediaRepository.list(query);
-        if (page.data().isEmpty()) {
-            return new CursorPage<>(List.of(), page.nextCursor());
-        }
-
-        Set<UUID> uploaderIds = page.data().stream()
-                .map(Media::getCreatedBy)
-                .collect(Collectors.toSet());
-        // HashMap, not toMap: a name may be null, and toMap rejects null values.
-        Map<UUID, String> nameByUserId = new HashMap<>();
-        for (UserAccountView account : userAccountQuery.findAccounts(uploaderIds)) {
-            nameByUserId.put(account.userId(), account.name());
-        }
-
         return new CursorPage<>(
-                page.data().stream()
-                        .map(media -> MediaView.from(media, nameByUserId.get(media.getCreatedBy())))
-                        .toList(),
+                page.data().stream().map(MediaView::from).toList(),
                 page.nextCursor());
     }
 }

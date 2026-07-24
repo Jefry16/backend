@@ -5,7 +5,10 @@ import com.vointika.media.domain.entity.Media;
 import com.vointika.media.domain.repository.MediaRepository;
 import com.vointika.media.domain.valueobject.ContentType;
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 
 import java.io.InputStream;
@@ -29,15 +32,18 @@ public class UploadMediaUseCase {
     private final MediaRepository mediaRepository;
     private final MediaStoragePort mediaStoragePort;
     private final TourOperatorMembershipCheck membershipCheck;
+    private final UserAccountQuery userAccountQuery;
     private final IdGenerator idGenerator;
 
     public UploadMediaUseCase(MediaRepository mediaRepository,
                               MediaStoragePort mediaStoragePort,
                               TourOperatorMembershipCheck membershipCheck,
+                              UserAccountQuery userAccountQuery,
                               IdGenerator idGenerator) {
         this.mediaRepository = mediaRepository;
         this.mediaStoragePort = mediaStoragePort;
         this.membershipCheck = membershipCheck;
+        this.userAccountQuery = userAccountQuery;
         this.idGenerator = idGenerator;
     }
 
@@ -52,6 +58,12 @@ public class UploadMediaUseCase {
             throw new InvalidFieldException("File too large: max 25 MB");
         }
 
+        // The uploader's name is snapshotted onto the row (so the library can sort
+        // by who uploaded). The caller is the authenticated admin, so it resolves.
+        String uploaderName = userAccountQuery.findContact(callerUserId)
+                .map(UserContactView::name)
+                .orElseThrow(() -> new ResourceNotFoundException("Uploading user not found"));
+
         UUID id = idGenerator.newId();
         String key = "tour-operators/" + tourOperatorId + "/" + id + "-" + sanitize(originalName, contentType);
 
@@ -61,7 +73,7 @@ public class UploadMediaUseCase {
 
         mediaRepository.save(Media.upload(
                 id, tourOperatorId, key, contentType.value(), sizeBytes,
-                normalizeName(originalName, contentType), callerUserId));
+                normalizeName(originalName, contentType), callerUserId, uploaderName));
         return id;
     }
 

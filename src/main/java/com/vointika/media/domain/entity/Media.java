@@ -19,6 +19,7 @@ public class Media {
     private final long sizeBytes;
     private final String originalName;
     private final UUID createdBy;
+    private final String createdByName;
     private final Instant createdAt;
 
     /** A freshly uploaded file, stamped now. */
@@ -28,9 +29,10 @@ public class Media {
                                String contentType,
                                long sizeBytes,
                                String originalName,
-                               UUID createdBy) {
+                               UUID createdBy,
+                               String createdByName) {
         return new Media(id, tourOperatorId, storageKey, contentType, sizeBytes,
-                originalName, createdBy, Instant.now());
+                originalName, createdBy, createdByName, Instant.now());
     }
 
     // Reconstitution from persistence.
@@ -41,6 +43,7 @@ public class Media {
                  long sizeBytes,
                  String originalName,
                  UUID createdBy,
+                 String createdByName,
                  Instant createdAt) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
@@ -49,6 +52,7 @@ public class Media {
         this.sizeBytes = sizeBytes;
         this.originalName = originalName;
         this.createdBy = createdBy;
+        this.createdByName = createdByName;
         this.createdAt = createdAt;
     }
 
@@ -59,5 +63,6 @@ public class Media {
     public long getSizeBytes() { return sizeBytes; }
     public String getOriginalName() { return originalName; }
     public UUID getCreatedBy() { return createdBy; }
+    public String getCreatedByName() { return createdByName; }
     public Instant getCreatedAt() { return createdAt; }
 }

@@ -147,7 +147,7 @@ class MediaControllerDocumentationTest {
                                 fieldWithPath("data[].createdAt").description("When it was uploaded"),
                                 fieldWithPath("data[].uploadedBy.id").description("The uploading user's id"),
                                 fieldWithPath("data[].uploadedBy.context").description("The entity's collection: \"users\""),
-                                fieldWithPath("data[].uploadedBy.name").description("Uploader's display name (best-effort; may be null)").optional(),
+                                fieldWithPath("data[].uploadedBy.name").description("Uploader's display name, snapshotted at upload (always present)"),
                                 fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
     }
 
@@ -176,7 +176,7 @@ class MediaControllerDocumentationTest {
                                 fieldWithPath("createdAt").description("When it was uploaded"),
                                 fieldWithPath("uploadedBy.id").description("The uploading user's id"),
                                 fieldWithPath("uploadedBy.context").description("The entity's collection: \"users\""),
-                                fieldWithPath("uploadedBy.name").description("Uploader's display name (best-effort; may be null)").optional())));
+                                fieldWithPath("uploadedBy.name").description("Uploader's display name, snapshotted at upload (always present)"))));
     }
 
     @Test

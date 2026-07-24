@@ -41,5 +41,8 @@ public class MediaJpaEntity {
     private UUID createdBy;
 
     @Column(nullable = false, updatable = false)
+    private String createdByName;
+
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 }
