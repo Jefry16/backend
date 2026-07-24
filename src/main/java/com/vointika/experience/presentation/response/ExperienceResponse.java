@@ -8,8 +8,10 @@ import java.util.UUID;
 
 /**
  * An experience for read APIs. {@code id} + {@code context:"experiences"} per the
- * house convention. Media is resolved: {@code thumbnailUrl} + ordered
- * {@code galleryUrls} (URLs, never stored).
+ * house convention. Media is given both ways: raw references
+ * ({@code thumbnailMediaId} + ordered {@code mediaIds}) so an editor can
+ * round-trip the selection, and resolved {@code thumbnailUrl} + ordered
+ * {@code galleryUrls} (URLs, never stored) for display.
  */
 public record ExperienceResponse(
         UUID id,
@@ -23,7 +25,9 @@ public record ExperienceResponse(
         List<String> included,
         List<String> notIncluded,
         List<String> highlights,
+        UUID thumbnailMediaId,
         String thumbnailUrl,
+        List<UUID> mediaIds,
         List<String> galleryUrls,
         int durationMinutes,
         int bookingCutoffHours,
@@ -35,7 +39,8 @@ public record ExperienceResponse(
         return new ExperienceResponse(
                 v.id(), "experiences", v.name(), v.slug(), v.description(), v.longDescription(),
                 v.featured(), v.tags(), v.included(), v.notIncluded(), v.highlights(),
-                v.thumbnailUrl(), v.galleryUrls(), v.durationMinutes(), v.bookingCutoffHours(),
+                v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
+                v.durationMinutes(), v.bookingCutoffHours(),
                 v.published(), v.createdBy(), v.createdAt());
     }
 }

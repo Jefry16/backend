@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * An experience for read APIs. Content flattened to primitives; media resolved
- * to absolute URLs at read time — {@code galleryUrls} follow the stored media-id
- * order, and any id that no longer resolves (deleted media) is dropped
- * (self-healing).
+ * An experience for read APIs. Content flattened to primitives; media exposed
+ * both as raw references ({@code thumbnailMediaId} + ordered {@code mediaIds},
+ * so an editor can round-trip the selection) AND resolved to absolute URLs at
+ * read time — {@code galleryUrls} follow the stored media-id order, and any id
+ * that no longer resolves (deleted media) is dropped from the URLs (self-healing;
+ * the raw {@code mediaIds} keep the full stored list).
  */
 public record ExperienceView(
         UUID id,
@@ -29,7 +31,9 @@ public record ExperienceView(
         List<String> included,
         List<String> notIncluded,
         List<String> highlights,
+        UUID thumbnailMediaId,
         String thumbnailUrl,
+        List<UUID> mediaIds,
         List<String> galleryUrls,
         int durationMinutes,
         int bookingCutoffHours,
@@ -51,7 +55,7 @@ public record ExperienceView(
                 e.getIncluded().stream().map(InclusionItem::value).toList(),
                 e.getNotIncluded().stream().map(InclusionItem::value).toList(),
                 e.getHighlights().stream().map(Highlight::value).toList(),
-                thumbnailUrl, gallery,
+                e.getThumbnailMediaId(), thumbnailUrl, e.getMediaIds(), gallery,
                 e.getDurationMinutes().value(), e.getBookingCutoffHours().value(),
                 e.isPublished(), e.getCreatedAt());
     }
