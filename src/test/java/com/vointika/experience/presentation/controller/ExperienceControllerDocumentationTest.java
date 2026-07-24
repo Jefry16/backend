@@ -99,7 +99,10 @@ class ExperienceControllerDocumentationTest {
         return new ExperienceView(UUID.fromString(EXP), UUID.fromString(OP), UUID.fromString(USER),
                 "Sunset Dive", "sunset-dive", "A guided reef dive at dusk", "Long description…",
                 true, List.of("diving", "reef"), List.of("Gear", "Guide"), List.of("Meals"),
-                List.of("Small groups"), "https://media.staging.vointika.com/thumb.jpg",
+                List.of("Small groups"),
+                UUID.fromString("bbbbbbbb-0000-4000-8000-000000000001"),
+                "https://media.staging.vointika.com/thumb.jpg",
+                List.of(UUID.fromString("bbbbbbbb-0000-4000-8000-000000000002")),
                 List.of("https://media.staging.vointika.com/1.jpg"),
                 120, 24, false, Instant.parse("2026-07-21T10:00:00Z"));
     }
@@ -173,7 +176,9 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].included").description("What's included"),
                                 fieldWithPath("data[].notIncluded").description("What's not included"),
                                 fieldWithPath("data[].highlights").description("Highlights"),
+                                fieldWithPath("data[].thumbnailMediaId").description("Thumbnail media id, or null").optional(),
                                 fieldWithPath("data[].thumbnailUrl").description("Resolved thumbnail URL, or null").optional(),
+                                fieldWithPath("data[].mediaIds").description("Gallery media ids (stored order)"),
                                 fieldWithPath("data[].galleryUrls").description("Resolved gallery URLs (media-id order)"),
                                 fieldWithPath("data[].durationMinutes").description("Duration in minutes"),
                                 fieldWithPath("data[].bookingCutoffHours").description("Advance-notice hours"),
