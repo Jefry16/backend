@@ -10,7 +10,7 @@ public interface AudienceJpaRepository extends JpaRepository<AudienceJpaEntity, 
 
     Optional<AudienceJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
-    boolean existsByTourOperatorIdAndName(UUID tourOperatorId, String name);
+    boolean existsByTourOperatorIdAndNameIgnoreCase(UUID tourOperatorId, String name);
 
-    boolean existsByTourOperatorIdAndNameAndIdNot(UUID tourOperatorId, String name, UUID id);
+    boolean existsByTourOperatorIdAndNameIgnoreCaseAndIdNot(UUID tourOperatorId, String name, UUID id);
 }

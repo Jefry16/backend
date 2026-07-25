@@ -45,12 +45,12 @@ public class AudienceRepositoryImpl implements AudienceRepository {
 
     @Override
     public boolean existsByTourOperatorIdAndName(UUID tourOperatorId, String name) {
-        return jpaRepository.existsByTourOperatorIdAndName(tourOperatorId, name);
+        return jpaRepository.existsByTourOperatorIdAndNameIgnoreCase(tourOperatorId, name);
     }
 
     @Override
     public boolean existsByTourOperatorIdAndNameExcluding(UUID tourOperatorId, String name, UUID excludingId) {
-        return jpaRepository.existsByTourOperatorIdAndNameAndIdNot(tourOperatorId, name, excludingId);
+        return jpaRepository.existsByTourOperatorIdAndNameIgnoreCaseAndIdNot(tourOperatorId, name, excludingId);
     }
 
     @Override
