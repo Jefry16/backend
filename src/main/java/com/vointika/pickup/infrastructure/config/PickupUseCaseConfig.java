@@ -6,8 +6,6 @@ import com.vointika.pickup.application.usecase.GetPickupLocationUseCase;
 import com.vointika.pickup.application.usecase.ListPickupLocationsUseCase;
 import com.vointika.pickup.application.usecase.UpdatePickupLocationUseCase;
 import com.vointika.pickup.domain.repository.PickupLocationRepository;
-import com.vointika.shared.port.SlotPickupLocationBackfillPort;
-import com.vointika.shared.port.SlotPickupLocationSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -20,32 +18,27 @@ public class PickupUseCaseConfig {
     @Bean
     public CreatePickupLocationUseCase createPickupLocationUseCase(
             PickupLocationRepository pickupLocationRepository,
-            SlotPickupLocationBackfillPort slotPickupLocationBackfillPort,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator) {
-        return new CreatePickupLocationUseCase(pickupLocationRepository, slotPickupLocationBackfillPort,
+        return new CreatePickupLocationUseCase(pickupLocationRepository,
                 membershipCheck, transactionRunner, idGenerator);
     }
 
     @Bean
     public UpdatePickupLocationUseCase updatePickupLocationUseCase(
             PickupLocationRepository pickupLocationRepository,
-            SlotPickupLocationSnapshotPropagator slotPickupLocationSnapshotPropagator,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner) {
-        return new UpdatePickupLocationUseCase(pickupLocationRepository, slotPickupLocationSnapshotPropagator,
+        return new UpdatePickupLocationUseCase(pickupLocationRepository,
                 membershipCheck, transactionRunner);
     }
 
     @Bean
     public DeletePickupLocationUseCase deletePickupLocationUseCase(
             PickupLocationRepository pickupLocationRepository,
-            SlotPickupLocationSnapshotPropagator slotPickupLocationSnapshotPropagator,
-            TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner) {
-        return new DeletePickupLocationUseCase(pickupLocationRepository, slotPickupLocationSnapshotPropagator,
-                membershipCheck, transactionRunner);
+            TourOperatorMembershipCheck membershipCheck) {
+        return new DeletePickupLocationUseCase(pickupLocationRepository, membershipCheck);
     }
 
     @Bean

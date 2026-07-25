@@ -6,7 +6,6 @@ import com.vointika.pickup.domain.repository.PickupLocationRepository;
 import com.vointika.pickup.domain.valueobject.PickupLocationName;
 import com.vointika.pickup.domain.valueobject.PickupLocationTime;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.port.SlotPickupLocationBackfillPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -17,25 +16,21 @@ import java.util.UUID;
 /**
  * Creates a pickup location. ADMIN+ only; membership enforced by the route
  * interceptor. Names are unique per operator case-insensitively — a duplicate is
- * 409, up-front and on the unique-index race. The new pickup is BACKFILLED onto
- * every existing slot of the operator in the same transaction (the catalog is
- * synced — new entries are offered on already-scheduled departures too).
+ * 409, up-front and on the unique-index race. Standalone catalog for now — the
+ * pickup↔slot relationship model is under design and deliberately unwired.
  */
 public class CreatePickupLocationUseCase {
 
     private final PickupLocationRepository pickupLocationRepository;
-    private final SlotPickupLocationBackfillPort backfillPort;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
 
     public CreatePickupLocationUseCase(PickupLocationRepository pickupLocationRepository,
-                                       SlotPickupLocationBackfillPort backfillPort,
                                        TourOperatorMembershipCheck membershipCheck,
                                        TransactionRunner transactionRunner,
                                        IdGenerator idGenerator) {
         this.pickupLocationRepository = pickupLocationRepository;
-        this.backfillPort = backfillPort;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
@@ -54,14 +49,7 @@ public class CreatePickupLocationUseCase {
         PickupLocation pickupLocation = new PickupLocation(
                 idGenerator.newId(), tourOperatorId, name, time, callerUserId);
         try {
-            transactionRunner.run(() -> {
-                pickupLocationRepository.save(pickupLocation);
-                backfillPort.backfillForTourOperator(
-                        tourOperatorId,
-                        pickupLocation.getId(),
-                        pickupLocation.getName().value(),
-                        pickupLocation.getTime().value());
-            });
+            transactionRunner.run(() -> pickupLocationRepository.save(pickupLocation));
         } catch (DataIntegrityViolationException e) {
             throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
         }

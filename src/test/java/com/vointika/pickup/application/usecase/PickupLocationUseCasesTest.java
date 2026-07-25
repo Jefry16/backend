@@ -8,8 +8,6 @@ import com.vointika.pickup.domain.valueobject.PickupLocationTime;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
-import com.vointika.shared.port.SlotPickupLocationBackfillPort;
-import com.vointika.shared.port.SlotPickupLocationSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -32,7 +30,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class PickupLocationUseCasesTest {
@@ -42,8 +39,6 @@ class PickupLocationUseCasesTest {
     private static final UUID PICKUP = UUID.fromString("dddddddd-0000-4000-8000-000000000001");
 
     private PickupLocationRepository repository;
-    private SlotPickupLocationBackfillPort backfillPort;
-    private SlotPickupLocationSnapshotPropagator propagator;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private IdGenerator idGenerator;
@@ -51,8 +46,6 @@ class PickupLocationUseCasesTest {
     @BeforeEach
     void setUp() {
         repository = mock(PickupLocationRepository.class);
-        backfillPort = mock(SlotPickupLocationBackfillPort.class);
-        propagator = mock(SlotPickupLocationSnapshotPropagator.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         idGenerator = mock(IdGenerator.class);
@@ -71,22 +64,22 @@ class PickupLocationUseCasesTest {
     }
 
     private CreatePickupLocationUseCase create() {
-        return new CreatePickupLocationUseCase(repository, backfillPort, membershipCheck,
+        return new CreatePickupLocationUseCase(repository, membershipCheck,
                 transactionRunner, idGenerator);
     }
 
     private UpdatePickupLocationUseCase update() {
-        return new UpdatePickupLocationUseCase(repository, propagator, membershipCheck, transactionRunner);
+        return new UpdatePickupLocationUseCase(repository, membershipCheck, transactionRunner);
     }
 
     private DeletePickupLocationUseCase delete() {
-        return new DeletePickupLocationUseCase(repository, propagator, membershipCheck, transactionRunner);
+        return new DeletePickupLocationUseCase(repository, membershipCheck);
     }
 
     // ---- create ----
 
     @Test
-    void createPersistsAndBackfillsExistingSlots() {
+    void createPersists() {
         when(repository.existsByTourOperatorIdAndName(OP, "Old Port")).thenReturn(false);
 
         UUID id = create().execute(OP, USER, new PickupLocationInput("Old Port", "09:30"));
@@ -94,7 +87,6 @@ class PickupLocationUseCasesTest {
         assertThat(id).isEqualTo(PICKUP);
         verify(membershipCheck).ensureAdmin(USER, OP);
         verify(repository).save(any());
-        verify(backfillPort).backfillForTourOperator(OP, PICKUP, "Old Port", LocalTime.of(9, 30));
     }
 
     @Test
@@ -104,7 +96,6 @@ class PickupLocationUseCasesTest {
         assertThatThrownBy(() -> create().execute(OP, USER, new PickupLocationInput("Old Port", "09:30")))
                 .isInstanceOf(ResourceAlreadyExistsException.class);
         verify(repository, never()).save(any());
-        verifyNoInteractions(backfillPort);
     }
 
     @Test
@@ -119,7 +110,7 @@ class PickupLocationUseCasesTest {
     // ---- update ----
 
     @Test
-    void updateRenamePropagatesNameAndTime() {
+    void updateRenames() {
         when(repository.findByIdAndTourOperatorId(PICKUP, OP))
                 .thenReturn(Optional.of(pickup("Old Port", LocalTime.of(9, 30))));
         when(repository.existsByTourOperatorIdAndNameExcluding(eq(OP), anyString(), eq(PICKUP)))
@@ -128,17 +119,16 @@ class PickupLocationUseCasesTest {
         update().execute(OP, PICKUP, USER, new PickupLocationInput("Marina", null));
 
         verify(repository).save(any());
-        verify(propagator).propagate(PICKUP, "Marina", LocalTime.of(9, 30));
     }
 
     @Test
-    void updateTimeOnlyPropagates() {
+    void updateTimeOnlyIsPartial() {
         when(repository.findByIdAndTourOperatorId(PICKUP, OP))
                 .thenReturn(Optional.of(pickup("Old Port", LocalTime.of(9, 30))));
 
         update().execute(OP, PICKUP, USER, new PickupLocationInput(null, "10:15"));
 
-        verify(propagator).propagate(PICKUP, "Old Port", LocalTime.of(10, 15));
+        verify(repository).save(any());
     }
 
     @Test
@@ -149,7 +139,6 @@ class PickupLocationUseCasesTest {
         update().execute(OP, PICKUP, USER, new PickupLocationInput("Old Port", "09:30"));
 
         verify(repository, never()).save(any());
-        verifyNoInteractions(propagator);
     }
 
     @Test
@@ -174,7 +163,7 @@ class PickupLocationUseCasesTest {
     // ---- delete ----
 
     @Test
-    void deleteRemovesCatalogRowAndSlotSnapshots() {
+    void deleteRemovesCatalogRow() {
         when(repository.findByIdAndTourOperatorId(PICKUP, OP))
                 .thenReturn(Optional.of(pickup("Old Port", LocalTime.of(9, 30))));
 
@@ -182,7 +171,6 @@ class PickupLocationUseCasesTest {
 
         verify(membershipCheck).ensureAdmin(USER, OP);
         verify(repository).deleteById(PICKUP);
-        verify(propagator).removeForPickupLocation(PICKUP);
     }
 
     @Test
@@ -192,6 +180,5 @@ class PickupLocationUseCasesTest {
         assertThatThrownBy(() -> delete().execute(OP, PICKUP, USER))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(repository, never()).deleteById(any());
-        verifyNoInteractions(propagator);
     }
 }

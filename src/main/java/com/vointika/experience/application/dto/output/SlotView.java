@@ -2,14 +2,12 @@ package com.vointika.experience.application.dto.output;
 
 import com.vointika.experience.domain.entity.Slot;
 import com.vointika.experience.domain.entity.SlotAudiencePricing;
-import com.vointika.experience.domain.entity.SlotPickupLocation;
 import com.vointika.experience.domain.valueobject.SlotStatus;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,8 +26,7 @@ public record SlotView(
         String experienceDescription,
         SlotStatus status,
         Instant createdAt,
-        List<AudiencePricingItem> audiencePrices,
-        List<PickupLocationItem> pickupLocations) {
+        List<AudiencePricingItem> audiencePrices) {
 
     public record AudiencePricingItem(
             UUID audienceId,
@@ -39,13 +36,7 @@ public record SlotView(
             int paxPerUnit,
             int bookedCount) {}
 
-    public record PickupLocationItem(
-            UUID pickupLocationId,
-            String name,
-            LocalTime time) {}
-
-    public static SlotView from(Slot slot, List<SlotAudiencePricing> pricing,
-                                List<SlotPickupLocation> pickups) {
+    public static SlotView from(Slot slot, List<SlotAudiencePricing> pricing) {
         return new SlotView(
                 slot.id(),
                 slot.experienceId(),
@@ -61,14 +52,6 @@ public record SlotView(
                         .map(p -> new AudiencePricingItem(
                                 p.audienceId(), p.audienceName(), p.price(),
                                 p.capacity(), p.paxPerUnit(), p.bookedCount()))
-                        .toList(),
-                // Deterministic shopper-friendly order: by pickup time, then name.
-                pickups.stream()
-                        .sorted(java.util.Comparator
-                                .comparing(SlotPickupLocation::pickupLocationTime)
-                                .thenComparing(SlotPickupLocation::pickupLocationName))
-                        .map(p -> new PickupLocationItem(
-                                p.pickupLocationId(), p.pickupLocationName(), p.pickupLocationTime()))
                         .toList());
     }
 }
