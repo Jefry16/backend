@@ -1,7 +1,18 @@
 package com.vointika.experience.infrastructure.config;
 
+import com.vointika.experience.application.service.AudiencePricingResolver;
 import com.vointika.experience.application.service.MediaReferenceValidator;
+import com.vointika.experience.application.usecase.CancelSlotUseCase;
 import com.vointika.experience.application.usecase.CreateExperienceUseCase;
+import com.vointika.experience.application.usecase.CreateSlotUseCase;
+import com.vointika.experience.application.usecase.CreateSlotsUseCase;
+import com.vointika.experience.application.usecase.GetSlotUseCase;
+import com.vointika.experience.application.usecase.ListSlotsUseCase;
+import com.vointika.experience.application.usecase.UpdateSlotUseCase;
+import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
+import com.vointika.experience.domain.repository.SlotRepository;
+import com.vointika.shared.port.AudienceOwnershipQuery;
+import com.vointika.shared.port.OperatorTimezoneQuery;
 import com.vointika.experience.application.usecase.DeleteExperienceTranslationUseCase;
 import com.vointika.experience.application.usecase.GetExperienceTranslationUseCase;
 import com.vointika.experience.application.usecase.GetExperienceUseCase;
@@ -114,5 +125,74 @@ public class ExperienceUseCaseConfig {
             ExperienceTranslationRepository translationRepository,
             TourOperatorMembershipCheck membershipCheck) {
         return new DeleteExperienceTranslationUseCase(experienceRepository, translationRepository, membershipCheck);
+    }
+
+    // ---- slots ----
+
+    @Bean
+    public AudiencePricingResolver audiencePricingResolver(
+            AudienceOwnershipQuery audienceOwnershipQuery, IdGenerator idGenerator) {
+        return new AudiencePricingResolver(audienceOwnershipQuery, idGenerator);
+    }
+
+    @Bean
+    public CreateSlotUseCase createSlotUseCase(
+            ExperienceRepository experienceRepository,
+            SlotRepository slotRepository,
+            SlotAudiencePricingRepository slotAudiencePricingRepository,
+            AudiencePricingResolver audiencePricingResolver,
+            OperatorTimezoneQuery operatorTimezoneQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            IdGenerator idGenerator) {
+        return new CreateSlotUseCase(experienceRepository, slotRepository, slotAudiencePricingRepository,
+                audiencePricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
+    }
+
+    @Bean
+    public CreateSlotsUseCase createSlotsUseCase(
+            ExperienceRepository experienceRepository,
+            SlotRepository slotRepository,
+            SlotAudiencePricingRepository slotAudiencePricingRepository,
+            AudiencePricingResolver audiencePricingResolver,
+            OperatorTimezoneQuery operatorTimezoneQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            IdGenerator idGenerator) {
+        return new CreateSlotsUseCase(experienceRepository, slotRepository, slotAudiencePricingRepository,
+                audiencePricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
+    }
+
+    @Bean
+    public GetSlotUseCase getSlotUseCase(
+            SlotRepository slotRepository,
+            SlotAudiencePricingRepository slotAudiencePricingRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck);
+    }
+
+    @Bean
+    public ListSlotsUseCase listSlotsUseCase(
+            SlotRepository slotRepository,
+            SlotAudiencePricingRepository slotAudiencePricingRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListSlotsUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck);
+    }
+
+    @Bean
+    public CancelSlotUseCase cancelSlotUseCase(
+            SlotRepository slotRepository,
+            SlotAudiencePricingRepository slotAudiencePricingRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new CancelSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpdateSlotUseCase updateSlotUseCase(
+            SlotRepository slotRepository,
+            SlotAudiencePricingRepository slotAudiencePricingRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner) {
+        return new UpdateSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck, transactionRunner);
     }
 }
