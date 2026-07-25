@@ -8,6 +8,7 @@ import com.vointika.audience.domain.valueobject.PaxPerUnit;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.SlotAudienceSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -22,6 +23,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -41,6 +43,7 @@ class AudienceUseCasesTest {
     private TourOperatorMembershipCheck membershipCheck;
     private IdGenerator idGenerator;
     private TransactionRunner transactionRunner;
+    private SlotAudienceSnapshotPropagator propagator;
 
     @BeforeEach
     void setUp() {
@@ -48,6 +51,7 @@ class AudienceUseCasesTest {
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         idGenerator = mock(IdGenerator.class);
         transactionRunner = mock(TransactionRunner.class);
+        propagator = mock(SlotAudienceSnapshotPropagator.class);
         when(transactionRunner.call(any())).thenAnswer(i -> ((Supplier<?>) i.getArgument(0)).get());
         doAnswer(i -> {
             ((Runnable) i.getArgument(0)).run();
@@ -102,18 +106,41 @@ class AudienceUseCasesTest {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
         when(repository.existsByTourOperatorIdAndNameExcluding(eq(OP), anyString(), eq(AUD))).thenReturn(false);
 
-        new UpdateAudienceUseCase(repository, membershipCheck, transactionRunner)
+        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
                 .execute(OP, AUD, USER, new AudienceInput("Seniors", 1));
 
         verify(membershipCheck).ensureAdmin(USER, OP);
         verify(repository).save(any());
+        verify(propagator).propagate(AUD, "Seniors", 1);
+    }
+
+    @Test
+    void updatePaxOnlyChangePropagates() {
+        when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
+
+        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+                .execute(OP, AUD, USER, new AudienceInput(null, 4));
+
+        verify(repository).save(any());
+        verify(propagator).propagate(AUD, "Adults", 4);
+    }
+
+    @Test
+    void updateWithNoChangesIsNoOp() {
+        when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
+
+        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+                .execute(OP, AUD, USER, new AudienceInput("Adults", 1));
+
+        verify(repository, never()).save(any());
+        verify(propagator, never()).propagate(any(), any(), anyInt());
     }
 
     @Test
     void updateMissingIs404() {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, membershipCheck, transactionRunner)
+        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
                 .execute(OP, AUD, USER, new AudienceInput("Seniors", 1)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
@@ -123,7 +150,7 @@ class AudienceUseCasesTest {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
         when(repository.existsByTourOperatorIdAndNameExcluding(eq(OP), eq("Seniors"), eq(AUD))).thenReturn(true);
 
-        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, membershipCheck, transactionRunner)
+        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
                 .execute(OP, AUD, USER, new AudienceInput("Seniors", 1)))
                 .isInstanceOf(ResourceAlreadyExistsException.class);
         verify(repository, never()).save(any());

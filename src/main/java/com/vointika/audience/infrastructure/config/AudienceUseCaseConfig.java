@@ -6,6 +6,7 @@ import com.vointika.audience.application.usecase.GetAudienceUseCase;
 import com.vointika.audience.application.usecase.ListAudiencesUseCase;
 import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
 import com.vointika.audience.domain.repository.AudienceRepository;
+import com.vointika.shared.port.SlotAudienceSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -27,9 +28,11 @@ public class AudienceUseCaseConfig {
     @Bean
     public UpdateAudienceUseCase updateAudienceUseCase(
             AudienceRepository audienceRepository,
+            SlotAudienceSnapshotPropagator slotAudienceSnapshotPropagator,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner) {
-        return new UpdateAudienceUseCase(audienceRepository, membershipCheck, transactionRunner);
+        return new UpdateAudienceUseCase(audienceRepository, slotAudienceSnapshotPropagator,
+                membershipCheck, transactionRunner);
     }
 
     @Bean
