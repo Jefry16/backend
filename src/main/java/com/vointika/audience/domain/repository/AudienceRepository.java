@@ -23,5 +23,4 @@ public interface AudienceRepository {
     /** As above, ignoring one audience — lets an audience keep its own name on update. */
     boolean existsByTourOperatorIdAndNameExcluding(UUID tourOperatorId, String name, UUID excludingId);
 
-    void deleteById(UUID id);
 }

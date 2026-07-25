@@ -53,8 +53,4 @@ public class AudienceRepositoryImpl implements AudienceRepository {
         return jpaRepository.existsByTourOperatorIdAndNameIgnoreCaseAndIdNot(tourOperatorId, name, excludingId);
     }
 
-    @Override
-    public void deleteById(UUID id) {
-        jpaRepository.deleteById(id);
-    }
 }

@@ -5,7 +5,6 @@ import com.vointika.audience.application.usecase.DeleteAudienceTranslationUseCas
 import com.vointika.audience.application.usecase.GetAudienceTranslationUseCase;
 import com.vointika.audience.application.usecase.ListAudienceTranslationsUseCase;
 import com.vointika.audience.application.usecase.UpsertAudienceTranslationUseCase;
-import com.vointika.audience.application.usecase.DeleteAudienceUseCase;
 import com.vointika.audience.application.usecase.GetAudienceUseCase;
 import com.vointika.audience.application.usecase.ListAudiencesUseCase;
 import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
@@ -53,22 +52,6 @@ public class AudienceUseCaseConfig {
             AudienceRepository audienceRepository,
             TourOperatorMembershipCheck membershipCheck) {
         return new ListAudiencesUseCase(audienceRepository, membershipCheck);
-    }
-
-    @Bean
-    public DeleteAudienceUseCase deleteAudienceUseCase(
-            AudienceRepository audienceRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new DeleteAudienceUseCase(audienceRepository, membershipCheck);
-    }
-    @Bean
-    public UpsertAudienceTranslationUseCase upsertAudienceTranslationUseCase(
-            AudienceRepository audienceRepository,
-            AudienceTranslationRepository audienceTranslationRepository,
-            OperatorLocalesQuery operatorLocalesQuery,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new UpsertAudienceTranslationUseCase(audienceRepository, audienceTranslationRepository,
-                operatorLocalesQuery, membershipCheck);
     }
 
     @Bean

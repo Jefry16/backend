@@ -2,7 +2,6 @@ package com.vointika.audience.presentation.controller;
 
 import com.vointika.audience.application.dto.input.AudienceInput;
 import com.vointika.audience.application.usecase.CreateAudienceUseCase;
-import com.vointika.audience.application.usecase.DeleteAudienceUseCase;
 import com.vointika.audience.application.usecase.GetAudienceUseCase;
 import com.vointika.audience.application.usecase.ListAudiencesUseCase;
 import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
@@ -16,7 +15,6 @@ import com.vointika.shared.web.list.ListQueryParser;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,20 +39,17 @@ public class AudienceController {
     private final UpdateAudienceUseCase updateAudienceUseCase;
     private final ListAudiencesUseCase listAudiencesUseCase;
     private final GetAudienceUseCase getAudienceUseCase;
-    private final DeleteAudienceUseCase deleteAudienceUseCase;
     private final ListQueryParser listQueryParser;
 
     public AudienceController(CreateAudienceUseCase createAudienceUseCase,
                              UpdateAudienceUseCase updateAudienceUseCase,
                              ListAudiencesUseCase listAudiencesUseCase,
                              GetAudienceUseCase getAudienceUseCase,
-                             DeleteAudienceUseCase deleteAudienceUseCase,
                              ListQueryParser listQueryParser) {
         this.createAudienceUseCase = createAudienceUseCase;
         this.updateAudienceUseCase = updateAudienceUseCase;
         this.listAudiencesUseCase = listAudiencesUseCase;
         this.getAudienceUseCase = getAudienceUseCase;
-        this.deleteAudienceUseCase = deleteAudienceUseCase;
         this.listQueryParser = listQueryParser;
     }
 
@@ -101,16 +96,6 @@ public class AudienceController {
             @AuthenticationPrincipal String callerUserId) {
         updateAudienceUseCase.execute(
                 tourOperatorId, audienceId, UUID.fromString(callerUserId), toInput(body));
-        return ResponseEntity.noContent().build();
-    }
-
-    /** Removes an audience. ADMIN+. 204. 404 if not under this operator. */
-    @DeleteMapping("/{audienceId}")
-    public ResponseEntity<Void> delete(
-            @PathVariable UUID tourOperatorId,
-            @PathVariable UUID audienceId,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteAudienceUseCase.execute(tourOperatorId, audienceId, UUID.fromString(callerUserId));
         return ResponseEntity.noContent().build();
     }
 
