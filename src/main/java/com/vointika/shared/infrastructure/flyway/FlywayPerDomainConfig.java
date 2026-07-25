@@ -40,6 +40,11 @@ public class FlywayPerDomainConfig {
             // media FKs into touroperator.tour_operators + identity.users, so it
             // must come after both.
             "media",
+            // audience FKs into touroperator.tour_operators + identity.users, so it
+            // must come after both. Placed before experience because experience's
+            // future slot pricing references audiences (by bare id, but keeping the
+            // schema available first is cleanest).
+            "audience",
             // experience FKs into touroperator.tour_operators + identity.users
             // (media ids are bare, no FK), so it must come after both.
             "experience"
