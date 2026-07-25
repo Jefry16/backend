@@ -42,4 +42,9 @@ public class SlotRepositoryImpl implements SlotRepository {
                 query,
                 SlotMapper::toDomain);
     }
+
+    @Override
+    public void propagateExperienceSnapshot(UUID experienceId, String experienceName, String experienceDescription) {
+        jpaRepository.propagateExperienceSnapshot(experienceId, experienceName, experienceDescription);
+    }
 }
