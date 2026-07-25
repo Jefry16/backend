@@ -3,7 +3,9 @@ package com.vointika.experience.application.usecase;
 import com.vointika.experience.application.dto.output.SlotView;
 import com.vointika.experience.domain.entity.Slot;
 import com.vointika.experience.domain.entity.SlotAudiencePricing;
+import com.vointika.experience.domain.entity.SlotPickupLocation;
 import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
+import com.vointika.experience.domain.repository.SlotPickupLocationRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.list.CursorPage;
@@ -44,13 +46,16 @@ public class ListSlotsUseCase {
 
     private final SlotRepository slotRepository;
     private final SlotAudiencePricingRepository pricingRepository;
+    private final SlotPickupLocationRepository pickupRepository;
     private final TourOperatorMembershipCheck membershipCheck;
 
     public ListSlotsUseCase(SlotRepository slotRepository,
                             SlotAudiencePricingRepository pricingRepository,
+                            SlotPickupLocationRepository pickupRepository,
                             TourOperatorMembershipCheck membershipCheck) {
         this.slotRepository = slotRepository;
         this.pricingRepository = pricingRepository;
+        this.pickupRepository = pickupRepository;
         this.membershipCheck = membershipCheck;
     }
 
@@ -66,10 +71,14 @@ public class ListSlotsUseCase {
         Map<UUID, List<SlotAudiencePricing>> pricingBySlot =
                 pricingRepository.findBySlotIds(slotIds).stream()
                         .collect(Collectors.groupingBy(SlotAudiencePricing::slotId));
+        Map<UUID, List<SlotPickupLocation>> pickupsBySlot =
+                pickupRepository.findBySlotIds(slotIds).stream()
+                        .collect(Collectors.groupingBy(SlotPickupLocation::slotId));
 
         return new CursorPage<>(
                 page.data().stream()
-                        .map(s -> SlotView.from(s, pricingBySlot.getOrDefault(s.id(), List.of())))
+                        .map(s -> SlotView.from(s, pricingBySlot.getOrDefault(s.id(), List.of()),
+                                pickupsBySlot.getOrDefault(s.id(), List.of())))
                         .toList(),
                 page.nextCursor());
     }
