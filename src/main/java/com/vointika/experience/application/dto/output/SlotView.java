@@ -23,6 +23,7 @@ public record SlotView(
         int day,
         long durationMinutes,
         String experienceName,
+        String experienceDescription,
         SlotStatus status,
         Instant createdAt,
         List<AudiencePricingItem> audiencePrices) {
@@ -44,6 +45,7 @@ public record SlotView(
                 slot.day(),
                 Duration.between(slot.startAt(), slot.endAt()).toMinutes(),
                 slot.experienceName(),
+                slot.experienceDescription(),
                 slot.status(),
                 slot.createdAt(),
                 pricing.stream()

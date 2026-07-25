@@ -17,6 +17,7 @@ public record SlotResponse(
         String context,
         UUID experienceId,
         String experienceName,
+        String experienceDescription,
         LocalDateTime startAt,
         LocalDateTime endAt,
         int day,
@@ -34,7 +35,7 @@ public record SlotResponse(
 
     public static SlotResponse from(SlotView v) {
         return new SlotResponse(
-                v.id(), "slots", v.experienceId(), v.experienceName(),
+                v.id(), "slots", v.experienceId(), v.experienceName(), v.experienceDescription(),
                 v.startAt(), v.endAt(), v.day(), v.durationMinutes(), v.status(),
                 v.audiencePrices().stream()
                         .map(p -> new AudiencePricingResponse(
