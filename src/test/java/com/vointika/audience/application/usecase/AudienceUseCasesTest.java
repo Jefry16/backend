@@ -156,7 +156,7 @@ class AudienceUseCasesTest {
         verify(repository, never()).save(any());
     }
 
-    // ---- get / delete ----
+    // ---- get ----
 
     @Test
     void getRequiresMemberAndReturns() {
@@ -176,22 +176,5 @@ class AudienceUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    @Test
-    void deleteRequiresAdminAndRemoves() {
-        when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
 
-        new DeleteAudienceUseCase(repository, membershipCheck).execute(OP, AUD, USER);
-
-        verify(membershipCheck).ensureAdmin(USER, OP);
-        verify(repository).deleteById(AUD);
-    }
-
-    @Test
-    void deleteMissingIs404() {
-        when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> new DeleteAudienceUseCase(repository, membershipCheck).execute(OP, AUD, USER))
-                .isInstanceOf(ResourceNotFoundException.class);
-        verify(repository, never()).deleteById(any());
-    }
 }

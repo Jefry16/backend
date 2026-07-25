@@ -1,7 +1,6 @@
 package com.vointika.audience.presentation.controller;
 
 import com.vointika.audience.application.usecase.CreateAudienceUseCase;
-import com.vointika.audience.application.usecase.DeleteAudienceUseCase;
 import com.vointika.audience.application.usecase.GetAudienceUseCase;
 import com.vointika.audience.application.usecase.ListAudiencesUseCase;
 import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
@@ -76,7 +75,6 @@ class AudienceControllerDocumentationTest {
     @MockitoBean private UpdateAudienceUseCase updateAudienceUseCase;
     @MockitoBean private ListAudiencesUseCase listAudiencesUseCase;
     @MockitoBean private GetAudienceUseCase getAudienceUseCase;
-    @MockitoBean private DeleteAudienceUseCase deleteAudienceUseCase;
     @MockitoBean private TourOperatorMembershipCheck membershipCheck;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
 
@@ -174,19 +172,6 @@ class AudienceControllerDocumentationTest {
                                 fieldWithPath("paxPerUnit").description("People per unit (positive; defaults to 1)").optional())));
     }
 
-    @Test
-    void deleteOne() throws Exception {
-        authenticated();
-
-        mockMvc.perform(delete("/api/tour-operators/{id}/audiences/{audienceId}", OP, AUD).with(csrf())
-                        .header("Authorization", BEARER))
-                .andExpect(status().isNoContent())
-                .andDo(document("audiences/delete",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
-                        pathParameters(
-                                parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("audienceId").description("The audience id"))));
-    }
 
     @Test
     void createRequiresAuthentication() throws Exception {
