@@ -73,9 +73,12 @@ public class ExperienceUseCaseConfig {
     @Bean
     public UpdateExperienceUseCase updateExperienceUseCase(
             ExperienceRepository experienceRepository,
+            SlotRepository slotRepository,
             MediaReferenceValidator mediaReferenceValidator,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new UpdateExperienceUseCase(experienceRepository, mediaReferenceValidator, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner) {
+        return new UpdateExperienceUseCase(experienceRepository, slotRepository,
+                mediaReferenceValidator, membershipCheck, transactionRunner);
     }
 
     @Bean

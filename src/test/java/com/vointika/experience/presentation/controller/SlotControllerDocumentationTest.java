@@ -105,7 +105,7 @@ class SlotControllerDocumentationTest {
         return new SlotView(
                 UUID.fromString(SLOT), UUID.fromString(EXP),
                 LocalDateTime.of(2026, 8, 1, 10, 0), LocalDateTime.of(2026, 8, 1, 13, 0),
-                6, 180, "Sunset Tour", SlotStatus.AVAILABLE,
+                6, 180, "Sunset Tour", "A guided walk", SlotStatus.AVAILABLE,
                 Instant.parse("2026-07-25T10:00:00Z"),
                 List.of(new SlotView.AudiencePricingItem(
                         UUID.fromString(AUD), "Adults", new BigDecimal("30.00"), 10, 1, 0)));

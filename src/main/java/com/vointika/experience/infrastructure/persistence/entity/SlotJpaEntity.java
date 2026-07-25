@@ -41,10 +41,12 @@ public class SlotJpaEntity {
     @Column(nullable = false, updatable = false)
     private int day;
 
-    @Column(nullable = false, updatable = false)
+    // Synced snapshots — refreshed by the experience-update propagation, so not
+    // updatable=false like the timing columns.
+    @Column(nullable = false)
     private String experienceName;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private String experienceDescription;
 
     @Enumerated(EnumType.STRING)
