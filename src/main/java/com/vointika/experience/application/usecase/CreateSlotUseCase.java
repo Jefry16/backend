@@ -5,13 +5,17 @@ import com.vointika.experience.application.service.AudiencePricingResolver;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.entity.Slot;
 import com.vointika.experience.domain.entity.SlotAudiencePricing;
+import com.vointika.experience.domain.entity.SlotPickupLocation;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
+import com.vointika.experience.domain.repository.SlotPickupLocationRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AudienceView;
 import com.vointika.shared.port.OperatorTimezoneQuery;
+import com.vointika.shared.port.PickupLocationCatalogQuery;
+import com.vointika.shared.port.PickupLocationView;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -32,8 +36,10 @@ public class CreateSlotUseCase {
     private final ExperienceRepository experienceRepository;
     private final SlotRepository slotRepository;
     private final SlotAudiencePricingRepository pricingRepository;
+    private final SlotPickupLocationRepository slotPickupLocationRepository;
     private final AudiencePricingResolver pricingResolver;
     private final OperatorTimezoneQuery operatorTimezoneQuery;
+    private final PickupLocationCatalogQuery pickupLocationCatalogQuery;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
@@ -41,16 +47,20 @@ public class CreateSlotUseCase {
     public CreateSlotUseCase(ExperienceRepository experienceRepository,
                              SlotRepository slotRepository,
                              SlotAudiencePricingRepository pricingRepository,
+                             SlotPickupLocationRepository slotPickupLocationRepository,
                              AudiencePricingResolver pricingResolver,
                              OperatorTimezoneQuery operatorTimezoneQuery,
+                             PickupLocationCatalogQuery pickupLocationCatalogQuery,
                              TourOperatorMembershipCheck membershipCheck,
                              TransactionRunner transactionRunner,
                              IdGenerator idGenerator) {
         this.experienceRepository = experienceRepository;
         this.slotRepository = slotRepository;
         this.pricingRepository = pricingRepository;
+        this.slotPickupLocationRepository = slotPickupLocationRepository;
         this.pricingResolver = pricingResolver;
         this.operatorTimezoneQuery = operatorTimezoneQuery;
+        this.pickupLocationCatalogQuery = pickupLocationCatalogQuery;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
@@ -82,6 +92,12 @@ public class CreateSlotUseCase {
 
             for (SlotAudiencePricing row : pricingResolver.buildRows(slot.id(), input.audiencePrices(), resolved)) {
                 pricingRepository.save(row);
+            }
+            // Snapshot the operator's whole pickup catalog onto the departure
+            // (synced catalog — later renames/deletes propagate).
+            for (PickupLocationView mp : pickupLocationCatalogQuery.findAllForTourOperator(input.tourOperatorId())) {
+                slotPickupLocationRepository.save(new SlotPickupLocation(
+                        idGenerator.newId(), slot.id(), mp.id(), mp.name(), mp.time()));
             }
             return slot.id();
         });
