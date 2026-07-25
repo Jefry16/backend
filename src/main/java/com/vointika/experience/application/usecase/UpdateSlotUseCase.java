@@ -5,7 +5,6 @@ import com.vointika.experience.application.dto.output.SlotView;
 import com.vointika.experience.domain.entity.Slot;
 import com.vointika.experience.domain.entity.SlotAudiencePricing;
 import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
-import com.vointika.experience.domain.repository.SlotPickupLocationRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.experience.domain.valueobject.Capacity;
 import com.vointika.experience.domain.valueobject.SlotStatus;
@@ -29,18 +28,15 @@ public class UpdateSlotUseCase {
 
     private final SlotRepository slotRepository;
     private final SlotAudiencePricingRepository pricingRepository;
-    private final SlotPickupLocationRepository pickupRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
 
     public UpdateSlotUseCase(SlotRepository slotRepository,
                              SlotAudiencePricingRepository pricingRepository,
-                             SlotPickupLocationRepository pickupRepository,
                              TourOperatorMembershipCheck membershipCheck,
                              TransactionRunner transactionRunner) {
         this.slotRepository = slotRepository;
         this.pricingRepository = pricingRepository;
-        this.pickupRepository = pickupRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
     }
@@ -60,8 +56,7 @@ public class UpdateSlotUseCase {
                 applyCapacities(slot.id(), input.capacities());
             }
 
-            return SlotView.from(slot, pricingRepository.findBySlotId(slot.id()),
-                    pickupRepository.findBySlotId(slot.id()));
+            return SlotView.from(slot, pricingRepository.findBySlotId(slot.id()));
         });
     }
 

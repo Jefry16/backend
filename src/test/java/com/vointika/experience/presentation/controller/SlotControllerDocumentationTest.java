@@ -60,7 +60,6 @@ class SlotControllerDocumentationTest {
     private static final String EXP = "aaaaaaaa-0000-4000-8000-000000000001";
     private static final String SLOT = "bbbbbbbb-0000-4000-8000-000000000001";
     private static final String AUD = "cccccccc-0000-4000-8000-000000000001";
-    private static final String PICKUP = "dddddddd-0000-4000-8000-000000000001";
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
@@ -109,9 +108,7 @@ class SlotControllerDocumentationTest {
                 6, 180, "Sunset Tour", "A guided walk", SlotStatus.AVAILABLE,
                 Instant.parse("2026-07-25T10:00:00Z"),
                 List.of(new SlotView.AudiencePricingItem(
-                        UUID.fromString(AUD), "Adults", new BigDecimal("30.00"), 10, 1, 0)),
-                List.of(new SlotView.PickupLocationItem(
-                        UUID.fromString(PICKUP), "Old Port", java.time.LocalTime.of(9, 30))));
+                        UUID.fromString(AUD), "Adults", new BigDecimal("30.00"), 10, 1, 0)));
     }
 
     @Test

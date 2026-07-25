@@ -10,7 +10,6 @@ import com.vointika.experience.domain.entity.Slot;
 import com.vointika.experience.domain.entity.SlotAudiencePricing;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
-import com.vointika.experience.domain.repository.SlotPickupLocationRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
@@ -18,7 +17,6 @@ import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.OperatorTimezoneQuery;
-import com.vointika.shared.port.PickupLocationCatalogQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -57,8 +55,6 @@ class SlotUseCasesTest {
     private ExperienceRepository experienceRepository;
     private SlotRepository slotRepository;
     private SlotAudiencePricingRepository pricingRepository;
-    private SlotPickupLocationRepository slotPickupRepository;
-    private PickupLocationCatalogQuery pickupCatalogQuery;
     private AudiencePricingResolver pricingResolver;
     private OperatorTimezoneQuery operatorTimezoneQuery;
     private TourOperatorMembershipCheck membershipCheck;
@@ -70,8 +66,6 @@ class SlotUseCasesTest {
         experienceRepository = mock(ExperienceRepository.class);
         slotRepository = mock(SlotRepository.class);
         pricingRepository = mock(SlotAudiencePricingRepository.class);
-        slotPickupRepository = mock(SlotPickupLocationRepository.class);
-        pickupCatalogQuery = mock(PickupLocationCatalogQuery.class);
         pricingResolver = mock(AudiencePricingResolver.class);
         operatorTimezoneQuery = mock(OperatorTimezoneQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
@@ -90,7 +84,6 @@ class SlotUseCasesTest {
         when(parent.getDescription()).thenReturn(new Description("A guided walk"));
         when(experienceRepository.findByIdAndTourOperatorId(EXP, OP)).thenReturn(Optional.of(parent));
         when(pricingResolver.buildRows(any(), any(), any())).thenReturn(List.of());
-        when(pickupCatalogQuery.findAllForTourOperator(OP)).thenReturn(List.of());
     }
 
     private List<AudiencePricingInput> prices() {
@@ -99,14 +92,12 @@ class SlotUseCasesTest {
 
     private CreateSlotUseCase createSingle() {
         return new CreateSlotUseCase(experienceRepository, slotRepository, pricingRepository,
-                slotPickupRepository, pricingResolver, operatorTimezoneQuery, pickupCatalogQuery,
-                membershipCheck, transactionRunner, idGenerator);
+                pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
     }
 
     private CreateSlotsUseCase createRecurring() {
         return new CreateSlotsUseCase(experienceRepository, slotRepository, pricingRepository,
-                slotPickupRepository, pricingResolver, operatorTimezoneQuery, pickupCatalogQuery,
-                membershipCheck, transactionRunner, idGenerator);
+                pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
     }
 
     // ---- single ----
@@ -182,8 +173,7 @@ class SlotUseCasesTest {
     // ---- update ----
 
     private UpdateSlotUseCase update() {
-        return new UpdateSlotUseCase(slotRepository, pricingRepository, slotPickupRepository,
-                membershipCheck, transactionRunner);
+        return new UpdateSlotUseCase(slotRepository, pricingRepository, membershipCheck, transactionRunner);
     }
 
     private Slot availableSlot() {
@@ -213,16 +203,5 @@ class SlotUseCasesTest {
         assertThatThrownBy(() -> update().execute(OP, SLOT, USER, new UpdateSlotInput(
                 null, List.of(new UpdateSlotInput.TierCapacity(AUD, 2)))))
                 .isInstanceOf(InvalidFieldException.class);
-    }
-    @Test
-    void singleCreateSnapshotsPickupCatalogOntoSlot() {
-        when(pickupCatalogQuery.findAllForTourOperator(OP)).thenReturn(List.of(
-                new com.vointika.shared.port.PickupLocationView(
-                        UUID.randomUUID(), "Old Port", java.time.LocalTime.of(9, 30))));
-        LocalDateTime start = LocalDate.now().plusDays(2).atTime(10, 0);
-
-        createSingle().execute(new CreateSlotInput(USER, OP, EXP, start, start.plusHours(3), prices()));
-
-        verify(slotPickupRepository).save(any());
     }
 }
