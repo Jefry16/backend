@@ -1,5 +1,7 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -29,6 +32,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RevokeInvitationUseCaseTest {
+
+    // Executes the work inline so assertions on the wrapped calls still hold.
+    private final TransactionRunner transactionRunner = executingRunner();
+
+    private static TransactionRunner executingRunner() {
+        TransactionRunner runner = mock(TransactionRunner.class);
+        when(runner.call(any())).thenAnswer(i -> ((java.util.function.Supplier<?>) i.getArgument(0)).get());
+        doAnswer(i -> {
+            ((Runnable) i.getArgument(0)).run();
+            return null;
+        }).when(runner).run(any());
+        return runner;
+    }
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private TourOperatorInvitationRepository invitationRepository;
     private TourOperatorMembershipCheck membershipCheck;
@@ -42,7 +60,7 @@ class RevokeInvitationUseCaseTest {
     void setUp() {
         invitationRepository = mock(TourOperatorInvitationRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new RevokeInvitationUseCase(invitationRepository, membershipCheck);
+        useCase = new RevokeInvitationUseCase(invitationRepository, membershipCheck, transactionRunner, auditTrailPort);
         when(invitationRepository.save(any())).thenAnswer(a -> a.getArgument(0));
     }
 

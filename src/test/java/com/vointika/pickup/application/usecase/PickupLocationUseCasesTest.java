@@ -5,6 +5,7 @@ import com.vointika.pickup.domain.entity.PickupLocation;
 import com.vointika.pickup.domain.repository.PickupLocationRepository;
 import com.vointika.pickup.domain.valueobject.PickupLocationName;
 import com.vointika.pickup.domain.valueobject.PickupLocationTime;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -33,6 +34,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PickupLocationUseCasesTest {
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private static final UUID OP = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
     private static final UUID USER = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -65,15 +68,15 @@ class PickupLocationUseCasesTest {
 
     private CreatePickupLocationUseCase create() {
         return new CreatePickupLocationUseCase(repository, membershipCheck,
-                transactionRunner, idGenerator);
+                transactionRunner, idGenerator, auditTrailPort);
     }
 
     private UpdatePickupLocationUseCase update() {
-        return new UpdatePickupLocationUseCase(repository, membershipCheck, transactionRunner);
+        return new UpdatePickupLocationUseCase(repository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     private DeletePickupLocationUseCase delete() {
-        return new DeletePickupLocationUseCase(repository, membershipCheck);
+        return new DeletePickupLocationUseCase(repository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     // ---- create ----

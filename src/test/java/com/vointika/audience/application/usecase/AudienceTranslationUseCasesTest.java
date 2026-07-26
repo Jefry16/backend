@@ -9,8 +9,11 @@ import com.vointika.audience.domain.valueobject.PaxPerUnit;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.valueobject.LocaleCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -39,6 +43,8 @@ class AudienceTranslationUseCasesTest {
     private AudienceTranslationRepository translationRepository;
     private OperatorLocalesQuery operatorLocalesQuery;
     private TourOperatorMembershipCheck membershipCheck;
+    private TransactionRunner transactionRunner;
+    private AuditTrailPort auditTrailPort;
 
     @BeforeEach
     void setUp() {
@@ -46,6 +52,15 @@ class AudienceTranslationUseCasesTest {
         translationRepository = mock(AudienceTranslationRepository.class);
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
+        transactionRunner = mock(TransactionRunner.class);
+        auditTrailPort = mock(AuditTrailPort.class);
+        doAnswer(i -> {
+            ((Runnable) i.getArgument(0)).run();
+            return null;
+        }).when(transactionRunner).run(any());
+        // The upsert/delete no-op probe: default = no existing overlay.
+        when(translationRepository.findByAudienceIdAndLocale(any(), any()))
+                .thenReturn(Optional.empty());
         when(audienceRepository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(
                 new Audience(AUD, OP, new AudienceName("Adults"), new PaxPerUnit(1), USER, Instant.now())));
         when(operatorLocalesQuery.findSupportedLocales(OP)).thenReturn(Set.of("en", "es"));
@@ -53,7 +68,19 @@ class AudienceTranslationUseCasesTest {
 
     private UpsertAudienceTranslationUseCase upsert() {
         return new UpsertAudienceTranslationUseCase(
-                audienceRepository, translationRepository, operatorLocalesQuery, membershipCheck);
+                audienceRepository, translationRepository, operatorLocalesQuery, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    private DeleteAudienceTranslationUseCase delete() {
+        return new DeleteAudienceTranslationUseCase(
+                audienceRepository, translationRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    private AudienceTranslation overlay(String name) {
+        return new AudienceTranslation(AUD, OP, new LocaleCode("es"),
+                name == null ? null : new AudienceName(name));
     }
 
     @Test
@@ -68,12 +95,26 @@ class AudienceTranslationUseCasesTest {
     }
 
     @Test
-    void upsertBlankNameStoresAbsent() {
+    void upsertBlankNameClearsExistingOverlayToAbsent() {
+        when(translationRepository.findByAudienceIdAndLocale(AUD, "es"))
+                .thenReturn(Optional.of(overlay("Adultos")));
+
         upsert().execute(OP, AUD, "es", "  ", USER);
 
         ArgumentCaptor<AudienceTranslation> captor = ArgumentCaptor.forClass(AudienceTranslation.class);
         verify(translationRepository).upsert(captor.capture());
         assertThat(captor.getValue().name()).isNull();
+    }
+
+    @Test
+    void upsertSameValueIsNoOpAndRecordsNothing() {
+        when(translationRepository.findByAudienceIdAndLocale(AUD, "es"))
+                .thenReturn(Optional.of(overlay("Adultos")));
+
+        upsert().execute(OP, AUD, "es", "Adultos", USER);
+
+        verify(translationRepository, never()).upsert(any());
+        verify(auditTrailPort, never()).append(any());
     }
 
     @Test
@@ -120,11 +161,22 @@ class AudienceTranslationUseCasesTest {
     }
 
     @Test
-    void deleteIsAdminAndIdempotent() {
-        new DeleteAudienceTranslationUseCase(audienceRepository, translationRepository, membershipCheck)
-                .execute(OP, AUD, "es", USER);
+    void deleteRemovesExistingOverlayAndAudits() {
+        when(translationRepository.findByAudienceIdAndLocale(AUD, "es"))
+                .thenReturn(Optional.of(overlay("Adultos")));
+
+        delete().execute(OP, AUD, "es", USER);
 
         verify(membershipCheck).ensureAdmin(USER, OP);
         verify(translationRepository).deleteByAudienceIdAndLocale(AUD, "es");
+        verify(auditTrailPort).append(any());
+    }
+
+    @Test
+    void deleteOfAbsentOverlayIsIdempotentAndRecordsNothing() {
+        delete().execute(OP, AUD, "es", USER);
+
+        verify(translationRepository, never()).deleteByAudienceIdAndLocale(any(), any());
+        verify(auditTrailPort, never()).append(any());
     }
 }

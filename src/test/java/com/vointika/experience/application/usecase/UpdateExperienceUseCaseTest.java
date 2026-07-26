@@ -10,6 +10,7 @@ import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -37,6 +38,8 @@ import static org.mockito.Mockito.when;
 
 class UpdateExperienceUseCaseTest {
 
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
+
     private ExperienceRepository repository;
     private SlotRepository slotRepository;
     private MediaReferenceValidator mediaValidator;
@@ -60,7 +63,7 @@ class UpdateExperienceUseCaseTest {
             return null;
         }).when(transactionRunner).run(any());
         useCase = new UpdateExperienceUseCase(repository, slotRepository,
-                mediaValidator, membershipCheck, transactionRunner);
+                mediaValidator, membershipCheck, transactionRunner, auditTrailPort);
         when(repository.save(any())).thenAnswer(a -> a.getArgument(0));
     }
 

@@ -5,12 +5,15 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.GoneException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.InvitedUserProvisioning;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.InvitedUserProvisioning.SessionTokens;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
@@ -22,6 +25,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -40,7 +44,8 @@ import java.util.UUID;
  * <p>Provisioning, membership, and the ACCEPTED transition run in ONE transaction;
  * the membership is {@code isDefault} only when it is the user's first. If the
  * caller already IS a member, the insert is skipped — accept stays idempotent.
- * Create-slice scope: no audit entry.
+ * The {@code invitation.accepted} audit entry (actor = the ACCEPTING user)
+ * rides the accept transaction.
  */
 public class AcceptInvitationUseCase {
 
@@ -52,6 +57,7 @@ public class AcceptInvitationUseCase {
     private final InvitationTokenPort invitationTokenPort;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public AcceptInvitationUseCase(TourOperatorInvitationRepository invitationRepository,
                                    TourOperatorMemberRepository memberRepository,
@@ -60,7 +66,8 @@ public class AcceptInvitationUseCase {
                                    InvitedUserProvisioning invitedUserProvisioning,
                                    InvitationTokenPort invitationTokenPort,
                                    IdGenerator idGenerator,
-                                   TransactionRunner transactionRunner) {
+                                   TransactionRunner transactionRunner,
+                                   AuditTrailPort auditTrailPort) {
         this.invitationRepository = invitationRepository;
         this.memberRepository = memberRepository;
         this.tourOperatorRepository = tourOperatorRepository;
@@ -69,6 +76,7 @@ public class AcceptInvitationUseCase {
         this.invitationTokenPort = invitationTokenPort;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     /** @param authenticatedUserId the caller's user id, or {@code null} for an anonymous accept. */
@@ -143,6 +151,10 @@ public class AcceptInvitationUseCase {
         }
         invitation.accept();
         invitationRepository.save(invitation);
+        auditTrailPort.append(new NewAuditEntry(
+                invitation.getTourOperatorId(), AuditActor.user(userId),
+                "INVITATION", invitation.getId(), "invitation.accepted",
+                Map.of("email", email)));
     }
 
     /** {@code tokens} is non-null only for a freshly provisioned user (auto-login). */

@@ -6,12 +6,17 @@ import com.vointika.media.domain.repository.MediaRepository;
 import com.vointika.media.domain.valueobject.ContentType;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -22,7 +27,8 @@ import java.util.UUID;
  * <p>Guards: caller not ADMIN+ → 403; content type not in the allowlist → 422;
  * empty or oversized file → 422. The object is streamed to storage <b>before</b>
  * the row is saved — a failed save strands an object (cleaned up out of band),
- * but a row never exists without its object. No audit entry (no audit context yet).
+ * but a row never exists without its object. The row save + audit entry share
+ * one transaction; the storage write stays outside — it can't roll back.
  */
 public class UploadMediaUseCase {
 
@@ -34,17 +40,23 @@ public class UploadMediaUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final UserAccountQuery userAccountQuery;
     private final IdGenerator idGenerator;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public UploadMediaUseCase(MediaRepository mediaRepository,
                               MediaStoragePort mediaStoragePort,
                               TourOperatorMembershipCheck membershipCheck,
                               UserAccountQuery userAccountQuery,
-                              IdGenerator idGenerator) {
+                              IdGenerator idGenerator,
+                              TransactionRunner transactionRunner,
+                              AuditTrailPort auditTrailPort) {
         this.mediaRepository = mediaRepository;
         this.mediaStoragePort = mediaStoragePort;
         this.membershipCheck = membershipCheck;
         this.userAccountQuery = userAccountQuery;
         this.idGenerator = idGenerator;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public UUID execute(UUID tourOperatorId, UUID callerUserId,
@@ -71,9 +83,16 @@ public class UploadMediaUseCase {
         // without its object. Storage can't roll back with the DB tx anyway.
         mediaStoragePort.putObject(key, contentType.value(), sizeBytes, body);
 
-        mediaRepository.save(Media.upload(
-                id, tourOperatorId, key, contentType.value(), sizeBytes,
-                normalizeName(originalName, contentType), callerUserId, uploaderName));
+        String fileName = normalizeName(originalName, contentType);
+        transactionRunner.run(() -> {
+            mediaRepository.save(Media.upload(
+                    id, tourOperatorId, key, contentType.value(), sizeBytes,
+                    fileName, callerUserId, uploaderName));
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "MEDIA", id, "media.uploaded",
+                    Map.of("fileName", fileName, "contentType", contentType.value())));
+        });
         return id;
     }
 

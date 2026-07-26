@@ -6,9 +6,12 @@ import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.audience.domain.valueobject.PaxPerUnit;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.UUID;
@@ -24,15 +27,18 @@ public class CreateAudienceUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public CreateAudienceUseCase(AudienceRepository audienceRepository,
                                  TourOperatorMembershipCheck membershipCheck,
                                  IdGenerator idGenerator,
-                                 TransactionRunner transactionRunner) {
+                                 TransactionRunner transactionRunner,
+                                 AuditTrailPort auditTrailPort) {
         this.audienceRepository = audienceRepository;
         this.membershipCheck = membershipCheck;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public UUID execute(UUID tourOperatorId, UUID callerUserId, AudienceInput input) {
@@ -47,7 +53,13 @@ public class CreateAudienceUseCase {
 
         Audience audience = new Audience(idGenerator.newId(), tourOperatorId, name, paxPerUnit, callerUserId);
         try {
-            return transactionRunner.call(() -> audienceRepository.save(audience)).getId();
+            return transactionRunner.call(() -> {
+                Audience saved = audienceRepository.save(audience);
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(callerUserId),
+                        "AUDIENCE", saved.getId(), "audience.created", null));
+                return saved;
+            }).getId();
         } catch (DataIntegrityViolationException e) {
             throw new ResourceAlreadyExistsException("An audience with this name already exists");
         }

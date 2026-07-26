@@ -6,7 +6,9 @@ import com.vointika.media.application.usecase.GetMediaUseCase;
 import com.vointika.media.application.usecase.ListMediaUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.media.domain.repository.MediaRepository;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.service.IdGenerator;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -23,9 +25,12 @@ public class MediaUseCaseConfig {
             MediaStoragePort mediaStoragePort,
             TourOperatorMembershipCheck membershipCheck,
             UserAccountQuery userAccountQuery,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
         return new UploadMediaUseCase(
-                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator);
+                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -46,7 +51,10 @@ public class MediaUseCaseConfig {
     public DeleteMediaUseCase deleteMediaUseCase(
             MediaRepository mediaRepository,
             MediaStoragePort mediaStoragePort,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new DeleteMediaUseCase(mediaRepository, mediaStoragePort, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteMediaUseCase(mediaRepository, mediaStoragePort, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 }

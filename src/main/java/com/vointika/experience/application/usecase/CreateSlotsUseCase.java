@@ -10,17 +10,22 @@ import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.AudienceView;
 import com.vointika.shared.port.OperatorTimezoneQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +45,7 @@ public class CreateSlotsUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
+    private final AuditTrailPort auditTrailPort;
 
     public CreateSlotsUseCase(ExperienceRepository experienceRepository,
                               SlotRepository slotRepository,
@@ -48,7 +54,8 @@ public class CreateSlotsUseCase {
                               OperatorTimezoneQuery operatorTimezoneQuery,
                               TourOperatorMembershipCheck membershipCheck,
                               TransactionRunner transactionRunner,
-                              IdGenerator idGenerator) {
+                              IdGenerator idGenerator,
+                              AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
         this.slotRepository = slotRepository;
         this.pricingRepository = pricingRepository;
@@ -57,6 +64,7 @@ public class CreateSlotsUseCase {
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(CreateSlotsInput input) {
@@ -87,6 +95,7 @@ public class CreateSlotsUseCase {
             List<AudienceView> resolved =
                     pricingResolver.validateAndResolve(input.audiencePrices(), input.tourOperatorId());
 
+            int created = 0;
             for (LocalDate d = input.validFrom(); !d.isAfter(input.validTo()); d = d.plusDays(1)) {
                 int dow = d.getDayOfWeek().getValue() % 7; // 0–6 Sunday-first
                 if (!days.contains(dow)) {
@@ -106,6 +115,21 @@ public class CreateSlotsUseCase {
                         pricingResolver.buildRows(slot.id(), input.audiencePrices(), resolved)) {
                     pricingRepository.save(row);
                 }
+                created++;
+            }
+            // ONE entry per batch, on the EXPERIENCE's timeline — recording a
+            // row per minted slot would bury the trail in near-duplicates.
+            if (created > 0) {
+                Map<String, Object> details = new LinkedHashMap<>();
+                details.put("count", created);
+                details.put("days", days.stream().sorted().toList());
+                details.put("startTime", input.startTime().toString());
+                details.put("endTime", input.endTime().toString());
+                details.put("validFrom", input.validFrom().toString());
+                details.put("validTo", input.validTo().toString());
+                auditTrailPort.append(new NewAuditEntry(
+                        input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                        "EXPERIENCE", input.experienceId(), "experience.slots_created", details));
             }
         });
     }

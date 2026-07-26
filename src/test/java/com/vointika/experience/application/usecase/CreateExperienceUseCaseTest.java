@@ -4,6 +4,7 @@ import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -30,6 +31,8 @@ import static org.mockito.Mockito.when;
 
 class CreateExperienceUseCaseTest {
 
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
+
     private ExperienceRepository repository;
     private MediaReferenceValidator mediaValidator;
     private TourOperatorMembershipCheck membershipCheck;
@@ -53,7 +56,7 @@ class CreateExperienceUseCaseTest {
             @Override public void run(Runnable work) { work.run(); }
         };
         useCase = new CreateExperienceUseCase(repository, mediaValidator, membershipCheck,
-                new SlugGenerator(), idGenerator, tx);
+                new SlugGenerator(), idGenerator, tx, auditTrailPort);
     }
 
     private ExperienceInput input(String name) {

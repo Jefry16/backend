@@ -4,6 +4,8 @@ import com.vointika.pickup.domain.valueobject.PickupLocationName;
 import com.vointika.pickup.domain.valueobject.PickupLocationTime;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -48,6 +50,17 @@ public class PickupLocation {
 
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
+    /**
+     * The auditable fields as JSON-native values — the exposure guard for the
+     * audit log's field diffs (only what appears here can enter the trail).
+     */
+    public Map<String, Object> auditSnapshot() {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("name", name.value());
+        snapshot.put("time", time.value().toString());
+        return snapshot;
+    }
+
     public PickupLocationName getName() { return name; }
     public PickupLocationTime getTime() { return time; }
     public UUID getCreatedBy() { return createdBy; }

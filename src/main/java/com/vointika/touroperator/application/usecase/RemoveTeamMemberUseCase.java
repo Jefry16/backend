@@ -3,11 +3,16 @@ package com.vointika.touroperator.application.usecase;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.valueobject.AuditActor;
+import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -23,20 +28,22 @@ import java.util.UUID;
  *       403), and the last OWNER is never removable (409).</li>
  * </ul>
  *
- * <p>Audit ({@code member.removed}) is subtracted — no audit context yet.
  */
 public class RemoveTeamMemberUseCase {
 
     private final TourOperatorMemberRepository memberRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public RemoveTeamMemberUseCase(TourOperatorMemberRepository memberRepository,
                                    TourOperatorMembershipCheck membershipCheck,
-                                   TransactionRunner transactionRunner) {
+                                   TransactionRunner transactionRunner,
+                                   AuditTrailPort auditTrailPort) {
         this.memberRepository = memberRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(UUID tourOperatorId, UUID targetUserId, UUID callerUserId) {
@@ -46,9 +53,12 @@ public class RemoveTeamMemberUseCase {
         }
 
         transactionRunner.run(() -> {
-            MemberRole targetRole = memberRepository
-                    .findRoleByTourOperatorIdAndUserId(tourOperatorId, targetUserId)
+            // Full member read (not role-only): the removed member's name goes to
+            // the trail's details — after the delete, that's where it survives.
+            TourOperatorMember member = memberRepository
+                    .findByTourOperatorIdAndUserId(tourOperatorId, targetUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+            MemberRole targetRole = member.getRole();
 
             if (targetRole == MemberRole.OWNER) {
                 if (!isSelf) {
@@ -69,6 +79,10 @@ public class RemoveTeamMemberUseCase {
             }
 
             memberRepository.deleteByTourOperatorIdAndUserId(tourOperatorId, targetUserId);
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "MEMBER", targetUserId, "member.removed",
+                    Map.of("memberName", member.getName())));
         });
     }
 }
