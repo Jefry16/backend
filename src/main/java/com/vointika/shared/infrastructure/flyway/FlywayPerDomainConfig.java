@@ -51,7 +51,10 @@ public class FlywayPerDomainConfig {
             "pickup",
             // experience FKs into touroperator.tour_operators + identity.users
             // (media ids are bare, no FK), so it must come after both.
-            "experience"
+            "experience",
+            // audit is deliberately FK-free (rows must survive deletion of what
+            // they describe), so its position is unconstrained.
+            "audit"
     );
 
     @Bean

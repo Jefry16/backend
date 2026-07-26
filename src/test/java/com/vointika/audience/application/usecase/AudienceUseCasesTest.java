@@ -5,6 +5,7 @@ import com.vointika.audience.domain.entity.Audience;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.audience.domain.valueobject.PaxPerUnit;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -34,6 +35,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AudienceUseCasesTest {
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private static final UUID OP = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
     private static final UUID USER = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -71,7 +74,7 @@ class AudienceUseCasesTest {
         when(repository.existsByTourOperatorIdAndName(OP, "Adults")).thenReturn(false);
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        UUID id = new CreateAudienceUseCase(repository, membershipCheck, idGenerator, transactionRunner)
+        UUID id = new CreateAudienceUseCase(repository, membershipCheck, idGenerator, transactionRunner, auditTrailPort)
                 .execute(OP, USER, new AudienceInput("Adults", 1));
 
         assertThat(id).isEqualTo(AUD);
@@ -83,7 +86,7 @@ class AudienceUseCasesTest {
     void createRejectsDuplicateNameUpFront() {
         when(repository.existsByTourOperatorIdAndName(OP, "Adults")).thenReturn(true);
 
-        assertThatThrownBy(() -> new CreateAudienceUseCase(repository, membershipCheck, idGenerator, transactionRunner)
+        assertThatThrownBy(() -> new CreateAudienceUseCase(repository, membershipCheck, idGenerator, transactionRunner, auditTrailPort)
                 .execute(OP, USER, new AudienceInput("Adults", 1)))
                 .isInstanceOf(ResourceAlreadyExistsException.class);
         verify(repository, never()).save(any());
@@ -93,7 +96,7 @@ class AudienceUseCasesTest {
     void createRequiresAdmin() {
         doThrow(new ForbiddenException("admin")).when(membershipCheck).ensureAdmin(USER, OP);
 
-        assertThatThrownBy(() -> new CreateAudienceUseCase(repository, membershipCheck, idGenerator, transactionRunner)
+        assertThatThrownBy(() -> new CreateAudienceUseCase(repository, membershipCheck, idGenerator, transactionRunner, auditTrailPort)
                 .execute(OP, USER, new AudienceInput("Adults", 1)))
                 .isInstanceOf(ForbiddenException.class);
         verify(repository, never()).save(any());
@@ -106,7 +109,7 @@ class AudienceUseCasesTest {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
         when(repository.existsByTourOperatorIdAndNameExcluding(eq(OP), anyString(), eq(AUD))).thenReturn(false);
 
-        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, AUD, USER, new AudienceInput("Seniors", 1));
 
         verify(membershipCheck).ensureAdmin(USER, OP);
@@ -118,7 +121,7 @@ class AudienceUseCasesTest {
     void updatePaxOnlyChangePropagates() {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
 
-        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, AUD, USER, new AudienceInput(null, 4));
 
         verify(repository).save(any());
@@ -129,7 +132,7 @@ class AudienceUseCasesTest {
     void updateWithNoChangesIsNoOp() {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
 
-        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+        new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, AUD, USER, new AudienceInput("Adults", 1));
 
         verify(repository, never()).save(any());
@@ -140,7 +143,7 @@ class AudienceUseCasesTest {
     void updateMissingIs404() {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, AUD, USER, new AudienceInput("Seniors", 1)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
@@ -150,7 +153,7 @@ class AudienceUseCasesTest {
         when(repository.findByIdAndTourOperatorId(AUD, OP)).thenReturn(Optional.of(audience("Adults", 1)));
         when(repository.existsByTourOperatorIdAndNameExcluding(eq(OP), eq("Seniors"), eq(AUD))).thenReturn(true);
 
-        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner)
+        assertThatThrownBy(() -> new UpdateAudienceUseCase(repository, propagator, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, AUD, USER, new AudienceInput("Seniors", 1)))
                 .isInstanceOf(ResourceAlreadyExistsException.class);
         verify(repository, never()).save(any());

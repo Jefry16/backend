@@ -6,10 +6,16 @@ import com.vointika.audience.domain.repository.AudienceTranslationRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.LocaleCode;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -24,15 +30,21 @@ public class UpsertAudienceTranslationUseCase {
     private final AudienceTranslationRepository translationRepository;
     private final OperatorLocalesQuery operatorLocalesQuery;
     private final TourOperatorMembershipCheck membershipCheck;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public UpsertAudienceTranslationUseCase(AudienceRepository audienceRepository,
                                             AudienceTranslationRepository translationRepository,
                                             OperatorLocalesQuery operatorLocalesQuery,
-                                            TourOperatorMembershipCheck membershipCheck) {
+                                            TourOperatorMembershipCheck membershipCheck,
+                                            TransactionRunner transactionRunner,
+                                            AuditTrailPort auditTrailPort) {
         this.audienceRepository = audienceRepository;
         this.translationRepository = translationRepository;
         this.operatorLocalesQuery = operatorLocalesQuery;
         this.membershipCheck = membershipCheck;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(UUID tourOperatorId, UUID audienceId, String rawLocale,
@@ -48,7 +60,22 @@ public class UpsertAudienceTranslationUseCase {
         }
 
         AudienceName translated = (name == null || name.isBlank()) ? null : new AudienceName(name);
-        translationRepository.upsert(
-                new AudienceTranslation(audienceId, tourOperatorId, locale, translated));
+
+        // A same-value re-save mutates nothing — no write, no audit entry.
+        String current = translationRepository.findByAudienceIdAndLocale(audienceId, locale.value())
+                .map(t -> t.name() == null ? null : t.name().value())
+                .orElse(null);
+        if (Objects.equals(current, translated == null ? null : translated.value())) {
+            return;
+        }
+
+        transactionRunner.run(() -> {
+            translationRepository.upsert(
+                    new AudienceTranslation(audienceId, tourOperatorId, locale, translated));
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "AUDIENCE", audienceId, "audience.translation_updated",
+                    Map.of("locale", locale.value())));
+        });
     }
 }

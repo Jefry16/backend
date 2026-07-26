@@ -6,9 +6,12 @@ import com.vointika.pickup.domain.repository.PickupLocationRepository;
 import com.vointika.pickup.domain.valueobject.PickupLocationName;
 import com.vointika.pickup.domain.valueobject.PickupLocationTime;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.UUID;
@@ -25,15 +28,18 @@ public class CreatePickupLocationUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
+    private final AuditTrailPort auditTrailPort;
 
     public CreatePickupLocationUseCase(PickupLocationRepository pickupLocationRepository,
                                        TourOperatorMembershipCheck membershipCheck,
                                        TransactionRunner transactionRunner,
-                                       IdGenerator idGenerator) {
+                                       IdGenerator idGenerator,
+                                       AuditTrailPort auditTrailPort) {
         this.pickupLocationRepository = pickupLocationRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public UUID execute(UUID tourOperatorId, UUID callerUserId, PickupLocationInput input) {
@@ -49,7 +55,12 @@ public class CreatePickupLocationUseCase {
         PickupLocation pickupLocation = new PickupLocation(
                 idGenerator.newId(), tourOperatorId, name, time, callerUserId);
         try {
-            transactionRunner.run(() -> pickupLocationRepository.save(pickupLocation));
+            transactionRunner.run(() -> {
+                pickupLocationRepository.save(pickupLocation);
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(callerUserId),
+                        "PICKUP_LOCATION", pickupLocation.getId(), "pickup_location.created", null));
+            });
         } catch (DataIntegrityViolationException e) {
             throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
         }

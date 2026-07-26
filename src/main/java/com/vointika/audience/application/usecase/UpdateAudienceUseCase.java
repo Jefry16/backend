@@ -7,11 +7,18 @@ import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.audience.domain.valueobject.PaxPerUnit;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.SlotAudienceSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.valueobject.AuditActor;
+import com.vointika.shared.valueobject.AuditChanges;
+import com.vointika.shared.valueobject.FieldChange;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -27,15 +34,18 @@ public class UpdateAudienceUseCase {
     private final SlotAudienceSnapshotPropagator slotAudienceSnapshotPropagator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public UpdateAudienceUseCase(AudienceRepository audienceRepository,
                                  SlotAudienceSnapshotPropagator slotAudienceSnapshotPropagator,
                                  TourOperatorMembershipCheck membershipCheck,
-                                 TransactionRunner transactionRunner) {
+                                 TransactionRunner transactionRunner,
+                                 AuditTrailPort auditTrailPort) {
         this.audienceRepository = audienceRepository;
         this.slotAudienceSnapshotPropagator = slotAudienceSnapshotPropagator;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(UUID tourOperatorId, UUID audienceId, UUID callerUserId, AudienceInput input) {
@@ -44,6 +54,7 @@ public class UpdateAudienceUseCase {
         Audience audience = audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Audience not found"));
 
+        Map<String, Object> before = audience.auditSnapshot();
         boolean changed = false;
 
         if (input.name() != null) {
@@ -73,11 +84,17 @@ public class UpdateAudienceUseCase {
         }
 
         Audience toSave = audience;
+        List<FieldChange> changes = AuditChanges.diff(before, audience.auditSnapshot());
         try {
+            // The slot-snapshot propagation is part of this edit — it rides the
+            // one audience.updated entry, no entry of its own.
             transactionRunner.run(() -> {
                 audienceRepository.save(toSave);
                 slotAudienceSnapshotPropagator.propagate(
                         toSave.getId(), toSave.getName().value(), toSave.getPaxPerUnit().value());
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(callerUserId),
+                        "AUDIENCE", audienceId, "audience.updated", null, changes));
             });
         } catch (DataIntegrityViolationException e) {
             throw new ResourceAlreadyExistsException("An audience with this name already exists");

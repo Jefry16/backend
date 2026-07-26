@@ -4,6 +4,7 @@ import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.UnauthorizedException;
@@ -44,6 +45,8 @@ import static org.mockito.Mockito.when;
 
 class CreateTourOperatorUseCaseTest {
 
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
+
     private TourOperatorRepository tourOperatorRepository;
     private TourOperatorMemberRepository memberRepository;
     private TimezoneRepository timezoneRepository;
@@ -74,7 +77,7 @@ class CreateTourOperatorUseCaseTest {
                 tourOperatorRepository, memberRepository,
                 timezoneRepository, currencyRepository,
                 new SlugGenerator(), transactionRunner, idGenerator,
-                userAccountQuery, eventPublisher);
+                userAccountQuery, eventPublisher, auditTrailPort);
 
         // Happy-path defaults; individual tests override.
         when(timezoneRepository.findById(any())).thenReturn(Optional.of(mock(Timezone.class)));

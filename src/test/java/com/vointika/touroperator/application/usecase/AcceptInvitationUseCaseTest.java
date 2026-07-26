@@ -1,5 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.GoneException;
@@ -45,6 +46,8 @@ import static org.mockito.Mockito.when;
 
 class AcceptInvitationUseCaseTest {
 
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
+
     private TourOperatorInvitationRepository invitationRepository;
     private TourOperatorMemberRepository memberRepository;
     private TourOperatorRepository tourOperatorRepository;
@@ -71,7 +74,7 @@ class AcceptInvitationUseCaseTest {
         };
         useCase = new AcceptInvitationUseCase(invitationRepository, memberRepository,
                 tourOperatorRepository, userAccountQuery, invitedUserProvisioning,
-                tokenPort, idGenerator, transactionRunner);
+                tokenPort, idGenerator, transactionRunner, auditTrailPort);
 
         when(idGenerator.newId()).thenReturn(UUID.randomUUID());
         when(tokenPort.hash("raw")).thenReturn("hash");

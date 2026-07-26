@@ -6,7 +6,9 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.EventPublisherPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
@@ -21,11 +23,13 @@ import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -35,9 +39,10 @@ import java.util.UUID;
  * (partial unique index); the "default operator" flag is the separate picker
  * concern.
  *
- * <p>Create-slice scope: subscription seeding, audit trail, and the
- * {@code TourOperatorCreated} event are deliberately not part of this — they
- * belong to contexts that do not exist yet (see MAP).
+ * <p>Create-slice scope: subscription seeding and the {@code TourOperatorCreated}
+ * event are deliberately not part of this — they belong to contexts that do not
+ * exist yet (see MAP). The {@code tour_operator.created} audit entry rides the
+ * create transaction — the first entry of every operator's trail.
  */
 public class CreateTourOperatorUseCase {
 
@@ -55,6 +60,7 @@ public class CreateTourOperatorUseCase {
     private final IdGenerator idGenerator;
     private final UserAccountQuery userAccountQuery;
     private final EventPublisherPort eventPublisher;
+    private final AuditTrailPort auditTrailPort;
 
     public CreateTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
@@ -65,7 +71,8 @@ public class CreateTourOperatorUseCase {
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
             UserAccountQuery userAccountQuery,
-            EventPublisherPort eventPublisher) {
+            EventPublisherPort eventPublisher,
+            AuditTrailPort auditTrailPort) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.memberRepository = memberRepository;
         this.timezoneRepository = timezoneRepository;
@@ -75,6 +82,7 @@ public class CreateTourOperatorUseCase {
         this.idGenerator = idGenerator;
         this.userAccountQuery = userAccountQuery;
         this.eventPublisher = eventPublisher;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public CreateTourOperatorOutput execute(CreateTourOperatorInput input) {
@@ -135,6 +143,10 @@ public class CreateTourOperatorUseCase {
                             idGenerator.newId(), candidate.getId(), createdBy,
                             MemberRole.OWNER, isFirst,
                             ownerContact.name(), ownerContact.email()));
+                    auditTrailPort.append(new NewAuditEntry(
+                            candidate.getId(), AuditActor.user(createdBy),
+                            "TOUR_OPERATOR", candidate.getId(), "tour_operator.created",
+                            Map.of("name", name.value(), "slug", candidate.getSlug().value())));
                     return candidate;
                 });
                 break;

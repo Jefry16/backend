@@ -14,6 +14,7 @@ import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.SlotStatus;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.OperatorTimezoneQuery;
@@ -45,6 +46,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SlotUseCasesTest {
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private static final UUID OP = UUID.randomUUID();
     private static final UUID EXP = UUID.randomUUID();
@@ -92,12 +95,12 @@ class SlotUseCasesTest {
 
     private CreateSlotUseCase createSingle() {
         return new CreateSlotUseCase(experienceRepository, slotRepository, pricingRepository,
-                pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
+                pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator, auditTrailPort);
     }
 
     private CreateSlotsUseCase createRecurring() {
         return new CreateSlotsUseCase(experienceRepository, slotRepository, pricingRepository,
-                pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
+                pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator, auditTrailPort);
     }
 
     // ---- single ----
@@ -173,7 +176,7 @@ class SlotUseCasesTest {
     // ---- update ----
 
     private UpdateSlotUseCase update() {
-        return new UpdateSlotUseCase(slotRepository, pricingRepository, membershipCheck, transactionRunner);
+        return new UpdateSlotUseCase(slotRepository, pricingRepository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     private Slot availableSlot() {

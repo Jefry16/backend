@@ -1,6 +1,8 @@
 package com.vointika.touroperator.application.usecase;
 
 import com.vointika.reference.domain.repository.LanguageRepository;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -28,6 +31,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UpdateOperatorLocalesUseCaseTest {
+
+    // Executes the work inline so assertions on the wrapped calls still hold.
+    private final TransactionRunner transactionRunner = executingRunner();
+
+    private static TransactionRunner executingRunner() {
+        TransactionRunner runner = mock(TransactionRunner.class);
+        when(runner.call(any())).thenAnswer(i -> ((java.util.function.Supplier<?>) i.getArgument(0)).get());
+        doAnswer(i -> {
+            ((Runnable) i.getArgument(0)).run();
+            return null;
+        }).when(runner).run(any());
+        return runner;
+    }
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private TourOperatorRepository operatorRepository;
     private LanguageRepository languageRepository;
@@ -42,7 +60,7 @@ class UpdateOperatorLocalesUseCaseTest {
         operatorRepository = mock(TourOperatorRepository.class);
         languageRepository = mock(LanguageRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new UpdateOperatorLocalesUseCase(operatorRepository, languageRepository, membershipCheck);
+        useCase = new UpdateOperatorLocalesUseCase(operatorRepository, languageRepository, membershipCheck, transactionRunner, auditTrailPort);
         when(operatorRepository.save(any())).thenAnswer(a -> a.getArgument(0));
         // by default the master list knows en/es/fr
         when(languageRepository.existsByCode("en")).thenReturn(true);

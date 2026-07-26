@@ -4,6 +4,8 @@ import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.audience.domain.valueobject.PaxPerUnit;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -51,6 +53,17 @@ public class Audience {
 
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
+    /**
+     * The auditable fields as JSON-native values — the exposure guard for the
+     * audit log's field diffs (only what appears here can enter the trail).
+     */
+    public Map<String, Object> auditSnapshot() {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("name", name.value());
+        snapshot.put("paxPerUnit", paxPerUnit.value());
+        return snapshot;
+    }
+
     public AudienceName getName() { return name; }
     public PaxPerUnit getPaxPerUnit() { return paxPerUnit; }
     public UUID getCreatedBy() { return createdBy; }

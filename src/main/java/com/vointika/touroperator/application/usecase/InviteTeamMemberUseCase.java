@@ -4,11 +4,15 @@ import com.vointika.shared.event.TeamInvitationRequestedEvent;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.EventPublisherPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
@@ -20,6 +24,7 @@ import com.vointika.touroperator.domain.valueobject.InviteeEmail;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,7 +37,8 @@ import java.util.UUID;
  * → 422; the email already belongs to a member of THIS operator → 409; a PENDING
  * invitation already exists → 409 (double-guarded by the partial unique index).
  * The event carries the RAW token (only its hash is persisted) and is published
- * after the save. Create-slice scope: no audit entry (no audit context yet).
+ * after the save; the {@code member.invited} audit entry rides the save's
+ * transaction.
  */
 public class InviteTeamMemberUseCase {
 
@@ -44,6 +50,8 @@ public class InviteTeamMemberUseCase {
     private final InvitationTokenPort invitationTokenPort;
     private final IdGenerator idGenerator;
     private final EventPublisherPort eventPublisher;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public InviteTeamMemberUseCase(TourOperatorInvitationRepository invitationRepository,
                                    TourOperatorMemberRepository memberRepository,
@@ -52,7 +60,9 @@ public class InviteTeamMemberUseCase {
                                    TourOperatorMembershipCheck membershipCheck,
                                    InvitationTokenPort invitationTokenPort,
                                    IdGenerator idGenerator,
-                                   EventPublisherPort eventPublisher) {
+                                   EventPublisherPort eventPublisher,
+                                   TransactionRunner transactionRunner,
+                                   AuditTrailPort auditTrailPort) {
         this.invitationRepository = invitationRepository;
         this.memberRepository = memberRepository;
         this.tourOperatorRepository = tourOperatorRepository;
@@ -61,6 +71,8 @@ public class InviteTeamMemberUseCase {
         this.invitationTokenPort = invitationTokenPort;
         this.idGenerator = idGenerator;
         this.eventPublisher = eventPublisher;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public UUID execute(UUID tourOperatorId, UUID invitedByUserId,
@@ -92,7 +104,13 @@ public class InviteTeamMemberUseCase {
                 idGenerator.newId(), tourOperatorId, email, name, role,
                 invitationTokenPort.hash(rawToken), invitedByUserId, inviter.name());
         try {
-            invitationRepository.save(invitation);
+            transactionRunner.run(() -> {
+                invitationRepository.save(invitation);
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(invitedByUserId),
+                        "INVITATION", invitation.getId(), "member.invited",
+                        Map.of("email", email.value(), "role", role.name())));
+            });
         } catch (DataIntegrityViolationException e) {
             // A concurrent invite committed first — the partial unique index fired.
             throw new ResourceAlreadyExistsException("A pending invitation for this email already exists");

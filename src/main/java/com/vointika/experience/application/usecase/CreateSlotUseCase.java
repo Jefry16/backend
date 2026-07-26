@@ -10,15 +10,19 @@ import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.AudienceView;
 import com.vointika.shared.port.OperatorTimezoneQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -37,6 +41,7 @@ public class CreateSlotUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
+    private final AuditTrailPort auditTrailPort;
 
     public CreateSlotUseCase(ExperienceRepository experienceRepository,
                              SlotRepository slotRepository,
@@ -45,7 +50,8 @@ public class CreateSlotUseCase {
                              OperatorTimezoneQuery operatorTimezoneQuery,
                              TourOperatorMembershipCheck membershipCheck,
                              TransactionRunner transactionRunner,
-                             IdGenerator idGenerator) {
+                             IdGenerator idGenerator,
+                             AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
         this.slotRepository = slotRepository;
         this.pricingRepository = pricingRepository;
@@ -54,6 +60,7 @@ public class CreateSlotUseCase {
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public UUID execute(CreateSlotInput input) {
@@ -83,6 +90,10 @@ public class CreateSlotUseCase {
             for (SlotAudiencePricing row : pricingResolver.buildRows(slot.id(), input.audiencePrices(), resolved)) {
                 pricingRepository.save(row);
             }
+            auditTrailPort.append(new NewAuditEntry(
+                    input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                    "SLOT", slot.id(), "slot.created",
+                    Map.of("experienceId", input.experienceId().toString())));
             return slot.id();
         });
     }

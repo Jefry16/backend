@@ -6,10 +6,13 @@ import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Slug;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -22,8 +25,7 @@ import java.util.UUID;
  * operator's library ({@link MediaReferenceValidator}, 422 on a foreign id).
  *
  * <p>The canonical slug is generated per-operator; on a slug race the tx rolls
- * back and we retry with a fresh slug (mirrors CreateTourOperatorUseCase). No
- * audit entry (no audit context yet).
+ * back and we retry with a fresh slug (mirrors CreateTourOperatorUseCase).
  */
 public class CreateExperienceUseCase {
 
@@ -35,19 +37,22 @@ public class CreateExperienceUseCase {
     private final SlugGenerator slugGenerator;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public CreateExperienceUseCase(ExperienceRepository experienceRepository,
                                    MediaReferenceValidator mediaReferenceValidator,
                                    TourOperatorMembershipCheck membershipCheck,
                                    SlugGenerator slugGenerator,
                                    IdGenerator idGenerator,
-                                   TransactionRunner transactionRunner) {
+                                   TransactionRunner transactionRunner,
+                                   AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
         this.mediaReferenceValidator = mediaReferenceValidator;
         this.membershipCheck = membershipCheck;
         this.slugGenerator = slugGenerator;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public UUID execute(UUID tourOperatorId, UUID callerUserId, ExperienceInput input) {
@@ -76,7 +81,13 @@ public class CreateExperienceUseCase {
                     tags, included, notIncluded, highlights,
                     mediaIds, input.thumbnailMediaId(), duration, cutoff);
             try {
-                saved = transactionRunner.call(() -> experienceRepository.save(experience));
+                saved = transactionRunner.call(() -> {
+                    Experience persisted = experienceRepository.save(experience);
+                    auditTrailPort.append(new NewAuditEntry(
+                            tourOperatorId, AuditActor.user(callerUserId),
+                            "EXPERIENCE", persisted.getId(), "experience.created", null));
+                    return persisted;
+                });
                 break;
             } catch (DataIntegrityViolationException e) {
                 // slug race — regenerate and retry

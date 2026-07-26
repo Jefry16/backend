@@ -12,13 +12,18 @@ import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Slug;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -43,17 +48,23 @@ public class UpsertExperienceTranslationUseCase {
     private final OperatorLocalesQuery operatorLocalesQuery;
     private final SlugGenerator slugGenerator;
     private final TourOperatorMembershipCheck membershipCheck;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public UpsertExperienceTranslationUseCase(ExperienceRepository experienceRepository,
                                               ExperienceTranslationRepository translationRepository,
                                               OperatorLocalesQuery operatorLocalesQuery,
                                               SlugGenerator slugGenerator,
-                                              TourOperatorMembershipCheck membershipCheck) {
+                                              TourOperatorMembershipCheck membershipCheck,
+                                              TransactionRunner transactionRunner,
+                                              AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
         this.translationRepository = translationRepository;
         this.operatorLocalesQuery = operatorLocalesQuery;
         this.slugGenerator = slugGenerator;
         this.membershipCheck = membershipCheck;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(UUID tourOperatorId, UUID experienceId, String rawLocale,
@@ -76,9 +87,15 @@ public class UpsertExperienceTranslationUseCase {
         List<InclusionItem> notIncluded = mapList(input.notIncluded(), InclusionItem::new);
         Slug slug = resolveSlug(tourOperatorId, experienceId, locale, input.slug(), name);
 
-        translationRepository.upsert(new ExperienceTranslation(
-                experienceId, tourOperatorId, locale,
-                name, description, longDescription, highlights, included, notIncluded, slug));
+        transactionRunner.run(() -> {
+            translationRepository.upsert(new ExperienceTranslation(
+                    experienceId, tourOperatorId, locale,
+                    name, description, longDescription, highlights, included, notIncluded, slug));
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "EXPERIENCE", experienceId, "experience.translation_updated",
+                    Map.of("locale", locale.value())));
+        });
     }
 
     private Slug resolveSlug(UUID operatorId, UUID experienceId, LocaleCode locale,

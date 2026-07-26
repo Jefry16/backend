@@ -13,7 +13,9 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.Slug;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -153,6 +155,31 @@ public class Experience {
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
     public UUID getCreatedBy() { return createdBy; }
+    /**
+     * The auditable fields as JSON-native values — the exposure guard for the
+     * audit log's field diffs (only what appears here can enter the trail).
+     * Slug is immutable and status changes only via publish/unpublish, so
+     * neither belongs in the update diff; {@code published} is diffed by the
+     * publish/unpublish use cases against this same snapshot.
+     */
+    public Map<String, Object> auditSnapshot() {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("name", name.value());
+        snapshot.put("description", description.value());
+        snapshot.put("longDescription", longDescription.value());
+        snapshot.put("featured", featured);
+        snapshot.put("tags", tags.stream().map(Tag::value).toList());
+        snapshot.put("included", included.stream().map(InclusionItem::value).toList());
+        snapshot.put("notIncluded", notIncluded.stream().map(InclusionItem::value).toList());
+        snapshot.put("highlights", highlights.stream().map(Highlight::value).toList());
+        snapshot.put("mediaIds", mediaIds.stream().map(UUID::toString).toList());
+        snapshot.put("thumbnailMediaId", thumbnailMediaId == null ? null : thumbnailMediaId.toString());
+        snapshot.put("durationMinutes", durationMinutes.value());
+        snapshot.put("bookingCutoffHours", bookingCutoffHours.value());
+        snapshot.put("published", published);
+        return snapshot;
+    }
+
     public Slug getSlug() { return slug; }
     public Instant getCreatedAt() { return createdAt; }
     public ExperienceName getName() { return name; }

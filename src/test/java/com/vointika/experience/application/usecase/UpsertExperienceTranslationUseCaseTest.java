@@ -5,6 +5,8 @@ import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.entity.ExperienceTranslation;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
@@ -24,6 +26,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,6 +37,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UpsertExperienceTranslationUseCaseTest {
+
+    // Executes the work inline so assertions on the wrapped calls still hold.
+    private final TransactionRunner transactionRunner = executingRunner();
+
+    private static TransactionRunner executingRunner() {
+        TransactionRunner runner = mock(TransactionRunner.class);
+        when(runner.call(any())).thenAnswer(i -> ((java.util.function.Supplier<?>) i.getArgument(0)).get());
+        doAnswer(i -> {
+            ((Runnable) i.getArgument(0)).run();
+            return null;
+        }).when(runner).run(any());
+        return runner;
+    }
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private ExperienceRepository experienceRepository;
     private ExperienceTranslationRepository translationRepository;
@@ -52,7 +70,7 @@ class UpsertExperienceTranslationUseCaseTest {
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
-                operatorLocalesQuery, new SlugGenerator(), membershipCheck);
+                operatorLocalesQuery, new SlugGenerator(), membershipCheck, transactionRunner, auditTrailPort);
 
         when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId))
                 .thenReturn(Optional.of(mock(Experience.class)));

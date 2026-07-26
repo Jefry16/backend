@@ -6,6 +6,7 @@ import com.vointika.pickup.application.usecase.GetPickupLocationUseCase;
 import com.vointika.pickup.application.usecase.ListPickupLocationsUseCase;
 import com.vointika.pickup.application.usecase.UpdatePickupLocationUseCase;
 import com.vointika.pickup.domain.repository.PickupLocationRepository;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -20,25 +21,30 @@ public class PickupUseCaseConfig {
             PickupLocationRepository pickupLocationRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            AuditTrailPort auditTrailPort) {
         return new CreatePickupLocationUseCase(pickupLocationRepository,
-                membershipCheck, transactionRunner, idGenerator);
+                membershipCheck, transactionRunner, idGenerator, auditTrailPort);
     }
 
     @Bean
     public UpdatePickupLocationUseCase updatePickupLocationUseCase(
             PickupLocationRepository pickupLocationRepository,
             TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner) {
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
         return new UpdatePickupLocationUseCase(pickupLocationRepository,
-                membershipCheck, transactionRunner);
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
     public DeletePickupLocationUseCase deletePickupLocationUseCase(
             PickupLocationRepository pickupLocationRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new DeletePickupLocationUseCase(pickupLocationRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeletePickupLocationUseCase(pickupLocationRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean

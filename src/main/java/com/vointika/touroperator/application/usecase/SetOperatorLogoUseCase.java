@@ -2,11 +2,17 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.valueobject.AuditActor;
+import com.vointika.shared.valueobject.FieldChange;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,13 +31,19 @@ public class SetOperatorLogoUseCase {
     private final TourOperatorRepository tourOperatorRepository;
     private final MediaKeyBatchQuery mediaKeyBatchQuery;
     private final TourOperatorMembershipCheck membershipCheck;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public SetOperatorLogoUseCase(TourOperatorRepository tourOperatorRepository,
                                   MediaKeyBatchQuery mediaKeyBatchQuery,
-                                  TourOperatorMembershipCheck membershipCheck) {
+                                  TourOperatorMembershipCheck membershipCheck,
+                                  TransactionRunner transactionRunner,
+                                  AuditTrailPort auditTrailPort) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.mediaKeyBatchQuery = mediaKeyBatchQuery;
         this.membershipCheck = membershipCheck;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(UUID tourOperatorId, UUID mediaId, UUID callerUserId) {
@@ -48,7 +60,18 @@ public class SetOperatorLogoUseCase {
 
         TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        UUID logoBefore = operator.getLogoMediaId();
         operator.setLogo(mediaId);
-        tourOperatorRepository.save(operator);
+        transactionRunner.run(() -> {
+            tourOperatorRepository.save(operator);
+            // Re-setting the same logo mutates nothing — records nothing.
+            if (!mediaId.equals(logoBefore)) {
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(callerUserId),
+                        "TOUR_OPERATOR", tourOperatorId, "tour_operator.logo_updated", null,
+                        List.of(new FieldChange("logoMediaId",
+                                logoBefore == null ? null : logoBefore.toString(), mediaId.toString()))));
+            }
+        });
     }
 }

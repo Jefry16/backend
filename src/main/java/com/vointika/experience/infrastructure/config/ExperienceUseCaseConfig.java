@@ -12,6 +12,7 @@ import com.vointika.experience.application.usecase.UpdateSlotUseCase;
 import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.shared.port.AudienceOwnershipQuery;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.OperatorTimezoneQuery;
 import com.vointika.experience.application.usecase.DeleteExperienceTranslationUseCase;
 import com.vointika.experience.application.usecase.GetExperienceTranslationUseCase;
@@ -49,9 +50,10 @@ public class ExperienceUseCaseConfig {
             TourOperatorMembershipCheck membershipCheck,
             SlugGenerator slugGenerator,
             IdGenerator idGenerator,
-            TransactionRunner transactionRunner) {
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
         return new CreateExperienceUseCase(experienceRepository, mediaReferenceValidator,
-                membershipCheck, slugGenerator, idGenerator, transactionRunner);
+                membershipCheck, slugGenerator, idGenerator, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -76,23 +78,30 @@ public class ExperienceUseCaseConfig {
             SlotRepository slotRepository,
             MediaReferenceValidator mediaReferenceValidator,
             TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner) {
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
         return new UpdateExperienceUseCase(experienceRepository, slotRepository,
-                mediaReferenceValidator, membershipCheck, transactionRunner);
+                mediaReferenceValidator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
     public PublishExperienceUseCase publishExperienceUseCase(
             ExperienceRepository experienceRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new PublishExperienceUseCase(experienceRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new PublishExperienceUseCase(experienceRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
     public UnpublishExperienceUseCase unpublishExperienceUseCase(
             ExperienceRepository experienceRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new UnpublishExperienceUseCase(experienceRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UnpublishExperienceUseCase(experienceRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -101,9 +110,11 @@ public class ExperienceUseCaseConfig {
             ExperienceTranslationRepository translationRepository,
             OperatorLocalesQuery operatorLocalesQuery,
             SlugGenerator slugGenerator,
-            TourOperatorMembershipCheck membershipCheck) {
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
         return new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
-                operatorLocalesQuery, slugGenerator, membershipCheck);
+                operatorLocalesQuery, slugGenerator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -126,8 +137,11 @@ public class ExperienceUseCaseConfig {
     public DeleteExperienceTranslationUseCase deleteExperienceTranslationUseCase(
             ExperienceRepository experienceRepository,
             ExperienceTranslationRepository translationRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new DeleteExperienceTranslationUseCase(experienceRepository, translationRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteExperienceTranslationUseCase(experienceRepository, translationRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
     // ---- slots ----
@@ -147,9 +161,11 @@ public class ExperienceUseCaseConfig {
             OperatorTimezoneQuery operatorTimezoneQuery,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            AuditTrailPort auditTrailPort) {
         return new CreateSlotUseCase(experienceRepository, slotRepository, slotAudiencePricingRepository,
-                audiencePricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
+                audiencePricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner,
+                idGenerator, auditTrailPort);
     }
 
     @Bean
@@ -161,9 +177,11 @@ public class ExperienceUseCaseConfig {
             OperatorTimezoneQuery operatorTimezoneQuery,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            AuditTrailPort auditTrailPort) {
         return new CreateSlotsUseCase(experienceRepository, slotRepository, slotAudiencePricingRepository,
-                audiencePricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator);
+                audiencePricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner,
+                idGenerator, auditTrailPort);
     }
 
     @Bean
@@ -186,8 +204,11 @@ public class ExperienceUseCaseConfig {
     public CancelSlotUseCase cancelSlotUseCase(
             SlotRepository slotRepository,
             SlotAudiencePricingRepository slotAudiencePricingRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new CancelSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new CancelSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -195,7 +216,9 @@ public class ExperienceUseCaseConfig {
             SlotRepository slotRepository,
             SlotAudiencePricingRepository slotAudiencePricingRepository,
             TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner) {
-        return new UpdateSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck, transactionRunner);
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateSlotUseCase(slotRepository, slotAudiencePricingRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 }

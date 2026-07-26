@@ -2,9 +2,13 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.event.TeamInvitationRequestedEvent;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.EventPublisherPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.domain.entity.TourOperator;
@@ -12,6 +16,7 @@ import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -24,7 +29,8 @@ import java.util.UUID;
  * → 404; already accepted or revoked → 409 (only pending invitations can be
  * resent — a lapsed-but-pending one CAN, that's the point). The email is sent in
  * the resending admin's UI language (the invitee still has no account/language);
- * the event carries the RAW token, published after the save. No audit entry
+ * the event carries the RAW token, published after the save; the
+ * {@code invitation.resent} audit entry rides the save's transaction.
  * (no audit context yet).
  */
 public class ResendInvitationUseCase {
@@ -35,19 +41,25 @@ public class ResendInvitationUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final InvitationTokenPort invitationTokenPort;
     private final EventPublisherPort eventPublisher;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
 
     public ResendInvitationUseCase(TourOperatorInvitationRepository invitationRepository,
                                    TourOperatorRepository tourOperatorRepository,
                                    UserAccountQuery userAccountQuery,
                                    TourOperatorMembershipCheck membershipCheck,
                                    InvitationTokenPort invitationTokenPort,
-                                   EventPublisherPort eventPublisher) {
+                                   EventPublisherPort eventPublisher,
+                                   TransactionRunner transactionRunner,
+                                   AuditTrailPort auditTrailPort) {
         this.invitationRepository = invitationRepository;
         this.tourOperatorRepository = tourOperatorRepository;
         this.userAccountQuery = userAccountQuery;
         this.membershipCheck = membershipCheck;
         this.invitationTokenPort = invitationTokenPort;
         this.eventPublisher = eventPublisher;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
     }
 
     public void execute(UUID tourOperatorId, UUID invitationId, UUID callerUserId) {
@@ -60,7 +72,13 @@ public class ResendInvitationUseCase {
 
         String rawToken = invitationTokenPort.generate();
         invitation.renew(invitationTokenPort.hash(rawToken));
-        invitationRepository.save(invitation);
+        transactionRunner.run(() -> {
+            invitationRepository.save(invitation);
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "INVITATION", invitationId, "invitation.resent",
+                    Map.of("email", invitation.getEmail().value())));
+        });
 
         String locale = userAccountQuery.findContact(callerUserId)
                 .map(UserContactView::language).orElse("en");

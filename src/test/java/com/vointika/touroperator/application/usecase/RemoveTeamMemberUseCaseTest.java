@@ -1,10 +1,12 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +27,8 @@ import static org.mockito.Mockito.when;
 
 class RemoveTeamMemberUseCaseTest {
 
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
+
     private TourOperatorMemberRepository memberRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private RemoveTeamMemberUseCase useCase;
@@ -42,12 +46,20 @@ class RemoveTeamMemberUseCaseTest {
             @Override public <T> T call(Supplier<T> work) { return work.get(); }
             @Override public void run(Runnable work) { work.run(); }
         };
-        useCase = new RemoveTeamMemberUseCase(memberRepository, membershipCheck, tx);
+        useCase = new RemoveTeamMemberUseCase(memberRepository, membershipCheck, tx, auditTrailPort);
     }
 
+    // The use case reads the TARGET as a full member (its name goes to the
+    // audit details) but still reads the CALLER role-only — stub both.
     private void roleOf(UUID userId, MemberRole role) {
         when(memberRepository.findRoleByTourOperatorIdAndUserId(op, userId))
                 .thenReturn(Optional.ofNullable(role));
+        when(memberRepository.findByTourOperatorIdAndUserId(op, userId))
+                .thenReturn(role == null
+                        ? Optional.empty()
+                        : Optional.of(new TourOperatorMember(
+                                UUID.randomUUID(), op, userId, role, false,
+                                "Member " + role, role.name().toLowerCase() + "@x.test")));
     }
     private void owners(long n) {
         when(memberRepository.countByTourOperatorIdAndRole(op, MemberRole.OWNER)).thenReturn(n);

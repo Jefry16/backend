@@ -3,6 +3,8 @@ package com.vointika.media.application.usecase;
 import com.vointika.media.application.port.MediaStoragePort;
 import com.vointika.media.domain.entity.Media;
 import com.vointika.media.domain.repository.MediaRepository;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -23,6 +25,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -35,6 +38,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UploadMediaUseCaseTest {
+
+    // Executes the work inline so assertions on the wrapped calls still hold.
+    private final TransactionRunner transactionRunner = executingRunner();
+
+    private static TransactionRunner executingRunner() {
+        TransactionRunner runner = mock(TransactionRunner.class);
+        when(runner.call(any())).thenAnswer(i -> ((java.util.function.Supplier<?>) i.getArgument(0)).get());
+        doAnswer(i -> {
+            ((Runnable) i.getArgument(0)).run();
+            return null;
+        }).when(runner).run(any());
+        return runner;
+    }
+
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private MediaRepository mediaRepository;
     private MediaStoragePort mediaStoragePort;
@@ -61,7 +79,7 @@ class UploadMediaUseCaseTest {
         IdGenerator idGenerator = mock(IdGenerator.class);
         when(idGenerator.newId()).thenReturn(newId);
         useCase = new UploadMediaUseCase(
-                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator);
+                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator, transactionRunner, auditTrailPort);
     }
 
     @Test

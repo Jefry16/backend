@@ -10,6 +10,7 @@ import com.vointika.audience.application.usecase.ListAudiencesUseCase;
 import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.SlotAudienceSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -26,8 +27,10 @@ public class AudienceUseCaseConfig {
             AudienceRepository audienceRepository,
             TourOperatorMembershipCheck membershipCheck,
             IdGenerator idGenerator,
-            TransactionRunner transactionRunner) {
-        return new CreateAudienceUseCase(audienceRepository, membershipCheck, idGenerator, transactionRunner);
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new CreateAudienceUseCase(audienceRepository, membershipCheck, idGenerator,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -35,9 +38,10 @@ public class AudienceUseCaseConfig {
             AudienceRepository audienceRepository,
             SlotAudienceSnapshotPropagator slotAudienceSnapshotPropagator,
             TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner) {
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
         return new UpdateAudienceUseCase(audienceRepository, slotAudienceSnapshotPropagator,
-                membershipCheck, transactionRunner);
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -70,11 +74,28 @@ public class AudienceUseCaseConfig {
         return new ListAudienceTranslationsUseCase(audienceRepository, audienceTranslationRepository, membershipCheck);
     }
 
+    // Was MISSING entirely (the import existed, the bean did not) — a boot-time
+    // failure for any context containing AudienceTranslationController.
+    @Bean
+    public UpsertAudienceTranslationUseCase upsertAudienceTranslationUseCase(
+            AudienceRepository audienceRepository,
+            AudienceTranslationRepository audienceTranslationRepository,
+            OperatorLocalesQuery operatorLocalesQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertAudienceTranslationUseCase(audienceRepository, audienceTranslationRepository,
+                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
     @Bean
     public DeleteAudienceTranslationUseCase deleteAudienceTranslationUseCase(
             AudienceRepository audienceRepository,
             AudienceTranslationRepository audienceTranslationRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new DeleteAudienceTranslationUseCase(audienceRepository, audienceTranslationRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteAudienceTranslationUseCase(audienceRepository, audienceTranslationRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 }

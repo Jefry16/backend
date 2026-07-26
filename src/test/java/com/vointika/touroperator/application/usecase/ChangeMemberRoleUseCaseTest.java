@@ -1,5 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -30,6 +31,8 @@ import static org.mockito.Mockito.when;
 
 class ChangeMemberRoleUseCaseTest {
 
+    private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
+
     private TourOperatorMemberRepository memberRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private ChangeMemberRoleUseCase useCase;
@@ -47,7 +50,7 @@ class ChangeMemberRoleUseCaseTest {
             @Override public <T> T call(Supplier<T> work) { return work.get(); }
             @Override public void run(Runnable work) { work.run(); }
         };
-        useCase = new ChangeMemberRoleUseCase(memberRepository, membershipCheck, tx);
+        useCase = new ChangeMemberRoleUseCase(memberRepository, membershipCheck, tx, auditTrailPort);
         when(memberRepository.save(any())).thenAnswer(a -> a.getArgument(0));
     }
 
