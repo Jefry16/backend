@@ -7,7 +7,7 @@
 -- of FKs keeps this domain's position in FlywayPerDomainConfig unconstrained.
 --
 -- actor_name is FROZEN at write time (the user's display name as it was when
--- the action happened) — historically truthful, sortable/filterable like any
+-- the action happened) — historically truthful, filterable like any
 -- denormalized list column, and no identity join at read. NULL for SYSTEM.
 CREATE TABLE audit.audit_log (
     id               UUID         NOT NULL PRIMARY KEY,   -- UUIDv7, app-assigned: time-ordered, so ORDER BY id DESC is the timeline

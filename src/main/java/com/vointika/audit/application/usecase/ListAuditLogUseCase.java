@@ -15,8 +15,9 @@ import java.util.UUID;
  * tenant-scoped; any member may read (the trail shows nothing a member can't
  * already see on the entity pages). Filterable by {@code entityType}/
  * {@code entityId} (a single entity's timeline), {@code action},
- * {@code actorType}/{@code actorId}, {@code actorName} (frozen at write, so a
- * plain text filter), and a {@code createdAt} range. Default {@code -id}: ids
+ * {@code actorType}/{@code actorId}, {@code actorName} (frozen at write; a
+ * text filter — not sortable, the column is nullable and the keyset cursor
+ * needs non-null sort keys), and a {@code createdAt} range. Default {@code -id}: ids
  * are UUIDv7, so descending id IS the reverse-chronological timeline and keeps
  * cursor pagination stable.
  */
@@ -33,7 +34,9 @@ public class ListAuditLogUseCase {
             .instant("createdAt")
             .sortable("id")
             .sortable("createdAt")
-            .sortable("actorName")
+            // actorName is deliberately NOT sortable: it is nullable (SYSTEM
+            // rows, unresolvable accounts) and the keyset cursor cannot
+            // paginate over null sort keys — filter-only.
             .defaultSort("-id")
             .build();
 

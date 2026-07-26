@@ -122,7 +122,7 @@ public class CreateSlotsUseCase {
             if (created > 0) {
                 Map<String, Object> details = new LinkedHashMap<>();
                 details.put("count", created);
-                details.put("days", List.copyOf(days));
+                details.put("days", days.stream().sorted().toList());
                 details.put("startTime", input.startTime().toString());
                 details.put("endTime", input.endTime().toString());
                 details.put("validFrom", input.validFrom().toString());
