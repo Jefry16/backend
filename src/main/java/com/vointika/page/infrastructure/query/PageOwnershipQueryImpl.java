@@ -18,6 +18,6 @@ public class PageOwnershipQueryImpl implements PageOwnershipQuery {
 
     @Override
     public boolean existsForTourOperator(UUID pageId, UUID tourOperatorId) {
-        return pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId).isPresent();
+        return pageRepository.existsByIdAndTourOperatorId(pageId, tourOperatorId);
     }
 }

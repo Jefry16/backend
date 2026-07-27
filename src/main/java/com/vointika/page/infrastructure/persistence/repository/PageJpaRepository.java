@@ -10,5 +10,7 @@ public interface PageJpaRepository extends JpaRepository<PageJpaEntity, UUID> {
 
     Optional<PageJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
+    boolean existsByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
+
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 }

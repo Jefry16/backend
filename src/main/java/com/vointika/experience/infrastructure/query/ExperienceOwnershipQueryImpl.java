@@ -18,6 +18,6 @@ public class ExperienceOwnershipQueryImpl implements ExperienceOwnershipQuery {
 
     @Override
     public boolean existsForTourOperator(UUID experienceId, UUID tourOperatorId) {
-        return experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId).isPresent();
+        return experienceRepository.existsByIdAndTourOperatorId(experienceId, tourOperatorId);
     }
 }

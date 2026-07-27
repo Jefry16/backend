@@ -31,6 +31,11 @@ public class PageRepositoryImpl implements PageRepository {
     }
 
     @Override
+    public boolean existsByIdAndTourOperatorId(UUID pageId, UUID tourOperatorId) {
+        return jpa.existsByIdAndTourOperatorId(pageId, tourOperatorId);
+    }
+
+    @Override
     public Optional<Page> findByIdAndTourOperatorId(UUID pageId, UUID tourOperatorId) {
         return jpa.findByIdAndTourOperatorId(pageId, tourOperatorId).map(PageMapper::toDomain);
     }

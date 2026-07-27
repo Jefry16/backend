@@ -9,6 +9,7 @@ import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
+import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -17,6 +18,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.FieldChange;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Map;
@@ -75,27 +77,34 @@ public class UpsertMetafieldValueUseCase {
                 valueRepository.findByDefinitionIdAndOwnerId(definition.getId(), input.ownerId());
         String priorValue = existing.map(MetafieldValue::getValue).orElse(null);
 
-        transactionRunner.run(() -> {
-            existing.ifPresentOrElse(
-                    row -> {
-                        row.changeValue(normalized);
-                        valueRepository.save(row);
-                    },
-                    () -> valueRepository.save(new MetafieldValue(
-                            idGenerator.newId(), definition.getId(), input.ownerId(),
-                            normalized, input.callerUserId())));
-            // On the OWNER's timeline — a metafield value is the owner's
-            // content (like a translation); details identify namespace.key and
-            // the value diffs whole (first set: null → value). An idempotent
-            // re-set of the same value records nothing.
-            if (!normalized.equals(priorValue)) {
-                auditTrailPort.append(new NewAuditEntry(
-                        input.tourOperatorId(), AuditActor.user(input.callerUserId()),
-                        input.ownerType().auditEntityType(), input.ownerId(),
-                        input.ownerType().action("updated"),
-                        Map.of("namespace", namespace.value(), "key", key.value()),
-                        List.of(new FieldChange("value", priorValue, normalized))));
-            }
-        });
+        try {
+            transactionRunner.run(() -> {
+                existing.ifPresentOrElse(
+                        row -> {
+                            row.changeValue(normalized);
+                            valueRepository.save(row);
+                        },
+                        () -> valueRepository.save(new MetafieldValue(
+                                idGenerator.newId(), definition.getId(), input.ownerId(),
+                                normalized, input.callerUserId())));
+                // On the OWNER's timeline — a metafield value is the owner's
+                // content (like a translation); details identify namespace.key
+                // and the value diffs whole (first set: null → value). An
+                // idempotent re-set of the same value records nothing.
+                if (!normalized.equals(priorValue)) {
+                    auditTrailPort.append(new NewAuditEntry(
+                            input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                            input.ownerType().auditEntityType(), input.ownerId(),
+                            input.ownerType().action("updated"),
+                            Map.of("namespace", namespace.value(), "key", key.value()),
+                            List.of(new FieldChange("value", priorValue, normalized))));
+                }
+            });
+        } catch (DataIntegrityViolationException e) {
+            // Two concurrent FIRST-sets both passed the empty probe; the
+            // (definition, owner) unique index broke the tie. 409, not 500 —
+            // a retry lands as a normal replace.
+            throw new ConflictException("This metafield was set concurrently — retry");
+        }
     }
 }

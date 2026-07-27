@@ -122,6 +122,16 @@ class MetafieldValueUseCasesTest {
     }
 
     @Test
+    void lostFirstSetRaceIs409NotA500() {
+        when(valueRepository.findByDefinitionIdAndOwnerId(DEF, OWNER)).thenReturn(Optional.empty());
+        when(valueRepository.save(any()))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
+
+        assertThatThrownBy(() -> upsert().execute(input("Boat tours since 1998")))
+                .isInstanceOf(com.vointika.shared.exception.ConflictException.class);
+    }
+
+    @Test
     void foreignOwnerIs404() {
         when(pageOwnershipQuery.existsForTourOperator(OWNER, OP)).thenReturn(false);
         assertThatThrownBy(() -> upsert().execute(input("x")))
