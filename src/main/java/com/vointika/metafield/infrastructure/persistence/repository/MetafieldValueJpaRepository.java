@@ -1,0 +1,37 @@
+package com.vointika.metafield.infrastructure.persistence.repository;
+
+import com.vointika.metafield.domain.projection.MetafieldValueWithDefinition;
+import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
+import com.vointika.metafield.infrastructure.persistence.entity.MetafieldValueJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface MetafieldValueJpaRepository extends JpaRepository<MetafieldValueJpaEntity, UUID> {
+
+    Optional<MetafieldValueJpaEntity> findByDefinitionIdAndOwnerId(UUID definitionId, UUID ownerId);
+
+    /**
+     * The per-resource read: this owner's values joined with their definitions,
+     * scoped through the operator-owned definition (the value row itself has no
+     * tenant column). Stable namespace.key ordering for the editor.
+     */
+    @Query("""
+            SELECT new com.vointika.metafield.domain.projection.MetafieldValueWithDefinition(
+                d.namespace, d.key, d.type, d.name, v.value, v.updatedAt)
+            FROM MetafieldValueJpaEntity v
+            JOIN MetafieldDefinitionJpaEntity d ON d.id = v.definitionId
+            WHERE d.tourOperatorId = :tourOperatorId
+              AND d.ownerType = :ownerType
+              AND v.ownerId = :ownerId
+            ORDER BY d.namespace, d.key
+            """)
+    List<MetafieldValueWithDefinition> listForOwner(
+            @Param("tourOperatorId") UUID tourOperatorId,
+            @Param("ownerType") MetafieldOwnerType ownerType,
+            @Param("ownerId") UUID ownerId);
+}

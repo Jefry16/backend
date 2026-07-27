@@ -55,6 +55,10 @@ public class FlywayPerDomainConfig {
             // page FKs into touroperator.tour_operators + identity.users, so it
             // must come after both.
             "page",
+            // metafield FKs into touroperator.tour_operators + identity.users, so
+            // it must come after both; values reference experiences/pages by BARE
+            // id (no FK), so its position relative to those is unconstrained.
+            "metafield",
             // audit is deliberately FK-free (rows must survive deletion of what
             // they describe), so its position is unconstrained.
             "audit"
