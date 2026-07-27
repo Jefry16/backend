@@ -126,6 +126,22 @@ services:
         - action: rebuild
           path: ./pom.xml
 
+  # Dev-only data seeder. Waits for the app's Flyway migrations to finish,
+  # then applies an idempotent SQL seed (verified admin user + demo operator +
+  # catalog/availability/pages data). Runs once and exits. Never deployed.
+  # Login: admin@vointika.test / password
+  seed:
+    image: postgres:17.9
+    depends_on:
+      - db
+      - app
+    environment:
+      PGPASSWORD: vointika
+    volumes:
+      - ./docker/dev-seed:/seed:ro
+    command: ["sh", "/seed/run.sh"]
+    restart: "no"
+
 volumes:
   pgdata:
   miniodata:
