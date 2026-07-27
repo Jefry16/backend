@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * An operator's pickup point (name + meeting time-of-day). Operator-scoped and
- * SYNCED onto slots: slot rows snapshot name/time but the catalog propagates
- * every create (backfill), rename/time change, and delete onto them — unlike
- * audience pricing, whose price/capacity stay frozen per slot.
+ * An operator's pickup point (name + meeting time-of-day). Operator-scoped,
+ * standalone catalog — slots know nothing about pickup locations. The
+ * slot relationship shipped in #49 (synced snapshots) was removed in #50 while
+ * the relationship model is decided; it returns as its own slice.
  */
 public class PickupLocation {
 

@@ -205,6 +205,19 @@ URI — else a path-variable route (`/api/invitations/*/accept`) buckets per tok
 value and never limits. Rules live with the context that owns the endpoint (SPI),
 never in a central hardcoded map.
 
+## 8b. Audit append (every operator-facing mutation)
+
+A use case that mutates an operator-facing entity records the action through
+`shared.port.AuditTrailPort.append(NewAuditEntry)` — **inside the same
+`TransactionRunner` block as the mutation**, so the entry commits and rolls
+back atomically with the action ("no unaudited mutation"; a failed append fails
+the action). Exception: a mutation whose target is object storage (S3) appends
+in its own transaction AFTER the successful write — storage can't roll back, so
+that is the honest best-effort. Actor name is frozen at write (filter-only,
+never sortable — it's nullable and keyset cursors need non-null sort keys).
+Canonical: any experience/audience mutating use case; the port impl lives in
+`audit/infrastructure/integration`.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,
@@ -232,3 +245,8 @@ next `V`. Curated reference/seed data lives in the migration.
   `KafkaTemplate`, not `<String, Object>`.
 - Multi-line email templates end `</body>\n\n</html>` — assert `endsWith("</html>")`,
   not `</body></html>`.
+- An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
+  table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
+  Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space
+  overlap) and the clear silently **discards the pending save**. Both snapshot
+  propagators carry load-bearing comments on this — don't strip them.
