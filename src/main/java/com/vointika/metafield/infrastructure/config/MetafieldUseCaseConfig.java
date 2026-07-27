@@ -1,0 +1,119 @@
+package com.vointika.metafield.infrastructure.config;
+
+import com.vointika.metafield.application.service.MetafieldOwnerAccess;
+import com.vointika.metafield.application.service.MetafieldValueValidator;
+import com.vointika.metafield.application.usecase.CreateMetafieldDefinitionUseCase;
+import com.vointika.metafield.application.usecase.DeleteMetafieldDefinitionUseCase;
+import com.vointika.metafield.application.usecase.DeleteMetafieldValueUseCase;
+import com.vointika.metafield.application.usecase.GetMetafieldDefinitionUseCase;
+import com.vointika.metafield.application.usecase.ListMetafieldDefinitionsUseCase;
+import com.vointika.metafield.application.usecase.ListMetafieldValuesUseCase;
+import com.vointika.metafield.application.usecase.UpdateMetafieldDefinitionUseCase;
+import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
+import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
+import com.vointika.metafield.domain.repository.MetafieldValueRepository;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.ExperienceOwnershipQuery;
+import com.vointika.shared.port.PageOwnershipQuery;
+import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.service.IdGenerator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.ObjectMapper;
+
+@Configuration("metafieldUseCaseConfig")
+public class MetafieldUseCaseConfig {
+
+    @Bean
+    public MetafieldValueValidator metafieldValueValidator(ObjectMapper objectMapper) {
+        return new MetafieldValueValidator(objectMapper);
+    }
+
+    @Bean
+    public MetafieldOwnerAccess metafieldOwnerAccess(
+            ExperienceOwnershipQuery experienceOwnershipQuery,
+            PageOwnershipQuery pageOwnershipQuery) {
+        return new MetafieldOwnerAccess(experienceOwnershipQuery, pageOwnershipQuery);
+    }
+
+    @Bean
+    public CreateMetafieldDefinitionUseCase createMetafieldDefinitionUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            IdGenerator idGenerator,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new CreateMetafieldDefinitionUseCase(definitionRepository, membershipCheck,
+                idGenerator, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpdateMetafieldDefinitionUseCase updateMetafieldDefinitionUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateMetafieldDefinitionUseCase(definitionRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetMetafieldDefinitionUseCase getMetafieldDefinitionUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetMetafieldDefinitionUseCase(definitionRepository, membershipCheck);
+    }
+
+    @Bean
+    public ListMetafieldDefinitionsUseCase listMetafieldDefinitionsUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListMetafieldDefinitionsUseCase(definitionRepository, membershipCheck);
+    }
+
+    @Bean
+    public DeleteMetafieldDefinitionUseCase deleteMetafieldDefinitionUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteMetafieldDefinitionUseCase(definitionRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpsertMetafieldValueUseCase upsertMetafieldValueUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            MetafieldValueRepository valueRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            MetafieldValueValidator metafieldValueValidator,
+            TourOperatorMembershipCheck membershipCheck,
+            IdGenerator idGenerator,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository,
+                metafieldOwnerAccess, metafieldValueValidator, membershipCheck,
+                idGenerator, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public ListMetafieldValuesUseCase listMetafieldValuesUseCase(
+            MetafieldValueRepository valueRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListMetafieldValuesUseCase(valueRepository, metafieldOwnerAccess, membershipCheck);
+    }
+
+    @Bean
+    public DeleteMetafieldValueUseCase deleteMetafieldValueUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            MetafieldValueRepository valueRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteMetafieldValueUseCase(definitionRepository, valueRepository,
+                metafieldOwnerAccess, membershipCheck, transactionRunner, auditTrailPort);
+    }
+}

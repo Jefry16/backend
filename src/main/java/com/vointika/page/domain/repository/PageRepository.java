@@ -12,6 +12,8 @@ public interface PageRepository {
 
     Page save(Page page);
 
+    boolean existsByIdAndTourOperatorId(UUID pageId, UUID tourOperatorId);
+
     Optional<Page> findByIdAndTourOperatorId(UUID pageId, UUID tourOperatorId);
 
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);

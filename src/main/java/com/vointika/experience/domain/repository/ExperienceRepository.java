@@ -12,6 +12,8 @@ public interface ExperienceRepository {
     Experience save(Experience experience);
 
     /** Tenant-scoped lookup — an id under a different operator resolves empty. */
+    boolean existsByIdAndTourOperatorId(UUID experienceId, UUID tourOperatorId);
+
     Optional<Experience> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
     /** The operator's experiences, cursor-paginated + filtered. */

@@ -1,0 +1,86 @@
+package com.vointika.metafield.application.usecase;
+
+import com.vointika.metafield.application.dto.input.CreateMetafieldDefinitionInput;
+import com.vointika.metafield.domain.entity.MetafieldDefinition;
+import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
+import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
+import com.vointika.metafield.domain.valueobject.MetafieldDescription;
+import com.vointika.metafield.domain.valueobject.MetafieldKey;
+import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
+import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
+import com.vointika.metafield.domain.valueobject.MetafieldType;
+import com.vointika.shared.exception.ResourceAlreadyExistsException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
+import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.service.IdGenerator;
+import com.vointika.shared.valueobject.AuditActor;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Creates a definition. ADMIN+ only. {@code namespace.key} is unique per
+ * (operator, owner type) — a duplicate is 409, double-guarded by the
+ * pre-check and the DB unique index.
+ */
+public class CreateMetafieldDefinitionUseCase {
+
+    private final MetafieldDefinitionRepository definitionRepository;
+    private final TourOperatorMembershipCheck membershipCheck;
+    private final IdGenerator idGenerator;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
+
+    public CreateMetafieldDefinitionUseCase(MetafieldDefinitionRepository definitionRepository,
+                                            TourOperatorMembershipCheck membershipCheck,
+                                            IdGenerator idGenerator,
+                                            TransactionRunner transactionRunner,
+                                            AuditTrailPort auditTrailPort) {
+        this.definitionRepository = definitionRepository;
+        this.membershipCheck = membershipCheck;
+        this.idGenerator = idGenerator;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
+    }
+
+    public UUID execute(CreateMetafieldDefinitionInput input) {
+        membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
+
+        MetafieldOwnerType ownerType = MetafieldOwnerType.fromCode(input.ownerType());
+        MetafieldNamespace namespace = new MetafieldNamespace(input.namespace());
+        MetafieldKey key = new MetafieldKey(input.key());
+        MetafieldType type = MetafieldType.fromCode(input.type());
+        MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
+        MetafieldDescription description = input.description() == null || input.description().isBlank()
+                ? null : new MetafieldDescription(input.description());
+
+        if (definitionRepository.existsByIdentity(
+                input.tourOperatorId(), ownerType, namespace.value(), key.value())) {
+            throw new ResourceAlreadyExistsException(
+                    "A metafield definition with this namespace and key already exists");
+        }
+
+        MetafieldDefinition definition = new MetafieldDefinition(
+                idGenerator.newId(), input.tourOperatorId(), ownerType,
+                namespace, key, type, name, description, input.callerUserId());
+        try {
+            transactionRunner.run(() -> {
+                definitionRepository.save(definition);
+                auditTrailPort.append(new NewAuditEntry(
+                        input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                        "METAFIELD_DEFINITION", definition.getId(), "metafield_definition.created",
+                        Map.of("ownerType", ownerType.code(),
+                                "namespace", namespace.value(),
+                                "key", key.value(),
+                                "type", type.code())));
+            });
+        } catch (DataIntegrityViolationException e) {
+            throw new ResourceAlreadyExistsException(
+                    "A metafield definition with this namespace and key already exists");
+        }
+        return definition.getId();
+    }
+}

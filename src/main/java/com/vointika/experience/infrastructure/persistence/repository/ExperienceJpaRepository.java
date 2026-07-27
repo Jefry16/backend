@@ -10,5 +10,7 @@ public interface ExperienceJpaRepository extends JpaRepository<ExperienceJpaEnti
 
     Optional<ExperienceJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
+    boolean existsByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
+
     boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
 }

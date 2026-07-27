@@ -30,6 +30,11 @@ public class ExperienceRepositoryImpl implements ExperienceRepository {
     }
 
     @Override
+    public boolean existsByIdAndTourOperatorId(UUID id, UUID tourOperatorId) {
+        return jpaRepository.existsByIdAndTourOperatorId(id, tourOperatorId);
+    }
+
+    @Override
     public Optional<Experience> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId) {
         return jpaRepository.findByIdAndTourOperatorId(id, tourOperatorId).map(ExperienceMapper::toDomain);
     }

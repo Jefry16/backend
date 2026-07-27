@@ -1,0 +1,82 @@
+package com.vointika.metafield.presentation.controller;
+
+import com.vointika.metafield.application.dto.input.UpsertMetafieldValueInput;
+import com.vointika.metafield.application.usecase.DeleteMetafieldValueUseCase;
+import com.vointika.metafield.application.usecase.ListMetafieldValuesUseCase;
+import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
+import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
+import com.vointika.metafield.presentation.request.UpsertMetafieldValueRequest;
+import com.vointika.metafield.presentation.response.MetafieldValueResponse;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * A page's metafield values — a thin mount of the owner-generic value
+ * use cases with the PAGE owner type (its EXPERIENCE twin serves experiences).
+ * Reads member; writes ADMIN+.
+ */
+@RestController
+@RequestMapping("/api/tour-operators/{tourOperatorId}/pages/{pageId}/metafields")
+public class PageMetafieldController {
+
+    private static final MetafieldOwnerType OWNER = MetafieldOwnerType.PAGE;
+
+    private final ListMetafieldValuesUseCase listUseCase;
+    private final UpsertMetafieldValueUseCase upsertUseCase;
+    private final DeleteMetafieldValueUseCase deleteUseCase;
+
+    public PageMetafieldController(ListMetafieldValuesUseCase listUseCase,
+                                         UpsertMetafieldValueUseCase upsertUseCase,
+                                         DeleteMetafieldValueUseCase deleteUseCase) {
+        this.listUseCase = listUseCase;
+        this.upsertUseCase = upsertUseCase;
+        this.deleteUseCase = deleteUseCase;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<MetafieldValueResponse>> list(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID pageId,
+            @AuthenticationPrincipal String callerUserId) {
+        return ResponseEntity.ok(listUseCase
+                .execute(tourOperatorId, OWNER, pageId, UUID.fromString(callerUserId)).stream()
+                .map(MetafieldValueResponse::from)
+                .toList());
+    }
+
+    @PutMapping("/{namespace}/{key}")
+    public ResponseEntity<Void> upsert(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID pageId,
+            @PathVariable String namespace,
+            @PathVariable String key,
+            @RequestBody UpsertMetafieldValueRequest body,
+            @AuthenticationPrincipal String callerUserId) {
+        upsertUseCase.execute(new UpsertMetafieldValueInput(
+                UUID.fromString(callerUserId), tourOperatorId, OWNER, pageId,
+                namespace, key, body.value()));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{namespace}/{key}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID pageId,
+            @PathVariable String namespace,
+            @PathVariable String key,
+            @AuthenticationPrincipal String callerUserId) {
+        deleteUseCase.execute(tourOperatorId, OWNER, pageId, namespace, key,
+                UUID.fromString(callerUserId));
+        return ResponseEntity.noContent().build();
+    }
+}
