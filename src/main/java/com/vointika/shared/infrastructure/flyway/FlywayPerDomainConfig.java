@@ -52,6 +52,9 @@ public class FlywayPerDomainConfig {
             // experience FKs into touroperator.tour_operators + identity.users
             // (media ids are bare, no FK), so it must come after both.
             "experience",
+            // page FKs into touroperator.tour_operators + identity.users, so it
+            // must come after both.
+            "page",
             // audit is deliberately FK-free (rows must survive deletion of what
             // they describe), so its position is unconstrained.
             "audit"

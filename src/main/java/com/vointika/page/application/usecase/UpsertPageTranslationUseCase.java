@@ -1,0 +1,125 @@
+package com.vointika.page.application.usecase;
+
+import com.vointika.page.application.dto.input.UpsertPageTranslationInput;
+import com.vointika.page.domain.entity.PageTranslation;
+import com.vointika.page.domain.repository.PageRepository;
+import com.vointika.page.domain.repository.PageTranslationRepository;
+import com.vointika.page.domain.valueobject.PageBody;
+import com.vointika.page.domain.valueobject.PageSeoDescription;
+import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.page.domain.valueobject.PageTitle;
+import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.ResourceAlreadyExistsException;
+import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
+import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.valueobject.AuditActor;
+import com.vointika.shared.valueobject.LocaleCode;
+import com.vointika.shared.valueobject.Slug;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Creates or replaces a page's translation for one locale — the experience
+ * model. ADMIN+. The page must belong to the operator (404), the locale must
+ * be one the operator supports (422), and the optional localized handle
+ * follows the experience rules: an explicit value is validated and
+ * uniqueness-checked per (operator, locale) excluding this page (409, no
+ * auto-suffix); absent but with a translated title, one is derived with
+ * numeric-suffix probing; else null (the canonical handle serves the locale).
+ */
+public class UpsertPageTranslationUseCase {
+
+    private final PageRepository pageRepository;
+    private final PageTranslationRepository translationRepository;
+    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final SlugGenerator slugGenerator;
+    private final TourOperatorMembershipCheck membershipCheck;
+    private final TransactionRunner transactionRunner;
+    private final AuditTrailPort auditTrailPort;
+
+    public UpsertPageTranslationUseCase(PageRepository pageRepository,
+                                        PageTranslationRepository translationRepository,
+                                        OperatorLocalesQuery operatorLocalesQuery,
+                                        SlugGenerator slugGenerator,
+                                        TourOperatorMembershipCheck membershipCheck,
+                                        TransactionRunner transactionRunner,
+                                        AuditTrailPort auditTrailPort) {
+        this.pageRepository = pageRepository;
+        this.translationRepository = translationRepository;
+        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.slugGenerator = slugGenerator;
+        this.membershipCheck = membershipCheck;
+        this.transactionRunner = transactionRunner;
+        this.auditTrailPort = auditTrailPort;
+    }
+
+    public void execute(UpsertPageTranslationInput input) {
+        membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
+        if (pageRepository.findByIdAndTourOperatorId(input.pageId(), input.tourOperatorId()).isEmpty()) {
+            throw new ResourceNotFoundException("Page not found");
+        }
+
+        LocaleCode locale = new LocaleCode(input.locale());
+        if (!operatorLocalesQuery.findSupportedLocales(input.tourOperatorId()).contains(locale.value())) {
+            throw new InvalidFieldException(
+                    "Locale '" + locale.value() + "' is not supported by this operator");
+        }
+
+        Slug slug = resolveSlug(input, locale);
+        PageTranslation translation = new PageTranslation(
+                input.pageId(),
+                input.tourOperatorId(),
+                locale,
+                blank(input.title()) ? null : new PageTitle(input.title()),
+                blank(input.body()) ? null : new PageBody(input.body()),
+                blank(input.seoTitle()) ? null : new PageSeoTitle(input.seoTitle()),
+                blank(input.seoDescription()) ? null : new PageSeoDescription(input.seoDescription()),
+                slug);
+
+        try {
+            transactionRunner.run(() -> {
+                translationRepository.upsert(translation);
+                // Event on the parent page's timeline (a whole-locale replace
+                // has no meaningful field diff — the locale is the story).
+                auditTrailPort.append(new NewAuditEntry(
+                        input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                        "PAGE", input.pageId(), "page.translation_updated",
+                        Map.of("locale", locale.value())));
+            });
+        } catch (DataIntegrityViolationException e) {
+            // Concurrent localized-handle race — the partial unique index fired.
+            throw new ResourceAlreadyExistsException(
+                    "The localized handle is already in use for this language");
+        }
+    }
+
+    private Slug resolveSlug(UpsertPageTranslationInput input, LocaleCode locale) {
+        if (!blank(input.slug())) {
+            Slug explicit = new Slug(input.slug().trim());
+            if (translationRepository.existsBySlug(
+                    input.tourOperatorId(), locale, explicit.value(), input.pageId())) {
+                throw new ResourceAlreadyExistsException(
+                        "The localized handle '" + explicit.value()
+                                + "' is already in use for this language");
+            }
+            return explicit;
+        }
+        if (!blank(input.title())) {
+            return slugGenerator.generateUnique(input.title(), candidate ->
+                    translationRepository.existsBySlug(
+                            input.tourOperatorId(), locale, candidate, input.pageId()));
+        }
+        return null;
+    }
+
+    private static boolean blank(String s) {
+        return s == null || s.isBlank();
+    }
+}
