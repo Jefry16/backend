@@ -14,8 +14,9 @@
 -- locales), OWNER membership, two audiences (+es overlay), two pickup
 -- locations, three PUBLISHED experiences (+es overlay on one), two AVAILABLE
 -- slots per experience dated relative to today with per-audience pricing
--- (one tier carries booked seats so the capacity floor is exercisable), and
--- three CMS pages (2 published, 1 draft, +es overlay on About).
+-- (one tier carries booked seats so the capacity floor is exercisable),
+-- three CMS pages (2 published, 1 draft, +es overlay on About), and the two
+-- default navigation menus with a small demo tree (+es overlay on Home).
 --
 -- Deliberately NOT seeded: media rows (a row without its MinIO object renders
 -- broken images — upload through the admin instead) and audit entries (the
@@ -60,6 +61,13 @@
 \set page_about_id      '01900000-0000-7000-8000-000000000050'
 \set page_contact_id    '01900000-0000-7000-8000-000000000051'
 \set page_faq_id        '01900000-0000-7000-8000-000000000052'
+
+\set menu_main_id       '01900000-0000-7000-8000-000000000060'
+\set menu_footer_id     '01900000-0000-7000-8000-000000000061'
+\set mi_home_id         '01900000-0000-7000-8000-000000000062'
+\set mi_experiences_id  '01900000-0000-7000-8000-000000000063'
+\set mi_about_id        '01900000-0000-7000-8000-000000000064'
+\set mi_contact_id      '01900000-0000-7000-8000-000000000065'
 
 -- 1. Admin user. Password is the literal string "password" — the hash is a
 -- fixed, precomputed BCrypt ($2a$, cost 10) digest accepted by
@@ -256,4 +264,31 @@ VALUES
      '<h1>Quiénes somos</h1>' || E'\n' ||
      '<p>Paseos en barco familiares en la costa desde 1998.</p>',
      NULL, NULL)
+ON CONFLICT DO NOTHING;
+
+-- 9. Navigation menus. The two defaults every operator gets at creation
+-- (seeded here because this operator is inserted raw, bypassing the use
+-- case), with a small demo tree: main-menu = Home / Experiences / About
+-- (+es overlay on Home), footer = Contact. The FAQ page is deliberately
+-- NOT linked — it's DRAFT, which exercises the render side's unresolvable
+-- handling later.
+INSERT INTO touroperator.menus
+    (id, tour_operator_id, handle, title, created_by, created_at, updated_at)
+VALUES
+    (:'menu_main_id',   :'operator_id', 'main-menu', 'Main menu', :'user_id', NOW(), NOW()),
+    (:'menu_footer_id', :'operator_id', 'footer',    'Footer',    :'user_id', NOW(), NOW())
+ON CONFLICT DO NOTHING;
+
+INSERT INTO touroperator.menu_items
+    (id, menu_id, parent_id, title, link_type, resource_id, url, position, created_at, updated_at)
+VALUES
+    (:'mi_home_id',        :'menu_main_id',   NULL, 'Home',        'HOME',            NULL,             NULL, 0, NOW(), NOW()),
+    (:'mi_experiences_id', :'menu_main_id',   NULL, 'Experiences', 'EXPERIENCE_LIST', NULL,             NULL, 1, NOW(), NOW()),
+    (:'mi_about_id',       :'menu_main_id',   NULL, 'About us',    'PAGE',            :'page_about_id', NULL, 2, NOW(), NOW()),
+    (:'mi_contact_id',     :'menu_footer_id', NULL, 'Contact',     'PAGE',            :'page_contact_id', NULL, 0, NOW(), NOW())
+ON CONFLICT DO NOTHING;
+
+INSERT INTO touroperator.menu_item_translations (menu_item_id, locale, title)
+VALUES
+    (:'mi_home_id', 'es', 'Inicio')
 ON CONFLICT DO NOTHING;
