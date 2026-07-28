@@ -52,6 +52,18 @@ public class TourOperatorJpaEntity {
     @Column(nullable = false)
     private String primaryLocale;
 
+    /** Storefront password protection (Shopify's Store access model). */
+    @Column(nullable = false)
+    private boolean passwordEnabled;
+
+    /** Shared storefront gate, plaintext by design — see V7. */
+    @Column(length = 100)
+    private String storefrontPassword;
+
+    /** The optional "Message for your visitors" shown on the password page. */
+    @Column(columnDefinition = "text")
+    private String passwordMessage;
+
     /** The content locales this operator supports — child table, eager (small set). */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(schema = "touroperator", name = "tour_operator_locales",
