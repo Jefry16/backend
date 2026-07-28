@@ -13,6 +13,7 @@ public record MetafieldDefinitionListItem(
         String namespace,
         String key,
         MetafieldType type,
+        UUID metaobjectDefinitionId,
         String name,
         Instant createdAt
 ) {}

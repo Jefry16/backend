@@ -3,12 +3,14 @@ package com.vointika.metafield.application.usecase;
 import com.vointika.metafield.application.dto.input.CreateMetafieldDefinitionInput;
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
+import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
 import com.vointika.metafield.domain.valueobject.MetafieldDescription;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
+import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -29,17 +31,20 @@ import java.util.UUID;
 public class CreateMetafieldDefinitionUseCase {
 
     private final MetafieldDefinitionRepository definitionRepository;
+    private final MetaobjectDefinitionRepository metaobjectDefinitionRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public CreateMetafieldDefinitionUseCase(MetafieldDefinitionRepository definitionRepository,
+                                            MetaobjectDefinitionRepository metaobjectDefinitionRepository,
                                             TourOperatorMembershipCheck membershipCheck,
                                             IdGenerator idGenerator,
                                             TransactionRunner transactionRunner,
                                             AuditTrailPort auditTrailPort) {
         this.definitionRepository = definitionRepository;
+        this.metaobjectDefinitionRepository = metaobjectDefinitionRepository;
         this.membershipCheck = membershipCheck;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
@@ -57,6 +62,23 @@ public class CreateMetafieldDefinitionUseCase {
         MetafieldDescription description = input.description() == null || input.description().isBlank()
                 ? null : new MetafieldDescription(input.description());
 
+        // The pin travels with the reference type and only with it — a
+        // reference definition without a target could validate nothing.
+        if (type == MetafieldType.METAOBJECT_REFERENCE) {
+            if (input.metaobjectDefinitionId() == null) {
+                throw new InvalidFieldException(
+                        "A metaobject_reference definition must pin a metaobjectDefinitionId");
+            }
+            if (metaobjectDefinitionRepository
+                    .findByIdAndTourOperatorId(input.metaobjectDefinitionId(), input.tourOperatorId())
+                    .isEmpty()) {
+                throw new InvalidFieldException("Metaobject definition not found");
+            }
+        } else if (input.metaobjectDefinitionId() != null) {
+            throw new InvalidFieldException(
+                    "metaobjectDefinitionId only applies to the metaobject_reference type");
+        }
+
         if (definitionRepository.existsByIdentity(
                 input.tourOperatorId(), ownerType, namespace.value(), key.value())) {
             throw new ResourceAlreadyExistsException(
@@ -65,7 +87,8 @@ public class CreateMetafieldDefinitionUseCase {
 
         MetafieldDefinition definition = new MetafieldDefinition(
                 idGenerator.newId(), input.tourOperatorId(), ownerType,
-                namespace, key, type, name, description, input.callerUserId());
+                namespace, key, type, input.metaobjectDefinitionId(),
+                name, description, input.callerUserId());
         try {
             transactionRunner.run(() -> {
                 definitionRepository.save(definition);

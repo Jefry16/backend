@@ -12,4 +12,6 @@ public interface MetaobjectEntryJpaRepository
     Optional<MetaobjectEntryJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
     boolean existsByDefinitionIdAndHandle(UUID definitionId, String handle);
+
+    boolean existsByIdAndDefinitionIdAndTourOperatorId(UUID id, UUID definitionId, UUID tourOperatorId);
 }

@@ -4,6 +4,7 @@ import com.vointika.metafield.domain.projection.MetafieldValueWithDefinition;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.metafield.infrastructure.persistence.entity.MetafieldValueJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -34,4 +35,21 @@ public interface MetafieldValueJpaRepository extends JpaRepository<MetafieldValu
             @Param("tourOperatorId") UUID tourOperatorId,
             @Param("ownerType") MetafieldOwnerType ownerType,
             @Param("ownerId") UUID ownerId);
+
+    /**
+     * Deletes every metaobject_reference value pointing at one entry (runs in
+     * the entry-delete tx so no dangling references survive). flushAutomatically
+     * per the house @Modifying convention — a pending same-tx save on another
+     * table must not be discarded by the clear.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            DELETE FROM MetafieldValueJpaEntity v
+            WHERE v.value = :entryId
+              AND EXISTS (
+                  SELECT 1 FROM MetafieldDefinitionJpaEntity d
+                  WHERE d.id = v.definitionId
+                    AND d.type = com.vointika.metafield.domain.valueobject.MetafieldType.METAOBJECT_REFERENCE)
+            """)
+    void deleteReferencesTo(@Param("entryId") String entryId);
 }

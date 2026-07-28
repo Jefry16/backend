@@ -7,6 +7,7 @@ import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.entity.MetafieldValue;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
+import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
@@ -47,6 +48,7 @@ class MetafieldValueUseCasesTest {
 
     private MetafieldDefinitionRepository definitionRepository;
     private MetafieldValueRepository valueRepository;
+    private MetaobjectEntryRepository metaobjectEntryRepository;
     private ExperienceOwnershipQuery experienceOwnershipQuery;
     private PageOwnershipQuery pageOwnershipQuery;
     private MetafieldOwnerAccess ownerAccess;
@@ -59,6 +61,7 @@ class MetafieldValueUseCasesTest {
     void setUp() {
         definitionRepository = mock(MetafieldDefinitionRepository.class);
         valueRepository = mock(MetafieldValueRepository.class);
+        metaobjectEntryRepository = mock(MetaobjectEntryRepository.class);
         experienceOwnershipQuery = mock(ExperienceOwnershipQuery.class);
         pageOwnershipQuery = mock(PageOwnershipQuery.class);
         ownerAccess = new MetafieldOwnerAccess(experienceOwnershipQuery, pageOwnershipQuery);
@@ -81,12 +84,13 @@ class MetafieldValueUseCasesTest {
     private MetafieldDefinition definition() {
         return new MetafieldDefinition(DEF, OP, MetafieldOwnerType.PAGE,
                 new MetafieldNamespace("custom"), new MetafieldKey("subtitle"),
-                MetafieldType.SINGLE_LINE_TEXT,
+                MetafieldType.SINGLE_LINE_TEXT, null,
                 new MetafieldDefinitionName("Subtitle"), null, USER);
     }
 
     private UpsertMetafieldValueUseCase upsert() {
-        return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository, ownerAccess,
+        return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository,
+                metaobjectEntryRepository, ownerAccess,
                 new MetafieldValueValidator(new ObjectMapper()), membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
     }
@@ -129,6 +133,33 @@ class MetafieldValueUseCasesTest {
 
         assertThatThrownBy(() -> upsert().execute(input("Boat tours since 1998")))
                 .isInstanceOf(com.vointika.shared.exception.ConflictException.class);
+    }
+
+    @Test
+    void referenceValueMustBeAnEntryOfThePinnedType() {
+        UUID pin = UUID.fromString("cccccccc-0000-4000-8000-0000000000aa");
+        UUID entry = UUID.fromString("cccccccc-0000-4000-8000-0000000000bb");
+        when(definitionRepository.findByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle"))
+                .thenReturn(Optional.of(new MetafieldDefinition(DEF, OP, MetafieldOwnerType.PAGE,
+                        new MetafieldNamespace("custom"), new MetafieldKey("subtitle"),
+                        MetafieldType.METAOBJECT_REFERENCE, pin,
+                        new MetafieldDefinitionName("Size chart"), null, USER)));
+        when(valueRepository.findByDefinitionIdAndOwnerId(DEF, OWNER)).thenReturn(Optional.empty());
+
+        // Not a UUID at all → 422 from the validator.
+        assertThatThrownBy(() -> upsert().execute(input("not-an-id")))
+                .isInstanceOf(com.vointika.shared.exception.InvalidFieldException.class);
+        // A UUID that isn't an entry of the pinned type → 422.
+        when(metaobjectEntryRepository.existsByIdAndDefinitionIdAndTourOperatorId(entry, pin, OP))
+                .thenReturn(false);
+        assertThatThrownBy(() -> upsert().execute(input(entry.toString())))
+                .isInstanceOf(com.vointika.shared.exception.InvalidFieldException.class)
+                .hasMessageContaining("pinned type");
+        // A real entry of the pinned type saves.
+        when(metaobjectEntryRepository.existsByIdAndDefinitionIdAndTourOperatorId(entry, pin, OP))
+                .thenReturn(true);
+        upsert().execute(input(entry.toString()));
+        verify(valueRepository).save(any());
     }
 
     @Test

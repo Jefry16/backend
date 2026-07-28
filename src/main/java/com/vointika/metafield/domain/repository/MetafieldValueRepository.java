@@ -19,4 +19,7 @@ public interface MetafieldValueRepository {
             UUID tourOperatorId, MetafieldOwnerType ownerType, UUID ownerId);
 
     void delete(UUID valueId);
+
+    /** Clears every metaobject_reference value pointing at a deleted entry. */
+    void deleteReferencesTo(UUID entryId);
 }

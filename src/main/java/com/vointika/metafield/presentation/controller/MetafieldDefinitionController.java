@@ -69,7 +69,7 @@ public class MetafieldDefinitionController {
         UUID id = createUseCase.execute(new CreateMetafieldDefinitionInput(
                 UUID.fromString(callerUserId), tourOperatorId,
                 body.ownerType(), body.namespace(), body.key(), body.type(),
-                body.name(), body.description()));
+                body.metaobjectDefinitionId(), body.name(), body.description()));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId
                         + "/metafield-definitions/" + id))

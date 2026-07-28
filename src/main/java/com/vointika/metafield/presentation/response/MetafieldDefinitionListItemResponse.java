@@ -12,6 +12,7 @@ public record MetafieldDefinitionListItemResponse(
         String namespace,
         String key,
         String type,
+        UUID metaobjectDefinitionId,
         String name,
         Instant createdAt) {
 
@@ -23,6 +24,7 @@ public record MetafieldDefinitionListItemResponse(
                 item.namespace(),
                 item.key(),
                 item.type().code(),
+                item.metaobjectDefinitionId(),
                 item.name(),
                 item.createdAt());
     }

@@ -3,10 +3,11 @@ package com.vointika.metafield.domain.valueobject;
 import com.vointika.shared.exception.InvalidFieldException;
 
 /**
- * The v1 metafield type catalogue. A definition's type establishes how values
+ * The metafield type catalogue. A definition's type establishes how values
  * are validated and how themes should interpret them. Codes are the wire and
- * storage format ({@code single_line_text}, …); reference, list and color
- * types are deliberately out of v1.
+ * storage format ({@code single_line_text}, …). {@code metaobject_reference}
+ * stores a metaobject entry id, pinned to one metaobject type on the
+ * definition; list and color types are deliberately still out.
  */
 public enum MetafieldType {
 
@@ -17,7 +18,8 @@ public enum MetafieldType {
     BOOLEAN("boolean"),
     DATE("date"),
     URL("url"),
-    JSON("json");
+    JSON("json"),
+    METAOBJECT_REFERENCE("metaobject_reference");
 
     private final String code;
 
@@ -37,6 +39,6 @@ public enum MetafieldType {
         }
         throw new InvalidFieldException(
                 "Metafield type must be one of: single_line_text, multi_line_text, number_integer, "
-                        + "number_decimal, boolean, date, url, json");
+                        + "number_decimal, boolean, date, url, json, metaobject_reference");
     }
 }

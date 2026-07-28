@@ -9,6 +9,7 @@ public record CreateMetafieldDefinitionInput(
         String namespace,
         String key,
         String type,
+        UUID metaobjectDefinitionId,
         String name,
         String description) {
 }

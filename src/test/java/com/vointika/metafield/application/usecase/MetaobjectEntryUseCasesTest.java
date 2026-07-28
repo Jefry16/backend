@@ -7,6 +7,7 @@ import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
 import com.vointika.metafield.domain.entity.MetaobjectEntryValue;
 import com.vointika.metafield.domain.entity.MetaobjectField;
+import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
@@ -54,6 +55,7 @@ class MetaobjectEntryUseCasesTest {
 
     private MetaobjectDefinitionRepository definitionRepository;
     private MetaobjectEntryRepository entryRepository;
+    private MetafieldValueRepository metafieldValueRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private IdGenerator idGenerator;
@@ -63,6 +65,7 @@ class MetaobjectEntryUseCasesTest {
     void setUp() {
         definitionRepository = mock(MetaobjectDefinitionRepository.class);
         entryRepository = mock(MetaobjectEntryRepository.class);
+        metafieldValueRepository = mock(MetafieldValueRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         idGenerator = mock(IdGenerator.class);
@@ -211,10 +214,13 @@ class MetaobjectEntryUseCasesTest {
     void deleteAuditsWithIdentityInDetails() {
         when(entryRepository.findByIdAndTourOperatorId(ENTRY, OP)).thenReturn(Optional.of(entry()));
         DeleteMetaobjectEntryUseCase useCase = new DeleteMetaobjectEntryUseCase(
-                entryRepository, membershipCheck, transactionRunner, auditTrailPort);
+                entryRepository, metafieldValueRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
 
         useCase.execute(OP, ENTRY, USER);
 
+        // Dangling metaobject_reference metafields clear in the same tx.
+        verify(metafieldValueRepository).deleteReferencesTo(ENTRY);
         verify(entryRepository).delete(ENTRY);
         ArgumentCaptor<NewAuditEntry> captor = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(captor.capture());

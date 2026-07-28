@@ -7,9 +7,12 @@ import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.entity.MetafieldValue;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
+import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
+import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.exception.ConflictException;
+import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -23,6 +26,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Sets (creates or replaces) one metafield value on an owning resource.
@@ -36,6 +40,7 @@ public class UpsertMetafieldValueUseCase {
 
     private final MetafieldDefinitionRepository definitionRepository;
     private final MetafieldValueRepository valueRepository;
+    private final MetaobjectEntryRepository metaobjectEntryRepository;
     private final MetafieldOwnerAccess ownerAccess;
     private final MetafieldValueValidator valueValidator;
     private final TourOperatorMembershipCheck membershipCheck;
@@ -45,6 +50,7 @@ public class UpsertMetafieldValueUseCase {
 
     public UpsertMetafieldValueUseCase(MetafieldDefinitionRepository definitionRepository,
                                        MetafieldValueRepository valueRepository,
+                                       MetaobjectEntryRepository metaobjectEntryRepository,
                                        MetafieldOwnerAccess ownerAccess,
                                        MetafieldValueValidator valueValidator,
                                        TourOperatorMembershipCheck membershipCheck,
@@ -53,6 +59,7 @@ public class UpsertMetafieldValueUseCase {
                                        AuditTrailPort auditTrailPort) {
         this.definitionRepository = definitionRepository;
         this.valueRepository = valueRepository;
+        this.metaobjectEntryRepository = metaobjectEntryRepository;
         this.ownerAccess = ownerAccess;
         this.valueValidator = valueValidator;
         this.membershipCheck = membershipCheck;
@@ -72,6 +79,17 @@ public class UpsertMetafieldValueUseCase {
                 .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
 
         String normalized = valueValidator.validateAndNormalize(definition.getType(), input.value());
+        // The validator only checks SHAPE for references; the integrity half —
+        // the entry exists, is this operator's and is of the pinned type —
+        // needs repositories, so it lives here.
+        if (definition.getType() == MetafieldType.METAOBJECT_REFERENCE
+                && !metaobjectEntryRepository.existsByIdAndDefinitionIdAndTourOperatorId(
+                        UUID.fromString(normalized),
+                        definition.getMetaobjectDefinitionId(),
+                        input.tourOperatorId())) {
+            throw new InvalidFieldException(
+                    "The value must reference an existing metaobject of the pinned type");
+        }
 
         Optional<MetafieldValue> existing =
                 valueRepository.findByDefinitionIdAndOwnerId(definition.getId(), input.ownerId());

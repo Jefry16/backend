@@ -43,6 +43,9 @@ public class MetafieldDefinitionJpaEntity {
     @Column(nullable = false, updatable = false, length = 30)
     private MetafieldType type;
 
+    @Column(updatable = false)
+    private UUID metaobjectDefinitionId;
+
     @Column(nullable = false, length = 120)
     private String name;
 

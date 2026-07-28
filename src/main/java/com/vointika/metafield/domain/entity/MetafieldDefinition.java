@@ -31,6 +31,8 @@ public class MetafieldDefinition {
     private final MetafieldNamespace namespace;
     private final MetafieldKey key;
     private final MetafieldType type;
+    /** The pinned metaobject type — set (immutably) iff type is METAOBJECT_REFERENCE. */
+    private final UUID metaobjectDefinitionId;
     private MetafieldDefinitionName name;
     private MetafieldDescription description;
     private final UUID createdBy;
@@ -44,6 +46,7 @@ public class MetafieldDefinition {
                                MetafieldNamespace namespace,
                                MetafieldKey key,
                                MetafieldType type,
+                               UUID metaobjectDefinitionId,
                                MetafieldDefinitionName name,
                                MetafieldDescription description,
                                UUID createdBy) {
@@ -53,6 +56,7 @@ public class MetafieldDefinition {
         this.namespace = namespace;
         this.key = key;
         this.type = type;
+        this.metaobjectDefinitionId = metaobjectDefinitionId;
         this.name = name;
         this.description = description;
         this.createdBy = createdBy;
@@ -67,6 +71,7 @@ public class MetafieldDefinition {
                                MetafieldNamespace namespace,
                                MetafieldKey key,
                                MetafieldType type,
+                               UUID metaobjectDefinitionId,
                                MetafieldDefinitionName name,
                                MetafieldDescription description,
                                UUID createdBy,
@@ -78,6 +83,7 @@ public class MetafieldDefinition {
         this.namespace = namespace;
         this.key = key;
         this.type = type;
+        this.metaobjectDefinitionId = metaobjectDefinitionId;
         this.name = name;
         this.description = description;
         this.createdBy = createdBy;
@@ -109,6 +115,7 @@ public class MetafieldDefinition {
     public MetafieldNamespace getNamespace() { return namespace; }
     public MetafieldKey getKey() { return key; }
     public MetafieldType getType() { return type; }
+    public UUID getMetaobjectDefinitionId() { return metaobjectDefinitionId; }
     public MetafieldDefinitionName getName() { return name; }
     public Optional<MetafieldDescription> getDescription() { return Optional.ofNullable(description); }
     public UUID getCreatedBy() { return createdBy; }

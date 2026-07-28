@@ -4,6 +4,7 @@ import com.vointika.metafield.application.dto.input.CreateMetafieldDefinitionInp
 import com.vointika.metafield.application.dto.input.UpdateMetafieldDefinitionInput;
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
+import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
@@ -38,6 +39,7 @@ class MetafieldDefinitionUseCasesTest {
     private static final UUID DEF = UUID.fromString("cccccccc-0000-4000-8000-000000000001");
 
     private MetafieldDefinitionRepository repository;
+    private MetaobjectDefinitionRepository metaobjectDefinitionRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private IdGenerator idGenerator;
@@ -46,6 +48,7 @@ class MetafieldDefinitionUseCasesTest {
     @BeforeEach
     void setUp() {
         repository = mock(MetafieldDefinitionRepository.class);
+        metaobjectDefinitionRepository = mock(MetaobjectDefinitionRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         idGenerator = mock(IdGenerator.class);
@@ -62,13 +65,17 @@ class MetafieldDefinitionUseCasesTest {
     private MetafieldDefinition definition() {
         return new MetafieldDefinition(DEF, OP, MetafieldOwnerType.PAGE,
                 new MetafieldNamespace("custom"), new MetafieldKey("subtitle"),
-                MetafieldType.SINGLE_LINE_TEXT,
+                MetafieldType.SINGLE_LINE_TEXT, null,
                 new MetafieldDefinitionName("Subtitle"), null, USER);
     }
 
     private CreateMetafieldDefinitionInput createInput(String ownerType, String type) {
+        return createInput(ownerType, type, null);
+    }
+
+    private CreateMetafieldDefinitionInput createInput(String ownerType, String type, UUID pin) {
         return new CreateMetafieldDefinitionInput(
-                USER, OP, ownerType, "custom", "subtitle", type, "Subtitle", null);
+                USER, OP, ownerType, "custom", "subtitle", type, pin, "Subtitle", null);
     }
 
     @Test
@@ -98,6 +105,24 @@ class MetafieldDefinitionUseCasesTest {
                 .isInstanceOf(InvalidFieldException.class);
         assertThatThrownBy(() -> create().execute(createInput("page", "color")))
                 .isInstanceOf(InvalidFieldException.class);
+    }
+
+    @Test
+    void referenceTypeRequiresAndValidatesThePin() {
+        // Missing pin → 422.
+        assertThatThrownBy(() -> create().execute(createInput("page", "metaobject_reference")))
+                .isInstanceOf(InvalidFieldException.class)
+                .hasMessageContaining("must pin");
+        // Pin that isn't the operator's → 422.
+        UUID pin = UUID.randomUUID();
+        when(metaobjectDefinitionRepository.findByIdAndTourOperatorId(pin, OP))
+                .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> create().execute(createInput("page", "metaobject_reference", pin)))
+                .isInstanceOf(InvalidFieldException.class);
+        // A pin on a scalar type → 422.
+        assertThatThrownBy(() -> create().execute(createInput("page", "boolean", pin)))
+                .isInstanceOf(InvalidFieldException.class)
+                .hasMessageContaining("only applies");
     }
 
     @Test
@@ -132,8 +157,8 @@ class MetafieldDefinitionUseCasesTest {
     }
 
     private CreateMetafieldDefinitionUseCase create() {
-        return new CreateMetafieldDefinitionUseCase(repository, membershipCheck, idGenerator,
-                transactionRunner, auditTrailPort);
+        return new CreateMetafieldDefinitionUseCase(repository, metaobjectDefinitionRepository,
+                membershipCheck, idGenerator, transactionRunner, auditTrailPort);
     }
 
     private UpdateMetafieldDefinitionUseCase update() {

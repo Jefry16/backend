@@ -2,12 +2,14 @@ package com.vointika.metafield.application.usecase;
 
 import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
+import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -39,13 +41,20 @@ public class DeleteMetaobjectDefinitionUseCase {
                 .findByIdAndTourOperatorId(definitionId, tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
         // A delete leaves no row to diff — identity rides details.
-        transactionRunner.run(() -> {
-            definitionRepository.delete(definitionId);
-            auditTrailPort.append(new NewAuditEntry(
-                    tourOperatorId, AuditActor.user(callerUserId),
-                    "METAOBJECT_DEFINITION", definitionId, "metaobject_definition.deleted",
-                    Map.of("type", definition.getType().value(),
-                            "name", definition.getName().value())));
-        });
+        try {
+            transactionRunner.run(() -> {
+                definitionRepository.delete(definitionId);
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(callerUserId),
+                        "METAOBJECT_DEFINITION", definitionId, "metaobject_definition.deleted",
+                        Map.of("type", definition.getType().value(),
+                                "name", definition.getName().value())));
+            });
+        } catch (DataIntegrityViolationException e) {
+            // The FK from metafield_definitions.metaobject_definition_id —
+            // a reference metafield still pins this type.
+            throw new ConflictException(
+                    "A metafield definition references this metaobject type — delete it first");
+        }
     }
 }

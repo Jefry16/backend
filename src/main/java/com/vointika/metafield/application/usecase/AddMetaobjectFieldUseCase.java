@@ -7,6 +7,7 @@ import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
+import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -54,6 +55,10 @@ public class AddMetaobjectFieldUseCase {
 
         MetafieldKey key = new MetafieldKey(input.key());
         MetafieldType type = MetafieldType.fromCode(input.type());
+        if (type == MetafieldType.METAOBJECT_REFERENCE) {
+            throw new InvalidFieldException(
+                    "Metaobject fields cannot use the metaobject_reference type");
+        }
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
 
         if (definitionRepository.existsField(definition.getId(), key.value())) {
