@@ -279,13 +279,21 @@ VALUES
     (:'menu_footer_id', :'operator_id', 'footer',    'Footer',    :'user_id', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
+-- Items resolve their menu by (operator, handle) instead of assuming the
+-- fixed menu ids above landed: on a dev DB whose defaults came from the V5
+-- backfill (random ids), the menus insert above no-ops on the handle
+-- conflict, and a fixed menu_id here would abort the whole seed on the FK.
 INSERT INTO touroperator.menu_items
     (id, menu_id, parent_id, title, link_type, resource_id, url, position, created_at, updated_at)
-VALUES
-    (:'mi_home_id',        :'menu_main_id',   NULL, 'Home',        'HOME',            NULL,             NULL, 0, NOW(), NOW()),
-    (:'mi_experiences_id', :'menu_main_id',   NULL, 'Experiences', 'EXPERIENCE_LIST', NULL,             NULL, 1, NOW(), NOW()),
-    (:'mi_about_id',       :'menu_main_id',   NULL, 'About us',    'PAGE',            :'page_about_id', NULL, 2, NOW(), NOW()),
-    (:'mi_contact_id',     :'menu_footer_id', NULL, 'Contact',     'PAGE',            :'page_contact_id', NULL, 0, NOW(), NOW())
+SELECT v.id, m.id, NULL, v.title, v.link_type, v.resource_id, NULL, v.position, NOW(), NOW()
+FROM (VALUES
+    (:'mi_home_id'::uuid,        'main-menu', 'Home',        'HOME',            NULL::uuid,             0),
+    (:'mi_experiences_id'::uuid, 'main-menu', 'Experiences', 'EXPERIENCE_LIST', NULL::uuid,             1),
+    (:'mi_about_id'::uuid,       'main-menu', 'About us',    'PAGE',            :'page_about_id'::uuid, 2),
+    (:'mi_contact_id'::uuid,     'footer',    'Contact',     'PAGE',            :'page_contact_id'::uuid, 0)
+) AS v(id, menu_handle, title, link_type, resource_id, position)
+JOIN touroperator.menus m
+    ON m.tour_operator_id = :'operator_id' AND m.handle = v.menu_handle
 ON CONFLICT DO NOTHING;
 
 INSERT INTO touroperator.menu_item_translations (menu_item_id, locale, title)

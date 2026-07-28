@@ -21,8 +21,7 @@ import java.util.UUID;
  */
 public class MenuItem {
 
-    public static final int MAX_DEPTH = 3;
-
+    private static final int MAX_DEPTH = 3;
     private static final int TITLE_MAX_LENGTH = 120;
     private static final int URL_MAX_LENGTH = 2048;
 
