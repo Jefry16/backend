@@ -5,8 +5,6 @@ import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.valueobject.Slug;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -89,14 +87,6 @@ public class MetaobjectEntry {
         }
         this.published = false;
         this.updatedAt = Instant.now();
-    }
-
-    /** The audit-worthy identity fields (values diff separately, per field key). */
-    public Map<String, Object> auditSnapshot() {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("name", name.value());
-        snapshot.put("handle", handle.value());
-        return snapshot;
     }
 
     public UUID getId() { return id; }

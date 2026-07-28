@@ -158,9 +158,14 @@ class MetaobjectDefinitionUseCasesTest {
     }
 
     @Test
-    void addFieldAppendsAtEndAndAudits() {
+    void addFieldAppendsAfterTheHighestPositionNotTheCount() {
         when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
-        when(repository.countFields(DEF)).thenReturn(2L);
+        // Two surviving fields at positions 1 and 4 (2 and 3 were removed):
+        // the next position must be 5, not count+1=3 (which would collide).
+        MetaobjectField last = new MetaobjectField(UUID.randomUUID(), DEF,
+                new MetafieldKey("rows"), MetafieldType.JSON,
+                new MetafieldDefinitionName("Rows"), 4);
+        when(repository.fieldsOf(DEF)).thenReturn(List.of(field("heading"), last));
         AddMetaobjectFieldUseCase useCase = new AddMetaobjectFieldUseCase(
                 repository, membershipCheck, idGenerator, transactionRunner, auditTrailPort);
 
@@ -168,7 +173,7 @@ class MetaobjectDefinitionUseCasesTest {
 
         ArgumentCaptor<MetaobjectField> saved = ArgumentCaptor.forClass(MetaobjectField.class);
         verify(repository).saveField(saved.capture());
-        assertThat(saved.getValue().getPosition()).isEqualTo(3);
+        assertThat(saved.getValue().getPosition()).isEqualTo(5);
         ArgumentCaptor<NewAuditEntry> captor = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(captor.capture());
         assertThat(captor.getValue().action()).isEqualTo("metaobject_definition.field_added");

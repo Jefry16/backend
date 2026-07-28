@@ -17,6 +17,7 @@ import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -59,9 +60,13 @@ public class AddMetaobjectFieldUseCase {
             throw new ResourceAlreadyExistsException(
                     "A field with this key already exists on this definition");
         }
+        // max(position)+1, NOT count+1 — after a removal, count+1 would
+        // collide with a surviving field's position and make ordering ties.
+        List<MetaobjectField> existing = definitionRepository.fieldsOf(definition.getId());
+        int nextPosition = existing.isEmpty()
+                ? 1 : existing.getLast().getPosition() + 1;
         MetaobjectField field = new MetaobjectField(
-                idGenerator.newId(), definition.getId(), key, type, name,
-                (int) definitionRepository.countFields(definition.getId()) + 1);
+                idGenerator.newId(), definition.getId(), key, type, name, nextPosition);
         try {
             transactionRunner.run(() -> {
                 definitionRepository.saveField(field);
