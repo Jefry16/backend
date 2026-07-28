@@ -26,6 +26,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Sets (creates or replaces) one metafield value on an owning resource.
@@ -83,7 +84,7 @@ public class UpsertMetafieldValueUseCase {
         // needs repositories, so it lives here.
         if (definition.getType() == MetafieldType.METAOBJECT_REFERENCE
                 && !metaobjectEntryRepository.existsByIdAndDefinitionIdAndTourOperatorId(
-                        java.util.UUID.fromString(normalized),
+                        UUID.fromString(normalized),
                         definition.getMetaobjectDefinitionId(),
                         input.tourOperatorId())) {
             throw new InvalidFieldException(
