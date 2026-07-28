@@ -18,9 +18,11 @@ import org.slf4j.LoggerFactory;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.shared.service.SlugGenerator;
+import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
+import com.vointika.touroperator.domain.repository.MenuRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.shared.valueobject.AuditActor;
@@ -53,6 +55,7 @@ public class CreateTourOperatorUseCase {
 
     private final TourOperatorRepository tourOperatorRepository;
     private final TourOperatorMemberRepository memberRepository;
+    private final MenuRepository menuRepository;
     private final TimezoneRepository timezoneRepository;
     private final CurrencyRepository currencyRepository;
     private final SlugGenerator slugGenerator;
@@ -65,6 +68,7 @@ public class CreateTourOperatorUseCase {
     public CreateTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
             TourOperatorMemberRepository memberRepository,
+            MenuRepository menuRepository,
             TimezoneRepository timezoneRepository,
             CurrencyRepository currencyRepository,
             SlugGenerator slugGenerator,
@@ -75,6 +79,7 @@ public class CreateTourOperatorUseCase {
             AuditTrailPort auditTrailPort) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.memberRepository = memberRepository;
+        this.menuRepository = menuRepository;
         this.timezoneRepository = timezoneRepository;
         this.currencyRepository = currencyRepository;
         this.slugGenerator = slugGenerator;
@@ -143,6 +148,13 @@ public class CreateTourOperatorUseCase {
                             idGenerator.newId(), candidate.getId(), createdBy,
                             MemberRole.OWNER, isFirst,
                             ownerContact.name(), ownerContact.email()));
+                    // Every operator starts with the two default storefront
+                    // menus (ordinary, deletable) — part of the operator's
+                    // initial state, so they ride the same transaction.
+                    menuRepository.save(new Menu(idGenerator.newId(), candidate.getId(),
+                            new Slug("main-menu"), "Main menu", createdBy));
+                    menuRepository.save(new Menu(idGenerator.newId(), candidate.getId(),
+                            new Slug("footer"), "Footer", createdBy));
                     auditTrailPort.append(new NewAuditEntry(
                             candidate.getId(), AuditActor.user(createdBy),
                             "TOUR_OPERATOR", candidate.getId(), "tour_operator.created",

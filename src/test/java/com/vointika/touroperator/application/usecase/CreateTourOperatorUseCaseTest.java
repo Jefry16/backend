@@ -17,15 +17,18 @@ import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.shared.service.SlugGenerator;
+import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
+import com.vointika.touroperator.domain.repository.MenuRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -40,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +53,7 @@ class CreateTourOperatorUseCaseTest {
 
     private TourOperatorRepository tourOperatorRepository;
     private TourOperatorMemberRepository memberRepository;
+    private MenuRepository menuRepository;
     private TimezoneRepository timezoneRepository;
     private CurrencyRepository currencyRepository;
     private IdGenerator idGenerator;
@@ -64,6 +69,7 @@ class CreateTourOperatorUseCaseTest {
     void setUp() {
         tourOperatorRepository = mock(TourOperatorRepository.class);
         memberRepository = mock(TourOperatorMemberRepository.class);
+        menuRepository = mock(MenuRepository.class);
         timezoneRepository = mock(TimezoneRepository.class);
         currencyRepository = mock(CurrencyRepository.class);
         idGenerator = mock(IdGenerator.class);
@@ -74,7 +80,7 @@ class CreateTourOperatorUseCaseTest {
             @Override public void run(Runnable work) { work.run(); }
         };
         useCase = new CreateTourOperatorUseCase(
-                tourOperatorRepository, memberRepository,
+                tourOperatorRepository, memberRepository, menuRepository,
                 timezoneRepository, currencyRepository,
                 new SlugGenerator(), transactionRunner, idGenerator,
                 userAccountQuery, eventPublisher, auditTrailPort);
@@ -82,9 +88,10 @@ class CreateTourOperatorUseCaseTest {
         // Happy-path defaults; individual tests override.
         when(timezoneRepository.findById(any())).thenReturn(Optional.of(mock(Timezone.class)));
         when(currencyRepository.findById(any())).thenReturn(Optional.of(mock(Currency.class)));
-        when(idGenerator.newId()).thenReturn(UUID.randomUUID(), UUID.randomUUID());
+        when(idGenerator.newId()).thenAnswer(inv -> UUID.randomUUID());
         when(tourOperatorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(memberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(menuRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(userAccountQuery.findContact(any()))
                 .thenReturn(Optional.of(new UserContactView("owner@example.com", "Ada Owner", "es")));
     }
@@ -112,6 +119,29 @@ class CreateTourOperatorUseCaseTest {
         assertEquals(userId, member.getUserId());
         assertEquals(saved.getId(), member.getTourOperatorId());
         assertTrue(member.isDefault(), "the user's first operator is their default");
+    }
+
+    @Test
+    void seedsTheTwoDefaultMenusInTheCreateTransaction() {
+        CreateTourOperatorOutput out = useCase.execute(input());
+
+        ArgumentCaptor<Menu> menuCaptor = ArgumentCaptor.forClass(Menu.class);
+        verify(menuRepository, times(2)).save(menuCaptor.capture());
+        List<Menu> menus = menuCaptor.getAllValues();
+        assertEquals("main-menu", menus.get(0).getHandle().value());
+        assertEquals("Main menu", menus.get(0).getTitle());
+        assertEquals("footer", menus.get(1).getHandle().value());
+        assertEquals("Footer", menus.get(1).getTitle());
+        assertEquals(out.id(), menus.get(0).getTourOperatorId());
+        assertEquals(userId, menus.get(0).getCreatedBy());
+    }
+
+    @Test
+    void rejectedCreateSeedsNoMenus() {
+        when(tourOperatorRepository.existsByOwnerAndName(eq(userId), any())).thenReturn(true);
+
+        assertThrows(ResourceAlreadyExistsException.class, () -> useCase.execute(input()));
+        verify(menuRepository, never()).save(any());
     }
 
     @Test
