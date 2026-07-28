@@ -55,7 +55,22 @@ public class MetafieldValueValidator {
             case DATE -> date(trimmed);
             case URL -> url(trimmed);
             case JSON -> json(trimmed);
+            case METAOBJECT_REFERENCE -> metaobjectReference(trimmed);
         };
+    }
+
+    /**
+     * Shape-only here (a canonical UUID string); the upsert use case checks
+     * the entry exists, belongs to the operator and matches the definition's
+     * pinned metaobject type — that needs repositories this service doesn't.
+     */
+    private String metaobjectReference(String value) {
+        try {
+            return java.util.UUID.fromString(value).toString();
+        } catch (IllegalArgumentException e) {
+            throw new InvalidFieldException(
+                    "A metaobject_reference metafield value must be a metaobject id");
+        }
     }
 
     private String singleLineText(String value) {

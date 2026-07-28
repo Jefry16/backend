@@ -19,6 +19,9 @@ public interface MetaobjectEntryRepository {
 
     boolean existsByDefinitionIdAndHandle(UUID definitionId, String handle);
 
+    /** The reference-metafield probe: does this entry exist under this type + operator? */
+    boolean existsByIdAndDefinitionIdAndTourOperatorId(UUID entryId, UUID definitionId, UUID tourOperatorId);
+
     CursorPage<MetaobjectEntryListItem> list(ListQuery query);
 
     /** Cascades the entry's values (DB-level). */

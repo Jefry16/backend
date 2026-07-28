@@ -48,6 +48,12 @@ public class MetaobjectEntryRepositoryImpl implements MetaobjectEntryRepository 
     }
 
     @Override
+    public boolean existsByIdAndDefinitionIdAndTourOperatorId(
+            UUID entryId, UUID definitionId, UUID tourOperatorId) {
+        return entryJpa.existsByIdAndDefinitionIdAndTourOperatorId(entryId, definitionId, tourOperatorId);
+    }
+
+    @Override
     public CursorPage<MetaobjectEntryListItem> list(ListQuery query) {
         return listExecutor.list(
                 MetaobjectEntryJpaEntity.class,

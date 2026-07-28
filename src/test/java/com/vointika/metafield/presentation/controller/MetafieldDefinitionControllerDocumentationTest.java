@@ -102,7 +102,7 @@ class MetafieldDefinitionControllerDocumentationTest {
     private MetafieldDefinition definition() {
         return new MetafieldDefinition(UUID.fromString(DEF), UUID.fromString(OP),
                 MetafieldOwnerType.PAGE, new MetafieldNamespace("custom"),
-                new MetafieldKey("subtitle"), MetafieldType.SINGLE_LINE_TEXT,
+                new MetafieldKey("subtitle"), MetafieldType.SINGLE_LINE_TEXT, null,
                 new MetafieldDefinitionName("Subtitle"),
                 new MetafieldDescription("Shown under the title"),
                 UUID.fromString(USER),
@@ -125,7 +125,8 @@ class MetafieldDefinitionControllerDocumentationTest {
                                 fieldWithPath("ownerType").description("Which resource kind: experience or page (immutable)"),
                                 fieldWithPath("namespace").description("Slug-shaped namespace half of the identifier (immutable)"),
                                 fieldWithPath("key").description("Slug-shaped key half; namespace.key unique per (operator, owner type) — duplicate → 409 (immutable)"),
-                                fieldWithPath("type").description("single_line_text | multi_line_text | number_integer | number_decimal | boolean | date | url | json (immutable)"),
+                                fieldWithPath("type").description("single_line_text | multi_line_text | number_integer | number_decimal | boolean | date | url | json | metaobject_reference (immutable)"),
+                                fieldWithPath("metaobjectDefinitionId").type("String").description("Required iff type is metaobject_reference: the pinned metaobject type").optional(),
                                 fieldWithPath("name").description("Display name (1–120)"),
                                 fieldWithPath("description").description("Optional help text (≤500)").optional())));
     }
@@ -148,7 +149,7 @@ class MetafieldDefinitionControllerDocumentationTest {
         when(listUseCase.execute(any(), any())).thenReturn(new CursorPage<>(
                 List.of(new MetafieldDefinitionListItem(UUID.fromString(DEF),
                         MetafieldOwnerType.PAGE, "custom", "subtitle",
-                        MetafieldType.SINGLE_LINE_TEXT, "Subtitle",
+                        MetafieldType.SINGLE_LINE_TEXT, null, "Subtitle",
                         Instant.parse("2026-07-27T10:00:00Z"))),
                 null));
 
@@ -165,6 +166,7 @@ class MetafieldDefinitionControllerDocumentationTest {
                                 fieldWithPath("data[].namespace").description("Namespace half of the identifier"),
                                 fieldWithPath("data[].key").description("Key half of the identifier"),
                                 fieldWithPath("data[].type").description("The value type code"),
+                                fieldWithPath("data[].metaobjectDefinitionId").type("String").description("The pinned metaobject type (metaobject_reference only), or null").optional(),
                                 fieldWithPath("data[].name").description("Display name"),
                                 fieldWithPath("data[].createdAt").description("When created"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));

@@ -20,6 +20,7 @@ public final class MetafieldDefinitionMapper {
                 d.getNamespace().value(),
                 d.getKey().value(),
                 d.getType(),
+                d.getMetaobjectDefinitionId(),
                 d.getName().value(),
                 d.getDescription().map(MetafieldDescription::value).orElse(null),
                 d.getCreatedBy(),
@@ -35,6 +36,7 @@ public final class MetafieldDefinitionMapper {
                 new MetafieldNamespace(e.getNamespace()),
                 new MetafieldKey(e.getKey()),
                 e.getType(),
+                e.getMetaobjectDefinitionId(),
                 new MetafieldDefinitionName(e.getName()),
                 e.getDescription() == null ? null : new MetafieldDescription(e.getDescription()),
                 e.getCreatedBy(),
@@ -49,6 +51,7 @@ public final class MetafieldDefinitionMapper {
                 e.getNamespace(),
                 e.getKey(),
                 e.getType(),
+                e.getMetaobjectDefinitionId(),
                 e.getName(),
                 e.getCreatedAt());
     }

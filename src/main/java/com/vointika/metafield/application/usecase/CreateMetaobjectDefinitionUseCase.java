@@ -76,9 +76,15 @@ public class CreateMetaobjectDefinitionUseCase {
             if (!seenKeys.add(key.value())) {
                 throw new InvalidFieldException("Duplicate field key '" + key.value() + "'");
             }
+            MetafieldType fieldType = MetafieldType.fromCode(spec.type());
+            if (fieldType == MetafieldType.METAOBJECT_REFERENCE) {
+                // Nested references (metaobject → metaobject) are out for now;
+                // the reference type belongs to experience/page metafields.
+                throw new InvalidFieldException(
+                        "Metaobject fields cannot use the metaobject_reference type");
+            }
             fields.add(new MetaobjectField(
-                    idGenerator.newId(), definition.getId(), key,
-                    MetafieldType.fromCode(spec.type()),
+                    idGenerator.newId(), definition.getId(), key, fieldType,
                     new MetafieldDefinitionName(spec.name()), position++));
         }
 

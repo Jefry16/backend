@@ -12,6 +12,8 @@ import com.vointika.metafield.application.usecase.UpdateMetafieldDefinitionUseCa
 import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
+import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
+import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.ExperienceOwnershipQuery;
 import com.vointika.shared.port.PageOwnershipQuery;
@@ -40,11 +42,13 @@ public class MetafieldUseCaseConfig {
     @Bean
     public CreateMetafieldDefinitionUseCase createMetafieldDefinitionUseCase(
             MetafieldDefinitionRepository definitionRepository,
+            MetaobjectDefinitionRepository metaobjectDefinitionRepository,
             TourOperatorMembershipCheck membershipCheck,
             IdGenerator idGenerator,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new CreateMetafieldDefinitionUseCase(definitionRepository, membershipCheck,
+        return new CreateMetafieldDefinitionUseCase(definitionRepository,
+                metaobjectDefinitionRepository, membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
     }
 
@@ -86,6 +90,7 @@ public class MetafieldUseCaseConfig {
     public UpsertMetafieldValueUseCase upsertMetafieldValueUseCase(
             MetafieldDefinitionRepository definitionRepository,
             MetafieldValueRepository valueRepository,
+            MetaobjectEntryRepository metaobjectEntryRepository,
             MetafieldOwnerAccess metafieldOwnerAccess,
             MetafieldValueValidator metafieldValueValidator,
             TourOperatorMembershipCheck membershipCheck,
@@ -93,7 +98,7 @@ public class MetafieldUseCaseConfig {
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository,
-                metafieldOwnerAccess, metafieldValueValidator, membershipCheck,
+                metaobjectEntryRepository, metafieldOwnerAccess, metafieldValueValidator, membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
     }
 

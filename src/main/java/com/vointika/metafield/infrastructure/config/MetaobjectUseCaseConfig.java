@@ -16,6 +16,7 @@ import com.vointika.metafield.application.usecase.RenameMetaobjectFieldUseCase;
 import com.vointika.metafield.application.usecase.UnpublishMetaobjectEntryUseCase;
 import com.vointika.metafield.application.usecase.UpdateMetaobjectDefinitionUseCase;
 import com.vointika.metafield.application.usecase.UpdateMetaobjectEntryUseCase;
+import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.shared.port.AuditTrailPort;
@@ -150,11 +151,13 @@ public class MetaobjectUseCaseConfig {
     @Bean
     public DeleteMetaobjectEntryUseCase deleteMetaobjectEntryUseCase(
             MetaobjectEntryRepository entryRepository,
+            MetafieldValueRepository metafieldValueRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new DeleteMetaobjectEntryUseCase(
-                entryRepository, membershipCheck, transactionRunner, auditTrailPort);
+                entryRepository, metafieldValueRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
