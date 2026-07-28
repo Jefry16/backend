@@ -60,7 +60,8 @@ class UserTourOperatorMembershipsQueryImplTest {
         return new TourOperatorJpaEntity(
                 id, name, slug, tzId, UUID.randomUUID(), "some address", logoMediaId,
                 UUID.randomUUID(), Instant.now(), Instant.now(),
-                "en", new java.util.LinkedHashSet<>(java.util.Set.of("en")));
+                "en", false, null, null,
+                new java.util.LinkedHashSet<>(java.util.Set.of("en")));
     }
 
     @Test

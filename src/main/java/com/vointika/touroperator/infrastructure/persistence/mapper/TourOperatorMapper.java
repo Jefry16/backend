@@ -29,6 +29,9 @@ public class TourOperatorMapper {
                 operator.getCreatedAt(),
                 operator.getUpdatedAt(),
                 operator.getPrimaryLocale().value(),
+                operator.isPasswordEnabled(),
+                operator.getStorefrontPassword(),
+                operator.getPasswordMessage(),
                 supported
         );
     }
@@ -49,7 +52,10 @@ public class TourOperatorMapper {
                 jpa.getUpdatedAt(),
                 jpa.getLogoMediaId(),
                 LocaleCode.of(jpa.getPrimaryLocale()),
-                supported
+                supported,
+                jpa.isPasswordEnabled(),
+                jpa.getStorefrontPassword(),
+                jpa.getPasswordMessage()
         );
     }
 }

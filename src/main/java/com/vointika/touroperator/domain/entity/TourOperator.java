@@ -31,9 +31,15 @@ public class TourOperator {
     private UUID logoMediaId;
     private LocaleCode primaryLocale;
     private Set<LocaleCode> supportedLocales;
+    private boolean passwordEnabled;
+    private String storefrontPassword;
+    private String passwordMessage;
     private final UUID createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
+
+    private static final int PASSWORD_MAX_LENGTH = 100;
+    private static final int PASSWORD_MESSAGE_MAX_LENGTH = 1000;
 
     /** The locale a brand-new operator gets until it configures its own. */
     private static final LocaleCode DEFAULT_LOCALE = LocaleCode.of("en");
@@ -60,7 +66,9 @@ public class TourOperator {
         this.updatedAt = Instant.now();
     }
 
-    // Constructor for reconstituting from persistence
+    // Convenience reconstitution without the password-protection slice
+    // (defaults: protection off). Kept for tests; the mapper uses the full
+    // constructor below.
     public TourOperator(UUID id,
                         TourOperatorName name,
                         Slug slug,
@@ -73,6 +81,26 @@ public class TourOperator {
                         UUID logoMediaId,
                         LocaleCode primaryLocale,
                         Set<LocaleCode> supportedLocales) {
+        this(id, name, slug, timezoneId, currencyId, address, createdBy, createdAt, updatedAt,
+                logoMediaId, primaryLocale, supportedLocales, false, null, null);
+    }
+
+    // Constructor for reconstituting from persistence
+    public TourOperator(UUID id,
+                        TourOperatorName name,
+                        Slug slug,
+                        UUID timezoneId,
+                        UUID currencyId,
+                        TourOperatorAddress address,
+                        UUID createdBy,
+                        Instant createdAt,
+                        Instant updatedAt,
+                        UUID logoMediaId,
+                        LocaleCode primaryLocale,
+                        Set<LocaleCode> supportedLocales,
+                        boolean passwordEnabled,
+                        String storefrontPassword,
+                        String passwordMessage) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -82,6 +110,9 @@ public class TourOperator {
         this.logoMediaId = logoMediaId;
         this.primaryLocale = primaryLocale;
         this.supportedLocales = new LinkedHashSet<>(supportedLocales);
+        this.passwordEnabled = passwordEnabled;
+        this.storefrontPassword = storefrontPassword;
+        this.passwordMessage = passwordMessage;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -116,6 +147,40 @@ public class TourOperator {
         this.updatedAt = Instant.now();
     }
 
+    /**
+     * Updates storefront password protection (Shopify's Store access model).
+     * A non-blank {@code password} replaces the stored one; null/blank keeps
+     * it (the form can flip the toggle or edit the message without re-sending
+     * the password). Enabling with no password stored and none provided is a
+     * 422. A null/blank {@code message} clears it. Disabling keeps password +
+     * message so re-enabling restores them.
+     */
+    public void updateStorefrontPassword(boolean enabled, String password, String message) {
+        if (password != null && !password.isBlank()) {
+            String trimmed = password.trim();
+            if (trimmed.length() > PASSWORD_MAX_LENGTH) {
+                throw new InvalidFieldException(
+                        "Storefront password must be at most " + PASSWORD_MAX_LENGTH + " characters");
+            }
+            this.storefrontPassword = trimmed;
+        }
+        if (enabled && (this.storefrontPassword == null || this.storefrontPassword.isBlank())) {
+            throw new InvalidFieldException("A password is required to enable password protection");
+        }
+        if (message == null || message.isBlank()) {
+            this.passwordMessage = null;
+        } else {
+            String trimmedMessage = message.trim();
+            if (trimmedMessage.length() > PASSWORD_MESSAGE_MAX_LENGTH) {
+                throw new InvalidFieldException("Password page message must be at most "
+                        + PASSWORD_MESSAGE_MAX_LENGTH + " characters");
+            }
+            this.passwordMessage = trimmedMessage;
+        }
+        this.passwordEnabled = enabled;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() { return id; }
     public TourOperatorName getName() { return name; }
     public Slug getSlug() { return slug; }
@@ -125,6 +190,9 @@ public class TourOperator {
     public UUID getLogoMediaId() { return logoMediaId; }
     public LocaleCode getPrimaryLocale() { return primaryLocale; }
     public Set<LocaleCode> getSupportedLocales() { return Set.copyOf(supportedLocales); }
+    public boolean isPasswordEnabled() { return passwordEnabled; }
+    public String getStorefrontPassword() { return storefrontPassword; }
+    public String getPasswordMessage() { return passwordMessage; }
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

@@ -23,6 +23,7 @@ import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.DeleteMenuUseCase;
 import com.vointika.touroperator.application.usecase.GetMemberUseCase;
 import com.vointika.touroperator.application.usecase.GetMenuUseCase;
+import com.vointika.touroperator.application.usecase.GetStorefrontPasswordUseCase;
 import com.vointika.touroperator.application.usecase.GetOperatorLocalesUseCase;
 import com.vointika.touroperator.application.usecase.GetInvitationPreviewUseCase;
 import com.vointika.touroperator.application.usecase.GetInvitationUseCase;
@@ -37,6 +38,7 @@ import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
 import com.vointika.touroperator.application.usecase.SetOperatorLogoUseCase;
 import com.vointika.touroperator.application.usecase.UpdateOperatorLocalesUseCase;
+import com.vointika.touroperator.application.usecase.UpdateStorefrontPasswordUseCase;
 import com.vointika.touroperator.domain.repository.MenuItemRepository;
 import com.vointika.touroperator.domain.repository.MenuRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
@@ -276,6 +278,23 @@ public class TourOperatorUseCaseConfig {
             AuditTrailPort auditTrailPort) {
         return new DeleteMenuUseCase(menuRepository, membershipCheck, transactionRunner,
                 auditTrailPort);
+    }
+
+    @Bean
+    public GetStorefrontPasswordUseCase getStorefrontPasswordUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetStorefrontPasswordUseCase(tourOperatorRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpdateStorefrontPasswordUseCase updateStorefrontPasswordUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateStorefrontPasswordUseCase(
+                tourOperatorRepository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
