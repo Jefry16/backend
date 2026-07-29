@@ -218,6 +218,33 @@ never sortable — it's nullable and keyset cursors need non-null sort keys).
 Canonical: any experience/audience mutating use case; the port impl lives in
 `audit/infrastructure/integration`.
 
+## 8c. Internal (BFF) endpoints — `/api/internal/**`
+
+The public storefront never talks to this API: its BFF does, server-to-server.
+That surface is authenticated by a **shared secret**, not a JWT. Page reads live
+in `rendering`; an internal endpoint that *mutates* belongs to the context owning
+the data (a cart write is cart's, not rendering's) and brings its own registrar.
+Adding one:
+
+1. Map it under `/api/internal/…` and take the tenant as a **slug** path
+   variable — the storefront knows tenants by subdomain, not by id.
+2. Register the exact pattern in `RenderingPublicRoutes` (a
+   `PublicRouteRegistrar`). This does **not** make it public: it only stops
+   `anyRequest().authenticated()` from demanding a JWT. `InternalApiSecretFilter`
+   still 401s any call whose `X-Internal-Secret` doesn't match, before any
+   handler runs. Forgetting the registrar → 401 even with the right secret;
+   registering a pattern that doesn't exist → nothing (fail-closed both ways).
+3. Compose the **whole page** in one response. One internal call per page render
+   is the contract — never make the BFF fan out (§6 applies: `rendering` reaches
+   every other context through shared ports and imports none of them, enforced by
+   ArchUnit).
+4. Anything a visitor guesses at (a password, a token) answers **200 with a
+   boolean**, not 401 — a 401 on this surface means "bad shared secret" and
+   nothing else. Unknown tenant and wrong answer must be indistinguishable.
+5. In a `@WebMvcTest`, `@Import` the registrar alongside `SecurityConfig` and pin
+   `app.internal.shared-secret` via `properties = …` (it has no default). Without
+   the registrar every assertion passes vacuously as 401.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,
@@ -245,6 +272,10 @@ next `V`. Curated reference/seed data lives in the migration.
   `KafkaTemplate`, not `<String, Object>`.
 - Multi-line email templates end `</body>\n\n</html>` — assert `endsWith("</html>")`,
   not `</body></html>`.
+- **Case-fold with `Locale.ROOT`, never the JVM default.** `"IT".toLowerCase()`
+  under a Turkish default locale is `"ıt"` (dotless), so locale codes, slugs and
+  handles silently stop matching depending on which machine served the request.
+  `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
   table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
   Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space
