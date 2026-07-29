@@ -16,7 +16,8 @@
 -- slots per experience dated relative to today with per-audience pricing
 -- (one tier carries booked seats so the capacity floor is exercisable),
 -- three CMS pages (2 published, 1 draft, +es overlay on About), and the two
--- default navigation menus with a small demo tree (+es overlay on Home).
+-- default navigation menus with a small demo tree (+es overlay on Home),
+-- and three contact-inbox messages (2 unread, 1 read).
 --
 -- Deliberately NOT seeded: media rows (a row without its MinIO object renders
 -- broken images — upload through the admin instead) and audit entries (the
@@ -68,6 +69,10 @@
 \set mi_experiences_id  '01900000-0000-7000-8000-000000000063'
 \set mi_about_id        '01900000-0000-7000-8000-000000000064'
 \set mi_contact_id      '01900000-0000-7000-8000-000000000065'
+
+\set cm_sizes_id        '01900000-0000-7000-8000-000000000070'
+\set cm_group_id        '01900000-0000-7000-8000-000000000071'
+\set cm_gift_id         '01900000-0000-7000-8000-000000000072'
 
 -- 1. Admin user. Password is the literal string "password" — the hash is a
 -- fixed, precomputed BCrypt ($2a$, cost 10) digest accepted by
@@ -299,4 +304,26 @@ ON CONFLICT DO NOTHING;
 INSERT INTO touroperator.menu_item_translations (menu_item_id, locale, title)
 VALUES
     (:'mi_home_id', 'es', 'Inicio')
+ON CONFLICT DO NOTHING;
+
+-- 10. Contact-inbox messages (the admin Inbox's rows — the storefront intake
+-- endpoint that will write these arrives with the storefront arc). Two
+-- unread, one read. created_at ASCENDS with the fixed ids (070 oldest) so
+-- the inbox's -id default order matches recency, like real UUIDv7 intake
+-- rows will.
+INSERT INTO contact.contact_messages
+    (id, tour_operator_id, name, email, summary, content, read_at, created_at)
+VALUES
+    (:'cm_sizes_id', :'operator_id', 'Laura Pérez', 'laura@example.com',
+     'Do you have child seats on the sunset tour?',
+     'Hi! We are a family of four (kids are 4 and 7). Do you provide child-size life vests and seats on the Sunset Sailing Tour? Thanks!',
+     NULL, NOW() - INTERVAL '3 days'),
+    (:'cm_group_id', :'operator_id', 'Tom Baker', 'tom@example.org',
+     'Group booking for 15 people',
+     'Hello, I am organising a company outing in September for about 15 people. Can we book a private departure, and is there a group rate?',
+     NULL, NOW() - INTERVAL '1 day'),
+    (:'cm_gift_id', :'operator_id', NULL, 'ana@example.net',
+     'Gift voucher?',
+     'Do you sell gift vouchers for the kayak trip? I would like to give one to my sister for her birthday.',
+     NOW() - INTERVAL '1 hour', NOW() - INTERVAL '2 hours')
 ON CONFLICT DO NOTHING;

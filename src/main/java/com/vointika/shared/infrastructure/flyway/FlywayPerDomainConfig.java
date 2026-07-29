@@ -61,7 +61,10 @@ public class FlywayPerDomainConfig {
             "metafield",
             // audit is deliberately FK-free (rows must survive deletion of what
             // they describe), so its position is unconstrained.
-            "audit"
+            "audit",
+            // contact is FK-free (tour_operator_id is a bare UUID), so its
+            // position is unconstrained.
+            "contact"
     );
 
     @Bean
