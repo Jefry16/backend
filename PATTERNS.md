@@ -221,8 +221,10 @@ Canonical: any experience/audience mutating use case; the port impl lives in
 ## 8c. Internal (BFF) endpoints — `/api/internal/**`
 
 The public storefront never talks to this API: its BFF does, server-to-server.
-That surface is authenticated by a **shared secret**, not a JWT, and lives in the
-`rendering` context. Adding one:
+That surface is authenticated by a **shared secret**, not a JWT. Page reads live
+in `rendering`; an internal endpoint that *mutates* belongs to the context owning
+the data (a cart write is cart's, not rendering's) and brings its own registrar.
+Adding one:
 
 1. Map it under `/api/internal/…` and take the tenant as a **slug** path
    variable — the storefront knows tenants by subdomain, not by id.
@@ -270,6 +272,10 @@ next `V`. Curated reference/seed data lives in the migration.
   `KafkaTemplate`, not `<String, Object>`.
 - Multi-line email templates end `</body>\n\n</html>` — assert `endsWith("</html>")`,
   not `</body></html>`.
+- **Case-fold with `Locale.ROOT`, never the JVM default.** `"IT".toLowerCase()`
+  under a Turkish default locale is `"ıt"` (dotless), so locale codes, slugs and
+  handles silently stop matching depending on which machine served the request.
+  `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
   table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
   Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space

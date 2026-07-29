@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +74,29 @@ class RenderContextUseCasesTest {
         givenOperator(operator("en", List.of("en", "es")));
 
         assertThat(getShopUseCase.execute(SLUG, "ES").locale()).isEqualTo("es");
+    }
+
+    @Test
+    void normalizes_a_requested_locale_independently_of_the_jvm_default_locale() {
+        givenOperator(operator("en", List.of("en", "it")));
+        Locale original = Locale.getDefault();
+        try {
+            // Turkish lowercases "I" to the dotless "ı", so a default-locale
+            // toLowerCase() turns "IT" into "ıt" and the Italian page silently
+            // renders in English — on some machines and not others.
+            Locale.setDefault(Locale.forLanguageTag("tr"));
+
+            assertThat(getShopUseCase.execute(SLUG, "IT").locale()).isEqualTo("it");
+        } finally {
+            Locale.setDefault(original);
+        }
+    }
+
+    @Test
+    void trims_a_padded_locale() {
+        givenOperator(operator("en", List.of("en", "es")));
+
+        assertThat(getShopUseCase.execute(SLUG, " es ").locale()).isEqualTo("es");
     }
 
     @Test

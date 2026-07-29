@@ -2,6 +2,8 @@ package com.vointika.rendering.application.service;
 
 import com.vointika.shared.port.StorefrontOperatorView;
 
+import java.util.Locale;
+
 /**
  * Resolves which locale a storefront page is rendered in.
  *
@@ -27,7 +29,11 @@ public final class LocaleResolver {
         if (requested == null) {
             return operator.primaryLocale();
         }
-        String normalized = requested.toLowerCase();
+        // Locale.ROOT, never the JVM default — matching LocaleCode. Under a
+        // Turkish default locale "IT".toLowerCase() is "ıt" (dotless), so an
+        // Italian storefront would silently fall back to its primary language
+        // depending on which machine served the request.
+        String normalized = requested.trim().toLowerCase(Locale.ROOT);
         return operator.supportedLocales().contains(normalized)
                 ? normalized
                 : operator.primaryLocale();
