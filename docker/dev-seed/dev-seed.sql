@@ -308,14 +308,16 @@ ON CONFLICT DO NOTHING;
 
 -- 10. Contact-inbox messages (the admin Inbox's rows — the storefront intake
 -- endpoint that will write these arrives with the storefront arc). Two
--- unread, one read.
+-- unread, one read. created_at ASCENDS with the fixed ids (070 oldest) so
+-- the inbox's -id default order matches recency, like real UUIDv7 intake
+-- rows will.
 INSERT INTO contact.contact_messages
     (id, tour_operator_id, name, email, summary, content, read_at, created_at)
 VALUES
     (:'cm_sizes_id', :'operator_id', 'Laura Pérez', 'laura@example.com',
      'Do you have child seats on the sunset tour?',
      'Hi! We are a family of four (kids are 4 and 7). Do you provide child-size life vests and seats on the Sunset Sailing Tour? Thanks!',
-     NULL, NOW() - INTERVAL '2 hours'),
+     NULL, NOW() - INTERVAL '3 days'),
     (:'cm_group_id', :'operator_id', 'Tom Baker', 'tom@example.org',
      'Group booking for 15 people',
      'Hello, I am organising a company outing in September for about 15 people. Can we book a private departure, and is there a group rate?',
@@ -323,5 +325,5 @@ VALUES
     (:'cm_gift_id', :'operator_id', NULL, 'ana@example.net',
      'Gift voucher?',
      'Do you sell gift vouchers for the kayak trip? I would like to give one to my sister for her birthday.',
-     NOW() - INTERVAL '2 days', NOW() - INTERVAL '3 days')
+     NOW() - INTERVAL '1 hour', NOW() - INTERVAL '2 hours')
 ON CONFLICT DO NOTHING;
