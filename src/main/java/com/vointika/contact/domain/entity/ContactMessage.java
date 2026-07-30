@@ -1,5 +1,10 @@
 package com.vointika.contact.domain.entity;
 
+import com.vointika.contact.domain.valueobject.ContactContent;
+import com.vointika.contact.domain.valueobject.ContactEmail;
+import com.vointika.contact.domain.valueobject.ContactName;
+import com.vointika.contact.domain.valueobject.ContactSummary;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -39,6 +44,35 @@ public class ContactMessage {
         this.content = content;
         this.readAt = readAt;
         this.createdAt = createdAt;
+    }
+
+    /**
+     * A message arriving from a storefront contact form.
+     *
+     * <p>The value objects validate on the way in — this is the first writer the
+     * inbox has ever had, which is why they exist now and did not before. It
+     * arrives unread: the whole point of the inbox is that someone still has to
+     * look at it.
+     *
+     * <p>{@code name} is always a {@link ContactName}; a shopper who gave none
+     * is one whose {@code value} is null.
+     */
+    public static ContactMessage submit(UUID id,
+                                        UUID tourOperatorId,
+                                        ContactName name,
+                                        ContactEmail email,
+                                        ContactSummary summary,
+                                        ContactContent content,
+                                        Instant submittedAt) {
+        return new ContactMessage(
+                id,
+                tourOperatorId,
+                name.value(),
+                email.value(),
+                summary.value(),
+                content.value(),
+                null,
+                submittedAt);
     }
 
     /** Marks read (idempotent — re-reading keeps the first read timestamp). */
