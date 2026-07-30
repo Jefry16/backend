@@ -2,9 +2,11 @@ package com.vointika.rendering.presentation.controller;
 
 import com.vointika.rendering.application.usecase.GetExperienceListRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetExperienceRenderContextUseCase;
+import com.vointika.rendering.application.usecase.GetPageRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.presentation.response.ExperienceListRenderContextResponse;
 import com.vointika.rendering.presentation.response.ExperienceRenderContextResponse;
+import com.vointika.rendering.presentation.response.PageRenderContextResponse;
 import com.vointika.rendering.presentation.response.ShopRenderContextResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,13 +38,16 @@ public class RenderContextController {
     private final GetShopRenderContextUseCase getShopUseCase;
     private final GetExperienceListRenderContextUseCase getExperienceListUseCase;
     private final GetExperienceRenderContextUseCase getExperienceUseCase;
+    private final GetPageRenderContextUseCase getPageUseCase;
 
     public RenderContextController(GetShopRenderContextUseCase getShopUseCase,
                                    GetExperienceListRenderContextUseCase getExperienceListUseCase,
-                                   GetExperienceRenderContextUseCase getExperienceUseCase) {
+                                   GetExperienceRenderContextUseCase getExperienceUseCase,
+                                   GetPageRenderContextUseCase getPageUseCase) {
         this.getShopUseCase = getShopUseCase;
         this.getExperienceListUseCase = getExperienceListUseCase;
         this.getExperienceUseCase = getExperienceUseCase;
+        this.getPageUseCase = getPageUseCase;
     }
 
     /**
@@ -89,5 +94,18 @@ public class RenderContextController {
             @RequestParam(required = false) String locale) {
         return ResponseEntity.ok(ExperienceRenderContextResponse.from(
                 getExperienceUseCase.execute(tenantSlug, experienceSlug, locale)));
+    }
+
+    /**
+     * A CMS page. {@code pageHandle} may be the canonical handle or the
+     * localized one for this locale; unknown or unpublished is a 404 either way.
+     */
+    @GetMapping("/page/{pageHandle}")
+    public ResponseEntity<PageRenderContextResponse> page(
+            @PathVariable String tenantSlug,
+            @PathVariable String pageHandle,
+            @RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(PageRenderContextResponse.from(
+                getPageUseCase.execute(tenantSlug, pageHandle, locale)));
     }
 }

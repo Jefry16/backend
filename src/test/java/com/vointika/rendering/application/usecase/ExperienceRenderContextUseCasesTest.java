@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,7 +47,7 @@ class ExperienceRenderContextUseCasesTest {
 
     private StorefrontExperienceView experience(String slug, String name) {
         return new StorefrontExperienceView(slug, name, "desc", "long", List.of(), List.of(),
-                List.of(), List.of(), null, List.of(), 90, false);
+                List.of(), List.of(), null, List.of(), 90, false, slug, Map.of());
     }
 
     @Test

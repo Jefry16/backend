@@ -3,12 +3,19 @@ package com.vointika.rendering.presentation.response;
 import com.vointika.shared.port.StorefrontExperienceView;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * An experience on the wire, already resolved for one locale.
  *
  * <p>Like {@link ShopResponse}, no {@code id}/{@code context} pair: this is a
  * render block for a theme, and the storefront addresses experiences by slug.
+ *
+ * <p>{@code canonicalSlug} + {@code handles} are what let a detail page link its
+ * own translations: read {@code handles[locale] ?? canonicalSlug} and the result
+ * always resolves. On list rows {@code handles} is empty — a card links only
+ * within the locale being rendered, so resolving every translation of every row
+ * would buy nothing.
  */
 public record ExperienceResponse(
         String slug,
@@ -22,7 +29,9 @@ public record ExperienceResponse(
         String thumbnailUrl,
         List<String> mediaUrls,
         Integer durationMinutes,
-        boolean featured) {
+        boolean featured,
+        String canonicalSlug,
+        Map<String, String> handles) {
 
     public static ExperienceResponse from(StorefrontExperienceView experience) {
         return new ExperienceResponse(
@@ -37,6 +46,8 @@ public record ExperienceResponse(
                 experience.thumbnailUrl(),
                 experience.mediaUrls(),
                 experience.durationMinutes(),
-                experience.featured());
+                experience.featured(),
+                experience.canonicalSlug(),
+                experience.handles());
     }
 }
