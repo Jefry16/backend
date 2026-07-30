@@ -14,6 +14,10 @@ public interface ExperienceJpaRepository extends JpaRepository<ExperienceJpaEnti
 
     boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
 
+    /** Navigation: resolve many ids to published experiences at once. */
+    java.util.List<ExperienceJpaEntity> findByIdInAndTourOperatorIdAndPublishedTrue(
+            java.util.Collection<UUID> ids, UUID tourOperatorId);
+
     /** Storefront read: published only, never drafts. */
     Optional<ExperienceJpaEntity> findByTourOperatorIdAndSlugAndPublishedTrue(UUID tourOperatorId, String slug);
 }

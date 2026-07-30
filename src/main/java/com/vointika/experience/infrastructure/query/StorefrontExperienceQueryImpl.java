@@ -163,6 +163,32 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
         return Map.copyOf(handles);
     }
 
+    @Override
+    public Map<UUID, String> publishedHandles(UUID tourOperatorId, Collection<UUID> ids, String locale) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+
+        List<ExperienceJpaEntity> published =
+                experienceRepository.findByIdInAndTourOperatorIdAndPublishedTrue(ids, tourOperatorId);
+        if (published.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<UUID, ExperienceTranslationJpaEntity> overlays = overlaysFor(published, locale);
+
+        Map<UUID, String> handles = new HashMap<>();
+        for (ExperienceJpaEntity experience : published) {
+            ExperienceTranslationJpaEntity overlay = overlays.get(experience.getId());
+            handles.put(
+                    experience.getId(),
+                    overlay != null && overlay.getSlug() != null
+                            ? overlay.getSlug()
+                            : experience.getSlug());
+        }
+        return Map.copyOf(handles);
+    }
+
     private Map<UUID, ExperienceTranslationJpaEntity> overlaysFor(
             Collection<ExperienceJpaEntity> experiences, String locale) {
 

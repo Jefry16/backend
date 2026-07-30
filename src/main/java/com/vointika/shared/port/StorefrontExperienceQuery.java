@@ -2,6 +2,8 @@ package com.vointika.shared.port;
 
 import com.vointika.shared.list.CursorPage;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,4 +46,14 @@ public interface StorefrontExperienceQuery {
      */
     Optional<StorefrontExperienceView> findPublishedBySlug(
             UUID tourOperatorId, String slug, String locale);
+
+    /**
+     * id → the handle each published experience has in this locale.
+     *
+     * <p>Batched, because navigation resolves every menu item at once and
+     * renders on every page. An id that is unknown, unpublished or another
+     * tenant's is simply absent — a menu item pointing at a draft drops out of
+     * the menu rather than linking to a 404.
+     */
+    Map<UUID, String> publishedHandles(UUID tourOperatorId, Collection<UUID> ids, String locale);
 }

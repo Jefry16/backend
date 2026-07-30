@@ -18,13 +18,15 @@ public record ExperienceListRenderContextResponse(
         ShopResponse shop,
         RequestResponse request,
         List<ExperienceResponse> experiences,
-        String nextCursor) {
+        String nextCursor,
+        List<NavigationMenuResponse> navigation) {
 
     public static ExperienceListRenderContextResponse from(ExperienceListRenderContext context) {
         return new ExperienceListRenderContextResponse(
                 ShopResponse.from(context.shop()),
                 new RequestResponse(context.locale()),
                 context.experiences().data().stream().map(ExperienceResponse::from).toList(),
-                context.experiences().nextCursor());
+                context.experiences().nextCursor(),
+                context.navigation().stream().map(NavigationMenuResponse::from).toList());
     }
 }

@@ -8,4 +8,5 @@ import com.vointika.shared.port.StorefrontOperatorView;
 public record ExperienceListRenderContext(
         StorefrontOperatorView shop,
         String locale,
-        CursorPage<StorefrontExperienceView> experiences) {}
+        CursorPage<StorefrontExperienceView> experiences,
+        java.util.List<NavigationMenu> navigation) {}

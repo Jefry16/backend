@@ -22,9 +22,12 @@ import com.vointika.shared.port.StorefrontOperatorView;
 public class TenantResolver {
 
     private final StorefrontOperatorQuery storefrontOperatorQuery;
+    private final NavigationAssembler navigationAssembler;
 
-    public TenantResolver(StorefrontOperatorQuery storefrontOperatorQuery) {
+    public TenantResolver(StorefrontOperatorQuery storefrontOperatorQuery,
+                          NavigationAssembler navigationAssembler) {
         this.storefrontOperatorQuery = storefrontOperatorQuery;
+        this.navigationAssembler = navigationAssembler;
     }
 
     /**
@@ -38,6 +41,11 @@ public class TenantResolver {
         StorefrontOperatorView operator = storefrontOperatorQuery.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Storefront not found"));
 
-        return new ShopRenderContext(operator, LocaleResolver.resolve(operator, requestedLocale));
+        String locale = LocaleResolver.resolve(operator, requestedLocale);
+
+        // Navigation is chrome: it belongs to every page, and this is the one
+        // place every page passes through.
+        return new ShopRenderContext(
+                operator, locale, navigationAssembler.assemble(operator.id(), locale));
     }
 }

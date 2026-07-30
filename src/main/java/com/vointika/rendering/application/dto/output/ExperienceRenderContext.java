@@ -7,4 +7,5 @@ import com.vointika.shared.port.StorefrontOperatorView;
 public record ExperienceRenderContext(
         StorefrontOperatorView shop,
         String locale,
-        StorefrontExperienceView experience) {}
+        StorefrontExperienceView experience,
+        java.util.List<NavigationMenu> navigation) {}

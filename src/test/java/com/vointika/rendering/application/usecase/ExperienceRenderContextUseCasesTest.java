@@ -1,7 +1,10 @@
 package com.vointika.rendering.application.usecase;
 
 import com.vointika.rendering.application.dto.output.ExperienceListRenderContext;
+import com.vointika.rendering.application.service.NavigationAssembler;
 import com.vointika.rendering.application.service.TenantResolver;
+import com.vointika.shared.port.StorefrontNavigationQuery;
+import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.StorefrontExperienceQuery;
@@ -18,6 +21,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,11 +36,19 @@ class ExperienceRenderContextUseCasesTest {
     private GetExperienceListRenderContextUseCase listUseCase;
     private GetExperienceRenderContextUseCase getUseCase;
 
+    /** A tenant with no menus — navigation is not what these tests are about. */
+    private NavigationAssembler emptyNavigation() {
+        StorefrontNavigationQuery navigationQuery = mock(StorefrontNavigationQuery.class);
+        when(navigationQuery.findMenus(any(), any())).thenReturn(List.of());
+        return new NavigationAssembler(
+                navigationQuery, mock(StorefrontExperienceQuery.class), mock(StorefrontPageQuery.class));
+    }
+
     @BeforeEach
     void setUp() {
         operatorQuery = mock(StorefrontOperatorQuery.class);
         experienceQuery = mock(StorefrontExperienceQuery.class);
-        TenantResolver tenantResolver = new TenantResolver(operatorQuery);
+        TenantResolver tenantResolver = new TenantResolver(operatorQuery, emptyNavigation());
         listUseCase = new GetExperienceListRenderContextUseCase(tenantResolver, experienceQuery);
         getUseCase = new GetExperienceRenderContextUseCase(tenantResolver, experienceQuery);
 

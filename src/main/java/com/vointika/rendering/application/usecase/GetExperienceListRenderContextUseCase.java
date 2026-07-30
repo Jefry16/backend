@@ -29,6 +29,7 @@ public class GetExperienceListRenderContextUseCase {
         return new ExperienceListRenderContext(
                 tenant.shop(),
                 tenant.locale(),
-                storefrontExperienceQuery.listPublished(tenant.shop().id(), tenant.locale(), cursor));
+                storefrontExperienceQuery.listPublished(tenant.shop().id(), tenant.locale(), cursor),
+                tenant.navigation());
     }
 }
