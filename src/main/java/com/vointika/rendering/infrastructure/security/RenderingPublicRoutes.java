@@ -22,6 +22,8 @@ public class RenderingPublicRoutes implements PublicRouteRegistrar {
     public List<PublicRoute> publicRoutes() {
         return List.of(
                 new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/shop"),
+                new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/experience-list"),
+                new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/experience/*"),
                 new PublicRoute(HttpMethod.POST, "/api/internal/storefront/*/verify-password")
         );
     }

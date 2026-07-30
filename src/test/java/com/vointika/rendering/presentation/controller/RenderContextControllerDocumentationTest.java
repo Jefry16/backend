@@ -1,10 +1,16 @@
 package com.vointika.rendering.presentation.controller;
 
+import com.vointika.rendering.application.dto.output.ExperienceListRenderContext;
+import com.vointika.rendering.application.dto.output.ExperienceRenderContext;
 import com.vointika.rendering.application.dto.output.ShopRenderContext;
+import com.vointika.rendering.application.usecase.GetExperienceListRenderContextUseCase;
+import com.vointika.rendering.application.usecase.GetExperienceRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCase;
 import com.vointika.rendering.infrastructure.security.RenderingPublicRoutes;
 import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.port.StorefrontExperienceView;
 import com.vointika.shared.port.StorefrontOperatorView;
 import com.vointika.shared.web.security.InternalApiSecretFilter;
 import com.vointika.shared.web.security.SecurityConfig;
@@ -36,6 +42,7 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -63,6 +70,8 @@ class RenderContextControllerDocumentationTest {
     private MockMvc mockMvc;
 
     @MockitoBean private GetShopRenderContextUseCase getShopUseCase;
+    @MockitoBean private GetExperienceListRenderContextUseCase getExperienceListUseCase;
+    @MockitoBean private GetExperienceRenderContextUseCase getExperienceUseCase;
     @MockitoBean private VerifyStorefrontPasswordUseCase verifyPasswordUseCase;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
 
@@ -77,19 +86,106 @@ class RenderContextControllerDocumentationTest {
                 .build();
     }
 
+    private StorefrontOperatorView operatorView() {
+        return new StorefrontOperatorView(
+                java.util.UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2"),
+                "Acme Tours",
+                SLUG,
+                "https://media.staging.vointika.com/logo.png",
+                "en",
+                List.of("en", "es"),
+                "USD",
+                "America/Santo_Domingo",
+                false,
+                null);
+    }
+
     private ShopRenderContext shopContext() {
-        return new ShopRenderContext(
-                new StorefrontOperatorView(
-                        "Acme Tours",
-                        SLUG,
-                        "https://media.staging.vointika.com/logo.png",
-                        "en",
-                        List.of("en", "es"),
-                        "USD",
-                        "America/Santo_Domingo",
-                        false,
-                        null),
-                "en");
+        return new ShopRenderContext(operatorView(), "en");
+    }
+
+    private StorefrontExperienceView experienceView() {
+        return new StorefrontExperienceView(
+                "morning-dive",
+                "Morning dive",
+                "A guided reef dive",
+                "A longer description of the dive.",
+                List.of("Small group"),
+                List.of("Gear"),
+                List.of("Lunch"),
+                List.of("diving"),
+                "https://media.staging.vointika.com/thumb.jpg",
+                List.of("https://media.staging.vointika.com/thumb.jpg"),
+                90,
+                true);
+    }
+
+    @Test
+    void getExperienceListRenderContext() throws Exception {
+        when(getExperienceListUseCase.execute(eq(SLUG), isNull(), isNull())).thenReturn(
+                new ExperienceListRenderContext(operatorView(), "en",
+                        new CursorPage<>(List.of(experienceView()), null)));
+
+        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience-list", SLUG)
+                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experiences[0].slug").value("morning-dive"))
+                .andDo(document("rendering-experience-list-render-context",
+                        requestHeaders(
+                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
+                                        .description("Shared secret authenticating the storefront BFF")),
+                        responseFields(
+                                subsectionWithPath("shop")
+                                        .description("The tenant block, identical on every render context"),
+                                fieldWithPath("request.locale")
+                                        .description("The locale this render actually uses, after fallback"),
+                                fieldWithPath("experiences[]")
+                                        .description("Published experiences, newest first; empty when none"),
+                                fieldWithPath("experiences[].slug")
+                                        .description("The handle for this locale — localized when the operator set one"),
+                                fieldWithPath("experiences[].name").description("Translated name"),
+                                fieldWithPath("experiences[].description").description("Translated short description").optional(),
+                                fieldWithPath("experiences[].longDescription").description("Translated long description").optional(),
+                                fieldWithPath("experiences[].highlights").description("Translated highlights"),
+                                fieldWithPath("experiences[].included").description("Translated inclusions"),
+                                fieldWithPath("experiences[].notIncluded").description("Translated exclusions"),
+                                fieldWithPath("experiences[].tags").description("Facets — deliberately not translated"),
+                                fieldWithPath("experiences[].thumbnailUrl").description("Resolved thumbnail URL").optional(),
+                                fieldWithPath("experiences[].mediaUrls").description("Resolved gallery URLs, in order"),
+                                fieldWithPath("experiences[].durationMinutes").description("Duration in minutes"),
+                                fieldWithPath("experiences[].featured").description("Whether the operator features it"),
+                                fieldWithPath("nextCursor")
+                                        .description("Cursor for the next page, or null on the last")
+                                        .optional())));
+    }
+
+    @Test
+    void getExperienceRenderContext() throws Exception {
+        when(getExperienceUseCase.execute(eq(SLUG), eq("morning-dive"), isNull())).thenReturn(
+                new ExperienceRenderContext(operatorView(), "en", experienceView()));
+
+        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience/{experienceSlug}",
+                                SLUG, "morning-dive")
+                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experience.name").value("Morning dive"))
+                .andDo(document("rendering-experience-render-context",
+                        requestHeaders(
+                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
+                                        .description("Shared secret authenticating the storefront BFF")),
+                        responseFields(
+                                subsectionWithPath("shop")
+                                        .description("The tenant block, identical on every render context"),
+                                fieldWithPath("request.locale").description("The locale this render actually uses"),
+                                subsectionWithPath("experience")
+                                        .description("The experience, resolved for this locale — same shape as "
+                                                + "an entry in the experience-list context"))));
+    }
+
+    @Test
+    void experienceListRejectsACallWithoutTheSharedSecret() throws Exception {
+        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience-list", SLUG))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

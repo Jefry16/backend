@@ -1,6 +1,10 @@
 package com.vointika.rendering.presentation.controller;
 
+import com.vointika.rendering.application.usecase.GetExperienceListRenderContextUseCase;
+import com.vointika.rendering.application.usecase.GetExperienceRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
+import com.vointika.rendering.presentation.response.ExperienceListRenderContextResponse;
+import com.vointika.rendering.presentation.response.ExperienceRenderContextResponse;
 import com.vointika.rendering.presentation.response.ShopRenderContextResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,9 +34,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class RenderContextController {
 
     private final GetShopRenderContextUseCase getShopUseCase;
+    private final GetExperienceListRenderContextUseCase getExperienceListUseCase;
+    private final GetExperienceRenderContextUseCase getExperienceUseCase;
 
-    public RenderContextController(GetShopRenderContextUseCase getShopUseCase) {
+    public RenderContextController(GetShopRenderContextUseCase getShopUseCase,
+                                   GetExperienceListRenderContextUseCase getExperienceListUseCase,
+                                   GetExperienceRenderContextUseCase getExperienceUseCase) {
         this.getShopUseCase = getShopUseCase;
+        this.getExperienceListUseCase = getExperienceListUseCase;
+        this.getExperienceUseCase = getExperienceUseCase;
     }
 
     /**
@@ -48,5 +58,36 @@ public class RenderContextController {
             @RequestParam(required = false) String locale) {
         return ResponseEntity.ok(
                 ShopRenderContextResponse.from(getShopUseCase.execute(tenantSlug, locale)));
+    }
+
+    /**
+     * Everything the experience-list page renders. Published experiences only,
+     * one cursor page at a time.
+     *
+     * @param cursor the {@code nextCursor} from a previous page, or absent for
+     *               the first. No filter or sort parameters are accepted yet —
+     *               the storefront builds that query itself.
+     */
+    @GetMapping("/experience-list")
+    public ResponseEntity<ExperienceListRenderContextResponse> experienceList(
+            @PathVariable String tenantSlug,
+            @RequestParam(required = false) String locale,
+            @RequestParam(required = false) String cursor) {
+        return ResponseEntity.ok(ExperienceListRenderContextResponse.from(
+                getExperienceListUseCase.execute(tenantSlug, locale, cursor)));
+    }
+
+    /**
+     * One experience's page. {@code experienceSlug} may be the canonical handle
+     * or the localized one for this locale; an unpublished or unknown handle is
+     * a 404 either way.
+     */
+    @GetMapping("/experience/{experienceSlug}")
+    public ResponseEntity<ExperienceRenderContextResponse> experience(
+            @PathVariable String tenantSlug,
+            @PathVariable String experienceSlug,
+            @RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(ExperienceRenderContextResponse.from(
+                getExperienceUseCase.execute(tenantSlug, experienceSlug, locale)));
     }
 }

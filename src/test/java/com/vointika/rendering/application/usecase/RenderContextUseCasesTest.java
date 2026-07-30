@@ -1,6 +1,7 @@
 package com.vointika.rendering.application.usecase;
 
 import com.vointika.rendering.application.dto.output.ShopRenderContext;
+import com.vointika.rendering.application.service.TenantResolver;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.StorefrontOperatorQuery;
 import com.vointika.shared.port.StorefrontOperatorView;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,6 +21,7 @@ import static org.mockito.Mockito.when;
 class RenderContextUseCasesTest {
 
     private static final String SLUG = "acme";
+    private static final UUID OP = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
 
     private StorefrontOperatorQuery storefrontOperatorQuery;
     private GetShopRenderContextUseCase getShopUseCase;
@@ -27,12 +30,13 @@ class RenderContextUseCasesTest {
     @BeforeEach
     void setUp() {
         storefrontOperatorQuery = mock(StorefrontOperatorQuery.class);
-        getShopUseCase = new GetShopRenderContextUseCase(storefrontOperatorQuery);
+        getShopUseCase = new GetShopRenderContextUseCase(new TenantResolver(storefrontOperatorQuery));
         verifyPasswordUseCase = new VerifyStorefrontPasswordUseCase(storefrontOperatorQuery);
     }
 
     private StorefrontOperatorView operator(String primary, List<String> supported) {
         return new StorefrontOperatorView(
+                OP,
                 "Acme Tours",
                 SLUG,
                 "https://media.example.com/logo.png",
@@ -126,7 +130,7 @@ class RenderContextUseCasesTest {
     @Test
     void carries_the_gate_state_so_the_bff_always_knows_to_gate() {
         givenOperator(new StorefrontOperatorView(
-                "Acme Tours", SLUG, null, "en", List.of("en"), "USD",
+                OP, "Acme Tours", SLUG, null, "en", List.of("en"), "USD",
                 "America/Santo_Domingo", true, "We open on Monday."));
 
         ShopRenderContext context = getShopUseCase.execute(SLUG, null);
