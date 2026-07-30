@@ -82,6 +82,26 @@ class StorefrontExperienceQueryImplTest {
     }
 
     @Test
+    void an_experience_with_no_media_at_all_still_renders() {
+        // The batch resolver returns an immutable empty map when there is
+        // nothing to resolve, and `Map.of().get(null)` throws — so an operator
+        // whose experiences carry no images took the whole list page down.
+        ExperienceJpaEntity noMedia = new ExperienceJpaEntity(
+                EXPERIENCE, OP, UUID.randomUUID(), "morning-dive", "Morning dive",
+                "A dive", "A long dive", false, List.of(), List.of(), List.of(), List.of(),
+                List.of(), null, 90, 24, true, Instant.now());
+        when(experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(OP))
+                .thenReturn(List.of(noMedia));
+
+        List<StorefrontExperienceView> views = query.listPublished(OP, "en");
+
+        assertThat(views).singleElement().satisfies(view -> {
+            assertThat(view.thumbnailUrl()).isNull();
+            assertThat(view.mediaUrls()).isEmpty();
+        });
+    }
+
+    @Test
     void an_operator_with_nothing_published_costs_no_further_queries() {
         when(experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(OP))
                 .thenReturn(List.of());

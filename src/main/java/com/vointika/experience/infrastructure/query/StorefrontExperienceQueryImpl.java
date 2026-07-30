@@ -126,7 +126,7 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
                 pickList(overlay == null ? null : overlay.getNotIncluded(), experience.getNotIncluded()),
                 // Tags are filter facets, deliberately not translated.
                 orEmpty(experience.getTags()),
-                mediaUrls.get(experience.getThumbnailMediaId()),
+                urlFor(experience.getThumbnailMediaId(), mediaUrls),
                 urlsFor(experience.getMediaIds(), mediaUrls),
                 experience.getDurationMinutes(),
                 experience.isFeatured());
@@ -146,6 +146,18 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
 
     private static List<String> orEmpty(List<String> values) {
         return values == null ? List.of() : List.copyOf(values);
+    }
+
+    /**
+     * One media id's URL, tolerating a null id.
+     *
+     * <p>Not simply {@code mediaUrls.get(id)}: when nothing needed resolving the
+     * map is {@link Map#of()}, and an immutable map throws on a null key rather
+     * than answering absent. An experience with no thumbnail is ordinary, so it
+     * must not depend on which map implementation happens to arrive.
+     */
+    private static String urlFor(UUID mediaId, Map<UUID, String> mediaUrls) {
+        return mediaId == null ? null : mediaUrls.get(mediaId);
     }
 
     /** Gallery URLs in the operator's chosen order; a since-deleted media id drops out. */
