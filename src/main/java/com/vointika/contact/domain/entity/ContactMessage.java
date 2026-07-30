@@ -53,6 +53,9 @@ public class ContactMessage {
      * inbox has ever had, which is why they exist now and did not before. It
      * arrives unread: the whole point of the inbox is that someone still has to
      * look at it.
+     *
+     * <p>{@code name} is always a {@link ContactName}; a shopper who gave none
+     * is one whose {@code value} is null.
      */
     public static ContactMessage submit(UUID id,
                                         UUID tourOperatorId,
@@ -64,7 +67,7 @@ public class ContactMessage {
         return new ContactMessage(
                 id,
                 tourOperatorId,
-                name == null ? null : name.value(),
+                name.value(),
                 email.value(),
                 summary.value(),
                 content.value(),

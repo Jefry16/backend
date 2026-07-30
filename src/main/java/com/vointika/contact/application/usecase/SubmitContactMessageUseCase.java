@@ -73,7 +73,7 @@ public class SubmitContactMessageUseCase {
         messageRepository.save(ContactMessage.submit(
                 idGenerator.newId(),
                 operator.id(),
-                ContactName.of(name),
+                new ContactName(name),
                 new ContactEmail(email),
                 new ContactSummary(summary),
                 new ContactContent(content),

@@ -103,6 +103,20 @@ public class ArchitectureTest {
                     .because("rendering composes storefront read models from shared ports only — "
                             + "it must never reach into a bounded context directly");
 
+    // contact owns the shopper inbox. It reads the tenant through a shared port
+    // (the intake resolves a storefront by slug) and imports no bounded context —
+    // the rule it shipped without in #63, added now that it has a second surface.
+    @ArchTest
+    static final ArchRule contact_depends_only_on_shared =
+            noClasses()
+                    .that().resideInAPackage("com.vointika.contact..")
+                    .should().dependOnClassesThat(
+                            resideInAPackage("com.vointika..")
+                                    .and(not(resideInAnyPackage(
+                                            "com.vointika.contact..",
+                                            "com.vointika.shared.."))))
+                    .because("contact reaches other contexts through shared ports only");
+
     // The Kafka client (producer/consumer/admin) is infrastructure for the event
     // backbone — confined to the shared producer/config package and the
     // notification consumer. Mirrors the Redis fence below.

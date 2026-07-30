@@ -5,6 +5,10 @@ import com.vointika.shared.exception.InvalidFieldException;
 /**
  * Who is writing. Optional — a shopper may not give a name, and refusing the
  * message over it would lose the operator a customer to protect a column.
+ *
+ * <p>The object is always present; its {@code value} is what may be null. That
+ * keeps "no name" a single representation rather than two (a null holder and a
+ * holder of null), which is the shape the entity relies on.
  */
 public record ContactName(String value) {
 
@@ -19,10 +23,5 @@ public record ContactName(String value) {
                 throw new InvalidFieldException("Name must be at most " + MAX_LENGTH + " characters");
             }
         }
-    }
-
-    /** Null-safe: a blank or absent name is simply no name. */
-    public static ContactName of(String raw) {
-        return new ContactName(raw);
     }
 }
