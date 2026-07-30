@@ -44,6 +44,7 @@ class StorefrontExperienceQueryImplTest {
         when(mediaUrlBatchResolver.resolve(any(), anyList())).thenReturn(Map.of(
                 THUMB, "https://media.example.com/thumb.jpg",
                 PHOTO, "https://media.example.com/photo.jpg"));
+        when(translationRepository.findByExperienceId(any())).thenReturn(List.of());
         when(translationRepository.findByExperienceIdInAndLocale(anyList(), any()))
                 .thenReturn(List.of());
         when(translationRepository.findByTourOperatorIdAndLocaleAndSlug(any(), any(), any()))
@@ -145,9 +146,36 @@ class StorefrontExperienceQueryImplTest {
         when(translationRepository.findByTourOperatorIdAndLocaleAndSlug(OP, "es", "buceo-matutino"))
                 .thenReturn(Optional.of(translation("buceo-matutino", "Buceo matutino")));
         when(experienceRepository.findById(EXPERIENCE)).thenReturn(Optional.of(experience()));
+        when(translationRepository.findByExperienceId(EXPERIENCE))
+                .thenReturn(List.of(translation("buceo-matutino", "Buceo matutino")));
 
         assertThat(query.findPublishedBySlug(OP, "buceo-matutino", "es"))
                 .get().extracting(StorefrontExperienceView::name).isEqualTo("Buceo matutino");
+    }
+
+    @Test
+    void a_detail_read_exposes_every_localized_handle() {
+        // What S3 lacked: without these a translated page guesses its siblings'
+        // handles, and the guess is a URL that 404s.
+        when(experienceRepository.findByTourOperatorIdAndSlugAndPublishedTrue(OP, "morning-dive"))
+                .thenReturn(Optional.of(experience()));
+        when(translationRepository.findByExperienceId(EXPERIENCE))
+                .thenReturn(List.of(translation("buceo-matutino", "Buceo matutino")));
+
+        StorefrontExperienceView view =
+                query.findPublishedBySlug(OP, "morning-dive", "en").orElseThrow();
+
+        assertThat(view.canonicalSlug()).isEqualTo("morning-dive");
+        assertThat(view.handles()).containsExactly(Map.entry("es", "buceo-matutino"));
+    }
+
+    @Test
+    void list_rows_carry_no_handle_map() {
+        // A card links inside the locale being rendered, so paying for every
+        // translation of every row would buy nothing.
+        givenPage(experience());
+
+        assertThat(query.listPublished(OP, "en", null).data().getFirst().handles()).isEmpty();
     }
 
     @Test

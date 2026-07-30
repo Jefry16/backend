@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,7 +103,8 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
 
         return new CursorPage<>(
                 page.data().stream()
-                        .map(experience -> toView(experience, overlays.get(experience.getId()), mediaUrls))
+                        .map(experience -> toView(
+                                experience, overlays.get(experience.getId()), mediaUrls, Map.of()))
                         .toList(),
                 page.nextCursor());
     }
@@ -123,15 +125,42 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
                 .filter(experience -> tourOperatorId.equals(experience.getTourOperatorId()))
                 .or(() -> experienceRepository.findByTourOperatorIdAndSlugAndPublishedTrue(tourOperatorId, slug));
 
-        return found.map(experience -> toView(
-                experience,
-                // Reuse the row the handle lookup already returned — it is the
-                // overlay for this experience in this locale. Only a canonical-
-                // handle hit still has to go and fetch one.
-                localized
-                        .filter(translation -> experience.getId().equals(translation.getExperienceId()))
-                        .orElseGet(() -> overlaysFor(List.of(experience), locale).get(experience.getId())),
-                mediaUrlsFor(tourOperatorId, List.of(experience))));
+        return found.map(experience -> {
+            // Every translation of this one experience, in one query: the current
+            // locale's overlay comes out of it, and so does the handle map a
+            // detail page needs to link its own translations.
+            List<ExperienceTranslationJpaEntity> translations =
+                    translationRepository.findByExperienceId(experience.getId());
+
+            ExperienceTranslationJpaEntity overlay = translations.stream()
+                    .filter(translation -> locale.equals(translation.getLocale()))
+                    .findFirst()
+                    .orElse(null);
+
+            return toView(
+                    experience,
+                    overlay,
+                    mediaUrlsFor(tourOperatorId, List.of(experience)),
+                    handlesFor(translations));
+        });
+    }
+
+    /**
+     * Locale → localized handle, for the locales that actually have one.
+     *
+     * <p>Paired with the view's canonical slug, which is addressable in every
+     * locale, this lets a detail page link its own translations instead of
+     * guessing — and guessing produces links that 404, which is exactly what
+     * shipped in S3 before this existed.
+     */
+    private Map<String, String> handlesFor(List<ExperienceTranslationJpaEntity> translations) {
+        Map<String, String> handles = new HashMap<>();
+        for (ExperienceTranslationJpaEntity translation : translations) {
+            if (translation.getSlug() != null) {
+                handles.put(translation.getLocale(), translation.getSlug());
+            }
+        }
+        return Map.copyOf(handles);
     }
 
     private Map<UUID, ExperienceTranslationJpaEntity> overlaysFor(
@@ -159,7 +188,8 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
     /** Overlay wins per field; a null translated field falls back to the canonical one. */
     private StorefrontExperienceView toView(ExperienceJpaEntity experience,
                                             ExperienceTranslationJpaEntity overlay,
-                                            Map<UUID, String> mediaUrls) {
+                                            Map<UUID, String> mediaUrls,
+                                            Map<String, String> handles) {
         return new StorefrontExperienceView(
                 pick(slugOf(overlay), experience.getSlug()),
                 pick(overlay == null ? null : overlay.getName(), experience.getName()),
@@ -173,7 +203,9 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
                 urlFor(experience.getThumbnailMediaId(), mediaUrls),
                 urlsFor(experience.getMediaIds(), mediaUrls),
                 experience.getDurationMinutes(),
-                experience.isFeatured());
+                experience.isFeatured(),
+                experience.getSlug(),
+                handles);
     }
 
     private static String slugOf(ExperienceTranslationJpaEntity overlay) {

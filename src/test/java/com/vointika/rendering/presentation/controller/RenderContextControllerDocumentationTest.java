@@ -5,6 +5,8 @@ import com.vointika.rendering.application.dto.output.ExperienceRenderContext;
 import com.vointika.rendering.application.dto.output.ShopRenderContext;
 import com.vointika.rendering.application.usecase.GetExperienceListRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetExperienceRenderContextUseCase;
+import com.vointika.rendering.application.dto.output.PageRenderContext;
+import com.vointika.rendering.application.usecase.GetPageRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCase;
 import com.vointika.rendering.infrastructure.security.RenderingPublicRoutes;
@@ -12,6 +14,7 @@ import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.StorefrontExperienceView;
 import com.vointika.shared.port.StorefrontOperatorView;
+import com.vointika.shared.port.StorefrontPageView;
 import com.vointika.shared.web.security.InternalApiSecretFilter;
 import com.vointika.shared.web.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,6 +75,7 @@ class RenderContextControllerDocumentationTest {
     @MockitoBean private GetShopRenderContextUseCase getShopUseCase;
     @MockitoBean private GetExperienceListRenderContextUseCase getExperienceListUseCase;
     @MockitoBean private GetExperienceRenderContextUseCase getExperienceUseCase;
+    @MockitoBean private GetPageRenderContextUseCase getPageUseCase;
     @MockitoBean private VerifyStorefrontPasswordUseCase verifyPasswordUseCase;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
 
@@ -117,7 +121,9 @@ class RenderContextControllerDocumentationTest {
                 "https://media.staging.vointika.com/thumb.jpg",
                 List.of("https://media.staging.vointika.com/thumb.jpg"),
                 90,
-                true);
+                true,
+                "morning-dive",
+                java.util.Map.of("es", "buceo-matutino"));
     }
 
     @Test
@@ -154,6 +160,10 @@ class RenderContextControllerDocumentationTest {
                                 fieldWithPath("experiences[].mediaUrls").description("Resolved gallery URLs, in order"),
                                 fieldWithPath("experiences[].durationMinutes").description("Duration in minutes"),
                                 fieldWithPath("experiences[].featured").description("Whether the operator features it"),
+                                fieldWithPath("experiences[].canonicalSlug")
+                                        .description("The original handle, addressable in every locale"),
+                                subsectionWithPath("experiences[].handles")
+                                        .description("Locale → localized handle, for the locales that have one"),
                                 fieldWithPath("nextCursor")
                                         .description("Cursor for the next page, or null on the last")
                                         .optional())));
@@ -180,6 +190,47 @@ class RenderContextControllerDocumentationTest {
                                 subsectionWithPath("experience")
                                         .description("The experience, resolved for this locale — same shape as "
                                                 + "an entry in the experience-list context"))));
+    }
+
+    @Test
+    void getPageRenderContext() throws Exception {
+        when(getPageUseCase.execute(eq(SLUG), eq("about-us"), isNull())).thenReturn(
+                new PageRenderContext(operatorView(), "en", new StorefrontPageView(
+                        "about-us",
+                        "About us",
+                        "<p>We run boats out of the old port.</p>",
+                        "About | Acme Tours",
+                        "Meet the crew behind Acme Tours",
+                        null,
+                        "about-us",
+                        java.util.Map.of("es", "sobre-nosotros"))));
+
+        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/page/{pageHandle}",
+                                SLUG, "about-us")
+                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.title").value("About us"))
+                .andDo(document("rendering-page-render-context",
+                        requestHeaders(
+                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
+                                        .description("Shared secret authenticating the storefront BFF")),
+                        responseFields(
+                                subsectionWithPath("shop")
+                                        .description("The tenant block, identical on every render context"),
+                                fieldWithPath("request.locale").description("The locale this render actually uses"),
+                                fieldWithPath("page.handle")
+                                        .description("The handle for this locale — localized when the operator set one"),
+                                fieldWithPath("page.title").description("Translated title"),
+                                fieldWithPath("page.body")
+                                        .description("Operator-authored raw HTML — the one value a theme marks `| raw`"),
+                                fieldWithPath("page.seoTitle").description("SEO title override").optional(),
+                                fieldWithPath("page.seoDescription").description("SEO description override").optional(),
+                                fieldWithPath("page.templateSuffix")
+                                        .description("Theme template variant, never translated").optional(),
+                                fieldWithPath("page.canonicalHandle")
+                                        .description("The original handle, addressable in every locale"),
+                                subsectionWithPath("page.handles")
+                                        .description("Locale → localized handle, for the locales that have one"))));
     }
 
     @Test

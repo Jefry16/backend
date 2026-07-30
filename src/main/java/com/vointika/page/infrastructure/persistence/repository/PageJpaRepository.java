@@ -13,4 +13,8 @@ public interface PageJpaRepository extends JpaRepository<PageJpaEntity, UUID> {
     boolean existsByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
+
+    /** Storefront read: published only, never drafts. */
+    Optional<PageJpaEntity> findByTourOperatorIdAndHandleAndStatus(
+            UUID tourOperatorId, String handle, com.vointika.page.domain.enums.PageStatus status);
 }
