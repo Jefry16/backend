@@ -60,13 +60,21 @@ public class RenderContextController {
                 ShopRenderContextResponse.from(getShopUseCase.execute(tenantSlug, locale)));
     }
 
-    /** Everything the experience-list page renders. Published experiences only. */
+    /**
+     * Everything the experience-list page renders. Published experiences only,
+     * one cursor page at a time.
+     *
+     * @param cursor the {@code nextCursor} from a previous page, or absent for
+     *               the first. No filter or sort parameters are accepted yet —
+     *               the storefront builds that query itself.
+     */
     @GetMapping("/experience-list")
     public ResponseEntity<ExperienceListRenderContextResponse> experienceList(
             @PathVariable String tenantSlug,
-            @RequestParam(required = false) String locale) {
+            @RequestParam(required = false) String locale,
+            @RequestParam(required = false) String cursor) {
         return ResponseEntity.ok(ExperienceListRenderContextResponse.from(
-                getExperienceListUseCase.execute(tenantSlug, locale)));
+                getExperienceListUseCase.execute(tenantSlug, locale, cursor)));
     }
 
     /**

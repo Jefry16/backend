@@ -9,6 +9,7 @@ import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCase;
 import com.vointika.rendering.infrastructure.security.RenderingPublicRoutes;
 import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.StorefrontExperienceView;
 import com.vointika.shared.port.StorefrontOperatorView;
 import com.vointika.shared.web.security.InternalApiSecretFilter;
@@ -121,8 +122,9 @@ class RenderContextControllerDocumentationTest {
 
     @Test
     void getExperienceListRenderContext() throws Exception {
-        when(getExperienceListUseCase.execute(eq(SLUG), isNull())).thenReturn(
-                new ExperienceListRenderContext(operatorView(), "en", List.of(experienceView())));
+        when(getExperienceListUseCase.execute(eq(SLUG), isNull(), isNull())).thenReturn(
+                new ExperienceListRenderContext(operatorView(), "en",
+                        new CursorPage<>(List.of(experienceView()), null)));
 
         mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience-list", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
@@ -151,7 +153,10 @@ class RenderContextControllerDocumentationTest {
                                 fieldWithPath("experiences[].thumbnailUrl").description("Resolved thumbnail URL").optional(),
                                 fieldWithPath("experiences[].mediaUrls").description("Resolved gallery URLs, in order"),
                                 fieldWithPath("experiences[].durationMinutes").description("Duration in minutes"),
-                                fieldWithPath("experiences[].featured").description("Whether the operator features it"))));
+                                fieldWithPath("experiences[].featured").description("Whether the operator features it"),
+                                fieldWithPath("nextCursor")
+                                        .description("Cursor for the next page, or null on the last")
+                                        .optional())));
     }
 
     @Test

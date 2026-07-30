@@ -2,6 +2,7 @@ package com.vointika.rendering.application.usecase;
 
 import com.vointika.rendering.application.dto.output.ExperienceListRenderContext;
 import com.vointika.rendering.application.service.TenantResolver;
+import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceView;
@@ -50,42 +51,52 @@ class ExperienceRenderContextUseCasesTest {
 
     @Test
     void list_returns_the_tenant_its_locale_and_its_published_experiences() {
-        when(experienceQuery.listPublished(OP, "en"))
-                .thenReturn(List.of(experience("morning-dive", "Morning dive")));
+        when(experienceQuery.listPublished(OP, "en", null))
+                .thenReturn(new CursorPage<>(List.of(experience("morning-dive", "Morning dive")), "cur-2"));
 
-        ExperienceListRenderContext context = listUseCase.execute(SLUG, null);
+        ExperienceListRenderContext context = listUseCase.execute(SLUG, null, null);
 
         assertThat(context.shop().name()).isEqualTo("Acme Tours");
         assertThat(context.locale()).isEqualTo("en");
-        assertThat(context.experiences()).singleElement()
+        assertThat(context.experiences().data()).singleElement()
                 .extracting(StorefrontExperienceView::slug).isEqualTo("morning-dive");
+        assertThat(context.experiences().nextCursor()).isEqualTo("cur-2");
     }
 
     @Test
     void list_asks_for_content_in_the_resolved_locale_not_the_requested_one() {
-        when(experienceQuery.listPublished(OP, "en")).thenReturn(List.of());
+        when(experienceQuery.listPublished(OP, "en", null)).thenReturn(CursorPage.empty());
 
         // French is not published, so the page renders in the primary locale —
         // and the content must be fetched in that same locale, or the chrome and
         // the experiences would disagree.
-        listUseCase.execute(SLUG, "fr");
+        listUseCase.execute(SLUG, "fr", null);
 
-        verify(experienceQuery).listPublished(OP, "en");
+        verify(experienceQuery).listPublished(OP, "en", null);
     }
 
     @Test
     void list_of_an_operator_with_nothing_published_is_empty_not_missing() {
-        when(experienceQuery.listPublished(OP, "en")).thenReturn(List.of());
+        when(experienceQuery.listPublished(OP, "en", null)).thenReturn(CursorPage.empty());
 
-        assertThat(listUseCase.execute(SLUG, null).experiences()).isEmpty();
+        assertThat(listUseCase.execute(SLUG, null, null).experiences().data()).isEmpty();
     }
 
     @Test
     void list_for_an_unknown_tenant_is_not_found() {
         when(operatorQuery.findBySlug("nobody")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> listUseCase.execute("nobody", null))
+        assertThatThrownBy(() -> listUseCase.execute("nobody", null, null))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void list_passes_the_page_cursor_through_untouched() {
+        when(experienceQuery.listPublished(OP, "en", "cur-2")).thenReturn(CursorPage.empty());
+
+        listUseCase.execute(SLUG, null, "cur-2");
+
+        verify(experienceQuery).listPublished(OP, "en", "cur-2");
     }
 
     @Test

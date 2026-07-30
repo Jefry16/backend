@@ -1,6 +1,7 @@
 package com.vointika.shared.port;
 
-import java.util.List;
+import com.vointika.shared.list.CursorPage;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,8 +20,20 @@ import java.util.UUID;
  */
 public interface StorefrontExperienceQuery {
 
-    /** The operator's published experiences, newest first. */
-    List<StorefrontExperienceView> listPublished(UUID tourOperatorId, String locale);
+    /**
+     * A page of the operator's published experiences, newest first.
+     *
+     * <p>Cursor-paginated through the shared list framework, like every other
+     * tenant-scoped list in this codebase — a storefront catalogue grows, and an
+     * unbounded response would grow with it. Filtering and sorting are
+     * deliberately NOT exposed yet: the framework supports them, but nothing
+     * renders them, and an unused query surface is one more thing to get wrong.
+     *
+     * @param cursor opaque page cursor from a previous call, or null for the
+     *               first page
+     */
+    CursorPage<StorefrontExperienceView> listPublished(
+            UUID tourOperatorId, String locale, String cursor);
 
     /**
      * One published experience by the handle in its URL.

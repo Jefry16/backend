@@ -4,6 +4,8 @@ import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEn
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
+import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
+import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.StorefrontExperienceView;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,7 @@ class StorefrontExperienceQueryImplTest {
 
     private ExperienceJpaRepository experienceRepository;
     private ExperienceTranslationJpaRepository translationRepository;
+    private CriteriaListExecutor listExecutor;
     private StorefrontExperienceQueryImpl query;
 
     @BeforeEach
@@ -46,8 +49,9 @@ class StorefrontExperienceQueryImplTest {
         when(translationRepository.findByTourOperatorIdAndLocaleAndSlug(any(), any(), any()))
                 .thenReturn(Optional.empty());
 
+        listExecutor = mock(CriteriaListExecutor.class);
         query = new StorefrontExperienceQueryImpl(
-                experienceRepository, translationRepository, mediaUrlBatchResolver);
+                experienceRepository, translationRepository, listExecutor, mediaUrlBatchResolver);
     }
 
     private ExperienceJpaEntity experience() {
@@ -58,6 +62,12 @@ class StorefrontExperienceQueryImplTest {
                 90, 24, true, Instant.now());
     }
 
+    @SuppressWarnings("unchecked")
+    private void givenPage(ExperienceJpaEntity... rows) {
+        when(listExecutor.list(any(), any(), any(), any()))
+                .thenReturn(new CursorPage<>(List.of(rows), null));
+    }
+
     /** Only name and slug translated — the rest null, which is the normal case. */
     private ExperienceTranslationJpaEntity translation(String slug, String name) {
         return new ExperienceTranslationJpaEntity(
@@ -66,10 +76,9 @@ class StorefrontExperienceQueryImplTest {
 
     @Test
     void lists_only_published_experiences_resolved_for_the_locale() {
-        when(experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(OP))
-                .thenReturn(List.of(experience()));
+        givenPage(experience());
 
-        List<StorefrontExperienceView> views = query.listPublished(OP, "en");
+        List<StorefrontExperienceView> views = query.listPublished(OP, "en", null).data();
 
         assertThat(views).singleElement().satisfies(view -> {
             assertThat(view.slug()).isEqualTo("morning-dive");
@@ -90,10 +99,9 @@ class StorefrontExperienceQueryImplTest {
                 EXPERIENCE, OP, UUID.randomUUID(), "morning-dive", "Morning dive",
                 "A dive", "A long dive", false, List.of(), List.of(), List.of(), List.of(),
                 List.of(), null, 90, 24, true, Instant.now());
-        when(experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(OP))
-                .thenReturn(List.of(noMedia));
+        givenPage(noMedia);
 
-        List<StorefrontExperienceView> views = query.listPublished(OP, "en");
+        List<StorefrontExperienceView> views = query.listPublished(OP, "en", null).data();
 
         assertThat(views).singleElement().satisfies(view -> {
             assertThat(view.thumbnailUrl()).isNull();
@@ -103,20 +111,18 @@ class StorefrontExperienceQueryImplTest {
 
     @Test
     void an_operator_with_nothing_published_costs_no_further_queries() {
-        when(experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(OP))
-                .thenReturn(List.of());
+        when(listExecutor.list(any(), any(), any(), any())).thenReturn(CursorPage.empty());
 
-        assertThat(query.listPublished(OP, "en")).isEmpty();
+        assertThat(query.listPublished(OP, "en", null).data()).isEmpty();
     }
 
     @Test
     void a_translated_field_overlays_the_canonical_one_and_the_rest_falls_back() {
-        when(experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(OP))
-                .thenReturn(List.of(experience()));
+        givenPage(experience());
         when(translationRepository.findByExperienceIdInAndLocale(anyList(), any()))
                 .thenReturn(List.of(translation("buceo-matutino", "Buceo matutino")));
 
-        StorefrontExperienceView view = query.listPublished(OP, "es").getFirst();
+        StorefrontExperienceView view = query.listPublished(OP, "es", null).data().getFirst();
 
         assertThat(view.name()).isEqualTo("Buceo matutino");
         assertThat(view.slug()).isEqualTo("buceo-matutino");

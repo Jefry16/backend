@@ -4,6 +4,15 @@ import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEn
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
+import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.Filter;
+import com.vointika.shared.list.FilterOp;
+import com.vointika.shared.list.FilterSpec;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.list.ListSchema;
+import com.vointika.shared.list.SortDirection;
+import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceView;
@@ -35,32 +44,67 @@ import java.util.stream.Collectors;
 @Component
 public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery {
 
+    /**
+     * The storefront's own list schema — deliberately narrower than the admin's.
+     *
+     * <p>`published` is declared so the forced filter below can be applied, but
+     * no filter or sort is exposed to callers: the storefront builds this query
+     * itself, so the only thing a visitor influences is the page cursor.
+     */
+    private static final ListSchema SCHEMA = ListSchema.builder()
+            .tenantScoped()
+            .bool("published")
+            .instant("createdAt")
+            .sortable("createdAt")
+            .sortable("id")
+            .defaultSort("-createdAt")
+            .build();
+
+    private static final SortSpec NEWEST_FIRST = new SortSpec("createdAt", SortDirection.DESC);
+
     private final ExperienceJpaRepository experienceRepository;
+    private final CriteriaListExecutor listExecutor;
     private final ExperienceTranslationJpaRepository translationRepository;
     private final MediaUrlBatchResolver mediaUrlBatchResolver;
 
     public StorefrontExperienceQueryImpl(ExperienceJpaRepository experienceRepository,
                                          ExperienceTranslationJpaRepository translationRepository,
+                                         CriteriaListExecutor listExecutor,
                                          MediaUrlBatchResolver mediaUrlBatchResolver) {
         this.experienceRepository = experienceRepository;
+        this.listExecutor = listExecutor;
         this.translationRepository = translationRepository;
         this.mediaUrlBatchResolver = mediaUrlBatchResolver;
     }
 
     @Override
-    public List<StorefrontExperienceView> listPublished(UUID tourOperatorId, String locale) {
-        List<ExperienceJpaEntity> experiences =
-                experienceRepository.findByTourOperatorIdAndPublishedTrueOrderByCreatedAtDesc(tourOperatorId);
-        if (experiences.isEmpty()) {
-            return List.of();
+    public CursorPage<StorefrontExperienceView> listPublished(
+            UUID tourOperatorId, String locale, String cursor) {
+
+        // The published filter is applied here, not taken from the caller: it is
+        // the one predicate a storefront request must never be able to relax.
+        ListQuery query = new ListQuery(
+                tourOperatorId,
+                new FilterSpec(List.of(new Filter("published", FilterOp.EQ, true))),
+                NEWEST_FIRST,
+                cursor);
+
+        CursorPage<ExperienceJpaEntity> page =
+                listExecutor.list(ExperienceJpaEntity.class, SCHEMA, query, entity -> entity);
+        if (page.data().isEmpty()) {
+            return CursorPage.empty();
         }
 
-        Map<UUID, ExperienceTranslationJpaEntity> overlays = overlaysFor(experiences, locale);
-        Map<UUID, String> mediaUrls = mediaUrlsFor(tourOperatorId, experiences);
+        // Enrich the page, not the table: overlays and media resolve for the
+        // rows this page actually returned (PATTERNS §4b step 3).
+        Map<UUID, ExperienceTranslationJpaEntity> overlays = overlaysFor(page.data(), locale);
+        Map<UUID, String> mediaUrls = mediaUrlsFor(tourOperatorId, page.data());
 
-        return experiences.stream()
-                .map(experience -> toView(experience, overlays.get(experience.getId()), mediaUrls))
-                .toList();
+        return new CursorPage<>(
+                page.data().stream()
+                        .map(experience -> toView(experience, overlays.get(experience.getId()), mediaUrls))
+                        .toList(),
+                page.nextCursor());
     }
 
     @Override

@@ -20,7 +20,8 @@ public class GetExperienceListRenderContextUseCase {
         this.storefrontExperienceQuery = storefrontExperienceQuery;
     }
 
-    public ExperienceListRenderContext execute(String slug, String requestedLocale) {
+    /** @param cursor opaque page cursor, or null for the first page */
+    public ExperienceListRenderContext execute(String slug, String requestedLocale, String cursor) {
         ShopRenderContext tenant = tenantResolver.resolve(slug, requestedLocale);
 
         // An operator with nothing published gets an empty list, not a 404 —
@@ -28,6 +29,6 @@ public class GetExperienceListRenderContextUseCase {
         return new ExperienceListRenderContext(
                 tenant.shop(),
                 tenant.locale(),
-                storefrontExperienceQuery.listPublished(tenant.shop().id(), tenant.locale()));
+                storefrontExperienceQuery.listPublished(tenant.shop().id(), tenant.locale(), cursor));
     }
 }
