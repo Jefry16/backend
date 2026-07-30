@@ -1,6 +1,7 @@
 package com.vointika.rendering.application.usecase;
 
 import com.vointika.rendering.application.dto.output.ShopRenderContext;
+import com.vointika.rendering.application.service.TenantResolver;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.StorefrontOperatorQuery;
 import com.vointika.shared.port.StorefrontOperatorView;
@@ -29,7 +30,7 @@ class RenderContextUseCasesTest {
     @BeforeEach
     void setUp() {
         storefrontOperatorQuery = mock(StorefrontOperatorQuery.class);
-        getShopUseCase = new GetShopRenderContextUseCase(storefrontOperatorQuery);
+        getShopUseCase = new GetShopRenderContextUseCase(new TenantResolver(storefrontOperatorQuery));
         verifyPasswordUseCase = new VerifyStorefrontPasswordUseCase(storefrontOperatorQuery);
     }
 

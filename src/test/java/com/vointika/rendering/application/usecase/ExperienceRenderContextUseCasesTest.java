@@ -1,6 +1,7 @@
 package com.vointika.rendering.application.usecase;
 
 import com.vointika.rendering.application.dto.output.ExperienceListRenderContext;
+import com.vointika.rendering.application.service.TenantResolver;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceView;
@@ -33,8 +34,9 @@ class ExperienceRenderContextUseCasesTest {
     void setUp() {
         operatorQuery = mock(StorefrontOperatorQuery.class);
         experienceQuery = mock(StorefrontExperienceQuery.class);
-        listUseCase = new GetExperienceListRenderContextUseCase(operatorQuery, experienceQuery);
-        getUseCase = new GetExperienceRenderContextUseCase(operatorQuery, experienceQuery);
+        TenantResolver tenantResolver = new TenantResolver(operatorQuery);
+        listUseCase = new GetExperienceListRenderContextUseCase(tenantResolver, experienceQuery);
+        getUseCase = new GetExperienceRenderContextUseCase(tenantResolver, experienceQuery);
 
         when(operatorQuery.findBySlug(SLUG)).thenReturn(Optional.of(new StorefrontOperatorView(
                 OP, "Acme Tours", SLUG, null, "en", List.of("en", "es"),

@@ -1,11 +1,10 @@
 package com.vointika.rendering.application.usecase;
 
 import com.vointika.rendering.application.dto.output.ExperienceRenderContext;
-import com.vointika.rendering.application.service.LocaleResolver;
+import com.vointika.rendering.application.dto.output.ShopRenderContext;
+import com.vointika.rendering.application.service.TenantResolver;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.StorefrontExperienceQuery;
-import com.vointika.shared.port.StorefrontOperatorQuery;
-import com.vointika.shared.port.StorefrontOperatorView;
 
 /**
  * One experience's page, addressed by the handle in its URL.
@@ -16,24 +15,22 @@ import com.vointika.shared.port.StorefrontOperatorView;
  */
 public class GetExperienceRenderContextUseCase {
 
-    private final StorefrontOperatorQuery storefrontOperatorQuery;
+    private final TenantResolver tenantResolver;
     private final StorefrontExperienceQuery storefrontExperienceQuery;
 
-    public GetExperienceRenderContextUseCase(StorefrontOperatorQuery storefrontOperatorQuery,
+    public GetExperienceRenderContextUseCase(TenantResolver tenantResolver,
                                              StorefrontExperienceQuery storefrontExperienceQuery) {
-        this.storefrontOperatorQuery = storefrontOperatorQuery;
+        this.tenantResolver = tenantResolver;
         this.storefrontExperienceQuery = storefrontExperienceQuery;
     }
 
     public ExperienceRenderContext execute(String slug, String experienceSlug, String requestedLocale) {
-        StorefrontOperatorView operator = storefrontOperatorQuery.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Storefront not found"));
-
-        String locale = LocaleResolver.resolve(operator, requestedLocale);
+        ShopRenderContext tenant = tenantResolver.resolve(slug, requestedLocale);
 
         return storefrontExperienceQuery
-                .findPublishedBySlug(operator.id(), experienceSlug, locale)
-                .map(experience -> new ExperienceRenderContext(operator, locale, experience))
+                .findPublishedBySlug(tenant.shop().id(), experienceSlug, tenant.locale())
+                .map(experience -> new ExperienceRenderContext(
+                        tenant.shop(), tenant.locale(), experience))
                 .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
     }
 }
