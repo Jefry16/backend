@@ -66,6 +66,7 @@ public class StorefrontOperatorQueryImpl implements StorefrontOperatorQuery {
     private StorefrontOperatorView toView(TourOperator operator) {
         String primaryLocale = operator.getPrimaryLocale().value();
         return new StorefrontOperatorView(
+                operator.getId(),
                 operator.getName().value(),
                 operator.getSlug().value(),
                 mediaUrlBatchResolver.resolveOne(operator.getId(), operator.getLogoMediaId()),
