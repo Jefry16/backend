@@ -1,5 +1,7 @@
 package com.vointika.shared.port;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,4 +24,10 @@ public interface StorefrontPageQuery {
      */
     Optional<StorefrontPageView> findPublishedByHandle(
             UUID tourOperatorId, String handle, String locale);
+
+    /**
+     * id → the handle each published page has in this locale. Same contract as
+     * the experience seam: absent means "do not link to it".
+     */
+    Map<UUID, String> publishedHandles(UUID tourOperatorId, Collection<UUID> ids, String locale);
 }

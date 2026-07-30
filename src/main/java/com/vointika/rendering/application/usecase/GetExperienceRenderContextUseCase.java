@@ -30,7 +30,7 @@ public class GetExperienceRenderContextUseCase {
         return storefrontExperienceQuery
                 .findPublishedBySlug(tenant.shop().id(), experienceSlug, tenant.locale())
                 .map(experience -> new ExperienceRenderContext(
-                        tenant.shop(), tenant.locale(), experience))
+                        tenant.shop(), tenant.locale(), experience, tenant.navigation()))
                 .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
     }
 }

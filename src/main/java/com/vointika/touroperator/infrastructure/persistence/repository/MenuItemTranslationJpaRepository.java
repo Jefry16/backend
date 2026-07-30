@@ -17,4 +17,8 @@ public interface MenuItemTranslationJpaRepository
                 SELECT i.id FROM MenuItemJpaEntity i WHERE i.menuId = :menuId)
             """)
     List<MenuItemTranslationJpaEntity> findByMenuId(UUID menuId);
+
+    /** Localized titles for many items in one query, for one locale. */
+    java.util.List<MenuItemTranslationJpaEntity> findByMenuItemIdInAndLocale(
+            java.util.Collection<java.util.UUID> menuItemIds, String locale);
 }

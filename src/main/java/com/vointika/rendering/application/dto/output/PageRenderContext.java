@@ -7,4 +7,5 @@ import com.vointika.shared.port.StorefrontPageView;
 public record PageRenderContext(
         StorefrontOperatorView shop,
         String locale,
-        StorefrontPageView page) {}
+        StorefrontPageView page,
+        java.util.List<NavigationMenu> navigation) {}

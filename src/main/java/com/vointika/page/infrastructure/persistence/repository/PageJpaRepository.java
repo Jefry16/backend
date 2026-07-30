@@ -15,6 +15,10 @@ public interface PageJpaRepository extends JpaRepository<PageJpaEntity, UUID> {
 
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 
+    /** Navigation: resolve many ids to published pages at once. */
+    java.util.List<PageJpaEntity> findByIdInAndTourOperatorIdAndStatus(
+            java.util.Collection<UUID> ids, UUID tourOperatorId, PageStatus status);
+
     /** Storefront read: published only, never drafts. */
     Optional<PageJpaEntity> findByTourOperatorIdAndHandleAndStatus(
             UUID tourOperatorId, String handle, PageStatus status);

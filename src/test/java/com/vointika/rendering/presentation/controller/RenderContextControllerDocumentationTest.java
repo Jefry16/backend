@@ -105,7 +105,7 @@ class RenderContextControllerDocumentationTest {
     }
 
     private ShopRenderContext shopContext() {
-        return new ShopRenderContext(operatorView(), "en");
+        return new ShopRenderContext(operatorView(), "en", List.of());
     }
 
     private StorefrontExperienceView experienceView() {
@@ -130,7 +130,7 @@ class RenderContextControllerDocumentationTest {
     void getExperienceListRenderContext() throws Exception {
         when(getExperienceListUseCase.execute(eq(SLUG), isNull(), isNull())).thenReturn(
                 new ExperienceListRenderContext(operatorView(), "en",
-                        new CursorPage<>(List.of(experienceView()), null)));
+                        new CursorPage<>(List.of(experienceView()), null), List.of()));
 
         mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience-list", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
@@ -145,6 +145,11 @@ class RenderContextControllerDocumentationTest {
                                         .description("The tenant block, identical on every render context"),
                                 fieldWithPath("request.locale")
                                         .description("The locale this render actually uses, after fallback"),
+                                subsectionWithPath("navigation")
+                                        .description("The operator's menus, resolved for this locale — chrome, so "
+                                                + "present on every render context. Items carry `linkType` + "
+                                                + "`handle`; the BFF turns those into paths, and an item whose "
+                                                + "target is not published is already absent"),
                                 fieldWithPath("experiences[]")
                                         .description("Published experiences, newest first; empty when none"),
                                 fieldWithPath("experiences[].slug")
@@ -172,7 +177,7 @@ class RenderContextControllerDocumentationTest {
     @Test
     void getExperienceRenderContext() throws Exception {
         when(getExperienceUseCase.execute(eq(SLUG), eq("morning-dive"), isNull())).thenReturn(
-                new ExperienceRenderContext(operatorView(), "en", experienceView()));
+                new ExperienceRenderContext(operatorView(), "en", experienceView(), List.of()));
 
         mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience/{experienceSlug}",
                                 SLUG, "morning-dive")
@@ -187,6 +192,11 @@ class RenderContextControllerDocumentationTest {
                                 subsectionWithPath("shop")
                                         .description("The tenant block, identical on every render context"),
                                 fieldWithPath("request.locale").description("The locale this render actually uses"),
+                                subsectionWithPath("navigation")
+                                        .description("The operator's menus, resolved for this locale — chrome, so "
+                                                + "present on every render context. Items carry `linkType` + "
+                                                + "`handle`; the BFF turns those into paths, and an item whose "
+                                                + "target is not published is already absent"),
                                 subsectionWithPath("experience")
                                         .description("The experience, resolved for this locale — same shape as "
                                                 + "an entry in the experience-list context"))));
@@ -203,7 +213,7 @@ class RenderContextControllerDocumentationTest {
                         "Meet the crew behind Acme Tours",
                         null,
                         "about-us",
-                        java.util.Map.of("es", "sobre-nosotros"))));
+                        java.util.Map.of("es", "sobre-nosotros")), List.of()));
 
         mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/page/{pageHandle}",
                                 SLUG, "about-us")
@@ -218,6 +228,11 @@ class RenderContextControllerDocumentationTest {
                                 subsectionWithPath("shop")
                                         .description("The tenant block, identical on every render context"),
                                 fieldWithPath("request.locale").description("The locale this render actually uses"),
+                                subsectionWithPath("navigation")
+                                        .description("The operator's menus, resolved for this locale — chrome, so "
+                                                + "present on every render context. Items carry `linkType` + "
+                                                + "`handle`; the BFF turns those into paths, and an item whose "
+                                                + "target is not published is already absent"),
                                 fieldWithPath("page.handle")
                                         .description("The handle for this locale — localized when the operator set one"),
                                 fieldWithPath("page.title").description("Translated title"),
@@ -268,7 +283,10 @@ class RenderContextControllerDocumentationTest {
                                 fieldWithPath("shop.passwordMessage")
                                         .description("The operator's message on the gate page, or null").optional(),
                                 fieldWithPath("request.locale")
-                                        .description("The locale this render actually uses, after fallback"))));
+                                        .description("The locale this render actually uses, after fallback"),
+                                subsectionWithPath("navigation")
+                                        .description("The operator's menus, resolved for this locale — chrome, so "
+                                                + "present on every render context"))));
     }
 
     @Test

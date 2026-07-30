@@ -29,7 +29,8 @@ public class GetPageRenderContextUseCase {
 
         return storefrontPageQuery
                 .findPublishedByHandle(tenant.shop().id(), pageHandle, tenant.locale())
-                .map(page -> new PageRenderContext(tenant.shop(), tenant.locale(), page))
+                .map(page -> new PageRenderContext(
+                        tenant.shop(), tenant.locale(), page, tenant.navigation()))
                 .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
     }
 }

@@ -9,11 +9,13 @@ import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontPageView;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * page's adapter for the storefront read seam — the mirror of
@@ -61,6 +63,32 @@ public class StorefrontPageQueryImpl implements StorefrontPageQuery {
 
             return toView(page, overlay, handlesFor(translations));
         });
+    }
+
+    @Override
+    public Map<UUID, String> publishedHandles(UUID tourOperatorId, Collection<UUID> ids, String locale) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+
+        List<PageJpaEntity> published = pageRepository
+                .findByIdInAndTourOperatorIdAndStatus(ids, tourOperatorId, PageStatus.PUBLISHED);
+        if (published.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<UUID, String> localized = translationRepository
+                .findByPageIdInAndLocale(published.stream().map(PageJpaEntity::getId).toList(), locale)
+                .stream()
+                .filter(translation -> translation.getSlug() != null)
+                .collect(Collectors.toMap(
+                        PageTranslationJpaEntity::getPageId, PageTranslationJpaEntity::getSlug));
+
+        Map<UUID, String> handles = new HashMap<>();
+        for (PageJpaEntity page : published) {
+            handles.put(page.getId(), localized.getOrDefault(page.getId(), page.getHandle()));
+        }
+        return Map.copyOf(handles);
     }
 
     /** Overlay wins per field; a null translated field falls back to the canonical one. */
