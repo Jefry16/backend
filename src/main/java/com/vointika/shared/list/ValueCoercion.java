@@ -5,7 +5,6 @@ import com.vointika.shared.exception.InvalidFieldException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -18,7 +17,6 @@ public final class ValueCoercion {
             if (targetType == String.class) return raw;
             if (targetType == UUID.class) return UUID.fromString(raw);
             if (targetType == Instant.class) return Instant.parse(raw);
-            if (targetType == LocalDate.class) return LocalDate.parse(raw);
             if (targetType == LocalDateTime.class) return LocalDateTime.parse(raw);
             if (targetType == LocalTime.class) return LocalTime.parse(raw);
             if (targetType == Integer.class || targetType == int.class) return Integer.valueOf(raw);

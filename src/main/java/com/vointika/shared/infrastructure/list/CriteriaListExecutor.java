@@ -101,10 +101,10 @@ public class CriteriaListExecutor {
         return switch (type) {
             case TEXT -> textPredicate(cb, root, f);
             case SET -> setPredicate(cb, root, f);
-            // DATE/TIME/INSTANT reuse the comparable predicate logic — LocalDate, LocalTime
-            // and Instant are all Comparable. Their op sets differ (e.g. DATE/TIME lack
+            // TIME/INSTANT reuse the comparable predicate logic — LocalTime and
+            // Instant are both Comparable. Their op sets differ (TIME lacks
             // GTE/LTE) but that's enforced upstream by FilterType.allowedOps.
-            case NUMBER, DATE, TIME, INSTANT -> numberPredicate(cb, root, f);
+            case NUMBER, TIME, INSTANT -> numberPredicate(cb, root, f);
             case BOOLEAN -> booleanPredicate(cb, root, f);
         };
     }

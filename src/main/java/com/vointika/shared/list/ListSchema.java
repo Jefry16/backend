@@ -2,7 +2,6 @@ package com.vointika.shared.list;
 
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -50,11 +49,6 @@ public final class ListSchema {
 
         public Builder number(String field, Class<?> valueType) {
             filters.put(field, new FilterFieldDef(FilterType.NUMBER, valueType));
-            return this;
-        }
-
-        public Builder date(String field) {
-            filters.put(field, new FilterFieldDef(FilterType.DATE, LocalDate.class));
             return this;
         }
 

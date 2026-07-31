@@ -12,5 +12,4 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
     Optional<UserJpaEntity> findByEmail(String email);
 
     /** Batch account fetch by id — one-query resolution for the member list, audit actors, and alert recipients (no N+1). */
-    List<UserJpaEntity> findByIdIn(Collection<UUID> ids);
 }

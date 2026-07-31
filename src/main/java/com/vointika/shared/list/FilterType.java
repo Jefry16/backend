@@ -24,13 +24,6 @@ public enum FilterType {
             FilterOp.LTE,
             FilterOp.BETWEEN
     )),
-    DATE(Set.of(
-            FilterOp.EQ,
-            FilterOp.NEQ,
-            FilterOp.LT,
-            FilterOp.GT,
-            FilterOp.BETWEEN
-    )),
     TIME(Set.of(
             FilterOp.EQ,
             FilterOp.NEQ,
