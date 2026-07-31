@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
@@ -148,6 +149,21 @@ class AudienceTranslationControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void aMissingBodyIs400BeforeTheHandlerRuns() throws Exception {
+        authenticated();
+
+        // The handler dropped its `body == null` guard because @RequestBody is
+        // required by default — this is what makes that guard unreachable.
+        mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
+                        .with(csrf())
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(upsertUseCase);
     }
 
     @Test

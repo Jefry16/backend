@@ -14,6 +14,10 @@ lie, because most of that pass was spent discovering them.
 2. `git checkout -b audit/<context>` — trunk takes no direct commits.
 3. Baseline the suite: `./mvnw -o test` and record the number. Every later count is
    compared to it, and a drop must be explained, not assumed benign.
+4. **Grep MAP's Debt section for the context's name first.** Earlier passes log what
+   they found and deliberately left; `audience` arrived with its entire finding list
+   already written there by the `touroperator` pass. Start from those and delete each
+   entry as you pay it off.
 
 ## The rule that governs the whole pass
 
@@ -114,9 +118,11 @@ was, and nothing re-checked it when the roster went denormalized instead. Grep t
 named caller before believing the sentence — this is cheap and it is how a whole
 orphaned branch stays plausible for months.
 
-Both `touroperator` and `identity` came back with **zero** genuinely dead members.
+Every context audited so far — `identity`, `touroperator`, `experience`,
+`metafield`, `shared`, `audience` — came back with **zero** genuinely dead members.
 That is the expected result, and it is only worth anything if the examined counts
-are printed beside it.
+are printed beside it. The subtractions that did land came from §3 and §5, not here:
+duplicate DTOs, an unreachable guard, a port method with no caller.
 
 ## 3 · Over-engineering
 

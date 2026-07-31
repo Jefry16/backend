@@ -6,7 +6,6 @@ import com.vointika.audience.application.usecase.GetAudienceUseCase;
 import com.vointika.audience.application.usecase.ListAudiencesUseCase;
 import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
 import com.vointika.audience.domain.entity.Audience;
-import com.vointika.audience.presentation.request.AudienceRequest;
 import com.vointika.audience.presentation.response.AudienceResponse;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
@@ -78,10 +77,10 @@ public class AudienceController {
     @PostMapping
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
-            @RequestBody AudienceRequest body,
+            @RequestBody AudienceInput body,
             @AuthenticationPrincipal String callerUserId) {
         UUID id = createAudienceUseCase.execute(
-                tourOperatorId, UUID.fromString(callerUserId), toInput(body));
+                tourOperatorId, UUID.fromString(callerUserId), body);
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/audiences/" + id))
                 .build();
@@ -92,14 +91,10 @@ public class AudienceController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID audienceId,
-            @RequestBody AudienceRequest body,
+            @RequestBody AudienceInput body,
             @AuthenticationPrincipal String callerUserId) {
         updateAudienceUseCase.execute(
-                tourOperatorId, audienceId, UUID.fromString(callerUserId), toInput(body));
+                tourOperatorId, audienceId, UUID.fromString(callerUserId), body);
         return ResponseEntity.noContent().build();
-    }
-
-    private static AudienceInput toInput(AudienceRequest b) {
-        return new AudienceInput(b.name(), b.paxPerUnit());
     }
 }

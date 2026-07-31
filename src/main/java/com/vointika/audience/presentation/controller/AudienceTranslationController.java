@@ -77,7 +77,7 @@ public class AudienceTranslationController {
             @RequestBody UpsertAudienceTranslationRequest body,
             @AuthenticationPrincipal String callerUserId) {
         upsertUseCase.execute(tourOperatorId, audienceId, locale,
-                body == null ? null : body.name(), UUID.fromString(callerUserId));
+                body.name(), UUID.fromString(callerUserId));
         return ResponseEntity.noContent().build();
     }
 
