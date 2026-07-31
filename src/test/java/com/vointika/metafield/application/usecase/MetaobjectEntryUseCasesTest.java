@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
+import com.vointika.metafield.infrastructure.port.JacksonJsonSyntaxPort;
 import com.vointika.metafield.application.dto.input.CreateMetaobjectEntryInput;
 import com.vointika.metafield.application.dto.input.UpdateMetaobjectEntryInput;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
@@ -99,13 +100,13 @@ class MetaobjectEntryUseCasesTest {
 
     private CreateMetaobjectEntryUseCase createUseCase() {
         return new CreateMetaobjectEntryUseCase(definitionRepository, entryRepository,
-                new MetafieldValueValidator(new ObjectMapper()), membershipCheck,
+                new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper())), membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
     }
 
     private UpdateMetaobjectEntryUseCase updateUseCase() {
         return new UpdateMetaobjectEntryUseCase(definitionRepository, entryRepository,
-                new MetafieldValueValidator(new ObjectMapper()), membershipCheck,
+                new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper())), membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
     }
 

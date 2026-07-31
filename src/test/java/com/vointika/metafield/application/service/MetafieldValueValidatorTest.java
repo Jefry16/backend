@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.service;
 
+import com.vointika.metafield.infrastructure.port.JacksonJsonSyntaxPort;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.exception.InvalidFieldException;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MetafieldValueValidatorTest {
 
-    private final MetafieldValueValidator validator = new MetafieldValueValidator(new ObjectMapper());
+    private final MetafieldValueValidator validator = new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper()));
 
     @Test
     void blankIsAlwaysRejected() {

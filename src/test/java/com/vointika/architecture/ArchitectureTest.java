@@ -2,7 +2,6 @@ package com.vointika.architecture;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
-import java.util.Set;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -11,7 +10,6 @@ import com.tngtech.archunit.library.Architectures;
 
 import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -197,43 +195,24 @@ public class ArchitectureTest {
      * in the repository adapter and delete this list.
      */
     /**
-     * One class left. {@code MetafieldValueValidator} holds a Jackson
-     * {@code ObjectMapper} to reject trailing-token garbage in {@code json} values —
-     * debt, not a pattern; it wants a parser port.
+     * The application layer's entire legal dependency surface: our own code, the JDK,
+     * and the SLF4J facade. An <strong>allowlist</strong>, deliberately — a list of
+     * banned frameworks only catches the ones someone thought to name, which is how a
+     * Jackson dependency under {@code tools.jackson} (not {@code com.fasterxml})
+     * survived a grep. Anything outside this is coupling, including a library nobody
+     * has imported yet.
      *
-     * <p>The 21 use cases that used to sit here caught Spring's
-     * {@code DataIntegrityViolationException} directly. They now catch
-     * {@code UniqueConstraintViolationException}, translated once in
-     * {@code SpringTransactionRunner}, which is where the flush actually fails.
+     * <p>There are no exemptions. There were two: 21 use cases catching Spring's
+     * {@code DataIntegrityViolationException}, now translated once in
+     * {@code SpringTransactionRunner}; and a validator holding a Jackson
+     * {@code ObjectMapper}, now behind {@code JsonSyntaxPort}. Both were listed here
+     * as frozen classes until the debt was paid, and the list is gone with them.
      */
-    private static final Set<String> FRAMEWORK_CATCHERS_FROZEN = Set.of(
-            "com.vointika.metafield.application.service.MetafieldValueValidator"
-    );
-
-    private static final DescribedPredicate<JavaClass> IS_FROZEN =
-            new DescribedPredicate<>("a frozen framework-catching class") {
-                @Override
-                public boolean test(JavaClass javaClass) {
-                    return FRAMEWORK_CATCHERS_FROZEN.contains(javaClass.getFullName());
-                }
-            };
-
     @ArchTest
     static final ArchRule application_depends_only_on_our_code_the_jdk_and_slf4j =
             classes()
-                    .that(resideInAPackage("com.vointika..application..").and(not(IS_FROZEN)))
+                    .that().resideInAPackage("com.vointika..application..")
                     .should().onlyDependOnClassesThat()
-                    .resideInAnyPackage(APPLICATION_MAY_DEPEND_ON)
+                    .resideInAnyPackage("com.vointika..", "java..", "org.slf4j..")
                     .because("anything else couples the layer to a framework — use a port");
-
-    @ArchTest
-    static final ArchRule frozen_classes_get_one_exemption_not_a_blank_cheque =
-            classes()
-                    .that(IS_FROZEN)
-                    .should().onlyDependOnClassesThat(
-                            resideInAnyPackage(APPLICATION_MAY_DEPEND_ON)
-                                    .or(belongToAnyOf(
-                                            tools.jackson.databind.ObjectMapper.class,
-                                            tools.jackson.databind.JsonNode.class)))
-                    .because("being on the frozen list buys one exemption, not free rein");
 }

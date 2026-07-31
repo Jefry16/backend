@@ -271,6 +271,11 @@ framework type reach the application layer; ArchUnit fails the build if it does.
 
 Uncaught, the exception maps to 409.
 
+The same move works for any library a use case reaches for: `MetafieldValueValidator`
+needed a JSON parser, so it asks `JsonSyntaxPort.isWellFormed(value)` and the Jackson
+call lives in `infrastructure/port`. The application layer has no exemptions — a
+library in a use case means a port is missing.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,

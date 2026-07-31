@@ -1,9 +1,8 @@
 package com.vointika.metafield.application.service;
 
+import com.vointika.metafield.application.port.JsonSyntaxPort;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.exception.InvalidFieldException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -30,10 +29,10 @@ public class MetafieldValueValidator {
     private static final int URL_MAX = 2_000;
     private static final int JSON_MAX = 10_000;
 
-    private final ObjectMapper objectMapper;
+    private final JsonSyntaxPort jsonSyntax;
 
-    public MetafieldValueValidator(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public MetafieldValueValidator(JsonSyntaxPort jsonSyntax) {
+        this.jsonSyntax = jsonSyntax;
     }
 
     /**
@@ -162,11 +161,7 @@ public class MetafieldValueValidator {
             throw new InvalidFieldException(
                     "A json metafield value must be at most " + JSON_MAX + " characters");
         }
-        try {
-            // readValue (not readTree) so trailing-token garbage is rejected
-            // instead of silently stored.
-            objectMapper.readValue(value, JsonNode.class);
-        } catch (Exception e) {
+        if (!jsonSyntax.isWellFormed(value)) {
             throw new InvalidFieldException("A json metafield value must be valid JSON");
         }
         return value;

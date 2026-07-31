@@ -1,6 +1,7 @@
 package com.vointika.metafield.infrastructure.config;
 
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
+import com.vointika.metafield.application.port.JsonSyntaxPort;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
 import com.vointika.metafield.application.usecase.CreateMetafieldDefinitionUseCase;
 import com.vointika.metafield.application.usecase.DeleteMetafieldDefinitionUseCase;
@@ -22,14 +23,13 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import tools.jackson.databind.ObjectMapper;
 
 @Configuration("metafieldUseCaseConfig")
 public class MetafieldUseCaseConfig {
 
     @Bean
-    public MetafieldValueValidator metafieldValueValidator(ObjectMapper objectMapper) {
-        return new MetafieldValueValidator(objectMapper);
+    public MetafieldValueValidator metafieldValueValidator(JsonSyntaxPort jsonSyntax) {
+        return new MetafieldValueValidator(jsonSyntax);
     }
 
     @Bean
