@@ -8,7 +8,7 @@ Three of the four governing documents are **not linked from anywhere in this rep
 
 | Document | Location | What it is |
 |---|---|---|
-| **LAW** | `../CONSTITUTION.md` (repo root's *parent*, outside every repo) | The rules. Short, read whole, every session. |
+| **LAW** | `../CONSTITUTION.md` (the parent directory — its own git repo, tracking LAW and MAP only) | The rules. Short, read whole, every session. |
 | **MAP** | `../MAP.md` (same place) | The living state: what exists, what each context owns, what is decided, what is still open. The only artifact that crosses session boundaries. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
