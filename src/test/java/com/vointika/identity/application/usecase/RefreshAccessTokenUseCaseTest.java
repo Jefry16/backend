@@ -1,5 +1,6 @@
 package com.vointika.identity.application.usecase;
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.identity.application.dto.input.RefreshAccessTokenInput;
 import com.vointika.identity.application.dto.output.RefreshAccessTokenOutput;
 import com.vointika.identity.application.port.TokenGeneratorPort;
@@ -37,6 +38,7 @@ class RefreshAccessTokenUseCaseTest {
     @Mock private UserRepository userRepository;
     @Mock private TokenGeneratorPort tokenGenerator;
     @Mock private TokenHasherPort tokenHasher;
+    @Mock private DiagnosticLogPort diagnosticLog;
 
     private final IdGenerator idGenerator = UUID::randomUUID;
 
@@ -50,7 +52,7 @@ class RefreshAccessTokenUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new RefreshAccessTokenUseCase(refreshTokenRepository, userRepository,
-                tokenGenerator, tokenHasher, transactionRunner, idGenerator);
+                tokenGenerator, tokenHasher, transactionRunner, idGenerator, diagnosticLog);
     }
 
     @Test

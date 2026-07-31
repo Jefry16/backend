@@ -9,5 +9,7 @@ import java.io.InputStream;
  */
 public interface AvatarStoragePort {
     void putObject(String key, String contentType, long size, InputStream body);
+    /** Best effort: never throws. A failure is logged by the adapter and leaves
+     *  an orphaned object, because the row it belonged to is already gone. */
     void deleteObject(String key);
 }

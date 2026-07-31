@@ -276,6 +276,13 @@ needed a JSON parser, so it asks `JsonSyntaxPort.isWellFormed(value)` and the Ja
 call lives in `infrastructure/port`. The application layer has no exemptions — a
 library in a use case means a port is missing.
 
+**Logging follows the same rule.** If a *side effect* fails and the caller does not
+care — deleting an object whose row is already gone, enqueuing a welcome email — the
+adapter swallows and logs it, and the port documents that it never throws. Only when
+the use case itself has something to report (a security signal, a branch taken because
+config was missing) does it reach for `DiagnosticLogPort`, which takes the calling
+class so log names still point at the reporter.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,

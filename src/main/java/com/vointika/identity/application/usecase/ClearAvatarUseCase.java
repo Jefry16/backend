@@ -6,14 +6,11 @@ import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.port.TransactionRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
 public class ClearAvatarUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(ClearAvatarUseCase.class);
 
     private final UserRepository userRepository;
     private final AvatarStoragePort avatarStoragePort;
@@ -41,10 +38,6 @@ public class ClearAvatarUseCase {
         transactionRunner.run(() -> userRepository.save(user));
 
         // AFTER commit: best-effort cleanup of the removed object.
-        try {
-            avatarStoragePort.deleteObject(oldKey);
-        } catch (RuntimeException e) {
-            log.warn("Failed to delete cleared avatar object {}", oldKey, e);
-        }
+        avatarStoragePort.deleteObject(oldKey);
     }
 }

@@ -77,13 +77,14 @@ class DeleteMediaUseCaseTest {
     }
 
     @Test
-    void objectDeleteFailureIsSwallowed() {
+    void objectDeleteIsDelegatedAfterTheRowIsRemoved() {
         when(mediaRepository.findByIdAndTourOperatorId(mediaId, operatorId)).thenReturn(Optional.of(media()));
-        doThrow(new RuntimeException("s3 down")).when(mediaStoragePort).deleteObject(anyString());
 
-        // row is already gone; a failed object delete must not surface as a 500
         useCase.execute(operatorId, mediaId, callerId);
+
+        // Resilience is the port's contract now — see S3MediaStoragePortImplTest.
         verify(mediaRepository).deleteByIdAndTourOperatorId(mediaId, operatorId);
+        verify(mediaStoragePort).deleteObject(anyString());
     }
 
     @Test

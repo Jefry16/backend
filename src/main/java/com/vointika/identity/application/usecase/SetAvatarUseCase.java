@@ -9,8 +9,6 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Locale;
 import java.util.Map;
@@ -18,7 +16,6 @@ import java.util.UUID;
 
 public class SetAvatarUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(SetAvatarUseCase.class);
 
     private static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
 
@@ -86,11 +83,7 @@ public class SetAvatarUseCase {
         if (key == null) {
             return;
         }
-        try {
-            avatarStoragePort.deleteObject(key);
-        } catch (RuntimeException e) {
-            log.warn("Failed to delete replaced avatar object {}", key, e);
-        }
+        avatarStoragePort.deleteObject(key);
     }
 
     private static String normalizeContentType(String contentType) {

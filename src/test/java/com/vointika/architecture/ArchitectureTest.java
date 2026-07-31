@@ -174,8 +174,9 @@ public class ArchitectureTest {
                     .because("domain must stay pure — infrastructure concerns belong in infrastructure");
 
     /**
-     * The application layer's entire legal dependency surface: our own code, the JDK,
-     * and the SLF4J facade. An <strong>allowlist</strong>, deliberately — a list of
+     * The application layer's entire legal dependency surface: our own code and the
+     * JDK. Nothing else — not even a logging facade. An <strong>allowlist</strong>,
+     * deliberately — a list of
      * banned frameworks only catches the ones someone thought to name, which is how a
      * Jackson dependency under {@code tools.jackson} (not {@code com.fasterxml})
      * survived a grep. Anything outside this is coupling, including a library nobody
@@ -195,24 +196,27 @@ public class ArchitectureTest {
      * in the repository adapter and delete this list.
      */
     /**
-     * The application layer's entire legal dependency surface: our own code, the JDK,
-     * and the SLF4J facade. An <strong>allowlist</strong>, deliberately — a list of
+     * The application layer's entire legal dependency surface: our own code and the
+     * JDK. Nothing else — not even a logging facade. An <strong>allowlist</strong>,
+     * deliberately — a list of
      * banned frameworks only catches the ones someone thought to name, which is how a
      * Jackson dependency under {@code tools.jackson} (not {@code com.fasterxml})
      * survived a grep. Anything outside this is coupling, including a library nobody
      * has imported yet.
      *
-     * <p>There are no exemptions. There were two: 21 use cases catching Spring's
-     * {@code DataIntegrityViolationException}, now translated once in
-     * {@code SpringTransactionRunner}; and a validator holding a Jackson
-     * {@code ObjectMapper}, now behind {@code JsonSyntaxPort}. Both were listed here
-     * as frozen classes until the debt was paid, and the list is gone with them.
+     * <p>There are no exemptions, and there is no third-party library on the list.
+     * Three were removed rather than tolerated: Spring's
+     * {@code DataIntegrityViolationException} (translated once in
+     * {@code SpringTransactionRunner}), Jackson (behind {@code JsonSyntaxPort}), and
+     * SLF4J — best-effort side effects now log in the adapter that fails, and the
+     * three use cases with something of their own to report go through
+     * {@code DiagnosticLogPort}.
      */
     @ArchTest
     static final ArchRule application_depends_only_on_our_code_the_jdk_and_slf4j =
             classes()
                     .that().resideInAPackage("com.vointika..application..")
                     .should().onlyDependOnClassesThat()
-                    .resideInAnyPackage("com.vointika..", "java..", "org.slf4j..")
+                    .resideInAnyPackage("com.vointika..", "java..")
                     .because("anything else couples the layer to a framework — use a port");
 }
