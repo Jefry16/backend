@@ -78,7 +78,9 @@ ceremony survives:
   mocked in 2–8 test classes each — the caller is the test.
 - The **domain/JPA double model** is expensive (574 LOC in `identity`, 293 of it pure
   mapping) and *bought*, by the rule that domain stays free of JPA. Priced, not wasted.
-- **Identical DTO pairs are the real find.** Compare each `presentation/request/XRequest`
+- **Identical DTO pairs are the real find — run this check first.** It has paid out in
+  every context so far: four pairs in `identity`, a nested node in `touroperator`,
+  three more in `experience`. Compare each `presentation/request/XRequest`
   to `application/dto/input/XInput` field by field. Where identical, the second
   insulates nothing. Collapse per PATTERNS §4c — the **application** record survives,
   the controller binds to it, and the wire contract is diffed before deleting.
@@ -122,6 +124,16 @@ the port's contract — move the swallow into the adapter and document it on the
 When you narrow a catch, ask what the broad one was absorbing. Those 21 caught the
 *parent* class, so foreign-key and not-null failures were being handled as races — in
 registration that could return a fake success and email a stranger.
+
+**A guard inside a state transition defends that transition and nothing else.**
+`experience` enforced "a cancelled slot is terminal" inside `Slot.changeStatus`, so
+the capacity-only `PATCH` — which never calls it — edited cancelled slots and audited
+the result. The fix is to ask the invariant **once, where the edit begins**
+(`slot.ensureEditable()` at the top of the use case), and let the transition method
+reuse it; a path added later then inherits the guard instead of having to remember it.
+Read every write path of an entity that has a terminal state and ask which of them
+actually reaches the check. Where a use case already asks at the top —
+`AcceptInvitationUseCase`'s status matrix — that is the shape to copy.
 
 ## 6 · Enforce, then break it on purpose
 

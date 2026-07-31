@@ -55,6 +55,7 @@ public class UpdateSlotUseCase {
         return transactionRunner.call(() -> {
             Slot slot = slotRepository.findByIdAndTourOperatorId(slotId, tourOperatorId)
                     .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
+            slot.ensureEditable();
 
             List<FieldChange> changes = new ArrayList<>();
             List<String> changedAudiences = new ArrayList<>();

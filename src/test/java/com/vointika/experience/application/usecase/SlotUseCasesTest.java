@@ -15,6 +15,7 @@ import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.OperatorTimezoneQuery;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -194,6 +196,21 @@ class SlotUseCasesTest {
         ArgumentCaptor<Slot> captor = ArgumentCaptor.forClass(Slot.class);
         verify(slotRepository).save(captor.capture());
         assertThat(captor.getValue().status()).isEqualTo(SlotStatus.SOLD_OUT);
+    }
+
+    @Test
+    void updateRejectsAnyEditOfACancelledSlot() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP))
+                .thenReturn(Optional.of(availableSlot().cancel()));
+
+        // The capacity-only path never touched changeStatus, so the terminal
+        // guard that lived there did not defend it: this used to succeed.
+        assertThatThrownBy(() -> update().execute(OP, SLOT, USER, new UpdateSlotInput(
+                null, List.of(new UpdateSlotInput.TierCapacity(AUD, 99)))))
+                .isInstanceOf(ConflictException.class);
+
+        verify(pricingRepository, never()).save(any());
+        verify(auditTrailPort, never()).append(any());
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.vointika.experience.presentation.request;
 
+import com.vointika.experience.application.dto.input.AudiencePricingInput;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -7,5 +9,5 @@ import java.util.List;
 public record CreateSlotRequest(
         LocalDateTime startAt,
         LocalDateTime endAt,
-        List<AudiencePricingRequest> audiencePrices) {
+        List<AudiencePricingInput> audiencePrices) {
 }
