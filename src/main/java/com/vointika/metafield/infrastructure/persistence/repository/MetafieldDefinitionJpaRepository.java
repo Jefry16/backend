@@ -15,6 +15,8 @@ public interface MetafieldDefinitionJpaRepository
     Optional<MetafieldDefinitionJpaEntity> findByTourOperatorIdAndOwnerTypeAndNamespaceAndKey(
             UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key);
 
+    boolean existsByMetaobjectDefinitionId(UUID metaobjectDefinitionId);
+
     boolean existsByTourOperatorIdAndOwnerTypeAndNamespaceAndKey(
             UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key);
 }

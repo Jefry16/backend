@@ -85,15 +85,10 @@ public class MetaobjectDefinitionController {
             @PathVariable UUID tourOperatorId,
             @RequestBody CreateMetaobjectDefinitionRequest body,
             @AuthenticationPrincipal String callerUserId) {
-        List<CreateMetaobjectDefinitionInput.FieldSpec> fields = body.fields() == null
-                ? List.of()
-                : body.fields().stream()
-                        .map(f -> new CreateMetaobjectDefinitionInput.FieldSpec(
-                                f.key(), f.type(), f.name()))
-                        .toList();
         UUID id = createUseCase.execute(new CreateMetaobjectDefinitionInput(
                 UUID.fromString(callerUserId), tourOperatorId,
-                body.type(), body.name(), body.description(), fields));
+                body.type(), body.name(), body.description(),
+                body.fields() == null ? List.of() : body.fields()));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId
                         + "/metaobject-definitions/" + id))

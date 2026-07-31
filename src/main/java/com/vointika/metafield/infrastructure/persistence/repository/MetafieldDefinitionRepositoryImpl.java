@@ -55,6 +55,11 @@ public class MetafieldDefinitionRepositoryImpl implements MetafieldDefinitionRep
     }
 
     @Override
+    public boolean existsPinningMetaobjectDefinition(UUID metaobjectDefinitionId) {
+        return jpa.existsByMetaobjectDefinitionId(metaobjectDefinitionId);
+    }
+
+    @Override
     public CursorPage<MetafieldDefinitionListItem> list(ListQuery query) {
         return listExecutor.list(
                 MetafieldDefinitionJpaEntity.class,
