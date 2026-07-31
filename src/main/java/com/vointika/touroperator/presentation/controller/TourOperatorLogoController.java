@@ -39,7 +39,7 @@ public class TourOperatorLogoController {
             @RequestBody SetOperatorLogoRequest body,
             @AuthenticationPrincipal String userIdStr) {
         setOperatorLogoUseCase.execute(
-                tourOperatorId, body == null ? null : body.mediaId(), UUID.fromString(userIdStr));
+                tourOperatorId, body.mediaId(), UUID.fromString(userIdStr));
         return ResponseEntity.noContent().build();
     }
 

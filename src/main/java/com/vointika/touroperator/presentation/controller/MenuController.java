@@ -7,7 +7,6 @@ import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.touroperator.application.dto.input.CreateMenuInput;
 import com.vointika.touroperator.application.dto.input.RenameMenuInput;
 import com.vointika.touroperator.application.dto.input.ReplaceMenuItemsInput;
-import com.vointika.touroperator.application.dto.input.ReplaceMenuItemsInput.MenuItemInput;
 import com.vointika.touroperator.application.usecase.CreateMenuUseCase;
 import com.vointika.touroperator.application.usecase.DeleteMenuUseCase;
 import com.vointika.touroperator.application.usecase.GetMenuUseCase;
@@ -18,7 +17,6 @@ import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.presentation.request.CreateMenuRequest;
 import com.vointika.touroperator.presentation.request.RenameMenuRequest;
 import com.vointika.touroperator.presentation.request.ReplaceMenuItemsRequest;
-import com.vointika.touroperator.presentation.request.ReplaceMenuItemsRequest.MenuItemRequest;
 import com.vointika.touroperator.presentation.response.MenuDetailResponse;
 import com.vointika.touroperator.presentation.response.MenuListItemResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -129,7 +126,7 @@ public class MenuController {
             @RequestBody ReplaceMenuItemsRequest body,
             @AuthenticationPrincipal String callerUserId) {
         replaceItemsUseCase.execute(new ReplaceMenuItemsInput(
-                UUID.fromString(callerUserId), tourOperatorId, menuId, toInputs(body.items())));
+                UUID.fromString(callerUserId), tourOperatorId, menuId, body.items()));
         return ResponseEntity.noContent().build();
     }
 
@@ -141,15 +138,5 @@ public class MenuController {
             @AuthenticationPrincipal String callerUserId) {
         deleteUseCase.execute(tourOperatorId, menuId, UUID.fromString(callerUserId));
         return ResponseEntity.noContent().build();
-    }
-
-    private static List<MenuItemInput> toInputs(List<MenuItemRequest> nodes) {
-        if (nodes == null) {
-            return List.of();
-        }
-        return nodes.stream()
-                .map(n -> new MenuItemInput(n.title(), n.linkType(), n.resourceId(), n.url(),
-                        n.titleTranslations(), toInputs(n.children())))
-                .toList();
     }
 }

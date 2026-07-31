@@ -41,7 +41,7 @@ Scan classes, interface methods, entity methods, record components, enum constan
 **Print how many members each scan examined.** A scan that finds nothing and a scan
 whose pattern is broken produce identical output; the count is the only difference.
 
-Four false positives that cost real time, all of which will recur:
+Seven false positives that cost real time, all of which will recur:
 
 - **Spring beans have no name references.** `@Repository`, `@Component`,
   `@RestController` and SPI registrars are found by annotation. Fifteen classes in
@@ -50,7 +50,23 @@ Four false positives that cost real time, all of which will recur:
   `extractClaims(token)` inside the same class.
 - **Records have implicit accessors.** A "public methods" scan sees nothing in a
   `record`; read the component list out of the declaration instead.
+- **Lombok fields are read through a generated getter.** A scan matching a JPA
+  entity's field *name* finds every one of them unused — 59 of `touroperator`'s
+  60 flagged fields were this. Match `getX(`/`isX(` instead, and every field
+  resolved.
+- **The §4a `context` component has no caller at all.** Only Jackson reads it, so
+  it is dead by every static measure and load-bearing on the wire. Same for any
+  response field the API contract carries but no Java code re-reads.
+- **An implemented interface method never looks dead to a declaration count.**
+  If the check is "occurrences ≤ declarations", the `Impl`'s own signature is a
+  second declaration in a second file, so the method scores as referenced.
+  Count **dotted call sites** (`\.name\(`, `::name`) instead — and keep the
+  bare-name pass too, for the private helpers above. Run both; the union is sound.
 - **`typeof null === 'object'`-class errors.** Assert the shape you mean.
+
+Both `touroperator` and `identity` came back with **zero** genuinely dead members.
+That is the expected result, and it is only worth anything if the examined counts
+are printed beside it.
 
 ## 3 · Over-engineering
 
@@ -66,6 +82,16 @@ ceremony survives:
   to `application/dto/input/XInput` field by field. Where identical, the second
   insulates nothing. Collapse per PATTERNS §4c — the **application** record survives,
   the controller binds to it, and the wire contract is diffed before deleting.
+  **Compare the nested records too.** In `touroperator` the two wrappers genuinely
+  differed (the input adds the caller and the path ids) while the tree node inside
+  them was identical — so a pair-level diff passes and a recursive copy runs on
+  every save. The nested type is where the cost is, because collapsing it deletes a
+  mapper, not just a file.
+- **A guard against a state the framework prevents is dead code.** A required
+  `@RequestBody` — the default — rejects an absent body *and* a literal `null` with
+  400 before the handler runs, so `body == null ? null : body.x()` never fires.
+  Only `@RequestBody(required = false)` makes it live. This one is settled by a
+  probe test in thirty seconds; reading the annotation is what gets it wrong.
 
 ## 4 · Coupling
 
@@ -120,6 +146,17 @@ only fenced against the original four.
 Prefer an **allowlist**. Exempt by *depending class*, never by *depended-on type* — the
 latter lets the pattern spread to an unlimited number of new classes while staying
 green.
+
+**Say so when a finding is not mechanically detectable, instead of inventing a rule.**
+ArchUnit reasons about types and packages; it cannot see an identical record pair or a
+ternary guarding an impossible null. `touroperator` produced two such findings and no
+new rule, which is the honest answer — a rule that does not actually re-detect the
+finding is worse than none, because it reads like coverage.
+
+**Audit the rules themselves while you are in there.** The allowlist that seals the
+application layer had a dead `String[]` beside it, still listing `org.slf4j..` — a
+value the live rule contradicts and the previous pass's own ledger entry denies.
+Nothing referenced it, so nothing failed; the next reader would simply have believed it.
 
 ## 7 · Land it
 

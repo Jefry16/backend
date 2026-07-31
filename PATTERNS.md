@@ -294,6 +294,13 @@ An identical copy is not a seam. Add a field to the request that the use case ne
 and both change in lockstep, so it insulates nothing while costing a file and a
 mapping step.
 
+**Check the nested records separately from the wrapper.** `ReplaceMenuItemsRequest`
+and `ReplaceMenuItemsInput` genuinely differ — the input adds the caller and the two
+path ids — but the tree node inside them was identical, so the controller carried a
+recursive copy that ran on every save. A pair can be a real seam at the top and a
+pure copy one level down; the nested type is where the cost is, because collapsing it
+deletes a mapper and not just a file.
+
 When you collapse one, **the application record is the survivor** and the controller
 binds to it:
 
