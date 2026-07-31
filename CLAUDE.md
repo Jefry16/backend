@@ -55,7 +55,7 @@ That second line matters: `rsync -a` preserves mtimes, so a stale compiled class
 
 A modular monolith: `com.vointika.<context>`, one package per bounded context, each **fully hexagonal** with the layer DAG `domain ← application ← {infrastructure, presentation}`. `domain` is pure — no Spring, JPA, or Jackson.
 
-**ArchUnit enforces the boundaries** (`src/test/java/com/vointika/architecture/ArchitectureTest.java`), so a violation is a failing test, not a review comment. When a context lands, add its isolation rule there.
+**ArchUnit enforces the boundaries** (`src/test/java/com/vointika/architecture/ArchitectureTest.java`), so a violation is a failing test, not a review comment. Context isolation is **derived from the package structure** — a new context is fenced the day its package appears, with no rule to remember to add. (It used to be one hand-written rule per context; seven contexts landed without one, and the rules that existed only named the original four.)
 
 ### The rules that shape every change
 
