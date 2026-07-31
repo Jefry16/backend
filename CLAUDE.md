@@ -15,8 +15,6 @@ Three of the four governing documents are **not linked from anywhere in this rep
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
 
-There is a read-only archive of the previous implementation at `/home/jefrycayo/archive-vointika/backend`. It is a **quarry, not a template** — carry a verified decision, re-earn the structure (LAW §2.3).
-
 ## Commands
 
 ```bash
