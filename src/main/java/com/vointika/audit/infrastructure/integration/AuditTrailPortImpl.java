@@ -5,6 +5,7 @@ import com.vointika.audit.domain.repository.AuditLogEntryRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.UserAccountQuery;
+import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActorType;
 import com.vointika.shared.web.CorrelationIdFilter;
@@ -12,7 +13,6 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -64,11 +64,8 @@ public class AuditTrailPortImpl implements AuditTrailPort {
         if (entry.actor().type() != AuditActorType.USER) {
             return null;
         }
-        UUID userId = entry.actor().id();
-        return userAccountQuery.findAccounts(Set.of(userId)).stream()
-                .filter(account -> userId.equals(account.userId()))
-                .map(account -> account.name())
-                .findFirst()
+        return userAccountQuery.findContact(entry.actor().id())
+                .map(UserContactView::name)
                 .orElse(null);
     }
 

@@ -23,14 +23,4 @@ public interface UserAccountQuery {
      * queries identity. Empty if no account has this id.
      */
     Optional<UserContactView> findContact(UUID userId);
-
-    /**
-     * Batch account lookup — one query for a set of user ids, returning
-     * {@link UserAccountView} (id + email + name) per resolvable account. An id
-     * with no account is simply absent from the result (callers key by id and
-     * treat a miss as null fields, never dropping their row). Empty input →
-     * empty list. This is the roster's N+1-free enrichment path; the single-id
-     * methods above stay for the invitation / order-lookup flows.
-     */
-    java.util.List<UserAccountView> findAccounts(java.util.Collection<UUID> userIds);
 }

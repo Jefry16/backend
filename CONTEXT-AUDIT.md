@@ -73,6 +73,14 @@ Seven false positives that cost real time, all of which will recur:
   bare-name pass too, for the private helpers above. Run both; the union is sound.
 - **`typeof null === 'object'`-class errors.** Assert the shape you mean.
 
+**A Javadoc naming a caller is not evidence the caller exists.**
+`UserAccountQuery.findAccounts` announced itself as "the roster's N+1-free
+enrichment path"; the roster never called it, and the one caller it did have
+passed a single-element set to a batch API. The doc was written when the method
+was, and nothing re-checked it when the roster went denormalized instead. Grep the
+named caller before believing the sentence — this is cheap and it is how a whole
+orphaned branch stays plausible for months.
+
 Both `touroperator` and `identity` came back with **zero** genuinely dead members.
 That is the expected result, and it is only worth anything if the examined counts
 are printed beside it.
@@ -103,6 +111,23 @@ ceremony survives:
   400 before the handler runs, so `body == null ? null : body.x()` never fires.
   Only `@RequestBody(required = false)` makes it live. This one is settled by a
   probe test in thirty seconds; reading the annotation is what gets it wrong.
+
+### Auditing `shared` instead of a context
+
+The kernel has no endpoints and no application layer, so §1's ratios and §4's
+allowlist do not apply. Two checks replace them:
+
+- **Every port names a live caller.** For each `shared/port/*`, count
+  implementations and consuming *contexts*. One implementation and ≥2 contexts is
+  the healthy shape; **one implementation and one context means the seam is not a
+  seam**, and a port method whose only caller degenerates its own signature (a
+  single-element set into a batch API) is the same finding one level down.
+- **Every framework extension point is a false positive.** `@Bean` factories,
+  `@ExceptionHandler` methods, `doFilterInternal`, `WebMvcConfigurer` and
+  `RecordInterceptor` overrides are all invoked reflectively — in `shared` they
+  were 33 of 33 flagged methods. Check each exception class has both a thrower
+  and a `GlobalExceptionHandler` mapping; the base class and any exception the
+  runner *constructs* rather than throws are the legitimate zero-thrower cases.
 
 ## 4 · Coupling
 
