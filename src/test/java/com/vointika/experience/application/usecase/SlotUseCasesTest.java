@@ -1,5 +1,6 @@
 package com.vointika.experience.application.usecase;
 
+import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.experience.application.dto.input.AudiencePricingInput;
 import com.vointika.experience.application.dto.input.CreateSlotInput;
 import com.vointika.experience.application.dto.input.CreateSlotsInput;
@@ -213,6 +214,24 @@ class SlotUseCasesTest {
         ArgumentCaptor<Slot> captor = ArgumentCaptor.forClass(Slot.class);
         verify(slotRepository).save(captor.capture());
         assertThat(captor.getValue().status()).isEqualTo(SlotStatus.SOLD_OUT);
+    }
+
+    /**
+     * Pins the status code this PR changed. Asking for CANCELLED on an already
+     * cancelled slot used to reach {@code changeStatus} and come back 422 ("cancel a
+     * slot via the cancel action"); the use-case guard now fires first and it is 409.
+     * That is the intended reading — the slot being cancelled is the salient fact
+     * whatever was asked for — but it is an API-visible change, so it is nailed down
+     * rather than left to be rediscovered by a client.
+     */
+    @Test
+    void askingForCancelledOnACancelledSlotIsAConflictNotAValidationError() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP))
+                .thenReturn(Optional.of(availableSlot().cancel()));
+
+        assertThatThrownBy(() -> update().execute(OP, SLOT, USER,
+                new UpdateSlotInput(SlotStatus.CANCELLED.name(), null)))
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
