@@ -22,7 +22,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -111,7 +111,7 @@ public class InviteTeamMemberUseCase {
                         "INVITATION", invitation.getId(), "member.invited",
                         Map.of("email", email.value(), "role", role.name())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // A concurrent invite committed first — the partial unique index fired.
             throw new ResourceAlreadyExistsException("A pending invitation for this email already exists");
         }

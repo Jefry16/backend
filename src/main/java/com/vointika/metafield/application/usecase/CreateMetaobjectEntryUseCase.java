@@ -19,7 +19,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Slug;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,7 +111,7 @@ public class CreateMetaobjectEntryUseCase {
                                 "handle", handle.value(),
                                 "name", name.value())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException(
                     "A metaobject with this handle already exists for this type");
         }

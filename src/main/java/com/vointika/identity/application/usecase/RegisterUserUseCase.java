@@ -10,7 +10,7 @@ import com.vointika.shared.event.VerificationEmailRequestedEvent;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.entity.VerificationToken;
 import com.vointika.shared.port.TransactionRunner;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.identity.domain.repository.VerificationTokenRepository;
 import com.vointika.identity.domain.valueobject.Email;
@@ -110,7 +110,7 @@ public class RegisterUserUseCase {
                 userRepository.save(user);
                 verificationTokenRepository.save(verificationToken);
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // Race with a concurrent registration of the same email: the DB
             // unique constraint won. Same anti-enumeration outcome as the
             // fast path — notify the mailbox owner (within the §7.9 cooldown),

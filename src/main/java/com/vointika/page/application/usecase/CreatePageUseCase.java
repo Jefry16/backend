@@ -15,7 +15,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Slug;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -74,7 +74,7 @@ public class CreatePageUseCase {
                         "PAGE", page.getId(), "page.created",
                         Map.of("title", title.value(), "handle", handle.value())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("A page with this handle already exists");
         }
         return page.getId();

@@ -13,7 +13,7 @@ import com.vointika.shared.valueobject.FieldChange;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.List;
 import java.util.Map;
@@ -64,7 +64,7 @@ public class ChangeMemberRoleUseCase {
 
         try {
             transactionRunner.run(() -> apply(tourOperatorId, targetUserId, newRole, callerUserId));
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // A concurrent ownership transfer won the single-OWNER partial unique
             // index race; the stale team snapshot this tx read is no longer valid.
             throw new ConflictException("The team's ownership just changed — reload and try again");

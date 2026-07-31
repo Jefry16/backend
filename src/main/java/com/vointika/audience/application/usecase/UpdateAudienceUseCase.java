@@ -15,7 +15,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.valueobject.FieldChange;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.List;
 import java.util.Map;
@@ -96,7 +96,7 @@ public class UpdateAudienceUseCase {
                         tourOperatorId, AuditActor.user(callerUserId),
                         "AUDIENCE", audienceId, "audience.updated", null, changes));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("An audience with this name already exists");
         }
     }

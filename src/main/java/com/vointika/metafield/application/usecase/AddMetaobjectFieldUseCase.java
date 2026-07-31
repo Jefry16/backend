@@ -16,7 +16,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.List;
 import java.util.Map;
@@ -83,7 +83,7 @@ public class AddMetaobjectFieldUseCase {
                                 "key", key.value(),
                                 "fieldType", type.code())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException(
                     "A field with this key already exists on this definition");
         }

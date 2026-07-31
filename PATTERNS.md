@@ -245,6 +245,32 @@ Adding one:
    `app.internal.shared-secret` via `properties = …` (it has no default). Without
    the registrar every assertion passes vacuously as 401.
 
+## 8d. Losing a race against a unique constraint
+
+A write that passes its `existsBy…` pre-check can still lose to a concurrent one:
+the DB constraint decides. JPA flushes at **commit**, so the failure surfaces from
+`transactionRunner.run(...)`, never from `repository.save(...)` — translating in a
+repository implementation would miss it.
+
+`SpringTransactionRunner` is the one translator. It converts Spring's
+`DuplicateKeyException` into `shared.exception.UniqueConstraintViolationException`;
+a use case catches that and answers in its own terms:
+
+```java
+try {
+    transactionRunner.run(() -> { repository.save(x); ... });
+} catch (UniqueConstraintViolationException e) {
+    throw new ResourceAlreadyExistsException("A page with that handle already exists");
+}
+```
+
+Two things this deliberately does **not** do. It does not translate the parent
+`DataIntegrityViolationException` — foreign-key, not-null and check-constraint
+failures are defects, not races, and must stay 500s. And it does not let the
+framework type reach the application layer; ArchUnit fails the build if it does.
+
+Uncaught, the exception maps to 409.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,

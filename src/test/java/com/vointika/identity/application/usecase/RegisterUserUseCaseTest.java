@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -128,7 +128,7 @@ class RegisterUserUseCaseTest {
         when(passwordHasher.hash("Password1!")).thenReturn("hashed");
         when(tokenGenerator.generateVerificationToken()).thenReturn("raw-token");
         when(tokenHasher.hash("raw-token")).thenReturn("hashed-token");
-        doThrow(new DataIntegrityViolationException("duplicate key"))
+        doThrow(new UniqueConstraintViolationException("duplicate key", null))
                 .when(userRepository).save(any(User.class));
 
         assertDoesNotThrow(
@@ -183,7 +183,7 @@ class RegisterUserUseCaseTest {
         when(passwordHasher.hash("Password1!")).thenReturn("hashed");
         when(tokenGenerator.generateVerificationToken()).thenReturn("raw-token");
         when(tokenHasher.hash("raw-token")).thenReturn("hashed-token");
-        doThrow(new DataIntegrityViolationException("duplicate key"))
+        doThrow(new UniqueConstraintViolationException("duplicate key", null))
                 .when(userRepository).save(any(User.class));
 
         assertDoesNotThrow(

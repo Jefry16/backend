@@ -21,7 +21,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.FieldChange;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.List;
 import java.util.Map;
@@ -118,7 +118,7 @@ public class UpsertMetafieldValueUseCase {
                             List.of(new FieldChange("value", priorValue, normalized))));
                 }
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // Two concurrent FIRST-sets both passed the empty probe; the
             // (definition, owner) unique index broke the tie. 409, not 500 —
             // a retry lands as a normal replace.

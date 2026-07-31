@@ -40,6 +40,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    /** A lost race against a unique constraint: the row exists, this caller just
+     * did not win. Most use cases catch it first and answer more specifically. */
+    @ExceptionHandler(UniqueConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleUniqueConstraint(UniqueConstraintViolationException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), ex.getErrorCode());

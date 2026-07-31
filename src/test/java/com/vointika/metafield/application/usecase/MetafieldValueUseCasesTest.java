@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 import com.vointika.metafield.application.dto.input.UpsertMetafieldValueInput;
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
@@ -129,7 +130,7 @@ class MetafieldValueUseCasesTest {
     void lostFirstSetRaceIs409NotA500() {
         when(valueRepository.findByDefinitionIdAndOwnerId(DEF, OWNER)).thenReturn(Optional.empty());
         when(valueRepository.save(any()))
-                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
+                .thenThrow(new UniqueConstraintViolationException("duplicate", null));
 
         assertThatThrownBy(() -> upsert().execute(input("Boat tours since 1998")))
                 .isInstanceOf(com.vointika.shared.exception.ConflictException.class);

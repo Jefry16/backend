@@ -11,7 +11,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.valueobject.Slug;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -65,7 +65,7 @@ public class RenamePageUseCase {
                         "PAGE", pageId, "page.renamed", null,
                         AuditChanges.diff(before, page.auditSnapshot())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("A page with this handle already exists");
         }
     }

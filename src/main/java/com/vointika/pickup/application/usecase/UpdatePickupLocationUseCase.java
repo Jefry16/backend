@@ -14,7 +14,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.valueobject.FieldChange;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.List;
 import java.util.Map;
@@ -88,7 +88,7 @@ public class UpdatePickupLocationUseCase {
                         tourOperatorId, AuditActor.user(callerUserId),
                         "PICKUP_LOCATION", pickupLocationId, "pickup_location.updated", null, changes));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
         }
     }

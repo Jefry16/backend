@@ -22,7 +22,7 @@ import com.vointika.touroperator.domain.enums.InvitationStatus;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -105,7 +105,7 @@ public class AcceptInvitationUseCase {
             try {
                 transactionRunner.run(() -> complete(
                         invitation, authenticatedUserId, caller.name(), caller.email()));
-            } catch (DataIntegrityViolationException e) {
+            } catch (UniqueConstraintViolationException e) {
                 // Overlapping double-accept by the same invitee — the membership
                 // already exists. Idempotent success, not a 500.
             }
@@ -134,7 +134,7 @@ public class AcceptInvitationUseCase {
                 complete(invitation, provisioned.userId(), name, inviteeEmail);
                 return invitedUserProvisioning.issueSession(provisioned.userId());
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // Truly-concurrent registration tripped users_email_unique — fail closed with the same 409.
             throw new ConflictException(
                     "An account with this email already exists — log in to accept the invitation");

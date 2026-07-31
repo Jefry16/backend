@@ -20,7 +20,7 @@ import com.vointika.shared.service.SlugGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Slug;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -93,7 +93,7 @@ public class UpsertPageTranslationUseCase {
                         "PAGE", input.pageId(), "page.translation_updated",
                         Map.of("locale", locale.value())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // Concurrent localized-handle race — the partial unique index fired.
             throw new ResourceAlreadyExistsException(
                     "The localized handle is already in use for this language");

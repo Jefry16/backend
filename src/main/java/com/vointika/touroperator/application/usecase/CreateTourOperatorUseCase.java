@@ -29,7 +29,7 @@ import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -162,7 +162,7 @@ public class CreateTourOperatorUseCase {
                     return candidate;
                 });
                 break;
-            } catch (DataIntegrityViolationException e) {
+            } catch (UniqueConstraintViolationException e) {
                 // Distinguish a concurrent duplicate-name from a slug race: if a
                 // sibling request just committed this name, surface the duplicate
                 // rather than burning retries on a collision that never clears.
