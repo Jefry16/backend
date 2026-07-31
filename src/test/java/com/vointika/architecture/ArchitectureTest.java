@@ -176,33 +176,10 @@ public class ArchitectureTest {
     /**
      * The application layer's entire legal dependency surface: our own code and the
      * JDK. Nothing else — not even a logging facade. An <strong>allowlist</strong>,
-     * deliberately — a list of
-     * banned frameworks only catches the ones someone thought to name, which is how a
-     * Jackson dependency under {@code tools.jackson} (not {@code com.fasterxml})
-     * survived a grep. Anything outside this is coupling, including a library nobody
-     * has imported yet.
-     */
-    private static final String[] APPLICATION_MAY_DEPEND_ON = {
-            "com.vointika..", "java..", "org.slf4j.."
-    };
-
-    /**
-     * The 21 use cases catching Spring's {@code DataIntegrityViolationException} to turn
-     * a lost DB-unique race into a 409, plus the validator holding a Jackson
-     * {@code ObjectMapper}. Frozen <em>by name</em>: a 22nd class cannot join without
-     * editing this list. The previous version exempted the exception type instead, which
-     * let the pattern spread silently — proven by adding the import to a 22nd use case
-     * and watching the suite stay green. Both are debt (see MAP); the fix is to translate
-     * in the repository adapter and delete this list.
-     */
-    /**
-     * The application layer's entire legal dependency surface: our own code and the
-     * JDK. Nothing else — not even a logging facade. An <strong>allowlist</strong>,
-     * deliberately — a list of
-     * banned frameworks only catches the ones someone thought to name, which is how a
-     * Jackson dependency under {@code tools.jackson} (not {@code com.fasterxml})
-     * survived a grep. Anything outside this is coupling, including a library nobody
-     * has imported yet.
+     * deliberately — a list of banned frameworks only catches the ones someone thought
+     * to name, which is how a Jackson dependency under {@code tools.jackson} (not
+     * {@code com.fasterxml}) survived a grep. Anything outside this is coupling,
+     * including a library nobody has imported yet.
      *
      * <p>There are no exemptions, and there is no third-party library on the list.
      * Three were removed rather than tolerated: Spring's
@@ -213,7 +190,7 @@ public class ArchitectureTest {
      * {@code DiagnosticLogPort}.
      */
     @ArchTest
-    static final ArchRule application_depends_only_on_our_code_the_jdk_and_slf4j =
+    static final ArchRule application_depends_only_on_our_code_and_the_jdk =
             classes()
                     .that().resideInAPackage("com.vointika..application..")
                     .should().onlyDependOnClassesThat()

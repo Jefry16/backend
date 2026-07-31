@@ -52,8 +52,8 @@ public class TourOperatorLocalesController {
             @AuthenticationPrincipal String userIdStr) {
         updateOperatorLocalesUseCase.execute(
                 tourOperatorId,
-                body == null ? null : body.primaryLocale(),
-                body == null ? null : body.supportedLocales(),
+                body.primaryLocale(),
+                body.supportedLocales(),
                 UUID.fromString(userIdStr));
         return ResponseEntity.noContent().build();
     }

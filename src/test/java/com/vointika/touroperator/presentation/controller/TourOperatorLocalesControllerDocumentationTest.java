@@ -116,6 +116,31 @@ class TourOperatorLocalesControllerDocumentationTest {
                                 fieldWithPath("supportedLocales").description("Locale codes from GET /api/languages; unknown → 422"))));
     }
 
+    /**
+     * Pins the framework behaviour two deleted null-guards relied on.
+     *
+     * <p>`@RequestBody` is required by default, so an absent body and a literal
+     * {@code null} are both rejected with 400 before the handler runs — which is why
+     * `body == null ? null : body.x()` in this controller could never fire and was
+     * removed. If a Spring upgrade ever changed that, the handler would NPE instead,
+     * and only this test would say so.
+     */
+    @Test
+    void nullBodyIsRejectedByTheFrameworkBeforeTheHandlerRuns() throws Exception {
+        authenticated();
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/locales", OPERATOR_ID)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/locales", OPERATOR_ID)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     void updateRequiresAuthentication() throws Exception {
         mockMvc.perform(patch("/api/tour-operators/{id}/locales", OPERATOR_ID)

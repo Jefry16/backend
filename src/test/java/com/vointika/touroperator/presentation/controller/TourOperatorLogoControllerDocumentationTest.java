@@ -101,6 +101,19 @@ class TourOperatorLogoControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id"))));
     }
 
+    /** Pins the framework behaviour the deleted null-guard relied on — see the twin
+     *  test in TourOperatorLocalesControllerDocumentationTest for why. */
+    @Test
+    void nullBodyIsRejectedByTheFrameworkBeforeTheHandlerRuns() throws Exception {
+        authenticated();
+
+        mockMvc.perform(put("/api/tour-operators/{id}/logo", OPERATOR_ID)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     void setLogoRequiresAuthentication() throws Exception {
         mockMvc.perform(put("/api/tour-operators/{id}/logo", OPERATOR_ID)
