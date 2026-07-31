@@ -44,6 +44,39 @@ against a target. `identity` ran 6.4 files/endpoint and 34 LOC/file — mid-pack
 lines, heaviest on files. That shape means ceremony, not verbosity, and it points at
 DTO layers and the domain/JPA double model.
 
+### If the target has no endpoints
+
+`shared` and `notification` have none, so the ratios above measure nothing and §4's
+application allowlist does not apply either — the kernel must depend on *nothing*,
+which is the inverse of the check. Substitute:
+
+**Every port must name a live caller.** For each interface in `shared/port`, list the
+contexts that reference it and the classes that implement it.
+
+```bash
+for p in $(ls src/main/java/com/vointika/shared/port/*.java | xargs -n1 basename | sed 's/\.java//'); do
+  impls=$(grep -rl "implements .*\b$p\b" src/main/java --include="*.java" | wc -l)
+  ctxs=$(grep -rl "\b$p\b" src/main/java/com/vointika --include="*.java" \
+         | sed 's|src/main/java/com/vointika/||;s|/.*||' | sort -u | tr '\n' ' ')
+  printf "%-34s impls:%s  used by: %s\n" "$p" "$impls" "$ctxs"
+done
+```
+
+Expect one implementation and at least two consumers — **for the interfaces**.
+`shared/port` also holds the `*View` records and `NewAuditEntry` that those
+interfaces carry, and those correctly report `impls:0`; four of the twenty-nine
+files are records, not ports. Filter on `interface` before reading the column as a
+finding.
+
+Anything else is a question, not necessarily a fault — `AccessTokenValidatorPort` has a single consumer because the
+kernel's own `JwtAuthenticationFilter` is the caller, which is correct. **Name every
+exception you find; an acknowledged gap left unspecified reads as a lurking problem.**
+
+Then go a level finer, because a port can be live while one of its *methods* is not.
+That is how `UserAccountQuery.findAccounts` survived: the port was in use, so a
+port-level check passed, and only reading the one call site showed it being handed a
+single-element set to do what the sibling method already did.
+
 ## 2 · Dead code
 
 Scan classes, interface methods, entity methods, record components, enum constants.
