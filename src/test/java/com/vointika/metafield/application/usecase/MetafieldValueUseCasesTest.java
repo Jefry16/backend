@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
+import com.vointika.metafield.infrastructure.port.JacksonJsonSyntaxPort;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 import com.vointika.metafield.application.dto.input.UpsertMetafieldValueInput;
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
@@ -92,7 +93,7 @@ class MetafieldValueUseCasesTest {
     private UpsertMetafieldValueUseCase upsert() {
         return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository,
                 metaobjectEntryRepository, ownerAccess,
-                new MetafieldValueValidator(new ObjectMapper()), membershipCheck,
+                new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper())), membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
     }
 
