@@ -1,6 +1,5 @@
 package com.vointika.experience.presentation.controller;
 
-import com.vointika.experience.application.dto.input.AudiencePricingInput;
 import com.vointika.experience.application.dto.input.CreateSlotInput;
 import com.vointika.experience.application.dto.input.CreateSlotsInput;
 import com.vointika.experience.application.dto.input.UpdateSlotInput;
@@ -11,10 +10,8 @@ import com.vointika.experience.application.usecase.CreateSlotsUseCase;
 import com.vointika.experience.application.usecase.GetSlotUseCase;
 import com.vointika.experience.application.usecase.ListSlotsUseCase;
 import com.vointika.experience.application.usecase.UpdateSlotUseCase;
-import com.vointika.experience.presentation.request.AudiencePricingRequest;
 import com.vointika.experience.presentation.request.CreateSlotRequest;
 import com.vointika.experience.presentation.request.CreateSlotsRequest;
-import com.vointika.experience.presentation.request.UpdateSlotRequest;
 import com.vointika.experience.presentation.response.SlotResponse;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
@@ -31,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -88,7 +84,10 @@ public class SlotController {
         return ResponseEntity.ok(SlotResponse.from(view));
     }
 
-    /** Creates recurring slots (weekday pattern × date window). ADMIN+. 201. */
+    /**
+     * Creates recurring slots (weekday pattern × date window). ADMIN+. 201.
+     * A pattern no date in the window satisfies creates nothing → 422.
+     */
     @PostMapping("/api/tour-operators/{tourOperatorId}/experiences/{experienceId}/slots")
     public ResponseEntity<Void> createRecurring(
             @PathVariable UUID tourOperatorId,
@@ -98,7 +97,7 @@ public class SlotController {
         createSlotsUseCase.execute(new CreateSlotsInput(
                 UUID.fromString(callerUserId), tourOperatorId, experienceId,
                 body.days(), body.startTime(), body.endTime(),
-                body.validFrom(), body.validTo(), toPricingInputs(body.audiencePrices())));
+                body.validFrom(), body.validTo(), body.audiencePrices()));
         return ResponseEntity.status(201).build();
     }
 
@@ -111,7 +110,7 @@ public class SlotController {
             @AuthenticationPrincipal String callerUserId) {
         UUID id = createSlotUseCase.execute(new CreateSlotInput(
                 UUID.fromString(callerUserId), tourOperatorId, experienceId,
-                body.startAt(), body.endAt(), toPricingInputs(body.audiencePrices())));
+                body.startAt(), body.endAt(), body.audiencePrices()));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/slots/" + id))
                 .build();
@@ -132,22 +131,12 @@ public class SlotController {
     public ResponseEntity<SlotResponse> update(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID slotId,
-            @RequestBody(required = false) UpdateSlotRequest body,
+            @RequestBody(required = false) UpdateSlotInput body,
             @AuthenticationPrincipal String callerUserId) {
-        List<UpdateSlotInput.TierCapacity> tiers = (body == null || body.capacities() == null)
-                ? null
-                : body.capacities().stream()
-                    .map(t -> new UpdateSlotInput.TierCapacity(t.audienceId(), t.capacity()))
-                    .toList();
-        UpdateSlotInput input = new UpdateSlotInput(body == null ? null : body.status(), tiers);
+        // An omitted body is a legal no-op PATCH, so it binds as an empty edit.
+        UpdateSlotInput input = body == null ? new UpdateSlotInput(null, null) : body;
         SlotView refreshed = updateSlotUseCase.execute(
                 tourOperatorId, slotId, UUID.fromString(callerUserId), input);
         return ResponseEntity.ok(SlotResponse.from(refreshed));
-    }
-
-    private static List<AudiencePricingInput> toPricingInputs(List<AudiencePricingRequest> reqs) {
-        return reqs == null ? List.of() : reqs.stream()
-                .map(r -> new AudiencePricingInput(r.audienceId(), r.price(), r.capacity()))
-                .toList();
     }
 }

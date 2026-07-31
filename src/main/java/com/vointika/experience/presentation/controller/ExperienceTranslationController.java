@@ -5,7 +5,6 @@ import com.vointika.experience.application.usecase.DeleteExperienceTranslationUs
 import com.vointika.experience.application.usecase.GetExperienceTranslationUseCase;
 import com.vointika.experience.application.usecase.ListExperienceTranslationsUseCase;
 import com.vointika.experience.application.usecase.UpsertExperienceTranslationUseCase;
-import com.vointika.experience.presentation.request.UpsertExperienceTranslationRequest;
 import com.vointika.experience.presentation.response.ExperienceTranslationResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -74,17 +73,9 @@ public class ExperienceTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
             @PathVariable String locale,
-            @RequestBody UpsertExperienceTranslationRequest body,
+            @RequestBody UpsertExperienceTranslationInput body,
             @AuthenticationPrincipal String userIdStr) {
-        UpsertExperienceTranslationInput input = new UpsertExperienceTranslationInput(
-                body == null ? null : body.name(),
-                body == null ? null : body.description(),
-                body == null ? null : body.longDescription(),
-                body == null ? null : body.highlights(),
-                body == null ? null : body.included(),
-                body == null ? null : body.notIncluded(),
-                body == null ? null : body.slug());
-        upsertUseCase.execute(tourOperatorId, experienceId, locale, input, UUID.fromString(userIdStr));
+        upsertUseCase.execute(tourOperatorId, experienceId, locale, body, UUID.fromString(userIdStr));
         return ResponseEntity.noContent().build();
     }
 

@@ -1,5 +1,6 @@
 package com.vointika.experience.application.usecase;
 
+import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.experience.application.dto.input.AudiencePricingInput;
 import com.vointika.experience.application.dto.input.CreateSlotInput;
 import com.vointika.experience.application.dto.input.CreateSlotsInput;
@@ -15,6 +16,7 @@ import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.OperatorTimezoneQuery;
@@ -33,6 +35,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -166,6 +170,22 @@ class SlotUseCasesTest {
     }
 
     @Test
+    void recurringRejectsAPatternThatMatchesNothing() {
+        // A one-day window on a Monday, asking for the other six weekdays.
+        LocalDate day = LocalDate.now().plusDays(1);
+        int dow = day.getDayOfWeek().getValue() % 7;
+        List<Integer> everyOtherDay = IntStream.range(0, 7).boxed().filter(d -> d != dow).toList();
+
+        assertThatThrownBy(() -> createRecurring().execute(new CreateSlotsInput(
+                USER, OP, EXP, everyOtherDay,
+                LocalTime.of(9, 0), LocalTime.of(11, 0), day, day, prices())))
+                .isInstanceOf(InvalidFieldException.class);
+
+        verify(slotRepository, never()).save(any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
     void recurringRejectsInvalidDay() {
         LocalDate day = LocalDate.now().plusDays(1);
         assertThatThrownBy(() -> createRecurring().execute(new CreateSlotsInput(
@@ -194,6 +214,39 @@ class SlotUseCasesTest {
         ArgumentCaptor<Slot> captor = ArgumentCaptor.forClass(Slot.class);
         verify(slotRepository).save(captor.capture());
         assertThat(captor.getValue().status()).isEqualTo(SlotStatus.SOLD_OUT);
+    }
+
+    /**
+     * Pins the status code this PR changed. Asking for CANCELLED on an already
+     * cancelled slot used to reach {@code changeStatus} and come back 422 ("cancel a
+     * slot via the cancel action"); the use-case guard now fires first and it is 409.
+     * That is the intended reading — the slot being cancelled is the salient fact
+     * whatever was asked for — but it is an API-visible change, so it is nailed down
+     * rather than left to be rediscovered by a client.
+     */
+    @Test
+    void askingForCancelledOnACancelledSlotIsAConflictNotAValidationError() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP))
+                .thenReturn(Optional.of(availableSlot().cancel()));
+
+        assertThatThrownBy(() -> update().execute(OP, SLOT, USER,
+                new UpdateSlotInput(SlotStatus.CANCELLED.name(), null)))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void updateRejectsAnyEditOfACancelledSlot() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP))
+                .thenReturn(Optional.of(availableSlot().cancel()));
+
+        // The capacity-only path never touched changeStatus, so the terminal
+        // guard that lived there did not defend it: this used to succeed.
+        assertThatThrownBy(() -> update().execute(OP, SLOT, USER, new UpdateSlotInput(
+                null, List.of(new UpdateSlotInput.TierCapacity(AUD, 99)))))
+                .isInstanceOf(ConflictException.class);
+
+        verify(pricingRepository, never()).save(any());
+        verify(auditTrailPort, never()).append(any());
     }
 
     @Test

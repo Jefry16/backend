@@ -134,6 +134,19 @@ class SlotControllerDocumentationTest {
     }
 
     @Test
+    void createRecurringRejectsAPatternThatMatchesNothing() throws Exception {
+        authenticated();
+        doThrow(new com.vointika.shared.exception.InvalidFieldException(
+                "No date in the validity window falls on the selected days"))
+                .when(createSlotsUseCase).execute(any());
+
+        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slots", OP, EXP).with(csrf())
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON).content(RECURRING_BODY))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
     void list() throws Exception {
         authenticated();
         when(listSlotsUseCase.execute(any(), any())).thenReturn(new CursorPage<>(List.of(view()), null));
