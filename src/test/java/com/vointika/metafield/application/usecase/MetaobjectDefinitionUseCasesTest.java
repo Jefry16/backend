@@ -6,6 +6,7 @@ import com.vointika.metafield.application.dto.input.RenameMetaobjectFieldInput;
 import com.vointika.metafield.application.dto.input.UpdateMetaobjectDefinitionInput;
 import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.entity.MetaobjectField;
+import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
@@ -44,6 +45,7 @@ class MetaobjectDefinitionUseCasesTest {
     private static final UUID DEF = UUID.fromString("dddddddd-0000-4000-8000-000000000001");
 
     private MetaobjectDefinitionRepository repository;
+    private MetafieldDefinitionRepository metafieldDefinitionRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private IdGenerator idGenerator;
@@ -52,6 +54,7 @@ class MetaobjectDefinitionUseCasesTest {
     @BeforeEach
     void setUp() {
         repository = mock(MetaobjectDefinitionRepository.class);
+        metafieldDefinitionRepository = mock(MetafieldDefinitionRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         idGenerator = mock(IdGenerator.class);
@@ -205,10 +208,28 @@ class MetaobjectDefinitionUseCasesTest {
     }
 
     @Test
+    void deleteIsRefusedWhileAReferenceMetafieldPinsTheType() {
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
+        when(metafieldDefinitionRepository.existsPinningMetaobjectDefinition(DEF)).thenReturn(true);
+        DeleteMetaobjectDefinitionUseCase useCase = new DeleteMetaobjectDefinitionUseCase(
+                repository, metafieldDefinitionRepository, membershipCheck, transactionRunner, auditTrailPort);
+
+        // Asked, not caught: the FK raises DataIntegrityViolationException, which
+        // SpringTransactionRunner deliberately leaves untranslated — so the
+        // catch this replaced could never fire and the delete 500'd.
+        assertThatThrownBy(() -> useCase.execute(OP, DEF, USER))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("references this metaobject type");
+
+        verify(repository, never()).delete(any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
     void deleteAuditsWithIdentityInDetails() {
         when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         DeleteMetaobjectDefinitionUseCase useCase = new DeleteMetaobjectDefinitionUseCase(
-                repository, membershipCheck, transactionRunner, auditTrailPort);
+                repository, metafieldDefinitionRepository, membershipCheck, transactionRunner, auditTrailPort);
 
         useCase.execute(OP, DEF, USER);
 

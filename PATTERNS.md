@@ -269,6 +269,16 @@ Two things this deliberately does **not** do. It does not translate the parent
 failures are defects, not races, and must stay 500s. And it does not let the
 framework type reach the application layer; ArchUnit fails the build if it does.
 
+**So a use case that must answer for a NON-unique constraint has to ask, not catch.**
+Postgres raises 23505 for a unique violation (→ `DuplicateKeyException`, translated)
+but 23503/23502/23514 for foreign-key/not-null/check (→ the untranslated parent).
+`DeleteMetaobjectDefinitionUseCase` caught `UniqueConstraintViolationException` to
+turn "a reference metafield still pins this type" into a 409; the catch could never
+fire and the delete 500'd. The fix is an `existsBy…` pre-check before the write —
+which leaves the concurrent-creation race as a 500, and that is the intended outcome
+for an unexpected constraint failure. `SpringTransactionRunnerTranslationTest` pins
+the boundary.
+
 Uncaught, the exception maps to 409.
 
 The same move works for any library a use case reaches for: `MetafieldValueValidator`

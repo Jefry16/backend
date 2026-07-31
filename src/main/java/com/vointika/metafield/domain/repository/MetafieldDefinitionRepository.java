@@ -21,6 +21,15 @@ public interface MetafieldDefinitionRepository {
     boolean existsByIdentity(
             UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key);
 
+    /**
+     * Whether any reference-typed definition pins this metaobject type. The FK
+     * that backs it raises SQLSTATE 23503, which Spring maps to
+     * {@code DataIntegrityViolationException} — a class the transaction runner
+     * deliberately does NOT translate (it is the parent of the duplicate-key
+     * one), so the delete has to ask rather than catch.
+     */
+    boolean existsPinningMetaobjectDefinition(UUID metaobjectDefinitionId);
+
     CursorPage<MetafieldDefinitionListItem> list(ListQuery query);
 
     void delete(UUID definitionId);

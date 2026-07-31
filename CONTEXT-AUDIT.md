@@ -134,6 +134,17 @@ When you narrow a catch, ask what the broad one was absorbing. Those 21 caught t
 *parent* class, so foreign-key and not-null failures were being handled as races — in
 registration that could return a fake success and email a stranger.
 
+**Read every `catch` against what the translator actually throws.** A catch names the
+exception it expects, and nothing checks that anything ever produces it —
+`DeleteMetaobjectDefinitionUseCase` caught `UniqueConstraintViolationException` for a
+**foreign-key** violation, so the 409 it documented was a 500. Postgres raises 23505
+for unique (→ `DuplicateKeyException`, the one class `SpringTransactionRunner`
+translates) and 23503/23502/23514 for FK/not-null/check (→ the untranslated parent).
+Grep every `catch (UniqueConstraintViolationException)` and read its comment: if the
+stated reason is not a unique index, it cannot fire. Settle it by running Spring's
+`SQLExceptionSubclassTranslator` over the SQLSTATEs — thirty seconds, and it beats
+reasoning about a hierarchy.
+
 **A guard inside a state transition defends that transition and nothing else.**
 `experience` enforced "a cancelled slot is terminal" inside `Slot.changeStatus`, so
 the capacity-only `PATCH` — which never calls it — edited cancelled slots and audited
