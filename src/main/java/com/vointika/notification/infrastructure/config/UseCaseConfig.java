@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.config;
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.notification.application.port.EmailSenderPort;
 import com.vointika.notification.application.port.TemplateCatalog;
 import com.vointika.notification.application.port.TemplateRendererPort;
@@ -16,7 +17,7 @@ public class UseCaseConfig {
     public SendNotificationUseCase sendNotificationUseCase(
             TemplateCatalog templateCatalog,
             TemplateRendererPort templateRenderer,
-            EmailSenderPort emailSender) {
-        return new SendNotificationUseCase(templateCatalog, templateRenderer, emailSender);
+            EmailSenderPort emailSender, DiagnosticLogPort diagnosticLog) {
+        return new SendNotificationUseCase(templateCatalog, templateRenderer, emailSender, diagnosticLog);
     }
 }

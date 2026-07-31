@@ -1,10 +1,9 @@
 package com.vointika.notification.application.usecase;
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.notification.application.port.EmailSenderPort;
 import com.vointika.notification.application.port.TemplateCatalog;
 import com.vointika.notification.application.port.TemplateRendererPort;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -12,20 +11,21 @@ import java.util.Set;
 
 public class SendNotificationUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(SendNotificationUseCase.class);
-
     private final TemplateCatalog templateCatalog;
     private final TemplateRendererPort templateRenderer;
     private final EmailSenderPort emailSender;
+    private final DiagnosticLogPort diagnosticLog;
 
     public SendNotificationUseCase(
             TemplateCatalog templateCatalog,
             TemplateRendererPort templateRenderer,
-            EmailSenderPort emailSender
+            EmailSenderPort emailSender,
+            DiagnosticLogPort diagnosticLog
     ) {
         this.templateCatalog = templateCatalog;
         this.templateRenderer = templateRenderer;
         this.emailSender = emailSender;
+        this.diagnosticLog = diagnosticLog;
     }
 
     /** English-template overload — the operator/identity emails, which stay untranslated. */
@@ -59,14 +59,14 @@ public class SendNotificationUseCase {
                 .findFirst();
 
         if (template.isEmpty()) {
-            log.warn("No template found for type={} locale={}", notificationType, locale);
+            diagnosticLog.warn(getClass(), "No template found for type={} locale={}", notificationType, locale);
             return;
         }
 
         var t = template.get();
         // The resolved-locale line doubles as the dev verification signal for
         // the email-localization pipeline (no mail catcher in dev).
-        log.info("Sending {} to {} using template locale={} (requested={})",
+        diagnosticLog.info(getClass(), "Sending {} to {} using template locale={} (requested={})",
                 notificationType, recipientEmail, t.locale(), locale);
         String renderedSubject = templateRenderer.render(t.subject(), templateVariables);
         String renderedBody = templateRenderer.render(t.body(), templateVariables);

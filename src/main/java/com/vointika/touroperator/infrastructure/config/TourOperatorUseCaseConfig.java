@@ -1,5 +1,6 @@
 package com.vointika.touroperator.infrastructure.config;
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.LanguageRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
@@ -71,7 +72,8 @@ public class TourOperatorUseCaseConfig {
             IdGenerator idGenerator,
             UserAccountQuery userAccountQuery,
             EventPublisherPort eventPublisher,
-            AuditTrailPort auditTrailPort) {
+            AuditTrailPort auditTrailPort,
+            DiagnosticLogPort diagnosticLog) {
         return new CreateTourOperatorUseCase(
                 tourOperatorRepository,
                 tourOperatorMemberRepository,
@@ -83,8 +85,8 @@ public class TourOperatorUseCaseConfig {
                 idGenerator,
                 userAccountQuery,
                 eventPublisher,
-                auditTrailPort
-        );
+                auditTrailPort,
+                diagnosticLog);
     }
 
     @Bean

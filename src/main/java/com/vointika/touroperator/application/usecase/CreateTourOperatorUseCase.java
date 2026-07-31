@@ -6,6 +6,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -13,8 +14,6 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.shared.service.SlugGenerator;
@@ -48,7 +47,6 @@ import java.util.UUID;
  */
 public class CreateTourOperatorUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(CreateTourOperatorUseCase.class);
 
     /** Bounded slug-collision retries; each attempt regenerates the slug in a fresh tx. */
     private static final int MAX_SLUG_ATTEMPTS = 5;
@@ -64,6 +62,7 @@ public class CreateTourOperatorUseCase {
     private final UserAccountQuery userAccountQuery;
     private final EventPublisherPort eventPublisher;
     private final AuditTrailPort auditTrailPort;
+    private final DiagnosticLogPort diagnosticLog;
 
     public CreateTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
@@ -76,7 +75,8 @@ public class CreateTourOperatorUseCase {
             IdGenerator idGenerator,
             UserAccountQuery userAccountQuery,
             EventPublisherPort eventPublisher,
-            AuditTrailPort auditTrailPort) {
+            AuditTrailPort auditTrailPort,
+            DiagnosticLogPort diagnosticLog) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.memberRepository = memberRepository;
         this.menuRepository = menuRepository;
@@ -88,6 +88,7 @@ public class CreateTourOperatorUseCase {
         this.userAccountQuery = userAccountQuery;
         this.eventPublisher = eventPublisher;
         this.auditTrailPort = auditTrailPort;
+        this.diagnosticLog = diagnosticLog;
     }
 
     public CreateTourOperatorOutput execute(CreateTourOperatorInput input) {
@@ -190,7 +191,7 @@ public class CreateTourOperatorUseCase {
             eventPublisher.publish(new TourOperatorWelcomeEmailRequestedEvent(
                     contact.email(), contact.name(), operatorName, contact.language()));
         } catch (Exception e) {
-            log.warn("Failed to enqueue welcome email for operator '{}': {}",
+            diagnosticLog.warn(getClass(), "Failed to enqueue welcome email for operator '{}': {}",
                     operatorName, e.getMessage(), e);
         }
     }

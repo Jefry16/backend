@@ -1,5 +1,6 @@
 package com.vointika.notification.application.usecase;
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.notification.application.port.EmailSenderPort;
 import com.vointika.notification.application.port.TemplateCatalog;
 import com.vointika.notification.application.port.TemplateCatalog.EmailTemplate;
@@ -21,12 +22,13 @@ class SendNotificationUseCaseTest {
     @Mock private TemplateCatalog templateCatalog;
     @Mock private TemplateRendererPort templateRenderer;
     @Mock private EmailSenderPort emailSender;
+    @Mock private DiagnosticLogPort diagnosticLog;
 
     private SendNotificationUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new SendNotificationUseCase(templateCatalog, templateRenderer, emailSender);
+        useCase = new SendNotificationUseCase(templateCatalog, templateRenderer, emailSender, diagnosticLog);
     }
 
     private static EmailTemplate template(String locale, String subject) {

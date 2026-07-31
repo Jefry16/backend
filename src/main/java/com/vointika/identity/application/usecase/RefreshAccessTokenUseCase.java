@@ -10,16 +10,14 @@ import com.vointika.identity.domain.repository.RefreshTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.UnauthorizedException;
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
 public class RefreshAccessTokenUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(RefreshAccessTokenUseCase.class);
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
@@ -27,6 +25,7 @@ public class RefreshAccessTokenUseCase {
     private final TokenHasherPort tokenHasher;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
+    private final DiagnosticLogPort diagnosticLog;
 
     public RefreshAccessTokenUseCase(
             RefreshTokenRepository refreshTokenRepository,
@@ -34,7 +33,8 @@ public class RefreshAccessTokenUseCase {
             TokenGeneratorPort tokenGenerator,
             TokenHasherPort tokenHasher,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator
+            IdGenerator idGenerator,
+            DiagnosticLogPort diagnosticLog
     ) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
@@ -42,6 +42,7 @@ public class RefreshAccessTokenUseCase {
         this.tokenHasher = tokenHasher;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
+        this.diagnosticLog = diagnosticLog;
     }
 
     public RefreshAccessTokenOutput execute(RefreshAccessTokenInput input) {
@@ -55,7 +56,7 @@ public class RefreshAccessTokenUseCase {
         // theft signal — kill the entire family so the attacker (and any legitimate
         // session along the same chain) is forced back through login.
         if (presented.isRevoked()) {
-            log.warn("Refresh token reuse detected; revoking family. userId={} familyId={}",
+            diagnosticLog.warn(getClass(), "Refresh token reuse detected; revoking family. userId={} familyId={}",
                     presented.getUserId(), presented.getFamilyId());
             refreshTokenRepository.revokeAllByFamilyId(presented.getFamilyId());
             throw new UnauthorizedException("Invalid refresh token");

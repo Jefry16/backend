@@ -68,16 +68,19 @@ class ClearAvatarUseCaseTest {
         verifyNoInteractions(avatarStoragePort);
     }
 
+    /** Deleting the object is delegated, not conditional: the port is best-effort by
+     *  contract, so resilience is asserted in S3AvatarStoragePortImplTest, not here. */
     @Test
-    void shouldSwallowDeleteFailure() {
-        User user = userWithAvatar("users/" + userId + "/abc-avatar.png");
+    void shouldDelegateTheObjectDeleteAfterClearing() {
+        String key = "users/" + userId + "/abc-avatar.png";
+        User user = userWithAvatar(key);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        doThrow(new RuntimeException("s3 down")).when(avatarStoragePort).deleteObject(anyString());
 
-        assertDoesNotThrow(() -> useCase.execute(new ClearAvatarInput(userId.toString())));
+        useCase.execute(new ClearAvatarInput(userId.toString()));
 
         assertNull(user.getAvatarKey());
         verify(userRepository).save(user);
+        verify(avatarStoragePort).deleteObject(key);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.vointika.identity.infrastructure.config;
 
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.port.TransactionRunner;
@@ -110,7 +111,7 @@ public class UseCaseConfig {
             TokenGeneratorPort tokenGeneratorPort,
             TokenHasherPort tokenHasherPort,
             TransactionRunner transactionRunner,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator, DiagnosticLogPort diagnosticLog) {
         return new RefreshAccessTokenUseCase(
                 refreshTokenRepository,
                 userRepository,
@@ -118,7 +119,7 @@ public class UseCaseConfig {
                 tokenHasherPort,
                 transactionRunner,
                 idGenerator
-        );
+        , diagnosticLog);
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.CurrencyRepository;
@@ -59,6 +60,7 @@ class CreateTourOperatorUseCaseTest {
     private IdGenerator idGenerator;
     private UserAccountQuery userAccountQuery;
     private EventPublisherPort eventPublisher;
+    private DiagnosticLogPort diagnosticLog;
     private CreateTourOperatorUseCase useCase;
 
     private final UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -75,6 +77,7 @@ class CreateTourOperatorUseCaseTest {
         idGenerator = mock(IdGenerator.class);
         userAccountQuery = mock(UserAccountQuery.class);
         eventPublisher = mock(EventPublisherPort.class);
+        diagnosticLog = mock(DiagnosticLogPort.class);
         TransactionRunner transactionRunner = new TransactionRunner() {
             @Override public <T> T call(Supplier<T> work) { return work.get(); }
             @Override public void run(Runnable work) { work.run(); }
@@ -83,7 +86,7 @@ class CreateTourOperatorUseCaseTest {
                 tourOperatorRepository, memberRepository, menuRepository,
                 timezoneRepository, currencyRepository,
                 new SlugGenerator(), transactionRunner, idGenerator,
-                userAccountQuery, eventPublisher, auditTrailPort);
+                userAccountQuery, eventPublisher, auditTrailPort, diagnosticLog);
 
         // Happy-path defaults; individual tests override.
         when(timezoneRepository.findById(any())).thenReturn(Optional.of(mock(Timezone.class)));

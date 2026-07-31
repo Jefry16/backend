@@ -9,8 +9,6 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
@@ -28,7 +26,6 @@ import java.util.UUID;
  */
 public class DeleteMediaUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(DeleteMediaUseCase.class);
 
     private final MediaRepository mediaRepository;
     private final MediaStoragePort mediaStoragePort;
@@ -64,10 +61,6 @@ public class DeleteMediaUseCase {
     }
 
     private void deleteQuietly(String key) {
-        try {
-            mediaStoragePort.deleteObject(key);
-        } catch (RuntimeException e) {
-            log.warn("Failed to delete media object {} after row removal", key, e);
-        }
+        mediaStoragePort.deleteObject(key);
     }
 }

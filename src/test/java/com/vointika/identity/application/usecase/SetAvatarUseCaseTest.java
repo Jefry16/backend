@@ -87,16 +87,17 @@ class SetAvatarUseCaseTest {
     }
 
     @Test
-    void shouldSwallowDeleteFailureOfReplacedObject() {
-        User user = userWithAvatar("users/" + userId + "/old-avatar.jpg");
+    void shouldDelegateDeleteOfTheReplacedObject() {
+        String oldKey = "users/" + userId + "/old-avatar.jpg";
+        User user = userWithAvatar(oldKey);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(idGenerator.newId()).thenReturn(generatedId);
-        doThrow(new RuntimeException("s3 down")).when(avatarStoragePort).deleteObject(anyString());
 
         SetAvatarOutput output = useCase.execute(input("image/webp", 1024, new ByteArrayInputStream(new byte[]{1})));
 
         assertEquals("users/" + userId + "/" + generatedId + "-avatar.webp", output.avatarKey());
         verify(userRepository).save(user);
+        verify(avatarStoragePort).deleteObject(oldKey);
     }
 
     @Test
