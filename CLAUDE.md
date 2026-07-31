@@ -12,6 +12,7 @@ Three of the four governing documents are **not linked from anywhere in this rep
 | **MAP** | `../MAP.md` (same place) | The living state: what exists, what each context owns, what is decided, what is still open. The only artifact that crosses session boundaries. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
+| **CONTEXT-AUDIT** | `CONTEXT-AUDIT.md` (in repo) | The playbook for auditing one bounded context — dead code, over-engineering, coupling. Invoke with just a context name. |
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
 
