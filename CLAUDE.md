@@ -8,14 +8,12 @@ Three of the four governing documents are **not linked from anywhere in this rep
 
 | Document | Location | What it is |
 |---|---|---|
-| **LAW** | `../CONSTITUTION.md` (repo root's *parent*, outside every repo) | The rules. Short, read whole, every session. |
+| **LAW** | `../CONSTITUTION.md` (the parent directory — its own git repo, tracking LAW and MAP only) | The rules. Short, read whole, every session. |
 | **MAP** | `../MAP.md` (same place) | The living state: what exists, what each context owns, what is decided, what is still open. The only artifact that crosses session boundaries. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
 
-LAW §4 is absolute and worth restating: **verify version-specific behavior against the pinned version's docs; never work from recall.** Boot 4 differs from Boot 3 in ways that cost real debugging time (see `STACK.md` gotchas).
-
-There is a read-only archive of the previous implementation at `/home/jefrycayo/archive-vointika/backend`. It is a **quarry, not a template** — carry a verified decision, re-earn the structure (LAW §2.3).
+LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
 
 ## Commands
 
@@ -62,7 +60,7 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 ### The rules that shape every change
 
 - **A context never imports another context.** Two channels only: a **shared query port** (`shared.port.<Noun>Query` + a `<Noun>View` of primitives, implemented by the owning context in its `infrastructure/query`) or a **Kafka event**. `shared` and `reference` are the shared kernels everyone may import.
-- **Use cases are plain POJOs** — no Spring annotations — hand-wired as `@Bean`s in each context's `infrastructure/config/<Ctx>UseCaseConfig`. That's why the application layer stays framework-free and unit-testable without Spring.
+- **Use cases are plain POJOs** — no Spring annotations — hand-wired as `@Bean`s in each context's `infrastructure/config/<Ctx>UseCaseConfig`. That is what keeps the application layer unit-testable without Spring, and **ArchUnit now enforces it**: application may not depend on Spring, Jakarta, JJWT, the AWS SDK, Hibernate or Jackson. **Two carve-outs, named per class in the rule** — `DataIntegrityViolationException` (21 use cases turn a lost DB-unique race into a 409; a house pattern) and `MetafieldValueValidator`'s Jackson `ObjectMapper` (debt, wants a parser port). Named per class, never per package: a package-wide hole widens quietly.
 - **Every operator-facing mutation appends to the audit trail inside the same transaction** as the mutation (PATTERNS §8b). No unaudited mutation.
 - **Any list over tenant or growable data uses the shared list framework** — keyset cursor, typed filters, `ListSchema` (PATTERNS §4b). Never return an unbounded array; that mistake has already been made and fixed once.
 - **URLs are never stored.** Store a storage key, resolve to a URL at read time.
@@ -85,8 +83,16 @@ Renames must sweep beyond `src/` — the dev seed and docs reference table and c
 
 Unit tests (JUnit 5 + Mockito, no Spring) for value objects, entity behavior, and use cases. Controller tests are **RestDocs documentation tests** — `@WebMvcTest` + `@Import(SecurityConfig.class)`, asserting behavior *and* emitting the snippets that build the API guide. Two recurring traps: a `@WebMvcTest` whose context loads `WebConfig` needs a `@MockitoBean TourOperatorMembershipCheck` or every request 500s; and an internal-API test that omits its `PublicRouteRegistrar` 401s everything, so the assertions pass without testing anything.
 
+## Conventions
+
+The working rules are LAW: §2.4 never over-engineer · §3 the landing ritual · §4 never assume · §6 craft (comments, commits, dead code). Only the calibration for this repo lives here.
+
+- **Javadoc runs heavier than LAW §6.1's default, deliberately.** A hexagonal context has real seams, and the Javadoc on a port, a security filter or a migration is often the only place a decision is recorded — `InternalApiSecretFilter`'s note on why *both* sides are hashed before comparison is load-bearing. The rule still bites: `/** Returns the user. */` over `getUser()` is noise. Keep the why, the trap and the rejected alternative; delete the restatement.
+- **Dead code has no mechanical gate here.** Java offers no `noUnusedLocals` equivalent, so LAW §6.3 is a look — plus **ArchUnit**, which already fences the §2 boundaries and is the right home for anything automatable (a port nobody implements, a use case no `@Bean` wires).
+- **A commit body is rarer than it looks** (LAW §6.2). The durable *why* belongs in `MAP.md`; the reviewer's context belongs in the PR description; the diff belongs in git. A message that repeats all three is paying three times.
+
 ## Working rhythm
 
 Trunk is `main`; no direct commits. Every slice gets a short-lived branch (`feat/…`, `fix/…`, `chore/…`, `docs/…`) → PR → **merge only when the user says so**. A slice is done when the full suite is green *and* the change has been verified live against the running stack.
 
-End any session that changed something by updating `../MAP.md` — that is the landing ritual (LAW §3), and it is the only reason the next session knows where things stand. Record any version trap you hit in `STACK.md`, and any pattern that has now repeated twice in `PATTERNS.md`.
+End any session that changed something with the landing ritual (LAW §3): make `../MAP.md`, this file, `PATTERNS.md`, `STACK.md` and any saved memory true. A version trap goes in `STACK.md`, a pattern that has now repeated twice in `PATTERNS.md`, and if a fact moved, the old copy is deleted rather than left to drift. MAP is the only reason the next session knows where things stand.

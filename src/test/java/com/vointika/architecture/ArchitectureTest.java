@@ -7,6 +7,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.Architectures;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -180,4 +181,40 @@ public class ArchitectureTest {
                             "tools.jackson.."
                     )
                     .because("domain must stay pure — infrastructure concerns belong in infrastructure");
+
+    /**
+     * The application layer is framework-free too, with two named exceptions.
+     *
+     * <p><strong>1. {@code DataIntegrityViolationException}</strong> — caught by 21
+     * use cases across eight contexts to turn a lost race against a DB unique
+     * constraint into the domain's own answer (409, or a generic anti-enumeration
+     * response). A deliberate house pattern, not drift.
+     *
+     * <p><strong>2. {@code MetafieldValueValidator}</strong> — holds a Jackson
+     * {@code ObjectMapper} to reject trailing-token garbage in {@code json} values.
+     * This one is <em>debt</em>, not a pattern: it wants a parser port. Recorded in
+     * MAP's Debt so the carve-out has an owner.
+     *
+     * <p>Exceptions are named per class, never per package: a package-wide hole
+     * grows quietly, a named one has to be argued for.
+     */
+    @ArchTest
+    static final ArchRule application_depends_on_no_framework_but_the_named_exceptions =
+            noClasses()
+                    .that().resideInAPackage("com.vointika..application..")
+                    .and().areNotAssignableTo(
+                            com.vointika.metafield.application.service.MetafieldValueValidator.class)
+                    .should().dependOnClassesThat(
+                            resideInAnyPackage(
+                                    "org.springframework..",
+                                    "jakarta..",
+                                    "io.jsonwebtoken..",
+                                    "software.amazon..",
+                                    "org.hibernate..",
+                                    "com.fasterxml.jackson..",
+                                    "tools.jackson.."
+                            ).and(not(belongToAnyOf(
+                                    org.springframework.dao.DataIntegrityViolationException.class))))
+                    .because("use cases stay unit-testable without Spring; the two carve-outs "
+                            + "are named on purpose so neither can widen unnoticed");
 }
