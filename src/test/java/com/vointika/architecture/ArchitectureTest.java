@@ -9,12 +9,14 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.Architectures;
 
+import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
  * Boundary rules for vointika's DDD + hexagonal layout.
@@ -23,8 +25,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * (Kafka, over {@code shared}) or shared query ports, never direct imports. Only
  * {@code shared} may be imported by every context, and {@code reference} is a
  * shared-kernel-like read module other contexts may import (it imports none).
- * New per-context isolation rules are added here as contexts land:
- * {@code identity}, {@code notification}, {@code reference}, {@code touroperator}.
+ * Context isolation is derived from the package structure, so a new context is
+ * fenced the day it appears — no rule to remember to add.
  *
  * <p>Within a bounded context, layers form a DAG:
  * {@code domain} ← {@code application} ← {@code infrastructure} / {@code presentation}
@@ -40,55 +42,42 @@ public class ArchitectureTest {
     // Cross-context boundaries
     // ------------------------------------------------------------
 
+    /**
+     * Every bounded context is fenced from every other, derived from the package
+     * structure rather than a hand-maintained list.
+     *
+     * <p>This replaced five per-context rules that each named the contexts they knew
+     * about — written when there were four. Seven contexts landed afterwards and
+     * nobody added rules for them, so half the codebase was unfenced; worse, the
+     * rules that did exist only fenced against the original four, so
+     * {@code touroperator → experience} passed too. Deriving the slices means the
+     * next context is fenced the day its package appears.
+     *
+     * <p>{@code shared} and {@code reference} are the shared kernels: any context may
+     * depend on them, which is why they are ignored as dependency <em>targets</em>.
+     * What they may depend on is constrained by the rule below.
+     */
+    @ArchTest
+    static final ArchRule contexts_do_not_depend_on_each_other =
+            slices().matching("com.vointika.(*)..")
+                    .should().notDependOnEachOther()
+                    .ignoreDependency(
+                            alwaysTrue(),
+                            resideInAnyPackage("com.vointika.shared..", "com.vointika.reference.."))
+                    .because("contexts communicate via shared query ports or Kafka events, never direct imports");
+
+    /**
+     * The base module knows nothing about anything above it — including
+     * {@code reference}, which the generic rule above ignores as a target.
+     */
     @ArchTest
     static final ArchRule shared_does_not_depend_on_any_bounded_context =
             noClasses()
                     .that().resideInAPackage("com.vointika.shared..")
-                    .should().dependOnClassesThat()
-                    .resideInAnyPackage(
-                            "com.vointika.identity..",
-                            "com.vointika.notification..",
-                            "com.vointika.reference..",
-                            "com.vointika.touroperator.."
-                    )
-                    .because("shared is the base module — it must not know about any bounded context");
-
-    @ArchTest
-    static final ArchRule identity_does_not_depend_on_other_bounded_contexts =
-            noClasses()
-                    .that().resideInAPackage("com.vointika.identity..")
-                    .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.notification..", "com.vointika.touroperator..")
-                    .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
-
-    @ArchTest
-    static final ArchRule notification_does_not_depend_on_other_bounded_contexts =
-            noClasses()
-                    .that().resideInAPackage("com.vointika.notification..")
-                    .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.touroperator..")
-                    .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
-
-    // touroperator owns the tenant aggregate. It may import the shared kernel and
-    // the reference module (timezone/currency validation), but not identity or
-    // notification — it reaches those via shared query ports / events.
-    @ArchTest
-    static final ArchRule touroperator_does_not_depend_on_other_bounded_contexts =
-            noClasses()
-                    .that().resideInAPackage("com.vointika.touroperator..")
-                    .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.notification..")
-                    .because("bounded contexts communicate via events (shared) or shared kernel, not direct imports");
-
-    // reference is a read-mostly, shared-kernel-like module (countries, timezones):
-    // other contexts may import it, but it depends on none of them.
-    @ArchTest
-    static final ArchRule reference_does_not_depend_on_other_bounded_contexts =
-            noClasses()
-                    .that().resideInAPackage("com.vointika.reference..")
-                    .should().dependOnClassesThat()
-                    .resideInAnyPackage("com.vointika.identity..", "com.vointika.notification..", "com.vointika.touroperator..")
-                    .because("reference feeds other contexts (shared kernel), never the other way");
+                    .should().dependOnClassesThat(
+                            resideInAPackage("com.vointika..")
+                                    .and(not(resideInAPackage("com.vointika.shared.."))))
+                    .because("shared is the base module — it must not know about any context");
 
     // rendering assembles the public storefront's read models. It is the one
     // context that imports NOTHING but shared — not even reference — so every
