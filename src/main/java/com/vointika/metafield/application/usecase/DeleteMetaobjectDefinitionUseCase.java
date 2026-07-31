@@ -9,7 +9,7 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -50,7 +50,7 @@ public class DeleteMetaobjectDefinitionUseCase {
                         Map.of("type", definition.getType().value(),
                                 "name", definition.getName().value())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // The FK from metafield_definitions.metaobject_definition_id —
             // a reference metafield still pins this type.
             throw new ConflictException(

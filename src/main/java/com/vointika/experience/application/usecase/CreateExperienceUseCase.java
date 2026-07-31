@@ -14,7 +14,7 @@ import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.service.SlugGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Slug;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.UUID;
 
@@ -89,7 +89,7 @@ public class CreateExperienceUseCase {
                     return persisted;
                 });
                 break;
-            } catch (DataIntegrityViolationException e) {
+            } catch (UniqueConstraintViolationException e) {
                 // slug race — regenerate and retry
             }
         }

@@ -17,7 +17,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -102,7 +102,7 @@ public class CreateMetaobjectDefinitionUseCase {
                         Map.of("type", type.value(),
                                 "fields", fields.stream().map(f -> f.getKey().value()).toList())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException(
                     "A metaobject definition with this type already exists");
         }

@@ -12,7 +12,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.UUID;
 
@@ -61,7 +61,7 @@ public class CreatePickupLocationUseCase {
                         tourOperatorId, AuditActor.user(callerUserId),
                         "PICKUP_LOCATION", pickupLocation.getId(), "pickup_location.created", null));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
         }
         return pickupLocation.getId();

@@ -207,28 +207,17 @@ public class ArchitectureTest {
      * and watching the suite stay green. Both are debt (see MAP); the fix is to translate
      * in the repository adapter and delete this list.
      */
+    /**
+     * One class left. {@code MetafieldValueValidator} holds a Jackson
+     * {@code ObjectMapper} to reject trailing-token garbage in {@code json} values —
+     * debt, not a pattern; it wants a parser port.
+     *
+     * <p>The 21 use cases that used to sit here caught Spring's
+     * {@code DataIntegrityViolationException} directly. They now catch
+     * {@code UniqueConstraintViolationException}, translated once in
+     * {@code SpringTransactionRunner}, which is where the flush actually fails.
+     */
     private static final Set<String> FRAMEWORK_CATCHERS_FROZEN = Set.of(
-            "com.vointika.audience.application.usecase.CreateAudienceUseCase",
-            "com.vointika.audience.application.usecase.UpdateAudienceUseCase",
-            "com.vointika.experience.application.usecase.CreateExperienceUseCase",
-            "com.vointika.identity.application.usecase.RegisterUserUseCase",
-            "com.vointika.metafield.application.usecase.AddMetaobjectFieldUseCase",
-            "com.vointika.metafield.application.usecase.CreateMetafieldDefinitionUseCase",
-            "com.vointika.metafield.application.usecase.CreateMetaobjectDefinitionUseCase",
-            "com.vointika.metafield.application.usecase.CreateMetaobjectEntryUseCase",
-            "com.vointika.metafield.application.usecase.DeleteMetaobjectDefinitionUseCase",
-            "com.vointika.metafield.application.usecase.UpdateMetaobjectEntryUseCase",
-            "com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase",
-            "com.vointika.page.application.usecase.CreatePageUseCase",
-            "com.vointika.page.application.usecase.RenamePageUseCase",
-            "com.vointika.page.application.usecase.UpsertPageTranslationUseCase",
-            "com.vointika.pickup.application.usecase.CreatePickupLocationUseCase",
-            "com.vointika.pickup.application.usecase.UpdatePickupLocationUseCase",
-            "com.vointika.touroperator.application.usecase.AcceptInvitationUseCase",
-            "com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase",
-            "com.vointika.touroperator.application.usecase.CreateMenuUseCase",
-            "com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase",
-            "com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase",
             "com.vointika.metafield.application.service.MetafieldValueValidator"
     );
 
@@ -255,7 +244,6 @@ public class ArchitectureTest {
                     .should().onlyDependOnClassesThat(
                             resideInAnyPackage(APPLICATION_MAY_DEPEND_ON)
                                     .or(belongToAnyOf(
-                                            org.springframework.dao.DataIntegrityViolationException.class,
                                             tools.jackson.databind.ObjectMapper.class,
                                             tools.jackson.databind.JsonNode.class)))
                     .because("being on the frozen list buys one exemption, not free rein");

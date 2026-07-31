@@ -11,7 +11,7 @@ import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.application.dto.input.CreateMenuInput;
 import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.repository.MenuRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -59,7 +59,7 @@ public class CreateMenuUseCase {
                         "MENU", menu.getId(), "menu.created",
                         Map.of("handle", handle.value(), "title", menu.getTitle())));
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("A menu with this handle already exists");
         }
         return menu.getId();

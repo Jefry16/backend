@@ -20,7 +20,7 @@ import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.FieldChange;
 import com.vointika.shared.valueobject.Slug;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -147,7 +147,7 @@ public class UpdateMetaobjectEntryUseCase {
                             changes));
                 }
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             // Concurrent handle rename past the pre-check.
             throw new ResourceAlreadyExistsException(
                     "A metaobject with this handle already exists for this type");

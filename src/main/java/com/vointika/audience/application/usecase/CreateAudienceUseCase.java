@@ -12,7 +12,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.UUID;
 
@@ -60,7 +60,7 @@ public class CreateAudienceUseCase {
                         "AUDIENCE", saved.getId(), "audience.created", null));
                 return saved;
             }).getId();
-        } catch (DataIntegrityViolationException e) {
+        } catch (UniqueConstraintViolationException e) {
             throw new ResourceAlreadyExistsException("An audience with this name already exists");
         }
     }
