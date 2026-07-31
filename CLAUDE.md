@@ -60,7 +60,7 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 ### The rules that shape every change
 
 - **A context never imports another context.** Two channels only: a **shared query port** (`shared.port.<Noun>Query` + a `<Noun>View` of primitives, implemented by the owning context in its `infrastructure/query`) or a **Kafka event**. `shared` and `reference` are the shared kernels everyone may import.
-- **Use cases are plain POJOs** — no Spring annotations — hand-wired as `@Bean`s in each context's `infrastructure/config/<Ctx>UseCaseConfig`. That's why the application layer stays framework-free and unit-testable without Spring.
+- **Use cases are plain POJOs** — no Spring annotations — hand-wired as `@Bean`s in each context's `infrastructure/config/<Ctx>UseCaseConfig`. That is what keeps the application layer unit-testable without Spring, and **ArchUnit now enforces it**: application may not depend on Spring, Jakarta, JJWT, the AWS SDK, Hibernate or Jackson. **Two carve-outs, named per class in the rule** — `DataIntegrityViolationException` (21 use cases turn a lost DB-unique race into a 409; a house pattern) and `MetafieldValueValidator`'s Jackson `ObjectMapper` (debt, wants a parser port). Named per class, never per package: a package-wide hole widens quietly.
 - **Every operator-facing mutation appends to the audit trail inside the same transaction** as the mutation (PATTERNS §8b). No unaudited mutation.
 - **Any list over tenant or growable data uses the shared list framework** — keyset cursor, typed filters, `ListSchema` (PATTERNS §4b). Never return an unbounded array; that mistake has already been made and fixed once.
 - **URLs are never stored.** Store a storage key, resolve to a URL at read time.

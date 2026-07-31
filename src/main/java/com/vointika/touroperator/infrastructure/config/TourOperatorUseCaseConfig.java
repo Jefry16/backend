@@ -15,6 +15,7 @@ import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.shared.service.SlugGenerator;
+import com.vointika.touroperator.application.policy.TourOperatorMembershipPolicy;
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
 import com.vointika.touroperator.application.usecase.ClearOperatorLogoUseCase;
@@ -49,6 +50,14 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration("tourOperatorUseCaseConfig")
 public class TourOperatorUseCaseConfig {
+
+    /** Hand-wired like every other application-layer collaborator: the policy is a
+     * plain POJO so the layer stays framework-free (ArchUnit enforces it). */
+    @Bean
+    public TourOperatorMembershipPolicy tourOperatorMembershipPolicy(
+            TourOperatorMemberRepository memberRepository) {
+        return new TourOperatorMembershipPolicy(memberRepository);
+    }
 
     @Bean
     public CreateTourOperatorUseCase createTourOperatorUseCase(

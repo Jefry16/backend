@@ -5,7 +5,6 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
-import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
@@ -15,7 +14,6 @@ import java.util.UUID;
  * resolves the caller's {@link MemberRole} and compares tiers, so {@code MemberRole}
  * never leaks into {@code shared} (§4.2).
  */
-@Component
 public class TourOperatorMembershipPolicy implements TourOperatorMembershipCheck {
 
     private final TourOperatorMemberRepository memberRepository;
