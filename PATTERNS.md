@@ -283,6 +283,38 @@ the use case itself has something to report (a security signal, a branch taken b
 config was missing) does it reach for `DiagnosticLogPort`, which takes the calling
 class so log names still point at the reporter.
 
+## 4c. One DTO or two at the application boundary
+
+A use case takes an `Input` from `application/dto/input` and the controller owns a
+`Request` in `presentation/request`. Keep both **only when they differ**. In identity
+nine pairs do — the `Input` carries a `userId` from the authenticated principal, or a
+`language` the body never had — and four were byte-identical copies, since deleted.
+
+An identical copy is not a seam. Add a field to the request that the use case needs
+and both change in lockstep, so it insulates nothing while costing a file and a
+mapping step.
+
+When you collapse one, **the application record is the survivor** and the controller
+binds to it:
+
+```java
+public ResponseEntity<LoginUserResponse> login(@RequestBody LoginUserInput input) {
+    var output = loginUserUseCase.execute(input);
+```
+
+Never the other way. A use case referencing a `presentation` type inverts the layer
+graph and ArchUnit fails the build.
+
+The condition, and the build enforces it: the surviving record must carry **no
+annotations**. The application layer's allowlist is `com.vointika..` + `java..`, so a
+`@JsonProperty` or a Jakarta validation annotation on it is a compile-time-legal but
+build-breaking change — and the correct answer at that point is to reintroduce a
+presentation DTO, because the shapes have genuinely diverged.
+
+Responses are the mirror image: `LoginUserOutput` carries `accessToken` *and*
+`refreshToken`, `LoginUserResponse` carries only the access token because the refresh
+token leaves in an httpOnly cookie. That pair stays.
+
 ## 9. Testing shapes
 
 - **Unit** — JUnit5 + Mockito, no Spring: every value object, entity behavior,

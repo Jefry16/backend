@@ -89,17 +89,14 @@ public class AuthController {
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerification(@RequestBody ResendVerificationEmailRequest request) {
-        resendVerificationEmailUseCase.execute(new ResendVerificationEmailInput(request.email()));
+    public ResponseEntity<Void> resendVerification(@RequestBody ResendVerificationEmailInput input) {
+        resendVerificationEmailUseCase.execute(input);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginUserResponse> login(@RequestBody LoginUserRequest request) {
-        var output = loginUserUseCase.execute(new LoginUserInput(
-                request.email(),
-                request.password()
-        ));
+    public ResponseEntity<LoginUserResponse> login(@RequestBody LoginUserInput input) {
+        var output = loginUserUseCase.execute(input);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookieFactory.issue(output.refreshToken()).toString())
                 .body(new LoginUserResponse(output.accessToken()));
@@ -140,17 +137,14 @@ public class AuthController {
     }
 
     @PostMapping("/request-password-reset")
-    public ResponseEntity<Void> requestPasswordReset(@RequestBody RequestPasswordResetRequest request) {
-        requestPasswordResetUseCase.execute(new RequestPasswordResetInput(request.email()));
+    public ResponseEntity<Void> requestPasswordReset(@RequestBody RequestPasswordResetInput input) {
+        requestPasswordResetUseCase.execute(input);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
-        resetPasswordUseCase.execute(new ResetPasswordInput(
-                request.token(),
-                request.newPassword()
-        ));
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordInput input) {
+        resetPasswordUseCase.execute(input);
         return ResponseEntity.noContent().build();
     }
 
