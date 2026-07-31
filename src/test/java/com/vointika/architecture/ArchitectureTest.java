@@ -1,5 +1,8 @@
 package com.vointika.architecture;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
+import java.util.Set;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -10,6 +13,7 @@ import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -183,38 +187,76 @@ public class ArchitectureTest {
                     .because("domain must stay pure — infrastructure concerns belong in infrastructure");
 
     /**
-     * The application layer is framework-free too, with two named exceptions.
-     *
-     * <p><strong>1. {@code DataIntegrityViolationException}</strong> — caught by 21
-     * use cases across eight contexts to turn a lost race against a DB unique
-     * constraint into the domain's own answer (409, or a generic anti-enumeration
-     * response). A deliberate house pattern, not drift.
-     *
-     * <p><strong>2. {@code MetafieldValueValidator}</strong> — holds a Jackson
-     * {@code ObjectMapper} to reject trailing-token garbage in {@code json} values.
-     * This one is <em>debt</em>, not a pattern: it wants a parser port. Recorded in
-     * MAP's Debt so the carve-out has an owner.
-     *
-     * <p>Exceptions are named per class, never per package: a package-wide hole
-     * grows quietly, a named one has to be argued for.
+     * The application layer's entire legal dependency surface: our own code, the JDK,
+     * and the SLF4J facade. An <strong>allowlist</strong>, deliberately — a list of
+     * banned frameworks only catches the ones someone thought to name, which is how a
+     * Jackson dependency under {@code tools.jackson} (not {@code com.fasterxml})
+     * survived a grep. Anything outside this is coupling, including a library nobody
+     * has imported yet.
      */
+    private static final String[] APPLICATION_MAY_DEPEND_ON = {
+            "com.vointika..", "java..", "org.slf4j.."
+    };
+
+    /**
+     * The 21 use cases catching Spring's {@code DataIntegrityViolationException} to turn
+     * a lost DB-unique race into a 409, plus the validator holding a Jackson
+     * {@code ObjectMapper}. Frozen <em>by name</em>: a 22nd class cannot join without
+     * editing this list. The previous version exempted the exception type instead, which
+     * let the pattern spread silently — proven by adding the import to a 22nd use case
+     * and watching the suite stay green. Both are debt (see MAP); the fix is to translate
+     * in the repository adapter and delete this list.
+     */
+    private static final Set<String> FRAMEWORK_CATCHERS_FROZEN = Set.of(
+            "com.vointika.audience.application.usecase.CreateAudienceUseCase",
+            "com.vointika.audience.application.usecase.UpdateAudienceUseCase",
+            "com.vointika.experience.application.usecase.CreateExperienceUseCase",
+            "com.vointika.identity.application.usecase.RegisterUserUseCase",
+            "com.vointika.metafield.application.usecase.AddMetaobjectFieldUseCase",
+            "com.vointika.metafield.application.usecase.CreateMetafieldDefinitionUseCase",
+            "com.vointika.metafield.application.usecase.CreateMetaobjectDefinitionUseCase",
+            "com.vointika.metafield.application.usecase.CreateMetaobjectEntryUseCase",
+            "com.vointika.metafield.application.usecase.DeleteMetaobjectDefinitionUseCase",
+            "com.vointika.metafield.application.usecase.UpdateMetaobjectEntryUseCase",
+            "com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase",
+            "com.vointika.page.application.usecase.CreatePageUseCase",
+            "com.vointika.page.application.usecase.RenamePageUseCase",
+            "com.vointika.page.application.usecase.UpsertPageTranslationUseCase",
+            "com.vointika.pickup.application.usecase.CreatePickupLocationUseCase",
+            "com.vointika.pickup.application.usecase.UpdatePickupLocationUseCase",
+            "com.vointika.touroperator.application.usecase.AcceptInvitationUseCase",
+            "com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase",
+            "com.vointika.touroperator.application.usecase.CreateMenuUseCase",
+            "com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase",
+            "com.vointika.touroperator.application.usecase.InviteTeamMemberUseCase",
+            "com.vointika.metafield.application.service.MetafieldValueValidator"
+    );
+
+    private static final DescribedPredicate<JavaClass> IS_FROZEN =
+            new DescribedPredicate<>("a frozen framework-catching class") {
+                @Override
+                public boolean test(JavaClass javaClass) {
+                    return FRAMEWORK_CATCHERS_FROZEN.contains(javaClass.getFullName());
+                }
+            };
+
     @ArchTest
-    static final ArchRule application_depends_on_no_framework_but_the_named_exceptions =
-            noClasses()
-                    .that().resideInAPackage("com.vointika..application..")
-                    .and().areNotAssignableTo(
-                            com.vointika.metafield.application.service.MetafieldValueValidator.class)
-                    .should().dependOnClassesThat(
-                            resideInAnyPackage(
-                                    "org.springframework..",
-                                    "jakarta..",
-                                    "io.jsonwebtoken..",
-                                    "software.amazon..",
-                                    "org.hibernate..",
-                                    "com.fasterxml.jackson..",
-                                    "tools.jackson.."
-                            ).and(not(belongToAnyOf(
-                                    org.springframework.dao.DataIntegrityViolationException.class))))
-                    .because("use cases stay unit-testable without Spring; the two carve-outs "
-                            + "are named on purpose so neither can widen unnoticed");
+    static final ArchRule application_depends_only_on_our_code_the_jdk_and_slf4j =
+            classes()
+                    .that(resideInAPackage("com.vointika..application..").and(not(IS_FROZEN)))
+                    .should().onlyDependOnClassesThat()
+                    .resideInAnyPackage(APPLICATION_MAY_DEPEND_ON)
+                    .because("anything else couples the layer to a framework — use a port");
+
+    @ArchTest
+    static final ArchRule frozen_classes_get_one_exemption_not_a_blank_cheque =
+            classes()
+                    .that(IS_FROZEN)
+                    .should().onlyDependOnClassesThat(
+                            resideInAnyPackage(APPLICATION_MAY_DEPEND_ON)
+                                    .or(belongToAnyOf(
+                                            org.springframework.dao.DataIntegrityViolationException.class,
+                                            tools.jackson.databind.ObjectMapper.class,
+                                            tools.jackson.databind.JsonNode.class)))
+                    .because("being on the frozen list buys one exemption, not free rein");
 }
