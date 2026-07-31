@@ -21,6 +21,15 @@ lie, because most of that pass was spent discovering them.
 "Nothing references it" and "nothing breaks without it" are different questions.
 Delete it, run the suite, put it back — that is the entire method.
 
+**And the probe is not the deliverable — the test is.** A throwaway probe proves the
+behaviour today; it leaves nothing behind to notice the day it changes. Every pass so
+far has changed something API-visible on the strength of a probe that was then
+deleted: two null-guard removals resting on `@RequestBody` being required by default
+(`touroperator`), and a 422 → 409 on an already-cancelled slot (`experience`). Both
+were right, both were disclosed, neither was pinned. **If a probe justified a change,
+the probe becomes a committed test before the PR opens** — and mutation-check that
+test too, or it may be passing for reasons unrelated to what it claims to guard.
+
 ## 1 · Measure
 
 ```bash
@@ -137,8 +146,12 @@ actually reaches the check. Where a use case already asks at the top —
 
 ## 6 · Enforce, then break it on purpose
 
-A finding you cannot re-detect is a finding you will make again. Add the ArchUnit rule,
-then **mutation-test it**:
+A finding you cannot re-detect is a finding you will make again — and that applies to
+behaviour as much as to structure. **Where the invariant is expressible in ArchUnit,
+add the rule; where it is not, add the test.** A cancelled slot staying uneditable, a
+required body rejecting `null`: no type-and-package analysis can see either, and
+"not mechanically detectable" is a reason to write a test, not a reason to write
+nothing. Then **mutation-test whichever you added**:
 
 ```bash
 cp "$F" /tmp/probe.bak                     # never `git checkout` uncommitted work
@@ -172,7 +185,11 @@ Nothing referenced it, so nothing failed; the next reader would simply have beli
 
 ## 7 · Land it
 
-Gates: `./mvnw -o test` green, count explained against the baseline.
+Gates: `./mvnw -o test` green, count explained against the baseline. **Every
+API-visible change gets a line in the PR body and a test in the diff** — a status
+code that moved, a body that is now rejected, a field that stopped being optional.
+The api-guide does not document every endpoint (MAP Debt), so the test is the only
+place a client's assumption is recorded.
 
 Then, in the same pass (LAW §3): `CLAUDE.md` if a claim it makes changed,
 `PATTERNS.md` if a shape repeated twice, `../MAP.md` ledger and Debt, and delete any
