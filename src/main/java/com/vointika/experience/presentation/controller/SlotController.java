@@ -84,7 +84,10 @@ public class SlotController {
         return ResponseEntity.ok(SlotResponse.from(view));
     }
 
-    /** Creates recurring slots (weekday pattern × date window). ADMIN+. 201. */
+    /**
+     * Creates recurring slots (weekday pattern × date window). ADMIN+. 201.
+     * A pattern no date in the window satisfies creates nothing → 422.
+     */
     @PostMapping("/api/tour-operators/{tourOperatorId}/experiences/{experienceId}/slots")
     public ResponseEntity<Void> createRecurring(
             @PathVariable UUID tourOperatorId,

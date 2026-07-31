@@ -34,6 +34,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -165,6 +166,22 @@ class SlotUseCasesTest {
         Slot saved = captor.getValue();
         assertThat(saved.startAt()).isEqualTo(day.atTime(22, 0));
         assertThat(saved.endAt()).isEqualTo(day.plusDays(1).atTime(1, 0));
+    }
+
+    @Test
+    void recurringRejectsAPatternThatMatchesNothing() {
+        // A one-day window on a Monday, asking for the other six weekdays.
+        LocalDate day = LocalDate.now().plusDays(1);
+        int dow = day.getDayOfWeek().getValue() % 7;
+        List<Integer> everyOtherDay = IntStream.range(0, 7).boxed().filter(d -> d != dow).toList();
+
+        assertThatThrownBy(() -> createRecurring().execute(new CreateSlotsInput(
+                USER, OP, EXP, everyOtherDay,
+                LocalTime.of(9, 0), LocalTime.of(11, 0), day, day, prices())))
+                .isInstanceOf(InvalidFieldException.class);
+
+        verify(slotRepository, never()).save(any());
+        verify(auditTrailPort, never()).append(any());
     }
 
     @Test

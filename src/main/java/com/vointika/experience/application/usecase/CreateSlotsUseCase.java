@@ -32,8 +32,9 @@ import java.util.Set;
  * Creates recurring departures: one slot per weekday in {@code days} within
  * [validFrom, validTo], all at the same start/end time-of-day and pricing. Same
  * guards as the single create, applied to the window. An end time-of-day ≤ the
- * start rolls the slot's end to the next day. A window with no matching weekday
- * yields zero slots (still succeeds).
+ * start rolls the slot's end to the next day. A window no selected weekday falls
+ * in creates nothing and is refused (422) rather than answered as an empty
+ * success — the response carries no body, so a silent no-op is unreportable.
  */
 public class CreateSlotsUseCase {
 
@@ -117,20 +118,26 @@ public class CreateSlotsUseCase {
                 }
                 created++;
             }
+            // A pattern no date in the window satisfies ("Sundays" over Mon–Wed)
+            // is a mistake, not an empty success: refuse rather than answer 201
+            // for nothing, since the caller gets no body to notice it with.
+            if (created == 0) {
+                throw new InvalidFieldException(
+                        "No date in the validity window falls on the selected days");
+            }
+
             // ONE entry per batch, on the EXPERIENCE's timeline — recording a
             // row per minted slot would bury the trail in near-duplicates.
-            if (created > 0) {
-                Map<String, Object> details = new LinkedHashMap<>();
-                details.put("count", created);
-                details.put("days", days.stream().sorted().toList());
-                details.put("startTime", input.startTime().toString());
-                details.put("endTime", input.endTime().toString());
-                details.put("validFrom", input.validFrom().toString());
-                details.put("validTo", input.validTo().toString());
-                auditTrailPort.append(new NewAuditEntry(
-                        input.tourOperatorId(), AuditActor.user(input.callerUserId()),
-                        "EXPERIENCE", input.experienceId(), "experience.slots_created", details));
-            }
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("count", created);
+            details.put("days", days.stream().sorted().toList());
+            details.put("startTime", input.startTime().toString());
+            details.put("endTime", input.endTime().toString());
+            details.put("validFrom", input.validFrom().toString());
+            details.put("validTo", input.validTo().toString());
+            auditTrailPort.append(new NewAuditEntry(
+                    input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                    "EXPERIENCE", input.experienceId(), "experience.slots_created", details));
         });
     }
 
