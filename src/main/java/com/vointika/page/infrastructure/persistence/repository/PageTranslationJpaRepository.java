@@ -19,9 +19,6 @@ public interface PageTranslationJpaRepository
     List<PageTranslationJpaEntity> findByPageIdInAndLocale(
             java.util.Collection<UUID> pageIds, String locale);
 
-    /** Resolves a localized handle back to its page. */
-    Optional<PageTranslationJpaEntity> findByTourOperatorIdAndLocaleAndSlug(
-            UUID tourOperatorId, String locale, String slug);
 
     boolean existsByTourOperatorIdAndSlugAndPageIdNot(
             UUID tourOperatorId, String slug, UUID excludePageId);

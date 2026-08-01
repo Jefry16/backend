@@ -20,6 +20,4 @@ public interface ExperienceJpaRepository extends JpaRepository<ExperienceJpaEnti
     java.util.List<ExperienceJpaEntity> findByIdInAndTourOperatorIdAndPublishedTrue(
             java.util.Collection<UUID> ids, UUID tourOperatorId);
 
-    /** Storefront read: published only, never drafts. */
-    Optional<ExperienceJpaEntity> findByTourOperatorIdAndSlugAndPublishedTrue(UUID tourOperatorId, String slug);
 }

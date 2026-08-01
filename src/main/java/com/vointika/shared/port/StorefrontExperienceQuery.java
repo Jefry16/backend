@@ -1,10 +1,7 @@
 package com.vointika.shared.port;
 
-import com.vointika.shared.list.CursorPage;
-
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -15,37 +12,14 @@ import java.util.UUID;
  * to ask this seam for a draft: the storefront cannot leak unpublished work even
  * if a render context forgets to check.
  *
- * <p>Every method takes the locale and returns content already resolved for it —
- * translated fields overlaid on the canonical ones, with a per-field fallback.
- * Resolution belongs to the context that owns the translations, not to the
- * renderer.
+ * <p>Reduced to the one method navigation needs. {@code listPublished} and
+ * {@code findPublishedBySlug} went with the experience render contexts — the
+ * detail read is what made a localized handle and a canonical one resolve as one
+ * namespace, so PATTERNS §4d's read half is parked with it. The write guards it
+ * justified are deliberately kept: they are what stops a shadowing handle being
+ * stored while nothing can observe it.
  */
 public interface StorefrontExperienceQuery {
-
-    /**
-     * A page of the operator's published experiences, newest first.
-     *
-     * <p>Cursor-paginated through the shared list framework, like every other
-     * tenant-scoped list in this codebase — a storefront catalogue grows, and an
-     * unbounded response would grow with it. Filtering and sorting are
-     * deliberately NOT exposed yet: the framework supports them, but nothing
-     * renders them, and an unused query surface is one more thing to get wrong.
-     *
-     * @param cursor opaque page cursor from a previous call, or null for the
-     *               first page
-     */
-    CursorPage<StorefrontExperienceView> listPublished(
-            UUID tourOperatorId, String locale, String cursor);
-
-    /**
-     * One published experience by the handle in its URL.
-     *
-     * <p>Matches the localized slug for this locale <em>or</em> the canonical
-     * slug, because an operator who translates a handle leaves the canonical one
-     * addressable — old links, shared links and search results keep working.
-     */
-    Optional<StorefrontExperienceView> findPublishedBySlug(
-            UUID tourOperatorId, String slug, String locale);
 
     /**
      * id → the handle each published experience has in this locale.
