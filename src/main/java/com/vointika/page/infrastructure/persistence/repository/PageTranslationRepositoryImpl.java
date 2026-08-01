@@ -14,6 +14,9 @@ import java.util.UUID;
 @Repository
 public class PageTranslationRepositoryImpl implements PageTranslationRepository {
 
+    /** Stands in for "exclude nothing" — no page can have the nil UUID. */
+    private static final UUID NO_PAGE = new UUID(0L, 0L);
+
     private final PageTranslationJpaRepository jpa;
 
     public PageTranslationRepositoryImpl(PageTranslationJpaRepository jpa) {
@@ -43,6 +46,15 @@ public class PageTranslationRepositoryImpl implements PageTranslationRepository 
     public boolean existsBySlug(UUID tourOperatorId, LocaleCode locale, String slug, UUID excludePageId) {
         return jpa.existsByTourOperatorIdAndLocaleAndSlugAndPageIdNot(
                 tourOperatorId, locale.value(), slug, excludePageId);
+    }
+
+    @Override
+    public boolean existsBySlugInAnyLocale(UUID tourOperatorId, String slug, UUID excludePageId) {
+        // A null exclusion would make the derived `…AndPageIdNot` query match
+        // nothing, so create passes a sentinel that cannot be a real page id.
+        return jpa.existsByTourOperatorIdAndSlugAndPageIdNot(
+                tourOperatorId, slug,
+                excludePageId == null ? NO_PAGE : excludePageId);
     }
 
     @Override

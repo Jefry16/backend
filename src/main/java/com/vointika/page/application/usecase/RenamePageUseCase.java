@@ -2,6 +2,7 @@ package com.vointika.page.application.usecase;
 
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
+import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -28,15 +29,18 @@ import java.util.UUID;
 public class RenamePageUseCase {
 
     private final PageRepository pageRepository;
+    private final PageTranslationRepository translationRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public RenamePageUseCase(PageRepository pageRepository,
+                             PageTranslationRepository translationRepository,
                              TourOperatorMembershipCheck membershipCheck,
                              TransactionRunner transactionRunner,
                              AuditTrailPort auditTrailPort) {
         this.pageRepository = pageRepository;
+        this.translationRepository = translationRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -53,6 +57,11 @@ public class RenamePageUseCase {
         }
         if (pageRepository.existsByTourOperatorIdAndHandle(tourOperatorId, handle.value())) {
             throw new ResourceAlreadyExistsException("A page with this handle already exists");
+        }
+        if (translationRepository.existsBySlugInAnyLocale(
+                tourOperatorId, handle.value(), pageId)) {
+            throw new ResourceAlreadyExistsException(
+                    "A page already uses this handle as a localized handle");
         }
 
         Map<String, Object> before = page.auditSnapshot();

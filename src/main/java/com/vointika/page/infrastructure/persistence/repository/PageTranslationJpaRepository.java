@@ -23,6 +23,9 @@ public interface PageTranslationJpaRepository
     Optional<PageTranslationJpaEntity> findByTourOperatorIdAndLocaleAndSlug(
             UUID tourOperatorId, String locale, String slug);
 
+    boolean existsByTourOperatorIdAndSlugAndPageIdNot(
+            UUID tourOperatorId, String slug, UUID excludePageId);
+
     boolean existsByTourOperatorIdAndLocaleAndSlugAndPageIdNot(
             UUID tourOperatorId, String locale, String slug, UUID pageId);
 }

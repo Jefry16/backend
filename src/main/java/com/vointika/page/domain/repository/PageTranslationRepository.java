@@ -20,5 +20,15 @@ public interface PageTranslationRepository {
     /** Localized-handle uniqueness per (operator, locale), excluding this page. */
     boolean existsBySlug(UUID tourOperatorId, LocaleCode locale, String slug, UUID excludePageId);
 
+    /**
+     * Whether another page already uses this slug as a localized handle in
+     * <em>any</em> locale. The storefront resolves a handle against localized
+     * handles first and canonical ones second, so the two namespaces are read as
+     * one and must be validated as one — a canonical handle equal to another
+     * page's localized handle silently shadows it in that locale.
+     * {@code excludePageId} may be null when no page exists yet (create).
+     */
+    boolean existsBySlugInAnyLocale(UUID tourOperatorId, String slug, UUID excludePageId);
+
     void delete(UUID pageId, LocaleCode locale);
 }

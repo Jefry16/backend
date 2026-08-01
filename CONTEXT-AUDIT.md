@@ -209,6 +209,14 @@ stated reason is not a unique index, it cannot fire. Settle it by running Spring
 `SQLExceptionSubclassTranslator` over the SQLSTATEs — thirty seconds, and it beats
 reasoning about a hierarchy.
 
+**When a read path consults two sources in precedence order, every write that feeds
+either must check both.** `page` resolved a storefront handle against localized
+handles first and canonical ones second, but create/rename validated only against
+`pages` and the translation upsert only against `page_translations`. Each write looked
+complete in isolation; together they let one page shadow another and vanish from a
+locale. The tell is a `.or(...)` / fallback chain in a read adapter — follow it back
+and list every writer of each branch. Recipe in PATTERNS §4d.
+
 **A guard inside a state transition defends that transition and nothing else.**
 `experience` enforced "a cancelled slot is terminal" inside `Slot.changeStatus`, so
 the capacity-only `PATCH` — which never calls it — edited cancelled slots and audited

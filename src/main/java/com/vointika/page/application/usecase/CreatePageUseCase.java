@@ -3,6 +3,7 @@ package com.vointika.page.application.usecase;
 import com.vointika.page.application.dto.input.CreatePageInput;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
+import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
@@ -30,17 +31,20 @@ import java.util.UUID;
 public class CreatePageUseCase {
 
     private final PageRepository pageRepository;
+    private final PageTranslationRepository translationRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public CreatePageUseCase(PageRepository pageRepository,
+                             PageTranslationRepository translationRepository,
                              TourOperatorMembershipCheck membershipCheck,
                              IdGenerator idGenerator,
                              TransactionRunner transactionRunner,
                              AuditTrailPort auditTrailPort) {
         this.pageRepository = pageRepository;
+        this.translationRepository = translationRepository;
         this.membershipCheck = membershipCheck;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
@@ -60,6 +64,11 @@ public class CreatePageUseCase {
 
         if (pageRepository.existsByTourOperatorIdAndHandle(input.tourOperatorId(), handle.value())) {
             throw new ResourceAlreadyExistsException("A page with this handle already exists");
+        }
+        if (translationRepository.existsBySlugInAnyLocale(
+                input.tourOperatorId(), handle.value(), null)) {
+            throw new ResourceAlreadyExistsException(
+                    "A page already uses this handle as a localized handle");
         }
 
         Page page = new Page(

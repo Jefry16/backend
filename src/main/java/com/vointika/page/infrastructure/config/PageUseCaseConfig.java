@@ -29,12 +29,13 @@ public class PageUseCaseConfig {
     @Bean
     public CreatePageUseCase createPageUseCase(
             PageRepository pageRepository,
+            PageTranslationRepository pageTranslationRepository,
             TourOperatorMembershipCheck membershipCheck,
             IdGenerator idGenerator,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new CreatePageUseCase(pageRepository, membershipCheck, idGenerator,
-                transactionRunner, auditTrailPort);
+        return new CreatePageUseCase(pageRepository, pageTranslationRepository, membershipCheck,
+                idGenerator, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -81,10 +82,12 @@ public class PageUseCaseConfig {
     @Bean
     public RenamePageUseCase renamePageUseCase(
             PageRepository pageRepository,
+            PageTranslationRepository pageTranslationRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new RenamePageUseCase(pageRepository, membershipCheck, transactionRunner, auditTrailPort);
+        return new RenamePageUseCase(pageRepository, pageTranslationRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
