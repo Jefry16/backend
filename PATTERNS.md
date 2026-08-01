@@ -153,6 +153,30 @@ Matching the page's **own** canonical handle is fine — it resolves to the same
 The general rule: when a read path consults two sources in precedence order, list the
 write paths that feed each and make every one of them check both.
 
+`experience` had the same defect and now has the same guards, with one difference worth
+knowing before you read the two side by side and think one is wrong. **Whether a
+cross-namespace collision is a 409 or a suffix depends on who chose the value, not on
+which namespace it came from.** A page handle is operator-chosen and permanent, so a
+clash is a 409 the operator can act on. An experience's canonical slug is *derived from
+its name*, so its create path widens the probe instead — the auto-suffix simply steps
+over localized slugs too, and the operator sees a `-2` rather than a 409 for a value
+they never typed and have no field to correct. The explicit localized slug is
+operator-chosen in both, and 409s in both.
+
+One consequence: the any-locale probe needs an exclusion parameter only where a *rename*
+path calls it (page). Where the canonical value is immutable (experience), create is the
+only caller and never excludes — so the parameter, and page's nil-UUID sentinel standing
+in for "exclude nothing", are both absent by LAW §2.4.
+
+**These guards are pre-checks, not constraints, and that is the one thing this recipe
+cannot fix.** Uniqueness *within* a namespace is backed by a unique index, so a lost race
+surfaces as a duplicate-key failure and the loser is rejected. There is no index spanning
+the two tables and there cannot be one without a trigger — so two concurrent writes, one
+per namespace, can still land on the same value and produce exactly the shadowing the
+guards exist to prevent. The window is small and both `page` and `experience` carry it.
+Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
+making the invariant true.
+
 ## 5. Read-time URL resolution (never store URLs)
 
 Store a bucket-relative **storage key** on the row; resolve it to an absolute

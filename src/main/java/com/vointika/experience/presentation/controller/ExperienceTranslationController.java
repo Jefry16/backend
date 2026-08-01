@@ -67,7 +67,10 @@ public class ExperienceTranslationController {
         return ResponseEntity.ok(ExperienceTranslationResponse.from(view));
     }
 
-    /** Creates or replaces a locale's overlay. ADMIN+. Unsupported locale → 422; duplicate localized slug → 409. */
+    /**
+     * Creates or replaces a locale's overlay. ADMIN+. Unsupported locale → 422; a slug
+     * already used by another experience — localized in this locale, or canonical → 409.
+     */
     @PutMapping("/{locale}")
     public ResponseEntity<Void> upsert(
             @PathVariable UUID tourOperatorId,

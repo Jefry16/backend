@@ -25,4 +25,16 @@ public interface ExperienceTranslationRepository {
      * its own slug on re-upsert).
      */
     boolean existsByOperatorLocaleSlug(UUID tourOperatorId, String locale, String slug, UUID excludingExperienceId);
+
+    /**
+     * Whether any experience of this operator uses this slug as a localized slug
+     * in <em>any</em> locale. The storefront resolves a slug against localized
+     * slugs first and canonical ones second, so the two namespaces are read as one
+     * and must be validated as one (PATTERNS §4d) — a canonical slug equal to
+     * another experience's localized slug silently shadows it in that locale.
+     *
+     * <p>No exclusion parameter: the only caller is experience creation, which has
+     * no id to exclude yet.
+     */
+    boolean existsBySlugInAnyLocale(UUID tourOperatorId, String slug);
 }
