@@ -385,6 +385,20 @@ show. Merge `--no-ff` (this repo is 30/30 merge commits), delete the branch, pus
 - A stale `target/` after switching branches can produce a **`BUILD FAILURE` with no
   failing test in the output**. Re-run before reporting it; it has already cost one
   false alarm on a branch that was green.
+- **Never probe by writing into `src/main/resources/db/migration/`.** `contextLoads`
+  boots the real application, so Flyway **applies** whatever is sitting there to the dev
+  database — a throwaway migration becomes a permanent row in
+  `<schema>.flyway_schema_history`, and its DDL really runs. A probe that narrowed an
+  audit CHECK constraint did exactly that, and the damage was invisible for a whole
+  review round: the migrations applied cleanly, the suite went green, and it only
+  surfaced later as a checksum mismatch when the probe was recreated with different
+  content. Probe against a **scratch copy of the directory**, or accept that you are
+  editing the database. Repairing it means restoring the DDL to what the real migration
+  declares *and* deleting the probe rows from the history table.
+- **Deleting a file under `src/main/resources` does not remove it from the build.**
+  Maven copies resources into `target/classes` and never prunes; Flyway and every other
+  classpath reader see the stale copy, so the deleted migration keeps running. Clear
+  `target/classes/...` too, or the cleanup looks done and is not.
 - Python string surgery fails silently. `assert old in s` on every replacement, or
   match on content rather than guessing indentation. Verify the file afterwards.
 - Removing `@Component` from a class that gains a test constructor leaves Spring with
