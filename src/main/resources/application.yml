@@ -52,8 +52,14 @@ spring:
     placeholder-replacement: false
   servlet:
     multipart:
-      max-file-size: 510MB
-      max-request-size: 510MB
+      # The container spools the whole part before any handler runs, so this
+      # ceiling is the real guard (RequestSizeLimitFilter exempts multipart for
+      # exactly this reason). Kept just above the largest app cap — media's 25 MB;
+      # the avatar's is 5 MB — so a marginally oversize upload still gets the
+      # app's own 422 and anything absurd is refused before it is read.
+      # MultipartLimitsTest fails the build if this drifts from the app caps.
+      max-file-size: 30MB
+      max-request-size: 32MB
 
 server:
   tomcat:
