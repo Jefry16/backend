@@ -151,6 +151,15 @@ ceremony survives:
   Only `@RequestBody(required = false)` makes it live. This one is settled by a
   probe test in thirty seconds; reading the annotation is what gets it wrong.
 
+**Check the `ListSchema` against what the screen is for.** A list can use the shared
+framework correctly and still be unusable: the contact inbox is cursor-paginated,
+tenant-scoped and filterable by name/email/subject — and not by **unread**, the one
+axis an inbox is read along. `read_at IS NULL` is not expressible because `FilterOp`
+has no null operator. Client-side filtering of the current page looks like a
+workaround and is not one, because the rest is behind the cursor. For each list, name
+the first filter its screen would offer and check the schema can express it; `slots`
+failed the same test on a date range.
+
 ### Auditing a worker module (`notification`)
 
 No endpoints, no domain, no presentation — §1's ratios measure nothing, but §4's
