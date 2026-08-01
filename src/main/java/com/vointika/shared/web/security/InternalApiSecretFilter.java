@@ -15,15 +15,15 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 
 /**
- * Gates {@code /api/internal/**} with a shared-secret header.
+ * Gates {@code /api/storefront/**} with a shared-secret header.
  *
- * <p>Runs before {@link JwtAuthenticationFilter}. Non-{@code /api/internal/**}
+ * <p>Runs before {@link JwtAuthenticationFilter}. Non-{@code /api/storefront/**}
  * paths pass through untouched. For matching paths, the filter compares
  * {@code X-Internal-Secret} against the configured secret using a constant-time
  * byte comparison; mismatch returns 401 with the standard error body and the
  * request is short-circuited (no downstream filters or handlers run).
  *
- * <p>Bound to {@code /api/internal/**} so the public storefront routes (which
+ * <p>Bound to {@code /api/storefront/**} so the public storefront routes (which
  * are also wired via {@link PublicRouteRegistrar} for JWT exemption) get
  * authenticated via shared secret instead. JWT auth does not apply on this
  * path family.
@@ -31,7 +31,7 @@ import java.time.Instant;
 public class InternalApiSecretFilter extends OncePerRequestFilter {
 
     public static final String HEADER_NAME = "X-Internal-Secret";
-    private static final String PATH_PREFIX = "/api/internal/";
+    private static final String PATH_PREFIX = "/api/storefront/";
 
     private final byte[] expectedDigest;
 

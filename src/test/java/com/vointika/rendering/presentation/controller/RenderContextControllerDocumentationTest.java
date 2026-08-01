@@ -100,7 +100,7 @@ class RenderContextControllerDocumentationTest {
     void getShopRenderContext() throws Exception {
         when(getShopUseCase.execute(eq(SLUG), isNull())).thenReturn(shopContext());
 
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/shop", SLUG)
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shop.slug").value(SLUG))
@@ -135,20 +135,20 @@ class RenderContextControllerDocumentationTest {
     void getShopRenderContextInARequestedLocale() throws Exception {
         when(getShopUseCase.execute(SLUG, "es")).thenReturn(shopContext());
 
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/shop?locale=es", SLUG)
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop?locale=es", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
                 .andExpect(status().isOk());
     }
 
     @Test
     void rejectsACallWithoutTheSharedSecret() throws Exception {
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/shop", SLUG))
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void rejectsACallWithTheWrongSharedSecret() throws Exception {
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/shop", SLUG)
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, "not-the-secret"))
                 .andExpect(status().isUnauthorized());
     }
@@ -157,7 +157,7 @@ class RenderContextControllerDocumentationTest {
     void verifyStorefrontPassword() throws Exception {
         when(verifyPasswordUseCase.execute(SLUG, "opensesame")).thenReturn(true);
 
-        mockMvc.perform(post("/api/internal/storefront/{tenantSlug}/verify-password", SLUG)
+        mockMvc.perform(post("/api/storefront/{tenantSlug}/verify-password", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, SECRET)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\":\"opensesame\"}")
@@ -181,7 +181,7 @@ class RenderContextControllerDocumentationTest {
     void aWrongPasswordIsStillTwoHundred() throws Exception {
         when(verifyPasswordUseCase.execute(SLUG, "guess")).thenReturn(false);
 
-        mockMvc.perform(post("/api/internal/storefront/{tenantSlug}/verify-password", SLUG)
+        mockMvc.perform(post("/api/storefront/{tenantSlug}/verify-password", SLUG)
                         .header(InternalApiSecretFilter.HEADER_NAME, SECRET)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\":\"guess\"}")

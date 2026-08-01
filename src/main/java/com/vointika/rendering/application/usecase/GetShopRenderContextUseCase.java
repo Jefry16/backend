@@ -7,7 +7,7 @@ import com.vointika.rendering.application.service.TenantResolver;
  * Resolves a storefront request's tenant and locale — the first thing every
  * public page render does, and all the password gate ever needs.
  *
- * <p>Unauthenticated in the JWT sense: {@code /api/internal/**} is gated by the
+ * <p>Unauthenticated in the JWT sense: {@code /api/storefront/**} is gated by the
  * shared secret instead, so the only caller is the storefront BFF.
  */
 public class GetShopRenderContextUseCase {

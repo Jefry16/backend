@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * The storefront's internal surface is exempt from JWT authentication — but not
- * from authentication. {@code InternalApiSecretFilter} gates every
- * {@code /api/internal/**} path on the shared secret and short-circuits a
+ * The storefront's server-to-server surface is exempt from JWT authentication —
+ * but not from authentication. {@code InternalApiSecretFilter} gates every
+ * {@code /api/storefront/**} path on the shared secret and short-circuits a
  * mismatch with 401 before any handler runs; this registrar only stops Spring
  * Security's {@code anyRequest().authenticated()} from demanding a JWT that a
  * server-to-server caller will never have.
@@ -21,11 +21,8 @@ public class RenderingPublicRoutes implements PublicRouteRegistrar {
     @Override
     public List<PublicRoute> publicRoutes() {
         return List.of(
-                new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/shop"),
-                new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/experience-list"),
-                new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/experience/*"),
-                new PublicRoute(HttpMethod.GET, "/api/internal/render-context/*/page/*"),
-                new PublicRoute(HttpMethod.POST, "/api/internal/storefront/*/verify-password")
+                new PublicRoute(HttpMethod.GET, "/api/storefront/render-context/*/shop"),
+                new PublicRoute(HttpMethod.POST, "/api/storefront/*/verify-password")
         );
     }
 }

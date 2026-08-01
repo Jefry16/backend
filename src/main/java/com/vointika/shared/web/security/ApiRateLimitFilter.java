@@ -30,7 +30,7 @@ import java.time.Instant;
  * API domain is deliberately un-proxied (grey-cloud, for the SameSite
  * cookie), so this app-side filter is the only place such a cap can live.
  *
- * <p>Scoped to JWT-authenticated requests only: {@code /api/internal/**}
+ * <p>Scoped to JWT-authenticated requests only: {@code /api/storefront/**}
  * (worker traffic, shared-secret auth) and unauthenticated/public routes
  * pass through untouched. Same fail-open posture and 429 shape as
  * {@link EndpointRateLimitFilter}.
@@ -39,7 +39,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
 
     static final int LIMIT = 300;
     static final Duration WINDOW = Duration.ofMinutes(1);
-    private static final String INTERNAL_PREFIX = "/api/internal/";
+    private static final String STOREFRONT_PREFIX = "/api/storefront/";
 
     private final ObjectProvider<RateLimiterPort> rateLimiterProvider;
     private final boolean enabled;
@@ -54,7 +54,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        if (!enabled || request.getRequestURI().startsWith(INTERNAL_PREFIX)) {
+        if (!enabled || request.getRequestURI().startsWith(STOREFRONT_PREFIX)) {
             filterChain.doFilter(request, response);
             return;
         }

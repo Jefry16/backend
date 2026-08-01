@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * resolves EXPERIENCE and PAGE link targets through the same two queries.
  */
 @RestController
-@RequestMapping("/api/internal/render-context/{tenantSlug}")
+@RequestMapping("/api/storefront/render-context/{tenantSlug}")
 public class RenderContextController {
 
     private final GetShopRenderContextUseCase getShopUseCase;

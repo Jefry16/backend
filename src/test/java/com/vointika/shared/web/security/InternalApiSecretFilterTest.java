@@ -13,7 +13,7 @@ class InternalApiSecretFilterTest {
     private final InternalApiSecretFilter filter = new InternalApiSecretFilter(SECRET);
 
     private static MockHttpServletRequest internalRequest(String headerValue) {
-        MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/internal/render-context/foo");
+        MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/storefront/render-context/foo");
         if (headerValue != null) {
             req.addHeader(InternalApiSecretFilter.HEADER_NAME, headerValue);
         }

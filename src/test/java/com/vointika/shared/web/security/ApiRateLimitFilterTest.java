@@ -55,7 +55,7 @@ class ApiRateLimitFilterTest {
     @Test
     void internalPathPassesThroughEvenWithAuthentication() throws Exception {
         authenticate();
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/internal/carts");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/storefront/carts");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         enabledFilter().doFilter(request, response, chain);

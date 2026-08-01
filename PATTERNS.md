@@ -282,7 +282,7 @@ never sortable — it's nullable and keyset cursors need non-null sort keys).
 Canonical: any experience/audience mutating use case; the port impl lives in
 `audit/infrastructure/integration`.
 
-## 8c. Internal (BFF) endpoints — `/api/internal/**`
+## 8c. BFF endpoints — `/api/storefront/**`
 
 The public storefront never talks to this API: its BFF does, server-to-server.
 That surface is authenticated by a **shared secret**, not a JWT. Page reads live
@@ -290,7 +290,7 @@ in `rendering`; an internal endpoint that *mutates* belongs to the context ownin
 the data (a cart write is cart's, not rendering's) and brings its own registrar.
 Adding one:
 
-1. Map it under `/api/internal/…` and take the tenant as a **slug** path
+1. Map it under `/api/storefront/…` and take the tenant as a **slug** path
    variable — the storefront knows tenants by subdomain, not by id.
 2. Register the exact pattern in `RenderingPublicRoutes` (a
    `PublicRouteRegistrar`). This does **not** make it public: it only stops

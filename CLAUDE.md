@@ -70,7 +70,7 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 ### Two API surfaces, two auth models
 
 1. **The admin/operator API** — JWT bearer tokens. Tenant-scoped routes live under `/api/tour-operators/{tourOperatorId}/**` and are gated in **two layers**: a membership interceptor (non-member → **404**, byte-identical to a missing operator) plus per-use-case role gates (`ensureAdmin`/`ensureOwner`) through the `TourOperatorMembershipCheck` port. Authorization belongs in the use case, not only the router — the router's matching is looser than the id binder, which is how an IDOR got in once.
-2. **The internal BFF API** — `/api/internal/**`, called server-to-server by the storefront Worker, authenticated by the `X-Internal-Secret` shared secret rather than a JWT. Tenants are addressed by **slug**, and one call returns a whole page's render context. See PATTERNS §8c before adding one — the registrar step is easy to miss and fails in a way that makes tests pass vacuously.
+2. **The BFF API** — `/api/storefront/**`, called server-to-server by the storefront Worker, authenticated by the `X-Internal-Secret` shared secret rather than a JWT. Tenants are addressed by **slug**, and one call returns a whole page's render context. See PATTERNS §8c before adding one — the registrar step is easy to miss and fails in a way that makes tests pass vacuously.
 
 Public (unauthenticated) routes are opt-in per context via the `PublicRouteRegistrar` SPI; rate-limit rules likewise via `RateLimitRuleRegistrar`. Never add either to a central hardcoded map.
 

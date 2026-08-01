@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * BFF posts here.
  */
 @RestController
-@RequestMapping("/api/internal/storefront/{tenantSlug}")
+@RequestMapping("/api/storefront/{tenantSlug}")
 public class StorefrontController {
 
     private final VerifyStorefrontPasswordUseCase verifyPasswordUseCase;
