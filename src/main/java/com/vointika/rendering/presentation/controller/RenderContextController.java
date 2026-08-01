@@ -48,7 +48,7 @@ public class RenderContextController {
      *
      * @param locale the locale from the URL prefix, omitted for the bare path
      */
-    @GetMapping("/shop")
+    @GetMapping
     public ResponseEntity<ShopRenderContextResponse> shop(
             @PathVariable String tenantSlug,
             @RequestParam(required = false) String locale) {

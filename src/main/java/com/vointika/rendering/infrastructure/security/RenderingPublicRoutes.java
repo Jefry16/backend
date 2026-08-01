@@ -21,7 +21,7 @@ public class RenderingPublicRoutes implements PublicRouteRegistrar {
     @Override
     public List<PublicRoute> publicRoutes() {
         return List.of(
-                new PublicRoute(HttpMethod.GET, "/api/storefront/render-context/*/shop"),
+                new PublicRoute(HttpMethod.GET, "/api/storefront/render-context/*"),
                 new PublicRoute(HttpMethod.POST, "/api/storefront/*/verify-password")
         );
     }

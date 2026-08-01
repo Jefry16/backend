@@ -100,7 +100,7 @@ class RenderContextControllerDocumentationTest {
     void getShopRenderContext() throws Exception {
         when(getShopUseCase.execute(eq(SLUG), isNull())).thenReturn(shopContext());
 
-        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG)
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}", SLUG)
                         .header(StorefrontApiSecretFilter.HEADER_NAME, SECRET))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shop.slug").value(SLUG))
@@ -135,20 +135,20 @@ class RenderContextControllerDocumentationTest {
     void getShopRenderContextInARequestedLocale() throws Exception {
         when(getShopUseCase.execute(SLUG, "es")).thenReturn(shopContext());
 
-        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop?locale=es", SLUG)
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}?locale=es", SLUG)
                         .header(StorefrontApiSecretFilter.HEADER_NAME, SECRET))
                 .andExpect(status().isOk());
     }
 
     @Test
     void rejectsACallWithoutTheSharedSecret() throws Exception {
-        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG))
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}", SLUG))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void rejectsACallWithTheWrongSharedSecret() throws Exception {
-        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG)
+        mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}", SLUG)
                         .header(StorefrontApiSecretFilter.HEADER_NAME, "not-the-secret"))
                 .andExpect(status().isUnauthorized());
     }
