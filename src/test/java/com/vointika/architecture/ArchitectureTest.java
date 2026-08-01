@@ -22,7 +22,9 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
  * <p>Bounded contexts are isolated from each other — they communicate via events
  * (Kafka, over {@code shared}) or shared query ports, never direct imports. Only
  * {@code shared} may be imported by every context, and {@code reference} is a
- * shared-kernel-like read module other contexts may import (it imports none).
+ * shared-kernel-like read module other contexts may import; it imports nothing but
+ * {@code shared} (the flag-URL resolver) — not "nothing", which this sentence
+ * claimed until the {@code reference} audit checked it.
  * Context isolation is derived from the package structure, so a new context is
  * fenced the day it appears — no rule to remember to add.
  *
