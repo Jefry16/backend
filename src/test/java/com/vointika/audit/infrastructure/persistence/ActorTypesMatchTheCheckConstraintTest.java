@@ -39,6 +39,8 @@ class ActorTypesMatchTheCheckConstraintTest {
 
     private static final Path MIGRATIONS = Path.of("src/main/resources/db/migration/audit");
 
+    private static final Pattern VERSION = Pattern.compile("^V(\\d+)__");
+
     /** The value list of the last statement that defines the actor_type check. */
     private static final Pattern ACTOR_TYPE_CHECK =
             Pattern.compile("actor_type\\s+IN\\s*\\(([^)]*)\\)", Pattern.CASE_INSENSITIVE);
@@ -71,12 +73,18 @@ class ActorTypesMatchTheCheckConstraintTest {
      * Reads the migrations in version order and keeps the <em>last</em> actor_type
      * check it finds, so a later migration that replaces the constraint wins over
      * the one V1 created. Union-ing them would let a narrowing migration pass.
+     *
+     * <p>Ordered on the parsed version, not the filename: lexicographically
+     * {@code V10} sorts before {@code V1}, which would silently keep the wrong
+     * constraint once the history is long enough — the very hole this method's
+     * ordering exists to close. A filename that is not {@code V<int>__name.sql}
+     * throws here rather than mis-sorting quietly.
      */
     private static Set<String> allowedActorTypes() throws IOException {
         List<Path> files;
         try (Stream<Path> paths = Files.list(MIGRATIONS)) {
             files = paths.filter(p -> p.toString().endsWith(".sql"))
-                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .sorted(Comparator.comparingInt(ActorTypesMatchTheCheckConstraintTest::version))
                     .toList();
         }
 
@@ -95,5 +103,17 @@ class ActorTypesMatchTheCheckConstraintTest {
             }
         }
         return latest;
+    }
+
+    private static int version(Path migration) {
+        String name = migration.getFileName().toString();
+        Matcher matcher = VERSION.matcher(name);
+        if (!matcher.find()) {
+            throw new IllegalStateException(
+                    "Migration '" + name + "' is not V<int>__name.sql, so this test cannot order it "
+                            + "against the others. Teach the parser the new scheme — silently "
+                            + "mis-ordering would let a narrowing constraint through.");
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 }
