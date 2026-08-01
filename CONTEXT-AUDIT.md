@@ -231,9 +231,21 @@ nothing. Then **mutation-test whichever you added**:
 ```bash
 cp "$F" /tmp/probe.bak                     # never `git checkout` uncommitted work
 # add a FIELD of the forbidden type — not an import
+grep -c "<the thing you just inserted>" "$F"   # PROVE the mutation landed
 timeout 590 ./mvnw -o test -Dtest=ArchitectureTest 2>&1 | grep -cE "was violated"
 cp /tmp/probe.bak "$F"
 ```
+
+**Confirm the mutation applied before believing the result.** A `sed` that matches
+nothing leaves the file untouched, the suite green, and the conclusion "the rule has
+a hole" or "their test is fake" — both wrong, from a command that silently did
+nothing. It has happened on a wrong type name (`AudienceTranslationRequest` for
+`UpsertAudienceTranslationRequest`) and on a wrong package. One `grep -c` between
+the edit and the run costs nothing and removes the whole class of error.
+
+**This applies to reviewing a pass as much as running one.** A reviewer
+mutation-testing someone else's rule is one silent non-match away from calling a
+sound test worthless.
 
 **ArchUnit reads bytecode.** An unused import emits none, so an import-only probe
 passes under any rule — I "proved" a hole that way and was wrong.
@@ -278,6 +290,9 @@ show. Merge `--no-ff` (this repo is 30/30 merge commits), delete the branch, pus
 - `grep -m` is unsupported here; `(public |)` is an invalid empty alternation.
 - Paths beginning `-` are eaten as flags by `tar`, `ls`, `grep` — prefix with `./`.
 - `git checkout <file>` silently discards **uncommitted** edits to that file.
+- A stale `target/` after switching branches can produce a **`BUILD FAILURE` with no
+  failing test in the output**. Re-run before reporting it; it has already cost one
+  false alarm on a branch that was green.
 - Python string surgery fails silently. `assert old in s` on every replacement, or
   match on content rather than guessing indentation. Verify the file afterwards.
 - Removing `@Component` from a class that gains a test constructor leaves Spring with
