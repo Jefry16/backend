@@ -93,9 +93,20 @@ invent new limits.
 - read is member-visible;
 - delete is ADMIN+, audited.
 
-Endpoints under `/api/tour-operators/{id}/translations/{locale}` following the
-existing translation controllers. `seo_title`/`seo_description` also gain
-canonical fields on the operator's own update path.
+Endpoints — verified against `ExperienceTranslationController` and
+`PageTranslationController`, which are identical to each other. The operator *is*
+the entity, so there is no nested id segment:
+
+```
+@RequestMapping("/api/tour-operators/{tourOperatorId}/translations")
+  GET            list every translated locale
+  GET    /{locale}
+  PUT    /{locale}
+  DELETE /{locale}
+```
+
+`seo_title`/`seo_description` also gain canonical fields on the operator's own
+update path.
 
 **`experience`** — add the two fields to the entity, JPA entity, mappers, the
 `ExperienceInput`/request records and the translation upsert. No new use case.
