@@ -48,6 +48,13 @@ against a target. `identity` ran 6.4 files/endpoint and 34 LOC/file — mid-pack
 lines, heaviest on files. That shape means ceremony, not verbosity, and it points at
 DTO layers and the domain/JPA double model.
 
+**The ratio is a pointer, not a verdict.** `reference` runs 10.6 files/endpoint, the
+highest anywhere, and every file is earned: three aggregates × the six-file
+persistence recipe (§3), serving one read endpoint each, plus §4's nested-only
+variant for `Country`. A context with N tables and N read endpoints cannot score
+well on a per-endpoint metric and nothing is wrong with it. Follow the ratio to the
+file list, then say which recipe explains it — or which does not.
+
 ### If the target has no endpoints
 
 `shared` and `notification` have none, so the ratios above measure nothing and §4's
@@ -181,6 +188,11 @@ pre-check was made case-sensitive, which is the bug `audience/V2` exists to fix.
 When an invariant lives in the adapter's *choice of query*, the test belongs on the
 adapter. Suspect this wherever a domain method name is vaguer than what it does
 (`existsByTourOperatorIdAndName` that ignores case).
+
+**A removal can also come back clean, and that is worth reporting.** `reference` dropped
+its `/countries` endpoint and left no orphan repository, use case or route — the exact
+check that found rot in `pickup` found nothing here. Run it both ways and say which
+answer you got; "audited the removal, nothing left behind" is a result.
 
 **When the context's history includes a removal, audit the removal.** Migrations are
 immutable, so a dropped feature leaves a create-then-drop pair on purpose — that part
