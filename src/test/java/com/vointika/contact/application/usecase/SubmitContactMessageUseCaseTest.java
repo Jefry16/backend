@@ -144,6 +144,21 @@ class SubmitContactMessageUseCaseTest {
     }
 
     @Test
+    void a_throttled_flood_of_garbage_still_costs_a_token() {
+        when(rateLimiter.tryAcquire(eq("rl:contact:tenant:" + OP), anyInt(), any(Duration.class)))
+                .thenReturn(false);
+
+        // The throttle must run BEFORE the value objects validate. Reorder them
+        // and this submission fails validation instead — which would make a
+        // flood of malformed messages cheaper to send than real ones, and free.
+        assertThatThrownBy(() -> submit("Laura", "not-an-email", "", ""))
+                .isInstanceOf(TooManyRequestsException.class);
+
+        verify(rateLimiter).tryAcquire(eq("rl:contact:tenant:" + OP), anyInt(), any(Duration.class));
+        verify(messageRepository, never()).save(any());
+    }
+
+    @Test
     void an_unknown_storefront_is_not_found() {
         assertThatThrownBy(() -> useCase.execute("nobody", null, "a@b.com", "Hi", "Hello"))
                 .isInstanceOf(ResourceNotFoundException.class);
