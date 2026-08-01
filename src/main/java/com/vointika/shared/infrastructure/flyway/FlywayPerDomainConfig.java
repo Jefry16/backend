@@ -46,8 +46,11 @@ public class FlywayPerDomainConfig {
             // schema available first is cleanest).
             "audience",
             // pickup FKs into touroperator.tour_operators + identity.users, so it
-            // must come after both; before experience for the same reason as
-            // audience (slots snapshot the pickup catalog by bare id).
+            // must come after both. Its position relative to experience is
+            // UNCONSTRAINED: the slot<->pickup snapshot table that once justified
+            // going first was dropped in experience/V6 and slots know nothing about
+            // pickups. Left here because reordering an applied sequence buys
+            // nothing.
             "pickup",
             // experience FKs into touroperator.tour_operators + identity.users
             // (media ids are bare, no FK), so it must come after both.
