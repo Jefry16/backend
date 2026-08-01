@@ -25,4 +25,6 @@ public interface ExperienceTranslationJpaRepository
 
     boolean existsByTourOperatorIdAndLocaleAndSlugAndExperienceIdNot(
             UUID tourOperatorId, String locale, String slug, UUID experienceId);
+
+    boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
 }

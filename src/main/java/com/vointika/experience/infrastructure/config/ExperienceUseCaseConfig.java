@@ -46,14 +46,16 @@ public class ExperienceUseCaseConfig {
     @Bean
     public CreateExperienceUseCase createExperienceUseCase(
             ExperienceRepository experienceRepository,
+            ExperienceTranslationRepository translationRepository,
             MediaReferenceValidator mediaReferenceValidator,
             TourOperatorMembershipCheck membershipCheck,
             SlugGenerator slugGenerator,
             IdGenerator idGenerator,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new CreateExperienceUseCase(experienceRepository, mediaReferenceValidator,
-                membershipCheck, slugGenerator, idGenerator, transactionRunner, auditTrailPort);
+        return new CreateExperienceUseCase(experienceRepository, translationRepository,
+                mediaReferenceValidator, membershipCheck, slugGenerator, idGenerator,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean

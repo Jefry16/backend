@@ -34,12 +34,16 @@ import java.util.function.Function;
  * <p>Guards: caller not ADMIN+ → 403; experience not under this operator → 404;
  * bad-shape or unsupported locale → 422 (the locale must be in the operator's
  * supported set — {@link OperatorLocalesQuery}); an explicit localized slug
- * already used by another experience for this operator+locale → 409. A blank
- * field is treated as untranslated (null → falls back to canonical).
+ * already used by another experience — as a localized slug in this locale, or as
+ * its canonical slug — → 409. A blank field is treated as untranslated (null →
+ * falls back to canonical).
  *
  * <p>Slug precedence: an explicit slug is validated + uniqueness-probed (no
  * auto-suffix — the admin chose it); else a translated {@code name} derives a
- * unique localized slug (auto-suffix); else null. No audit (no audit context yet).
+ * unique localized slug (auto-suffix); else null. Both probe <em>both</em>
+ * namespaces: the storefront resolves a slug against localized slugs first and
+ * canonical ones second, so a slug taken from either shadows the other (PATTERNS
+ * §4d). No audit (no audit context yet).
  */
 public class UpsertExperienceTranslationUseCase {
 
@@ -106,11 +110,18 @@ public class UpsertExperienceTranslationUseCase {
                 throw new ResourceAlreadyExistsException(
                         "The localized slug '" + slug.value() + "' is already in use for this language");
             }
+            // Excluding this experience: matching its own canonical slug resolves
+            // to the same experience, so only another one's is a clash.
+            if (experienceRepository.existsByTourOperatorIdAndSlugExcluding(operatorId, slug.value(), experienceId)) {
+                throw new ResourceAlreadyExistsException(
+                        "Another experience already uses '" + slug.value() + "' as its slug");
+            }
             return slug;
         }
         if (name != null) {
             return slugGenerator.generateUnique(name.value(), candidate ->
-                    translationRepository.existsByOperatorLocaleSlug(operatorId, locale.value(), candidate, experienceId));
+                    translationRepository.existsByOperatorLocaleSlug(operatorId, locale.value(), candidate, experienceId)
+                            || experienceRepository.existsByTourOperatorIdAndSlugExcluding(operatorId, candidate, experienceId));
         }
         return null;
     }

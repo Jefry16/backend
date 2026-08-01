@@ -52,4 +52,9 @@ public class ExperienceRepositoryImpl implements ExperienceRepository {
     public boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug) {
         return jpaRepository.existsByTourOperatorIdAndSlug(tourOperatorId, slug);
     }
+
+    @Override
+    public boolean existsByTourOperatorIdAndSlugExcluding(UUID tourOperatorId, String slug, UUID excludeExperienceId) {
+        return jpaRepository.existsByTourOperatorIdAndSlugAndIdNot(tourOperatorId, slug, excludeExperienceId);
+    }
 }

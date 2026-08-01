@@ -272,6 +272,22 @@ complete in isolation; together they let one page shadow another and vanish from
 locale. The tell is a `.or(...)` / fallback chain in a read adapter — follow it back
 and list every writer of each branch. Recipe in PATTERNS §4d.
 
+**"Every writer" means every path that *produces* the value, not every path that
+*accepts* one.** The `page` pass predicted the same defect in `experience` and filed it
+as Debt — correctly — but sized it as one write path, reasoning that experience slugs
+are immutable so there is no rename to guard. True, and beside the point: the create
+path *generated* a canonical slug while probing only its own table, so generation was a
+second door. Immutability rules out later edits; it says nothing about the write that
+sets the value in the first place. When you enumerate writers, list the derivers
+alongside the setters.
+
+**A predicted defect is worth filing even when it costs a second pass.** The `page`
+audit found the twin in `experience`, verified it, and left it — in scope terms that was
+right, and the entry is what made the fix cheap two weeks later. What the entry could
+not do is be trusted as a *scope estimate*: it was written from the outside, and the
+implementing pass still had to enumerate the write paths itself. File the finding, not
+the plan.
+
 **A guard inside a state transition defends that transition and nothing else.**
 `experience` enforced "a cancelled slot is terminal" inside `Slot.changeStatus`, so
 the capacity-only `PATCH` — which never calls it — edited cancelled slots and audited

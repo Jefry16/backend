@@ -133,6 +133,40 @@ class UpsertExperienceTranslationUseCaseTest {
     }
 
     @Test
+    void explicitSlugMatchingAnotherExperiencesCanonicalSlugIs409() {
+        when(experienceRepository.existsByTourOperatorIdAndSlugExcluding(operatorId, "buceo", experienceId))
+                .thenReturn(true);
+        assertThrows(ResourceAlreadyExistsException.class,
+                () -> useCase.execute(operatorId, experienceId, "es", input("X", "buceo"), callerId));
+        verify(translationRepository, never()).upsert(any());
+    }
+
+    // The guard excludes this experience, so its own canonical slug is not a clash —
+    // it resolves to the same experience. Pins the Excluding half of the query.
+    @Test
+    void explicitSlugMatchingItsOwnCanonicalSlugIsAllowed() {
+        when(experienceRepository.existsByTourOperatorIdAndSlug(operatorId, "buceo")).thenReturn(true);
+
+        useCase.execute(operatorId, experienceId, "es", input("Buceo", "buceo"), callerId);
+
+        ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
+        verify(translationRepository).upsert(saved.capture());
+        assertEquals("buceo", saved.getValue().slug().value());
+    }
+
+    @Test
+    void derivedSlugSkipsAnotherExperiencesCanonicalSlug() {
+        when(experienceRepository.existsByTourOperatorIdAndSlugExcluding(
+                operatorId, "buceo-al-atardecer", experienceId)).thenReturn(true);
+
+        useCase.execute(operatorId, experienceId, "es", input("Buceo al atardecer", null), callerId);
+
+        ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
+        verify(translationRepository).upsert(saved.capture());
+        assertEquals("buceo-al-atardecer-2", saved.getValue().slug().value());
+    }
+
+    @Test
     void unknownExperienceIs404() {
         when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class,

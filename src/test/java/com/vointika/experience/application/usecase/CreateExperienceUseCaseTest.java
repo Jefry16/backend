@@ -4,6 +4,7 @@ import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
+import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -34,6 +35,7 @@ class CreateExperienceUseCaseTest {
     private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private ExperienceRepository repository;
+    private ExperienceTranslationRepository translationRepository;
     private MediaReferenceValidator mediaValidator;
     private TourOperatorMembershipCheck membershipCheck;
     private CreateExperienceUseCase useCase;
@@ -45,6 +47,7 @@ class CreateExperienceUseCaseTest {
     @BeforeEach
     void setUp() {
         repository = mock(ExperienceRepository.class);
+        translationRepository = mock(ExperienceTranslationRepository.class);
         mediaValidator = mock(MediaReferenceValidator.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         IdGenerator idGenerator = mock(IdGenerator.class);
@@ -55,8 +58,8 @@ class CreateExperienceUseCaseTest {
             @Override public <T> T call(Supplier<T> work) { return work.get(); }
             @Override public void run(Runnable work) { work.run(); }
         };
-        useCase = new CreateExperienceUseCase(repository, mediaValidator, membershipCheck,
-                new SlugGenerator(), idGenerator, tx, auditTrailPort);
+        useCase = new CreateExperienceUseCase(repository, translationRepository, mediaValidator,
+                membershipCheck, new SlugGenerator(), idGenerator, tx, auditTrailPort);
     }
 
     private ExperienceInput input(String name) {
@@ -76,6 +79,19 @@ class CreateExperienceUseCaseTest {
         org.junit.jupiter.api.Assertions.assertFalse(saved.getValue().isPublished());
         assertEquals("dive-trip", saved.getValue().getSlug().value());
         assertEquals(callerId, saved.getValue().getCreatedBy());
+    }
+
+    // The generated slug is derived, not operator-chosen, so a clash with a
+    // localized slug auto-suffixes rather than answering 409.
+    @Test
+    void generatedSlugSkipsAnExistingLocalizedSlug() {
+        when(translationRepository.existsBySlugInAnyLocale(operatorId, "dive-trip")).thenReturn(true);
+
+        useCase.execute(operatorId, callerId, input("Dive Trip"));
+
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        assertEquals("dive-trip-2", saved.getValue().getSlug().value());
     }
 
     @Test

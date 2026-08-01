@@ -5,6 +5,7 @@ import com.vointika.experience.application.service.ExperienceInputMapper;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
+import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -24,14 +25,20 @@ import java.util.UUID;
  * ({@link ExperienceInputMapper}); media references are validated against the
  * operator's library ({@link MediaReferenceValidator}, 422 on a foreign id).
  *
- * <p>The canonical slug is generated per-operator; on a slug race the tx rolls
- * back and we retry with a fresh slug (mirrors CreateTourOperatorUseCase).
+ * <p>The canonical slug is generated per-operator, unique across <em>both</em>
+ * canonical and localized slugs: the storefront resolves a slug against localized
+ * slugs first and canonical ones second, so a canonical slug that lands on some
+ * experience's localized slug would shadow it (PATTERNS §4d). The slug is derived,
+ * not operator-chosen, so a collision auto-suffixes rather than answering 409. On a
+ * slug race the tx rolls back and we retry with a fresh slug (mirrors
+ * CreateTourOperatorUseCase).
  */
 public class CreateExperienceUseCase {
 
     private static final int MAX_SLUG_ATTEMPTS = 5;
 
     private final ExperienceRepository experienceRepository;
+    private final ExperienceTranslationRepository translationRepository;
     private final MediaReferenceValidator mediaReferenceValidator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final SlugGenerator slugGenerator;
@@ -40,6 +47,7 @@ public class CreateExperienceUseCase {
     private final AuditTrailPort auditTrailPort;
 
     public CreateExperienceUseCase(ExperienceRepository experienceRepository,
+                                   ExperienceTranslationRepository translationRepository,
                                    MediaReferenceValidator mediaReferenceValidator,
                                    TourOperatorMembershipCheck membershipCheck,
                                    SlugGenerator slugGenerator,
@@ -47,6 +55,7 @@ public class CreateExperienceUseCase {
                                    TransactionRunner transactionRunner,
                                    AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
+        this.translationRepository = translationRepository;
         this.mediaReferenceValidator = mediaReferenceValidator;
         this.membershipCheck = membershipCheck;
         this.slugGenerator = slugGenerator;
@@ -73,8 +82,9 @@ public class CreateExperienceUseCase {
 
         Experience saved = null;
         for (int attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
-            Slug slug = slugGenerator.generateUnique(name.value(),
-                    candidate -> experienceRepository.existsByTourOperatorIdAndSlug(tourOperatorId, candidate));
+            Slug slug = slugGenerator.generateUnique(name.value(), candidate ->
+                    experienceRepository.existsByTourOperatorIdAndSlug(tourOperatorId, candidate)
+                            || translationRepository.existsBySlugInAnyLocale(tourOperatorId, candidate));
             Experience experience = Experience.create(
                     idGenerator.newId(), tourOperatorId, callerUserId, slug,
                     name, description, longDescription, input.featured(),

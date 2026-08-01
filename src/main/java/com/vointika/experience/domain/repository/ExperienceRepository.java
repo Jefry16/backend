@@ -21,4 +21,7 @@ public interface ExperienceRepository {
 
     /** Whether this operator already has an experience with this slug (per-operator uniqueness). */
     boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
+
+    /** As above, ignoring one experience — its own canonical slug never clashes with itself. */
+    boolean existsByTourOperatorIdAndSlugExcluding(UUID tourOperatorId, String slug, UUID excludeExperienceId);
 }
