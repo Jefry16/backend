@@ -43,11 +43,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // The shared secret is pinned here rather than inherited from the environment:
-// `app.internal.shared-secret` has no default in application.yml (it is supplied
-// by APP_INTERNAL_SHARED_SECRET at runtime), and a test that authenticates
+// `app.storefront.shared-secret` has no default in application.yml (it is supplied
+// by APP_STOREFRONT_SHARED_SECRET at runtime), and a test that authenticates
 // against it must not depend on whoever's shell is running the suite.
 @WebMvcTest(controllers = {RenderContextController.class, StorefrontController.class},
-        properties = "app.internal.shared-secret=test-internal-secret")
+        properties = "app.storefront.shared-secret=test-storefront-secret")
 @ExtendWith(RestDocumentationExtension.class)
 // RenderingPublicRoutes is imported deliberately, not incidentally: without it
 // the chain's anyRequest().authenticated() rejects these paths with 401 even
@@ -59,7 +59,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RenderContextControllerDocumentationTest {
 
     private static final String SLUG = "acme";
-    private static final String SECRET = "test-internal-secret";
+    private static final String SECRET = "test-storefront-secret";
 
     private MockMvc mockMvc;
 

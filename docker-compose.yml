@@ -96,7 +96,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_JWT_SECRET: super-secret-key-change-me-in-production-must-be-at-least-32-chars
       APP_JWT_ACCESS_TOKEN_EXPIRATION_MS: 900000
-      APP_INTERNAL_SHARED_SECRET: ${APP_INTERNAL_SHARED_SECRET:-dev-internal-secret-change-me-in-production}
+      APP_STOREFRONT_SHARED_SECRET: ${APP_STOREFRONT_SHARED_SECRET:-dev-storefront-secret-change-me-in-production}
       # Dev email → the local SESv2 mock (the `ses` service). Dummy AWS creds
       # satisfy the SDK signer; the mock ignores them. Set APP_SES_ENDPOINT blank
       # + real creds to route to actual SES instead.

@@ -20,6 +20,25 @@ class StorefrontApiSecretFilterTest {
         return req;
     }
 
+    /**
+     * The header name is a wire contract: the storefront BFF sends this exact
+     * string on every call. Every other test here reaches for the constant, so
+     * changing its value used to break nothing — renaming it from
+     * {@code X-Internal-Secret} left the whole suite green, and the failure would
+     * have been every storefront request 401ing in production.
+     */
+    @Test
+    void theHeaderNameIsPinnedBecauseTheStorefrontSendsIt() {
+        assertThat(StorefrontApiSecretFilter.HEADER_NAME)
+                .withFailMessage(
+                        "The shared-secret header is named '%s'. Changing it is a coordinated "
+                                + "change with the storefront BFF, which sends it on every call — "
+                                + "update src/lib/internalApi.ts in the storefront repo in the same "
+                                + "breath, or every request 401s.",
+                        StorefrontApiSecretFilter.HEADER_NAME)
+                .isEqualTo("X-Storefront-Secret");
+    }
+
     @Test
     void correctSecretPassesThrough() throws Exception {
         MockHttpServletResponse res = new MockHttpServletResponse();

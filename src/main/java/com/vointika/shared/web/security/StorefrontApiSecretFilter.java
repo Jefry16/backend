@@ -19,7 +19,7 @@ import java.time.Instant;
  *
  * <p>Runs before {@link JwtAuthenticationFilter}. Non-{@code /api/storefront/**}
  * paths pass through untouched. For matching paths, the filter compares
- * {@code X-Internal-Secret} against the configured secret using a constant-time
+ * {@code X-Storefront-Secret} against the configured secret using a constant-time
  * byte comparison; mismatch returns 401 with the standard error body and the
  * request is short-circuited (no downstream filters or handlers run).
  *
@@ -30,7 +30,7 @@ import java.time.Instant;
  */
 public class StorefrontApiSecretFilter extends OncePerRequestFilter {
 
-    public static final String HEADER_NAME = "X-Internal-Secret";
+    public static final String HEADER_NAME = "X-Storefront-Secret";
     private static final String PATH_PREFIX = "/api/storefront/";
 
     private final byte[] expectedDigest;
@@ -38,7 +38,7 @@ public class StorefrontApiSecretFilter extends OncePerRequestFilter {
     public StorefrontApiSecretFilter(String sharedSecret) {
         if (sharedSecret == null || sharedSecret.isBlank()) {
             throw new IllegalStateException(
-                    "app.internal.shared-secret must be configured (set APP_INTERNAL_SHARED_SECRET)");
+                    "app.storefront.shared-secret must be configured (set APP_STOREFRONT_SHARED_SECRET)");
         }
         this.expectedDigest = sha256(sharedSecret.getBytes(StandardCharsets.UTF_8));
     }
@@ -53,7 +53,7 @@ public class StorefrontApiSecretFilter extends OncePerRequestFilter {
         }
 
         // SECURITY: never log the received secret, the expected secret, or the
-        // X-Internal-Secret header value in any log line or response body. A
+        // X-Storefront-Secret header value in any log line or response body. A
         // generic exception handler upstream must also avoid reflecting request
         // headers, since this filter sits before @ControllerAdvice can reach.
         String provided = request.getHeader(HEADER_NAME);

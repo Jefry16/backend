@@ -295,7 +295,7 @@ Adding one:
 2. Register the exact pattern in `RenderingPublicRoutes` (a
    `PublicRouteRegistrar`). This does **not** make it public: it only stops
    `anyRequest().authenticated()` from demanding a JWT. `InternalApiSecretFilter`
-   still 401s any call whose `X-Internal-Secret` doesn't match, before any
+   still 401s any call whose `X-Storefront-Secret` doesn't match, before any
    handler runs. Forgetting the registrar → 401 even with the right secret;
    registering a pattern that doesn't exist → nothing (fail-closed both ways).
 3. Compose the **whole page** in one response. One internal call per page render
@@ -306,7 +306,7 @@ Adding one:
    boolean**, not 401 — a 401 on this surface means "bad shared secret" and
    nothing else. Unknown tenant and wrong answer must be indistinguishable.
 5. In a `@WebMvcTest`, `@Import` the registrar alongside `SecurityConfig` and pin
-   `app.internal.shared-secret` via `properties = …` (it has no default). Without
+   `app.storefront.shared-secret` via `properties = …` (it has no default). Without
    the registrar every assertion passes vacuously as 401.
 
 ## 8d. Losing a race against a unique constraint

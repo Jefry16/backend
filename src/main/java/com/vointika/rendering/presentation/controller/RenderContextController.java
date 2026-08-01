@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * response per page render.
  *
  * <p>Server-to-server: the only caller is the storefront BFF, authenticated by
- * {@code X-Internal-Secret} rather than a JWT. The one-call-per-page shape is
+ * {@code X-Storefront-Secret} rather than a JWT. The one-call-per-page shape is
  * deliberate — composition belongs here, where the domain lives, not fanned out
  * across the edge.
  *
