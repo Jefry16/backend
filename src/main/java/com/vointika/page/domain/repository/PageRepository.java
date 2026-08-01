@@ -18,6 +18,9 @@ public interface PageRepository {
 
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 
+    /** As above, ignoring one page — a page's own canonical handle never clashes with itself. */
+    boolean existsByTourOperatorIdAndHandleExcluding(UUID tourOperatorId, String handle, UUID excludePageId);
+
     CursorPage<PageListItem> list(ListQuery query);
 
     void delete(UUID pageId);

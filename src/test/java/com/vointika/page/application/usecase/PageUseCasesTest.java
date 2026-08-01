@@ -4,6 +4,7 @@ import com.vointika.page.application.dto.input.CreatePageInput;
 import com.vointika.page.application.dto.input.UpdatePageInput;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
+import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ForbiddenException;
@@ -38,6 +39,7 @@ class PageUseCasesTest {
     private static final UUID PAGE = UUID.fromString("bbbbbbbb-0000-4000-8000-000000000001");
 
     private PageRepository repository;
+    private PageTranslationRepository translationRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private IdGenerator idGenerator;
@@ -46,6 +48,7 @@ class PageUseCasesTest {
     @BeforeEach
     void setUp() {
         repository = mock(PageRepository.class);
+        translationRepository = mock(PageTranslationRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         idGenerator = mock(IdGenerator.class);
@@ -189,9 +192,33 @@ class PageUseCasesTest {
         verify(auditTrailPort).append(any());
     }
 
+    @Test
+    void createRejectsAHandleAnotherPageAlreadyUsesAsALocalizedHandle() {
+        when(repository.existsByTourOperatorIdAndHandle(OP, "sobre-nosotros")).thenReturn(false);
+        when(translationRepository.existsBySlugInAnyLocale(OP, "sobre-nosotros", null)).thenReturn(true);
+
+        assertThatThrownBy(() -> create().execute(new CreatePageInput(
+                USER, OP, "Sobre nosotros", "sobre-nosotros", "<p>x</p>", null, null)))
+                .isInstanceOf(ResourceAlreadyExistsException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void renameRejectsAHandleAnotherPageAlreadyUsesAsALocalizedHandle() {
+        when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
+        when(repository.existsByTourOperatorIdAndHandle(OP, "sobre-nosotros")).thenReturn(false);
+        when(translationRepository.existsBySlugInAnyLocale(OP, "sobre-nosotros", PAGE)).thenReturn(true);
+
+        assertThatThrownBy(() -> rename().execute(OP, PAGE, "sobre-nosotros", USER))
+                .isInstanceOf(ResourceAlreadyExistsException.class);
+
+        verify(repository, never()).save(any());
+    }
+
     private CreatePageUseCase create() {
-        return new CreatePageUseCase(repository, membershipCheck, idGenerator,
-                transactionRunner, auditTrailPort);
+        return new CreatePageUseCase(repository, translationRepository, membershipCheck,
+                idGenerator, transactionRunner, auditTrailPort);
     }
 
     private UpdatePageUseCase update() {
@@ -199,6 +226,7 @@ class PageUseCasesTest {
     }
 
     private RenamePageUseCase rename() {
-        return new RenamePageUseCase(repository, membershipCheck, transactionRunner, auditTrailPort);
+        return new RenamePageUseCase(repository, translationRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 }

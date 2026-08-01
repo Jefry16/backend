@@ -126,6 +126,21 @@ class PageTranslationUseCasesTest {
     }
 
     @Test
+    void upsertRejectsALocalizedHandleThatIsAnotherPagesCanonicalHandle() {
+        // The storefront resolves localized handles BEFORE canonical ones, so
+        // allowing this made the other page unreachable in that locale.
+        when(translationRepository.existsBySlug(any(), any(), any(), any())).thenReturn(false);
+        when(pageRepository.existsByTourOperatorIdAndHandleExcluding(OP, "about-us", PAGE))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> upsert().execute(new UpsertPageTranslationInput(
+                USER, OP, PAGE, "es", "Sobre nosotros", null, null, null, "about-us")))
+                .isInstanceOf(ResourceAlreadyExistsException.class);
+
+        verify(translationRepository, never()).upsert(any());
+    }
+
+    @Test
     void upsertUnsupportedLocaleIs422() {
         assertThatThrownBy(() -> upsert().execute(new UpsertPageTranslationInput(
                 USER, OP, PAGE, "fr", "Titre", "<p>Bonjour</p>", null, null, null)))

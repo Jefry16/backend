@@ -130,6 +130,29 @@ Query shape: `?filter[role][in]=OWNER,ADMIN&sort=-joinedAt&cursor=…`. The curs
 opaque (base64, keyset on sort-field + id); `nextCursor` is null on the last page.
 Canonical: `ListMembersUseCase` + `GET /api/tour-operators/{id}/members`.
 
+## 4d. Two namespaces read as one must be validated as one
+
+A storefront handle resolves against **localized handles first, canonical handles
+second** (`StorefrontPageQuery`, `StorefrontExperienceQuery`). That makes them one
+namespace on the read side, so uniqueness has to be checked across both on every
+write — otherwise one silently shadows the other and the shadowed page becomes
+unreachable in that locale, with no error at any point.
+
+`page` shipped with each namespace checked only against itself, which is the natural
+mistake: the create/rename path asks `pages`, the translation path asks
+`page_translations`, and each looks complete on its own. The three write paths now
+cross-check:
+
+- **create / rename a canonical handle** → also reject it if any *other* page uses it
+  as a localized handle in **any** locale;
+- **upsert an explicit localized handle** → also reject another page's canonical handle;
+- **derive a localized handle** → probe *both* namespaces, so the auto-suffix never
+  lands on one either.
+
+Matching the page's **own** canonical handle is fine — it resolves to the same page.
+The general rule: when a read path consults two sources in precedence order, list the
+write paths that feed each and make every one of them check both.
+
 ## 5. Read-time URL resolution (never store URLs)
 
 Store a bucket-relative **storage key** on the row; resolve it to an absolute

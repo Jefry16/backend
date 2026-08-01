@@ -46,6 +46,12 @@ public class PageRepositoryImpl implements PageRepository {
     }
 
     @Override
+    public boolean existsByTourOperatorIdAndHandleExcluding(
+            UUID tourOperatorId, String handle, UUID excludePageId) {
+        return jpa.existsByTourOperatorIdAndHandleAndIdNot(tourOperatorId, handle, excludePageId);
+    }
+
+    @Override
     public CursorPage<PageListItem> list(ListQuery query) {
         return listExecutor.list(
                 PageJpaEntity.class,

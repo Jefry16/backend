@@ -109,14 +109,33 @@ public class UpsertPageTranslationUseCase {
                         "The localized handle '" + explicit.value()
                                 + "' is already in use for this language");
             }
+            requireNoCanonicalClash(input, explicit.value());
             return explicit;
         }
         if (!blank(input.title())) {
+            // Probe both namespaces, so a derived handle never lands on another
+            // page's canonical one either.
             return slugGenerator.generateUnique(input.title(), candidate ->
                     translationRepository.existsBySlug(
-                            input.tourOperatorId(), locale, candidate, input.pageId()));
+                            input.tourOperatorId(), locale, candidate, input.pageId())
+                            || pageRepository.existsByTourOperatorIdAndHandleExcluding(
+                                    input.tourOperatorId(), candidate, input.pageId()));
         }
         return null;
+    }
+
+    /**
+     * The storefront resolves a handle against localized handles first and
+     * canonical ones second, so a localized handle equal to ANOTHER page's
+     * canonical handle silently shadows that page in this locale. Matching the
+     * page's own canonical handle is harmless — it resolves to the same page.
+     */
+    private void requireNoCanonicalClash(UpsertPageTranslationInput input, String slug) {
+        if (pageRepository.existsByTourOperatorIdAndHandleExcluding(
+                input.tourOperatorId(), slug, input.pageId())) {
+            throw new ResourceAlreadyExistsException(
+                    "Another page already uses '" + slug + "' as its handle");
+        }
     }
 
     private static boolean blank(String s) {
