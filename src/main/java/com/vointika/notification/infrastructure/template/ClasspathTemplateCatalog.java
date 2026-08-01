@@ -42,10 +42,14 @@ public class ClasspathTemplateCatalog implements TemplateCatalog {
     private static final String BASE_PATH = "templates/email/";
 
     /**
-     * Locales every identity email ships in — these should track the platform's
-     * UI languages ({@code app.identity.ui-languages}). Growing a language means
-     * adding its code here AND the matching {@code {type}_{locale}} files, or the
-     * fail-fast loader below refuses to start.
+     * Locales every identity email ships in. These <b>must</b> track the
+     * platform's UI languages ({@code app.identity.ui-languages}) and
+     * {@code TemplateLocalesTrackUiLanguagesTest} fails the build when they do
+     * not — a language on the allowlist with no templates is the one failure
+     * mode nothing else catches, because the send succeeds in English instead.
+     * Growing a language means adding its code here AND the matching
+     * {@code {type}_{locale}} files, or the fail-fast loader below refuses to
+     * start.
      */
     private static final List<String> LOCALES = List.of("en", "es");
 
