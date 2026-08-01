@@ -7,7 +7,6 @@ import com.vointika.pickup.application.usecase.GetPickupLocationUseCase;
 import com.vointika.pickup.application.usecase.ListPickupLocationsUseCase;
 import com.vointika.pickup.application.usecase.UpdatePickupLocationUseCase;
 import com.vointika.pickup.domain.entity.PickupLocation;
-import com.vointika.pickup.presentation.request.PickupLocationRequest;
 import com.vointika.pickup.presentation.response.PickupLocationResponse;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
@@ -85,10 +84,10 @@ public class PickupLocationController {
     @PostMapping
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
-            @RequestBody PickupLocationRequest body,
+            @RequestBody PickupLocationInput body,
             @AuthenticationPrincipal String callerUserId) {
         UUID id = createPickupLocationUseCase.execute(
-                tourOperatorId, UUID.fromString(callerUserId), toInput(body));
+                tourOperatorId, UUID.fromString(callerUserId), body);
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/pickup-locations/" + id))
                 .build();
@@ -99,10 +98,10 @@ public class PickupLocationController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pickupLocationId,
-            @RequestBody PickupLocationRequest body,
+            @RequestBody PickupLocationInput body,
             @AuthenticationPrincipal String callerUserId) {
         updatePickupLocationUseCase.execute(
-                tourOperatorId, pickupLocationId, UUID.fromString(callerUserId), toInput(body));
+                tourOperatorId, pickupLocationId, UUID.fromString(callerUserId), body);
         return ResponseEntity.noContent().build();
     }
 
@@ -114,9 +113,5 @@ public class PickupLocationController {
             @AuthenticationPrincipal String callerUserId) {
         deletePickupLocationUseCase.execute(tourOperatorId, pickupLocationId, UUID.fromString(callerUserId));
         return ResponseEntity.noContent().build();
-    }
-
-    private static PickupLocationInput toInput(PickupLocationRequest b) {
-        return new PickupLocationInput(b.name(), b.time());
     }
 }

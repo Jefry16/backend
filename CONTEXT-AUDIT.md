@@ -151,6 +151,22 @@ ceremony survives:
   Only `@RequestBody(required = false)` makes it live. This one is settled by a
   probe test in thirty seconds; reading the annotation is what gets it wrong.
 
+**A use-case test cannot see which query the adapter chose.** Use-case tests stub the
+domain repository, so everything decided *below* that port is invisible to them —
+including whether the duplicate-name pre-check calls `existsBy…IgnoreCase` or the
+case-sensitive sibling. In `pickup` all ten use-case tests stayed green while the
+pre-check was made case-sensitive, which is the bug `audience/V2` exists to fix.
+When an invariant lives in the adapter's *choice of query*, the test belongs on the
+adapter. Suspect this wherever a domain method name is vaguer than what it does
+(`existsByTourOperatorIdAndName` that ignores case).
+
+**When the context's history includes a removal, audit the removal.** Migrations are
+immutable, so a dropped feature leaves a create-then-drop pair on purpose — that part
+is correct. What rots is everything that *explained* it: `FlywayPerDomainConfig` still
+justified pickup's ordering by a slot↔pickup snapshot deleted in `experience/V6`.
+Grep the removed feature's nouns across the whole repo, not just the context, and read
+what the hits are asserting.
+
 **Check the `ListSchema` against what the screen is for.** A list can use the shared
 framework correctly and still be unusable: the contact inbox is cursor-paginated,
 tenant-scoped and filterable by name/email/subject — and not by **unread**, the one
