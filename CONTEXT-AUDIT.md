@@ -151,6 +151,15 @@ ceremony survives:
   Only `@RequestBody(required = false)` makes it live. This one is settled by a
   probe test in thirty seconds; reading the annotation is what gets it wrong.
 
+**Config outlives the feature it was sized for.** `spring.servlet.multipart.max-file-size`
+was 510MB, set in the first commit when the only upload was a 5 MB avatar; the largest
+cap today is 25 MB, and the container spools the part before any handler runs. Nothing
+was wrong at the time and nothing announced that it had become wrong. For each limit,
+timeout and pool size the context relies on, `git log -S` the value and ask what it was
+sized against — then pin it to the thing it must track, the way
+`MultipartLimitsTest` and `TemplateLocalesTrackUiLanguagesTest` do. Two numbers that
+must agree are the most common finding in this whole pass.
+
 **A use-case test cannot see which query the adapter chose.** Use-case tests stub the
 domain repository, so everything decided *below* that port is invisible to them —
 including whether the duplicate-name pre-check calls `existsBy…IgnoreCase` or the

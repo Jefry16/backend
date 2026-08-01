@@ -57,10 +57,8 @@ public class DeleteMediaUseCase {
                     "MEDIA", mediaId, "media.deleted",
                     Map.of("fileName", media.getOriginalName())));
         });
-        deleteQuietly(media.getStorageKey());
-    }
-
-    private void deleteQuietly(String key) {
-        mediaStoragePort.deleteObject(key);
+        // After the commit, and never guarded here: deleteObject is best-effort
+        // by contract and swallows its own failures (see the S3 adapter).
+        mediaStoragePort.deleteObject(media.getStorageKey());
     }
 }
