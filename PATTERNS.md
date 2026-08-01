@@ -168,6 +168,15 @@ path calls it (page). Where the canonical value is immutable (experience), creat
 only caller and never excludes — so the parameter, and page's nil-UUID sentinel standing
 in for "exclude nothing", are both absent by LAW §2.4.
 
+**These guards are pre-checks, not constraints, and that is the one thing this recipe
+cannot fix.** Uniqueness *within* a namespace is backed by a unique index, so a lost race
+surfaces as a duplicate-key failure and the loser is rejected. There is no index spanning
+the two tables and there cannot be one without a trigger — so two concurrent writes, one
+per namespace, can still land on the same value and produce exactly the shadowing the
+guards exist to prevent. The window is small and both `page` and `experience` carry it.
+Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
+making the invariant true.
+
 ## 5. Read-time URL resolution (never store URLs)
 
 Store a bucket-relative **storage key** on the row; resolve it to an absolute
