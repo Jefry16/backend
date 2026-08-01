@@ -1,0 +1,34 @@
+-- The denormalized "from" price a storefront card shows.
+--
+-- MAP's featured-experiences entry ruled this out as "a decision rather than a
+-- column", because deriving it from the per-audience prices frozen per slot needs
+-- rules: which window of slots, what happens when nothing is scheduled, and per
+-- person or per pax_per_unit. That ruling stands on the derivation; the column is
+-- added ahead of it because the storage question has one answer either way.
+-- Rendering composes read models from shared ports only and a storefront page is
+-- one internal call, so whatever the rule turns out to be, its result has to sit
+-- on the row the card already loads — the same shape as media.created_by_name and
+-- tour_operator_members.name.
+--
+-- Two of the three rules are now decided: nothing scheduled resolves to 0, and the
+-- figure is per person, not per pax_per_unit. Free tiers are excluded — a literal
+-- MIN over audience_slot would advertise the infant price on a tour whose adult
+-- ticket is 60. That exclusion is also what makes 0 a safe default rather than a
+-- lie: a real starting price can never be 0, so 0 means "nothing priced yet" and
+-- the storefront hides the badge instead of rendering "From 0". No nullable
+-- column, no companion flag.
+--
+-- Still open, and owned by the slice that populates this: which slots count.
+-- slots.status is AVAILABLE | SOLD_OUT | CANCELLED and departures are dated, so a
+-- naive MIN would quote a cancelled or past departure.
+--
+-- No currency column: it is per operator (tour_operators.currency_id), exactly as
+-- audience_slot.price already assumes. A copy here could disagree with it.
+--
+-- NUMERIC(12,2) matches audience_slot.price so the Price value object can carry
+-- both, and the CHECK mirrors its own so the snapshot cannot hold a value its
+-- source could not. Nothing writes this column yet; existing rows take the
+-- DEFAULT.
+ALTER TABLE experience.experiences
+    ADD COLUMN starting_price NUMERIC(12,2) NOT NULL DEFAULT 0
+        CHECK (starting_price >= 0);
