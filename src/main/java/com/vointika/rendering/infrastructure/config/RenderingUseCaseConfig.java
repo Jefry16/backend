@@ -1,10 +1,7 @@
 package com.vointika.rendering.infrastructure.config;
 
-import com.vointika.rendering.application.usecase.GetExperienceListRenderContextUseCase;
-import com.vointika.rendering.application.usecase.GetExperienceRenderContextUseCase;
 import com.vointika.rendering.application.service.NavigationAssembler;
 import com.vointika.rendering.application.service.TenantResolver;
-import com.vointika.rendering.application.usecase.GetPageRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCase;
 import com.vointika.shared.port.StorefrontExperienceQuery;
@@ -33,26 +30,6 @@ public class RenderingUseCaseConfig {
     @Bean
     public GetShopRenderContextUseCase getShopRenderContextUseCase(TenantResolver tenantResolver) {
         return new GetShopRenderContextUseCase(tenantResolver);
-    }
-
-    @Bean
-    public GetExperienceListRenderContextUseCase getExperienceListRenderContextUseCase(
-            TenantResolver tenantResolver,
-            StorefrontExperienceQuery storefrontExperienceQuery) {
-        return new GetExperienceListRenderContextUseCase(tenantResolver, storefrontExperienceQuery);
-    }
-
-    @Bean
-    public GetExperienceRenderContextUseCase getExperienceRenderContextUseCase(
-            TenantResolver tenantResolver,
-            StorefrontExperienceQuery storefrontExperienceQuery) {
-        return new GetExperienceRenderContextUseCase(tenantResolver, storefrontExperienceQuery);
-    }
-
-    @Bean
-    public GetPageRenderContextUseCase getPageRenderContextUseCase(
-            TenantResolver tenantResolver, StorefrontPageQuery storefrontPageQuery) {
-        return new GetPageRenderContextUseCase(tenantResolver, storefrontPageQuery);
     }
 
     @Bean
