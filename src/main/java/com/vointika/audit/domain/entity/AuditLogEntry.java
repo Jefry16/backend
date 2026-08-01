@@ -22,7 +22,14 @@ public class AuditLogEntry {
     private static final int ENTITY_TYPE_MAX = 40;
     private static final int ACTION_MAX = 80;
     private static final int ACTOR_NAME_MAX = 255;
-    private static final int REQUEST_ID_MAX = 64;
+
+    /**
+     * Public because the writer must truncate to it rather than trip it: this
+     * entity is built inside the caller's transaction, so throwing here takes down
+     * the business action being recorded. A second copy of the number could drift
+     * in exactly that direction without anything noticing.
+     */
+    public static final int REQUEST_ID_MAX = 64;
 
     private final UUID id;
     private final UUID tourOperatorId;

@@ -119,7 +119,8 @@ named caller before believing the sentence — this is cheap and it is how a who
 orphaned branch stays plausible for months.
 
 Every context audited so far — `identity`, `touroperator`, `experience`,
-`metafield`, `shared`, `audience` — came back with **zero** genuinely dead members.
+`metafield`, `shared`, `audience`, `audit` — came back with **zero** genuinely dead
+members.
 That is the expected result, and it is only worth anything if the examined counts
 are printed beside it. The subtractions that did land came from §3 and §5, not here:
 duplicate DTOs, an unreachable guard, a port method with no caller.
@@ -159,6 +160,18 @@ timeout and pool size the context relies on, `git log -S` the value and ask what
 sized against — then pin it to the thing it must track, the way
 `MultipartLimitsTest` and `TemplateLocalesTrackUiLanguagesTest` do. Two numbers that
 must agree are the most common finding in this whole pass.
+
+**A doc that promises how cheap a future change will be is a must-agree pair with no
+second number.** `AuditActorType` said adding `STOREFRONT` was "a one-line
+CHECK-constraint migration" — plausible, uncheckable, and wrong twice over: nothing
+made the enum and `audit_log_actor_type_check` agree, and the invariant that a
+non-`USER` actor carries no id lives in two more places the sentence never mentioned.
+Treat "adding X is just Y" in a comment as a claim to verify, then either enforce it
+or correct it. **Prefer pinning the pair where drift is silent.** `audit`'s four
+column widths also mirror the DDL, and those were left alone on purpose: over-long
+input is rejected loudly by whichever side is stricter, whereas the enum gap only
+surfaces in production, on the first write by the new actor type — and takes the
+audited action down with it.
 
 **A use-case test cannot see which query the adapter chose.** Use-case tests stub the
 domain repository, so everything decided *below* that port is invisible to them —

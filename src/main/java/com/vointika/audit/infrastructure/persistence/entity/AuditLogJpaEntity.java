@@ -1,5 +1,6 @@
 package com.vointika.audit.infrastructure.persistence.entity;
 
+import com.vointika.audit.domain.entity.AuditLogEntry;
 import com.vointika.shared.valueobject.AuditActorType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -63,7 +64,7 @@ public class AuditLogJpaEntity {
     @Column(updatable = false, columnDefinition = "jsonb")
     private String changes;
 
-    @Column(updatable = false, length = 64)
+    @Column(updatable = false, length = AuditLogEntry.REQUEST_ID_MAX)
     private String requestId;
 
     @Column(nullable = false, updatable = false)

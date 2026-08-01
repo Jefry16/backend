@@ -29,8 +29,6 @@ import java.util.UUID;
 @Component
 public class AuditTrailPortImpl implements AuditTrailPort {
 
-    private static final int REQUEST_ID_MAX = 64;
-
     private final AuditLogEntryRepository repository;
     private final UserAccountQuery userAccountQuery;
     private final IdGenerator idGenerator;
@@ -75,6 +73,8 @@ public class AuditTrailPortImpl implements AuditTrailPort {
         if (requestId == null) {
             return null;
         }
-        return requestId.length() > REQUEST_ID_MAX ? requestId.substring(0, REQUEST_ID_MAX) : requestId;
+        return requestId.length() > AuditLogEntry.REQUEST_ID_MAX
+                ? requestId.substring(0, AuditLogEntry.REQUEST_ID_MAX)
+                : requestId;
     }
 }
