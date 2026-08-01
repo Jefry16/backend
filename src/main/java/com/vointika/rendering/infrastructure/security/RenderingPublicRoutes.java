@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * The storefront's server-to-server surface is exempt from JWT authentication —
- * but not from authentication. {@code InternalApiSecretFilter} gates every
+ * but not from authentication. {@code StorefrontApiSecretFilter} gates every
  * {@code /api/storefront/**} path on the shared secret and short-circuits a
  * mismatch with 401 before any handler runs; this registrar only stops Spring
  * Security's {@code anyRequest().authenticated()} from demanding a JWT that a

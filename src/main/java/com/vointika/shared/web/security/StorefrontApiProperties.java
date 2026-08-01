@@ -3,7 +3,7 @@ package com.vointika.shared.web.security;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Configuration for the internal-API auth model.
+ * Configuration for the storefront-API auth model.
  *
  * <p>{@code /api/storefront/**} routes are server-to-server (called by the
  * storefront SSR Node app, not a browser). They are not JWT-gated; instead,
@@ -12,4 +12,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * environment.
  */
 @ConfigurationProperties(prefix = "app.internal")
-public record InternalApiProperties(String sharedSecret) {}
+public record StorefrontApiProperties(String sharedSecret) {}

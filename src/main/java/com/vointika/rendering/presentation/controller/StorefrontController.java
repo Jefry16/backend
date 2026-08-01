@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code render-context} because these are relayed shopper intent, not reads of
  * a page — the cart and contact-form relays will join this family.
  *
- * <p>Same internal-secret gate: the visitor's browser posts to the BFF, and the
+ * <p>Same shared-secret gate: the visitor's browser posts to the BFF, and the
  * BFF posts here.
  */
 @RestController

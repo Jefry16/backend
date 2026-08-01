@@ -28,14 +28,14 @@ import java.time.Instant;
  * authenticated via shared secret instead. JWT auth does not apply on this
  * path family.
  */
-public class InternalApiSecretFilter extends OncePerRequestFilter {
+public class StorefrontApiSecretFilter extends OncePerRequestFilter {
 
     public static final String HEADER_NAME = "X-Internal-Secret";
     private static final String PATH_PREFIX = "/api/storefront/";
 
     private final byte[] expectedDigest;
 
-    public InternalApiSecretFilter(String sharedSecret) {
+    public StorefrontApiSecretFilter(String sharedSecret) {
         if (sharedSecret == null || sharedSecret.isBlank()) {
             throw new IllegalStateException(
                     "app.internal.shared-secret must be configured (set APP_INTERNAL_SHARED_SECRET)");
@@ -87,7 +87,7 @@ public class InternalApiSecretFilter extends OncePerRequestFilter {
         // dependency cycle into the controller advice (we're a filter).
         response.getWriter().write(
                 "{\"status\":401,\"error\":\"Unauthorized\","
-                        + "\"message\":\"Invalid internal API credentials\","
+                        + "\"message\":\"Invalid storefront API credentials\","
                         + "\"timestamp\":\"" + Instant.now() + "\"}");
     }
 }

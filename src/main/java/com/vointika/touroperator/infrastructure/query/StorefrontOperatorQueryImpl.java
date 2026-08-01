@@ -93,7 +93,7 @@ public class StorefrontOperatorQueryImpl implements StorefrontOperatorQuery {
 
     /**
      * Constant-time comparison of fixed-width SHA-256 digests, matching
-     * {@code InternalApiSecretFilter}. The storefront password is a shared gate
+     * {@code StorefrontApiSecretFilter}. The storefront password is a shared gate
      * rather than a credential, but it is still a secret compared against
      * attacker-supplied input: hashing first means the comparison leaks neither
      * the stored password's length nor its prefix through timing.

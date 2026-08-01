@@ -6,7 +6,7 @@ import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCas
 import com.vointika.rendering.infrastructure.security.RenderingPublicRoutes;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.StorefrontOperatorView;
-import com.vointika.shared.web.security.InternalApiSecretFilter;
+import com.vointika.shared.web.security.StorefrontApiSecretFilter;
 import com.vointika.shared.web.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // the chain's anyRequest().authenticated() rejects these paths with 401 even
 // when the shared secret is correct, because the secret filter authenticates
 // the caller without populating a SecurityContext. The registrar is what makes
-// the internal surface reachable at all — this test would pass vacuously
+// the storefront surface reachable at all — this test would pass vacuously
 // (401 everywhere) if it were left out.
 @Import({SecurityConfig.class, RenderingPublicRoutes.class})
 class RenderContextControllerDocumentationTest {
@@ -101,13 +101,13 @@ class RenderContextControllerDocumentationTest {
         when(getShopUseCase.execute(eq(SLUG), isNull())).thenReturn(shopContext());
 
         mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG)
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
+                        .header(StorefrontApiSecretFilter.HEADER_NAME, SECRET))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shop.slug").value(SLUG))
                 .andExpect(jsonPath("$.request.locale").value("en"))
                 .andDo(document("rendering-shop-render-context",
                         requestHeaders(
-                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
+                                headerWithName(StorefrontApiSecretFilter.HEADER_NAME)
                                         .description("Shared secret authenticating the storefront BFF")),
                         responseFields(
                                 fieldWithPath("shop.name").description("The operator's display name"),
@@ -136,7 +136,7 @@ class RenderContextControllerDocumentationTest {
         when(getShopUseCase.execute(SLUG, "es")).thenReturn(shopContext());
 
         mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop?locale=es", SLUG)
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
+                        .header(StorefrontApiSecretFilter.HEADER_NAME, SECRET))
                 .andExpect(status().isOk());
     }
 
@@ -149,7 +149,7 @@ class RenderContextControllerDocumentationTest {
     @Test
     void rejectsACallWithTheWrongSharedSecret() throws Exception {
         mockMvc.perform(get("/api/storefront/render-context/{tenantSlug}/shop", SLUG)
-                        .header(InternalApiSecretFilter.HEADER_NAME, "not-the-secret"))
+                        .header(StorefrontApiSecretFilter.HEADER_NAME, "not-the-secret"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -158,7 +158,7 @@ class RenderContextControllerDocumentationTest {
         when(verifyPasswordUseCase.execute(SLUG, "opensesame")).thenReturn(true);
 
         mockMvc.perform(post("/api/storefront/{tenantSlug}/verify-password", SLUG)
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET)
+                        .header(StorefrontApiSecretFilter.HEADER_NAME, SECRET)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\":\"opensesame\"}")
                         .with(csrf()))
@@ -166,7 +166,7 @@ class RenderContextControllerDocumentationTest {
                 .andExpect(jsonPath("$.verified").value(true))
                 .andDo(document("rendering-verify-storefront-password",
                         requestHeaders(
-                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
+                                headerWithName(StorefrontApiSecretFilter.HEADER_NAME)
                                         .description("Shared secret authenticating the storefront BFF")),
                         requestFields(
                                 fieldWithPath("password").description("The visitor's attempt at the gate password")),
@@ -182,7 +182,7 @@ class RenderContextControllerDocumentationTest {
         when(verifyPasswordUseCase.execute(SLUG, "guess")).thenReturn(false);
 
         mockMvc.perform(post("/api/storefront/{tenantSlug}/verify-password", SLUG)
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET)
+                        .header(StorefrontApiSecretFilter.HEADER_NAME, SECRET)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\":\"guess\"}")
                         .with(csrf()))

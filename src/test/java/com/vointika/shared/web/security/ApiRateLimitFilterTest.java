@@ -53,7 +53,7 @@ class ApiRateLimitFilterTest {
     }
 
     @Test
-    void internalPathPassesThroughEvenWithAuthentication() throws Exception {
+    void storefrontPathPassesThroughEvenWithAuthentication() throws Exception {
         authenticate();
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/storefront/carts");
         MockHttpServletResponse response = new MockHttpServletResponse();

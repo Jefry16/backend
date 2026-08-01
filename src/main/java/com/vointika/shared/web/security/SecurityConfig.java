@@ -19,23 +19,23 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties({SecurityProperties.class, InternalApiProperties.class})
+@EnableConfigurationProperties({SecurityProperties.class, StorefrontApiProperties.class})
 public class SecurityConfig {
 
     private final AccessTokenValidatorPort accessTokenValidator;
     private final List<PublicRouteRegistrar> publicRouteRegistrars;
-    private final InternalApiProperties internalApiProperties;
+    private final StorefrontApiProperties storefrontApiProperties;
     private final ObjectProvider<RateLimiterPort> rateLimiterProvider;
     private final boolean rateLimitEnabled;
 
     public SecurityConfig(AccessTokenValidatorPort accessTokenValidator,
                           List<PublicRouteRegistrar> publicRouteRegistrars,
-                          InternalApiProperties internalApiProperties,
+                          StorefrontApiProperties storefrontApiProperties,
                           ObjectProvider<RateLimiterPort> rateLimiterProvider,
                           @Value("${app.rate-limit.enabled:true}") boolean rateLimitEnabled) {
         this.accessTokenValidator = accessTokenValidator;
         this.publicRouteRegistrars = publicRouteRegistrars;
-        this.internalApiProperties = internalApiProperties;
+        this.storefrontApiProperties = storefrontApiProperties;
         this.rateLimiterProvider = rateLimiterProvider;
         this.rateLimitEnabled = rateLimitEnabled;
     }
@@ -58,7 +58,7 @@ public class SecurityConfig {
                     auth.anyRequest().authenticated();
                 })
                 .addFilterBefore(
-                        new InternalApiSecretFilter(internalApiProperties.sharedSecret()),
+                        new StorefrontApiSecretFilter(storefrontApiProperties.sharedSecret()),
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .addFilterBefore(
