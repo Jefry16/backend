@@ -97,9 +97,12 @@ public class ArchitectureTest {
                     .because("rendering composes storefront read models from shared ports only — "
                             + "it must never reach into a bounded context directly");
 
-    // contact owns the shopper inbox. It reads the tenant through a shared port
-    // (the intake resolves a storefront by slug) and imports no bounded context —
-    // the rule it shipped without in #63, added now that it has a second surface.
+    // contact owns the shopper inbox and imports no bounded context — the rule it
+    // shipped without in #63. It reached the tenant through StorefrontOperatorQuery
+    // until the storefront intake was removed on 2026-08-01; the admin side needs no
+    // shared port at all now, so this rule currently has nothing to catch. Kept
+    // because the intake returns, and a fence added back later is a fence that was
+    // missing in between.
     @ArchTest
     static final ArchRule contact_depends_only_on_shared =
             noClasses()

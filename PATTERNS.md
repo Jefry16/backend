@@ -133,10 +133,18 @@ Canonical: `ListMembersUseCase` + `GET /api/tour-operators/{id}/members`.
 ## 4d. Two namespaces read as one must be validated as one
 
 A storefront handle resolves against **localized handles first, canonical handles
-second** (`StorefrontPageQuery`, `StorefrontExperienceQuery`). That makes them one
-namespace on the read side, so uniqueness has to be checked across both on every
-write — otherwise one silently shadows the other and the shadowed page becomes
-unreachable in that locale, with no error at any point.
+second**. That makes them one namespace on the read side, so uniqueness has to be
+checked across both on every write — otherwise one silently shadows the other and
+the shadowed page becomes unreachable in that locale, with no error at any point.
+
+> **The read half is parked (2026-08-01).** `findPublishedBySlug` /
+> `findPublishedByHandle` went with the experience and page render contexts when the
+> storefront surface was cut back to `/shop`, so nothing resolves a handle that way
+> today — only `publishedHandles`, which navigation calls with ids, not handles.
+> **The write guards below were kept anyway.** They cost nothing, and dropping them
+> would let a shadowing handle be stored during the gap and only surface as an
+> unreachable page the day the detail read returns — a defect committed now and
+> discovered much later. Restore this section's present tense with that read path.
 
 `page` shipped with each namespace checked only against itself, which is the natural
 mistake: the create/rename path asks `pages`, the translation path asks

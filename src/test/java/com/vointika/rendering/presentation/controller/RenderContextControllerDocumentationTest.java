@@ -1,20 +1,11 @@
 package com.vointika.rendering.presentation.controller;
 
-import com.vointika.rendering.application.dto.output.ExperienceListRenderContext;
-import com.vointika.rendering.application.dto.output.ExperienceRenderContext;
 import com.vointika.rendering.application.dto.output.ShopRenderContext;
-import com.vointika.rendering.application.usecase.GetExperienceListRenderContextUseCase;
-import com.vointika.rendering.application.usecase.GetExperienceRenderContextUseCase;
-import com.vointika.rendering.application.dto.output.PageRenderContext;
-import com.vointika.rendering.application.usecase.GetPageRenderContextUseCase;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCase;
 import com.vointika.rendering.infrastructure.security.RenderingPublicRoutes;
 import com.vointika.shared.port.AccessTokenValidatorPort;
-import com.vointika.shared.list.CursorPage;
-import com.vointika.shared.port.StorefrontExperienceView;
 import com.vointika.shared.port.StorefrontOperatorView;
-import com.vointika.shared.port.StorefrontPageView;
 import com.vointika.shared.web.security.InternalApiSecretFilter;
 import com.vointika.shared.web.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,9 +64,6 @@ class RenderContextControllerDocumentationTest {
     private MockMvc mockMvc;
 
     @MockitoBean private GetShopRenderContextUseCase getShopUseCase;
-    @MockitoBean private GetExperienceListRenderContextUseCase getExperienceListUseCase;
-    @MockitoBean private GetExperienceRenderContextUseCase getExperienceUseCase;
-    @MockitoBean private GetPageRenderContextUseCase getPageUseCase;
     @MockitoBean private VerifyStorefrontPasswordUseCase verifyPasswordUseCase;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
 
@@ -106,152 +94,6 @@ class RenderContextControllerDocumentationTest {
 
     private ShopRenderContext shopContext() {
         return new ShopRenderContext(operatorView(), "en", List.of());
-    }
-
-    private StorefrontExperienceView experienceView() {
-        return new StorefrontExperienceView(
-                "morning-dive",
-                "Morning dive",
-                "A guided reef dive",
-                "A longer description of the dive.",
-                List.of("Small group"),
-                List.of("Gear"),
-                List.of("Lunch"),
-                List.of("diving"),
-                "https://media.staging.vointika.com/thumb.jpg",
-                List.of("https://media.staging.vointika.com/thumb.jpg"),
-                90,
-                true,
-                "morning-dive",
-                java.util.Map.of("es", "buceo-matutino"));
-    }
-
-    @Test
-    void getExperienceListRenderContext() throws Exception {
-        when(getExperienceListUseCase.execute(eq(SLUG), isNull(), isNull())).thenReturn(
-                new ExperienceListRenderContext(operatorView(), "en",
-                        new CursorPage<>(List.of(experienceView()), null), List.of()));
-
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience-list", SLUG)
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.experiences[0].slug").value("morning-dive"))
-                .andDo(document("rendering-experience-list-render-context",
-                        requestHeaders(
-                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
-                                        .description("Shared secret authenticating the storefront BFF")),
-                        responseFields(
-                                subsectionWithPath("shop")
-                                        .description("The tenant block, identical on every render context"),
-                                fieldWithPath("request.locale")
-                                        .description("The locale this render actually uses, after fallback"),
-                                subsectionWithPath("navigation")
-                                        .description("The operator's menus, resolved for this locale — chrome, so "
-                                                + "present on every render context. Items carry `linkType` + "
-                                                + "`handle`; the BFF turns those into paths, and an item whose "
-                                                + "target is not published is already absent"),
-                                fieldWithPath("experiences[]")
-                                        .description("Published experiences, newest first; empty when none"),
-                                fieldWithPath("experiences[].slug")
-                                        .description("The handle for this locale — localized when the operator set one"),
-                                fieldWithPath("experiences[].name").description("Translated name"),
-                                fieldWithPath("experiences[].description").description("Translated short description").optional(),
-                                fieldWithPath("experiences[].longDescription").description("Translated long description").optional(),
-                                fieldWithPath("experiences[].highlights").description("Translated highlights"),
-                                fieldWithPath("experiences[].included").description("Translated inclusions"),
-                                fieldWithPath("experiences[].notIncluded").description("Translated exclusions"),
-                                fieldWithPath("experiences[].tags").description("Facets — deliberately not translated"),
-                                fieldWithPath("experiences[].thumbnailUrl").description("Resolved thumbnail URL").optional(),
-                                fieldWithPath("experiences[].mediaUrls").description("Resolved gallery URLs, in order"),
-                                fieldWithPath("experiences[].durationMinutes").description("Duration in minutes"),
-                                fieldWithPath("experiences[].featured").description("Whether the operator features it"),
-                                fieldWithPath("experiences[].canonicalSlug")
-                                        .description("The original handle, addressable in every locale"),
-                                subsectionWithPath("experiences[].handles")
-                                        .description("Locale → localized handle, for the locales that have one"),
-                                fieldWithPath("nextCursor")
-                                        .description("Cursor for the next page, or null on the last")
-                                        .optional())));
-    }
-
-    @Test
-    void getExperienceRenderContext() throws Exception {
-        when(getExperienceUseCase.execute(eq(SLUG), eq("morning-dive"), isNull())).thenReturn(
-                new ExperienceRenderContext(operatorView(), "en", experienceView(), List.of()));
-
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience/{experienceSlug}",
-                                SLUG, "morning-dive")
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.experience.name").value("Morning dive"))
-                .andDo(document("rendering-experience-render-context",
-                        requestHeaders(
-                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
-                                        .description("Shared secret authenticating the storefront BFF")),
-                        responseFields(
-                                subsectionWithPath("shop")
-                                        .description("The tenant block, identical on every render context"),
-                                fieldWithPath("request.locale").description("The locale this render actually uses"),
-                                subsectionWithPath("navigation")
-                                        .description("The operator's menus, resolved for this locale — chrome, so "
-                                                + "present on every render context. Items carry `linkType` + "
-                                                + "`handle`; the BFF turns those into paths, and an item whose "
-                                                + "target is not published is already absent"),
-                                subsectionWithPath("experience")
-                                        .description("The experience, resolved for this locale — same shape as "
-                                                + "an entry in the experience-list context"))));
-    }
-
-    @Test
-    void getPageRenderContext() throws Exception {
-        when(getPageUseCase.execute(eq(SLUG), eq("about-us"), isNull())).thenReturn(
-                new PageRenderContext(operatorView(), "en", new StorefrontPageView(
-                        "about-us",
-                        "About us",
-                        "<p>We run boats out of the old port.</p>",
-                        "About | Acme Tours",
-                        "Meet the crew behind Acme Tours",
-                        null,
-                        "about-us",
-                        java.util.Map.of("es", "sobre-nosotros")), List.of()));
-
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/page/{pageHandle}",
-                                SLUG, "about-us")
-                        .header(InternalApiSecretFilter.HEADER_NAME, SECRET))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page.title").value("About us"))
-                .andDo(document("rendering-page-render-context",
-                        requestHeaders(
-                                headerWithName(InternalApiSecretFilter.HEADER_NAME)
-                                        .description("Shared secret authenticating the storefront BFF")),
-                        responseFields(
-                                subsectionWithPath("shop")
-                                        .description("The tenant block, identical on every render context"),
-                                fieldWithPath("request.locale").description("The locale this render actually uses"),
-                                subsectionWithPath("navigation")
-                                        .description("The operator's menus, resolved for this locale — chrome, so "
-                                                + "present on every render context. Items carry `linkType` + "
-                                                + "`handle`; the BFF turns those into paths, and an item whose "
-                                                + "target is not published is already absent"),
-                                fieldWithPath("page.handle")
-                                        .description("The handle for this locale — localized when the operator set one"),
-                                fieldWithPath("page.title").description("Translated title"),
-                                fieldWithPath("page.body")
-                                        .description("Operator-authored raw HTML — the one value a theme marks `| raw`"),
-                                fieldWithPath("page.seoTitle").description("SEO title override").optional(),
-                                fieldWithPath("page.seoDescription").description("SEO description override").optional(),
-                                fieldWithPath("page.templateSuffix")
-                                        .description("Theme template variant, never translated").optional(),
-                                fieldWithPath("page.canonicalHandle")
-                                        .description("The original handle, addressable in every locale"),
-                                subsectionWithPath("page.handles")
-                                        .description("Locale → localized handle, for the locales that have one"))));
-    }
-
-    @Test
-    void experienceListRejectsACallWithoutTheSharedSecret() throws Exception {
-        mockMvc.perform(get("/api/internal/render-context/{tenantSlug}/experience-list", SLUG))
-                .andExpect(status().isUnauthorized());
     }
 
     @Test

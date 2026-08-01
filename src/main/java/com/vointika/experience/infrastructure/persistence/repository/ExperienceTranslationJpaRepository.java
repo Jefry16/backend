@@ -19,9 +19,6 @@ public interface ExperienceTranslationJpaRepository
     List<ExperienceTranslationJpaEntity> findByExperienceIdInAndLocale(
             java.util.Collection<UUID> experienceIds, String locale);
 
-    /** Resolves a localized handle back to its experience. */
-    Optional<ExperienceTranslationJpaEntity> findByTourOperatorIdAndLocaleAndSlug(
-            UUID tourOperatorId, String locale, String slug);
 
     boolean existsByTourOperatorIdAndLocaleAndSlugAndExperienceIdNot(
             UUID tourOperatorId, String locale, String slug, UUID experienceId);
