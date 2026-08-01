@@ -151,6 +151,27 @@ ceremony survives:
   Only `@RequestBody(required = false)` makes it live. This one is settled by a
   probe test in thirty seconds; reading the annotation is what gets it wrong.
 
+### Auditing a worker module (`notification`)
+
+No endpoints, no domain, no presentation — §1's ratios measure nothing, but §4's
+application allowlist *does* apply (unlike `shared`). Substitute:
+
+- **Every consumer has a producer, and every produced event has a consumer.**
+  Cross `EventTopics.BY_EVENT_TYPE` against `new <Event>(` call sites and
+  `@KafkaListener` topics; the healthy shape is 1 publisher : 1 consumer per event.
+- **Every asset the module ships is declared, and every declared asset exists.**
+  Templates are the `notification` case: the catalog fails fast at boot on a
+  missing file, so the gap that survives is the *other* direction — an asset set
+  that must track a config allowlist somewhere else.
+- **Every consumer log-and-swallows** (PATTERNS §7), or one bad record stalls a
+  partition.
+
+**Hunt for a second list that must agree with a config allowlist.** The catalog's
+locales "should track" `app.identity.ui-languages` — a comment, enforcing nothing,
+while three docs promised growing a language was code-free. The failure mode is the
+dangerous kind: not an error but a **silent downgrade** (the email sends, in the
+wrong language). Whenever a fallback exists, ask what it hides.
+
 ### Auditing `shared` instead of a context
 
 The kernel has no endpoints and no application layer, so §1's ratios and §4's

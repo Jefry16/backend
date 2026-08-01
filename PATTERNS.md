@@ -201,8 +201,17 @@ A context never imports another's types. Two channels only:
 A capability whose *set* grows over time (UI languages, email locales) is a
 config allowlist (`@ConfigurationProperties`), validated in the use case, and
 exposed via a read endpoint when the frontend needs the list. Growing it = add a
-config key (+ any assets like a template file); zero code, zero migration.
+config key (+ any assets like a template file); no migration, and no code
+*for the capability itself*.
 Canonical: `app.identity.ui-languages` + `GET /api/ui-languages`.
+
+**Count the consumers of the allowlist before calling it config-only.** Adding a
+UI language is a yml edit for the picker and for validation — but transactional
+email keeps its own list (`ClasspathTemplateCatalog.LOCALES`) plus a template pair
+per (type, locale), and a language missing from it does not fail: the send falls
+back to English, so the user silently gets the wrong language. A second list that
+must agree with the allowlist needs a test that fails the build when they diverge
+(`TemplateLocalesTrackUiLanguagesTest`), not a comment saying it should track.
 
 ## 8a. Rate limiting (three layers)
 
