@@ -71,12 +71,12 @@ class UpdateExperienceUseCaseTest {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Slug("dive"),
                 new ExperienceName("Old"), new Description("d"), new LongDescription("l"),
                 false, List.of(), List.of(), List.of(), List.of(),
-                List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0));
+                List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null);
     }
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "new desc", "new long", true,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 90, 12);
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 90, 12, null, null);
     }
 
     @Test
@@ -130,7 +130,7 @@ class UpdateExperienceUseCaseTest {
         when(repository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.of(existing()));
         // Same name + description as `existing()`; other fields may change freely.
         ExperienceInput unchanged = new ExperienceInput("Old", "d", "new long", true,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 90, 12);
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 90, 12, null, null);
 
         useCase.execute(operatorId, experienceId, callerId, unchanged);
 

@@ -78,6 +78,12 @@ public class ExperienceJpaEntity {
     @Column(nullable = false)
     private boolean published;
 
+    @Column(length = 70)
+    private String seoTitle;
+
+    @Column(length = 320)
+    private String seoDescription;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 }

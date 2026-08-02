@@ -1,6 +1,7 @@
 package com.vointika.shared.port;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -21,8 +22,14 @@ import java.util.UUID;
  * @param supportedLocales the operator's published content locales, primary
  *                         first, then the rest alphabetically — a stable order
  *                         the language switcher can render directly
- * @param passwordMessage  the operator's message to visitors on the gate page;
- *                         null when unset
+ * @param passwordMessage  the operator's canonical message to visitors on the
+ *                         gate page; null when unset. Per-locale overrides live
+ *                         in {@code translations}.
+ * @param ogImageUrl       the shop-level social image, already resolved from its
+ *                         stored media id (PATTERNS §5)
+ * @param translations     locale → overlay, for every locale this operator has
+ *                         translated. See {@link StorefrontOperatorTranslationView}
+ *                         for why they ride along rather than being asked for.
  */
 public record StorefrontOperatorView(
         UUID id,
@@ -34,4 +41,25 @@ public record StorefrontOperatorView(
         String currency,
         String timezone,
         boolean passwordEnabled,
-        String passwordMessage) {}
+        String passwordMessage,
+        String seoTitle,
+        String seoDescription,
+        String ogImageUrl,
+        Map<String, StorefrontOperatorTranslationView> translations) {
+
+    public StorefrontOperatorView {
+        translations = translations == null ? Map.of() : Map.copyOf(translations);
+    }
+
+    /**
+     * This operator's overlay for {@code locale}, or an all-null one when the
+     * locale is untranslated — so a caller can read through it without a null
+     * check per field.
+     */
+    public StorefrontOperatorTranslationView translation(String locale) {
+        StorefrontOperatorTranslationView overlay = locale == null ? null : translations.get(locale);
+        return overlay == null
+                ? new StorefrontOperatorTranslationView(null, null, null)
+                : overlay;
+    }
+}

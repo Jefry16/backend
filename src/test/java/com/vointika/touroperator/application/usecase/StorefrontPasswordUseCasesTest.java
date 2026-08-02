@@ -59,7 +59,7 @@ class StorefrontPasswordUseCasesTest {
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Calle Mayor 1"),
                 USER, Instant.now(), Instant.now(), null,
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")),
-                enabled, password, message);
+                enabled, password, message, null, null, null);
     }
 
     private UpdateStorefrontPasswordUseCase updateUseCase() {

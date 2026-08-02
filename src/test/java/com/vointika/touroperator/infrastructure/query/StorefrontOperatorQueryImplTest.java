@@ -10,6 +10,7 @@ import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Slug;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
+import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,15 +52,19 @@ class StorefrontOperatorQueryImplTest {
         when(mediaUrlBatchResolver.resolveOne(any(), any())).thenReturn(null);
 
         query = new StorefrontOperatorQueryImpl(
-                tourOperatorRepository, currencyRepository, timezoneRepository, mediaUrlBatchResolver);
+                tourOperatorRepository, currencyRepository, timezoneRepository, mediaUrlBatchResolver,
+                translationRepository);
     }
+
+    private final TourOperatorTranslationRepository translationRepository =
+            mock(TourOperatorTranslationRepository.class);
 
     private TourOperator operator(LocaleCode primary, Set<LocaleCode> supported,
                                   boolean passwordEnabled, String password) {
         return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Slug("acme"),
                 TIMEZONE, CURRENCY, new TourOperatorAddress("Calle Mayor 1"),
                 USER, Instant.now(), Instant.now(), null,
-                primary, supported, passwordEnabled, password, null);
+                primary, supported, passwordEnabled, password, null, null, null, null);
     }
 
     private void givenOperator(TourOperator operator) {

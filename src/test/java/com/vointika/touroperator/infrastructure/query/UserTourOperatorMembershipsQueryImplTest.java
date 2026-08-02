@@ -61,6 +61,7 @@ class UserTourOperatorMembershipsQueryImplTest {
                 id, name, slug, tzId, UUID.randomUUID(), "some address", logoMediaId,
                 UUID.randomUUID(), Instant.now(), Instant.now(),
                 "en", false, null, null,
+                null, null, null,
                 new java.util.LinkedHashSet<>(java.util.Set.of("en")));
     }
 

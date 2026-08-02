@@ -7,6 +7,8 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.SeoDescription;
+import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -54,6 +56,9 @@ public class Experience {
     private DurationMinutes durationMinutes;
     private BookingCutoffHours bookingCutoffHours;
     private boolean published;
+    /** Optional SEO overrides; null means "no override" and the render falls back. */
+    private SeoTitle seoTitle;
+    private SeoDescription seoDescription;
 
     /** A brand-new experience — always unpublished (a draft). */
     public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Slug slug,
@@ -61,10 +66,12 @@ public class Experience {
                                     boolean featured, List<Tag> tags, List<InclusionItem> included,
                                     List<InclusionItem> notIncluded, List<Highlight> highlights,
                                     List<UUID> mediaIds, UUID thumbnailMediaId,
-                                    DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours) {
+                                    DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
+                                    SeoTitle seoTitle, SeoDescription seoDescription) {
         Experience e = new Experience(id, tourOperatorId, createdBy, slug, Instant.now(),
                 name, description, longDescription, featured, tags, included, notIncluded, highlights,
-                mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false);
+                mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false,
+                seoTitle, seoDescription);
         e.validateInvariants();
         return e;
     }
@@ -76,7 +83,7 @@ public class Experience {
                       List<InclusionItem> notIncluded, List<Highlight> highlights,
                       List<UUID> mediaIds, UUID thumbnailMediaId,
                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
-                      boolean published) {
+                      boolean published, SeoTitle seoTitle, SeoDescription seoDescription) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.createdBy = createdBy;
@@ -95,6 +102,8 @@ public class Experience {
         this.durationMinutes = durationMinutes;
         this.bookingCutoffHours = bookingCutoffHours;
         this.published = published;
+        this.seoTitle = seoTitle;
+        this.seoDescription = seoDescription;
     }
 
     /** Replaces the editable fields (everything but id/operator/slug/status/createdAt). */
@@ -102,7 +111,8 @@ public class Experience {
                        boolean featured, List<Tag> tags, List<InclusionItem> included,
                        List<InclusionItem> notIncluded, List<Highlight> highlights,
                        List<UUID> mediaIds, UUID thumbnailMediaId,
-                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours) {
+                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
+                       SeoTitle seoTitle, SeoDescription seoDescription) {
         this.name = name;
         this.description = description;
         this.longDescription = longDescription;
@@ -115,6 +125,8 @@ public class Experience {
         this.thumbnailMediaId = thumbnailMediaId;
         this.durationMinutes = durationMinutes;
         this.bookingCutoffHours = bookingCutoffHours;
+        this.seoTitle = seoTitle;
+        this.seoDescription = seoDescription;
         validateInvariants();
     }
 
@@ -195,4 +207,7 @@ public class Experience {
     public DurationMinutes getDurationMinutes() { return durationMinutes; }
     public BookingCutoffHours getBookingCutoffHours() { return bookingCutoffHours; }
     public boolean isPublished() { return published; }
+
+    public SeoTitle getSeoTitle() { return seoTitle; }
+    public SeoDescription getSeoDescription() { return seoDescription; }
 }

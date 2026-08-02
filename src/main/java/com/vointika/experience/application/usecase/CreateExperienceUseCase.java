@@ -89,7 +89,8 @@ public class CreateExperienceUseCase {
                     idGenerator.newId(), tourOperatorId, callerUserId, slug,
                     name, description, longDescription, input.featured(),
                     tags, included, notIncluded, highlights,
-                    mediaIds, input.thumbnailMediaId(), duration, cutoff);
+                    mediaIds, input.thumbnailMediaId(), duration, cutoff,
+                    ExperienceInputMapper.seoTitle(input), ExperienceInputMapper.seoDescription(input));
             try {
                 saved = transactionRunner.call(() -> {
                     Experience persisted = experienceRepository.save(experience);

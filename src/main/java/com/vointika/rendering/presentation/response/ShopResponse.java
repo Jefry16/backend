@@ -23,7 +23,12 @@ public record ShopResponse(
         boolean passwordEnabled,
         String passwordMessage) {
 
-    public static ShopResponse from(StorefrontOperatorView operator) {
+    /**
+     * @param passwordMessage the locale-resolved message, not
+     *                        {@code operator.passwordMessage()} — the canonical
+     *                        value is the fallback, never what gets rendered.
+     */
+    public static ShopResponse from(StorefrontOperatorView operator, String passwordMessage) {
         return new ShopResponse(
                 operator.name(),
                 operator.slug(),
@@ -33,6 +38,6 @@ public record ShopResponse(
                 operator.currency(),
                 operator.timezone(),
                 operator.passwordEnabled(),
-                operator.passwordMessage());
+                passwordMessage);
     }
 }

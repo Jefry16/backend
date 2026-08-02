@@ -130,6 +130,7 @@ public class ExperienceController {
                 b.name(), b.description(), b.longDescription(),
                 Boolean.TRUE.equals(b.featured()),
                 b.tags(), b.included(), b.notIncluded(), b.highlights(),
-                b.mediaIds(), b.thumbnailMediaId(), b.durationMinutes(), b.bookingCutoffHours());
+                b.mediaIds(), b.thumbnailMediaId(), b.durationMinutes(), b.bookingCutoffHours(),
+                b.seoTitle(), b.seoDescription());
     }
 }

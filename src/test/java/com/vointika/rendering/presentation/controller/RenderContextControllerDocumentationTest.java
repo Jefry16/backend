@@ -1,6 +1,7 @@
 package com.vointika.rendering.presentation.controller;
 
 import com.vointika.rendering.application.dto.output.ShopRenderContext;
+import com.vointika.rendering.application.service.SeoResolver;
 import com.vointika.rendering.application.usecase.GetShopRenderContextUseCase;
 import com.vointika.rendering.application.usecase.VerifyStorefrontPasswordUseCase;
 import com.vointika.rendering.infrastructure.security.RenderingPublicRoutes;
@@ -89,11 +90,21 @@ class RenderContextControllerDocumentationTest {
                 "USD",
                 "America/Santo_Domingo",
                 false,
-                null);
+                null,
+                "Acme Tours — dive trips in Santo Domingo",
+                "Small-group diving and snorkelling on the south coast.",
+                "https://media.staging.vointika.com/og.png",
+                java.util.Map.of());
     }
 
     private ShopRenderContext shopContext() {
-        return new ShopRenderContext(operatorView(), "en", List.of());
+        StorefrontOperatorView shop = operatorView();
+        // Built through the resolver, not hand-assembled: the documented payload
+        // should be what the chain actually produces.
+        return new ShopRenderContext(
+                shop, "en", List.of(),
+                SeoResolver.forHome(shop, "en"),
+                SeoResolver.passwordMessage(shop, "en"));
     }
 
     @Test
@@ -128,7 +139,17 @@ class RenderContextControllerDocumentationTest {
                                         .description("The locale this render actually uses, after fallback"),
                                 subsectionWithPath("navigation")
                                         .description("The operator's menus, resolved for this locale — chrome, so "
-                                                + "present on every render context"))));
+                                                + "present on every render context"),
+                                fieldWithPath("seo.title")
+                                        .description("Resolved page title: the shop's translated SEO title, then its "
+                                                + "canonical one, then the shop name. Never suffixed with the shop "
+                                                + "name — that is a theme's choice").optional(),
+                                fieldWithPath("seo.description")
+                                        .description("Resolved meta description: translated, then canonical, else "
+                                                + "null when the operator has set none").optional(),
+                                fieldWithPath("seo.imageUrl")
+                                        .description("Resolved social image: the shop's OG image, else its logo, "
+                                                + "else null").optional())));
     }
 
     @Test

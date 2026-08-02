@@ -78,7 +78,9 @@ public class UpdateExperienceUseCase {
                 mediaIds,
                 input.thumbnailMediaId(),
                 ExperienceInputMapper.durationMinutes(input),
-                ExperienceInputMapper.bookingCutoffHours(input));
+                ExperienceInputMapper.bookingCutoffHours(input),
+                ExperienceInputMapper.seoTitle(input),
+                ExperienceInputMapper.seoDescription(input));
 
         boolean snapshotChanged = !experience.getName().value().equals(nameBefore)
                 || !experience.getDescription().value().equals(descriptionBefore);
