@@ -67,10 +67,11 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 - **URLs are never stored.** Store a storage key, resolve to a URL at read time.
 - **Responses identify themselves with `id` + `context`** — never `userId`/`tourOperatorId`, never `type` (PATTERNS §4a).
 
-### Two API surfaces, two auth models
+### One API surface, one auth model
 
-1. **The admin/operator API** — JWT bearer tokens. Tenant-scoped routes live under `/api/tour-operators/{tourOperatorId}/**` and are gated in **two layers**: a membership interceptor (non-member → **404**, byte-identical to a missing operator) plus per-use-case role gates (`ensureAdmin`/`ensureOwner`) through the `TourOperatorMembershipCheck` port. Authorization belongs in the use case, not only the router — the router's matching is looser than the id binder, which is how an IDOR got in once.
-2. **The BFF API** — `/api/storefront/**`, called server-to-server by whatever renders the public site, authenticated by the `X-Storefront-Secret` shared secret rather than a JWT. Tenants are addressed by **handle**, and one call returns a whole page's render context. See PATTERNS §8c before adding one — the registrar step is easy to miss and fails in a way that makes tests pass vacuously.
+**The admin/operator API** — JWT bearer tokens, and nothing else: the storefront serving side was deleted on 2026-08-02, so there is no `/api/storefront/**` surface and no shared secret anywhere. Tenant-scoped routes live under `/api/tour-operators/{tourOperatorId}/**` and are gated in **two layers**: a membership interceptor (non-member → **404**, byte-identical to a missing operator) plus per-use-case role gates (`ensureAdmin`/`ensureOwner`) through the `TourOperatorMembershipCheck` port. Authorization belongs in the use case, not only the router — the router's matching is looser than the id binder, which is how an IDOR got in once.
+
+Whatever renders the public site next brings its own surface and its own auth decision back with it (MAP open decision 6). Nothing here presumes one.
 
 Public (unauthenticated) routes are opt-in per context via the `PublicRouteRegistrar` SPI; rate-limit rules likewise via `RateLimitRuleRegistrar`. Never add either to a central hardcoded map.
 
@@ -82,13 +83,13 @@ Renames must sweep beyond `src/` — the dev seed and docs reference table and c
 
 ### Tests
 
-Unit tests (JUnit 5 + Mockito, no Spring) for value objects, entity behavior, and use cases. Controller tests are **RestDocs documentation tests** — `@WebMvcTest` + `@Import(SecurityConfig.class)`, asserting behavior *and* emitting the snippets that build the API guide. Two recurring traps: a `@WebMvcTest` whose context loads `WebConfig` needs a `@MockitoBean TourOperatorMembershipCheck` or every request 500s; and an internal-API test that omits its `PublicRouteRegistrar` 401s everything, so the assertions pass without testing anything.
+Unit tests (JUnit 5 + Mockito, no Spring) for value objects, entity behavior, and use cases. Controller tests are **RestDocs documentation tests** — `@WebMvcTest` + `@Import(SecurityConfig.class)`, asserting behavior *and* emitting the snippets that build the API guide. Two recurring traps: a `@WebMvcTest` whose context loads `WebConfig` needs a `@MockitoBean TourOperatorMembershipCheck` or every request 500s; and a public-route test that omits its `PublicRouteRegistrar` 401s everything, so the assertions pass without testing anything.
 
 ## Conventions
 
 The working rules are LAW: §2.4 never over-engineer · §3 the landing ritual · §4 never assume · §6 craft (comments, commits, dead code). Only the calibration for this repo lives here.
 
-- **Javadoc runs heavier than LAW §6.1's default, deliberately.** A hexagonal context has real seams, and the Javadoc on a port, a security filter or a migration is often the only place a decision is recorded — `InternalApiSecretFilter`'s note on why *both* sides are hashed before comparison is load-bearing. The rule still bites: `/** Returns the user. */` over `getUser()` is noise. Keep the why, the trap and the rejected alternative; delete the restatement.
+- **Javadoc runs heavier than LAW §6.1's default, deliberately.** A hexagonal context has real seams, and the Javadoc on a port, a security filter or a migration is often the only place a decision is recorded — `EndpointRateLimitFilter`'s note on why the counter keys on the matched *pattern* and not the concrete URI is load-bearing. The rule still bites: `/** Returns the user. */` over `getUser()` is noise. Keep the why, the trap and the rejected alternative; delete the restatement.
 - **Dead code has no mechanical gate here.** Java offers no `noUnusedLocals` equivalent, so LAW §6.3 is a look — plus **ArchUnit**, which already fences the §2 boundaries and is the right home for anything automatable (a port nobody implements, a use case no `@Bean` wires).
 - **A commit body is rarer than it looks** (LAW §6.2). The durable *why* belongs in `MAP.md`; the reviewer's context belongs in the PR description; the diff belongs in git. A message that repeats all three is paying three times.
 

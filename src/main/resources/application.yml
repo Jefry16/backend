@@ -90,8 +90,6 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET}
     access-token-expiration-ms: ${APP_JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
-  storefront:
-    shared-secret: ${APP_STOREFRONT_SHARED_SECRET}
   ses:
     region: ${APP_SES_REGION:eu-north-1}
     from-address: ${APP_SES_FROM_ADDRESS:noreply@example.com}

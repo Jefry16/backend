@@ -5,12 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface TourOperatorJpaRepository extends JpaRepository<TourOperatorJpaEntity, UUID> {
-    Optional<TourOperatorJpaEntity> findByHandle(String handle);
-
     boolean existsByHandle(String handle);
 
     boolean existsByCreatedByAndNameIgnoreCase(UUID createdBy, String name);

@@ -15,11 +15,6 @@ public interface ExperienceTranslationJpaRepository
 
     List<ExperienceTranslationJpaEntity> findByExperienceId(UUID experienceId);
 
-    /** Batched overlay fetch — one query per page render, never one per row. */
-    List<ExperienceTranslationJpaEntity> findByExperienceIdInAndLocale(
-            java.util.Collection<UUID> experienceIds, String locale);
-
-
     boolean existsByTourOperatorIdAndLocaleAndHandleAndExperienceIdNot(
             UUID tourOperatorId, String locale, String handle, UUID experienceId);
 
