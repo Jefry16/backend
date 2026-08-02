@@ -16,7 +16,7 @@
 -- update it in the same PR (renames-must-update-dev-seed rule).
 --
 -- Seeds: a verified admin user, the demo tour operator (slug `acme`, primary
--- locale `es` plus `en` and `fr`), OWNER membership, two audiences (+es overlay), two pickup
+-- locale `es` plus `en` and `fr`, canonical + `es` SEO), OWNER membership, two audiences (+es overlay), two pickup
 -- locations, three PUBLISHED experiences (+es overlay on one), two AVAILABLE
 -- slots per experience dated relative to today with per-audience pricing
 -- (one tier carries booked seats so the capacity floor is exercisable),
@@ -107,7 +107,7 @@ ON CONFLICT DO NOTHING;
 -- the first reference row, so a changed reference set still seeds.
 INSERT INTO touroperator.tour_operators
     (id, name, slug, timezone_id, currency_id, address, primary_locale,
-     created_by, created_at, updated_at)
+     seo_title, seo_description, created_by, created_at, updated_at)
 VALUES
     (:'operator_id', 'Acme Tours', 'acme',
      COALESCE(
@@ -117,6 +117,11 @@ VALUES
          (SELECT id FROM reference.currencies WHERE code = 'EUR'),
          (SELECT id FROM reference.currencies ORDER BY code LIMIT 1)),
      'Calle Mayor 1, 28013 Madrid', 'es',
+     -- Canonical SEO is English like every other canonical row here; the `es`
+     -- overlay below is what a default visit resolves to. og_image_media_id
+     -- stays NULL on purpose — see "Deliberately NOT seeded".
+     'Acme Tours — Sailing and diving in Madrid',
+     'Small-group sailing, diving and coastal day trips run out of Madrid since 2011.',
      :'user_id', NOW(), NOW())
 -- DO UPDATE, not DO NOTHING: this row's values get edited (the primary locale
 -- has already changed once), and DO NOTHING would skip an existing operator
@@ -127,8 +132,10 @@ ON CONFLICT (id) DO UPDATE SET
     slug           = EXCLUDED.slug,
     timezone_id    = EXCLUDED.timezone_id,
     currency_id    = EXCLUDED.currency_id,
-    address        = EXCLUDED.address,
-    primary_locale = EXCLUDED.primary_locale,
+    address         = EXCLUDED.address,
+    primary_locale  = EXCLUDED.primary_locale,
+    seo_title       = EXCLUDED.seo_title,
+    seo_description = EXCLUDED.seo_description,
     updated_at     = NOW();
 
 INSERT INTO touroperator.tour_operator_locales (tour_operator_id, locale)
@@ -137,6 +144,23 @@ VALUES
     (:'operator_id', 'en'),
     (:'operator_id', 'fr')
 ON CONFLICT DO NOTHING;
+
+-- 2b. Operator translations. The `es` overlay is what a default visit resolves
+-- to (primary locale is es), so this is the row that proves the shop-level
+-- overlay is actually read rather than the canonical always winning.
+-- password_message is left NULL: the gate is off, so a value here renders
+-- nowhere and would be untestable fiction.
+INSERT INTO touroperator.tour_operator_translations
+    (tour_operator_id, locale, seo_title, seo_description, password_message)
+VALUES
+    (:'operator_id', 'es',
+     'Acme Tours — Vela y buceo en Madrid',
+     'Salidas en velero, buceo y excursiones de un día en grupos pequeños desde Madrid, desde 2011.',
+     NULL)
+ON CONFLICT (tour_operator_id, locale) DO UPDATE SET
+    seo_title        = EXCLUDED.seo_title,
+    seo_description  = EXCLUDED.seo_description,
+    password_message = EXCLUDED.password_message;
 
 -- 3. OWNER membership (name/email denormalized per the roster model).
 INSERT INTO touroperator.tour_operator_members
