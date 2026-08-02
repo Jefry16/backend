@@ -81,7 +81,7 @@ class UpsertExperienceTranslationUseCaseTest {
 
     private UpsertExperienceTranslationInput input(String name, String slug) {
         return new UpsertExperienceTranslationInput(name, "Buceo", "Larga", List.of("Grupo pequeño"),
-                List.of("Equipo"), List.of(), slug);
+                List.of("Equipo"), List.of(), slug, null, null);
     }
 
     @Test
@@ -108,7 +108,7 @@ class UpsertExperienceTranslationUseCaseTest {
     @Test
     void nullSlugAndNullNameLeavesSlugNull() {
         useCase.execute(operatorId, experienceId, "es",
-                new UpsertExperienceTranslationInput(null, "only desc", null, null, null, null, null), callerId);
+                new UpsertExperienceTranslationInput(null, "only desc", null, null, null, null, null, null, null), callerId);
         ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
         verify(translationRepository).upsert(saved.capture());
         assertNull(saved.getValue().slug());

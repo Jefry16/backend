@@ -8,6 +8,8 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.SeoDescription;
+import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.shared.exception.InvalidFieldException;
 
@@ -59,6 +61,19 @@ public final class ExperienceInputMapper {
             throw new InvalidFieldException("Booking cutoff hours are required");
         }
         return new BookingCutoffHours(in.bookingCutoffHours());
+    }
+
+    /** Optional SEO overrides — blank or absent means "no override". */
+    public static SeoTitle seoTitle(ExperienceInput in) {
+        return blank(in.seoTitle()) ? null : new SeoTitle(in.seoTitle());
+    }
+
+    public static SeoDescription seoDescription(ExperienceInput in) {
+        return blank(in.seoDescription()) ? null : new SeoDescription(in.seoDescription());
+    }
+
+    private static boolean blank(String s) {
+        return s == null || s.isBlank();
     }
 
     private static <T> List<T> safe(List<T> list) {

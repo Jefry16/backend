@@ -64,7 +64,7 @@ class CreateExperienceUseCaseTest {
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24);
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null);
     }
 
     @Test

@@ -5,6 +5,8 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.SeoDescription;
+import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Slug;
 
@@ -29,7 +31,9 @@ public record ExperienceTranslation(
         List<Highlight> highlights,
         List<InclusionItem> included,
         List<InclusionItem> notIncluded,
-        Slug slug) {
+        Slug slug,
+        SeoTitle seoTitle,
+        SeoDescription seoDescription) {
 
     public ExperienceTranslation {
         Objects.requireNonNull(experienceId, "experienceId");
@@ -43,6 +47,6 @@ public record ExperienceTranslation(
     /** A fully-untranslated locale — every content field null (the admin editor form). */
     public static ExperienceTranslation empty(UUID experienceId, UUID tourOperatorId, LocaleCode locale) {
         return new ExperienceTranslation(experienceId, tourOperatorId, locale,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
     }
 }

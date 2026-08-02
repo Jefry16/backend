@@ -14,5 +14,7 @@ public record UpsertExperienceTranslationInput(
         List<String> highlights,
         List<String> included,
         List<String> notIncluded,
-        String slug) {
+        String slug,
+        String seoTitle,
+        String seoDescription) {
 }

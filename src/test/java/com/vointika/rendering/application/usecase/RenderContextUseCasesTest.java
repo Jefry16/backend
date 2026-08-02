@@ -58,7 +58,7 @@ class RenderContextUseCasesTest {
                 "USD",
                 "America/Santo_Domingo",
                 false,
-                null);
+                null, null, null, null, java.util.Map.of());
     }
 
     private void givenOperator(StorefrontOperatorView view) {
@@ -144,7 +144,7 @@ class RenderContextUseCasesTest {
     void carries_the_gate_state_so_the_bff_always_knows_to_gate() {
         givenOperator(new StorefrontOperatorView(
                 OP, "Acme Tours", SLUG, null, "en", List.of("en"), "USD",
-                "America/Santo_Domingo", true, "We open on Monday."));
+                "America/Santo_Domingo", true, "We open on Monday.", null, null, null, java.util.Map.of()));
 
         ShopRenderContext context = getShopUseCase.execute(SLUG, null);
 

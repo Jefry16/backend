@@ -62,7 +62,7 @@ class ListExperiencesUseCaseTest {
         return Experience.create(UUID.randomUUID(), operatorId, UUID.randomUUID(), new Slug("s" + UUID.randomUUID()),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
                 false, List.of(), List.of(), List.of(), List.of(),
-                List.of(media), media, new DurationMinutes(60), new BookingCutoffHours(0));
+                List.of(media), media, new DurationMinutes(60), new BookingCutoffHours(0), null, null);
     }
 
     @Test

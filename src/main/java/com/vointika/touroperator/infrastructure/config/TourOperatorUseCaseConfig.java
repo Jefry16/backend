@@ -48,6 +48,14 @@ import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
+import com.vointika.touroperator.application.usecase.UpdateOperatorSeoUseCase;
+import com.vointika.touroperator.application.usecase.GetOperatorSeoUseCase;
+import com.vointika.touroperator.application.usecase.DeleteOperatorTranslationUseCase;
+import com.vointika.touroperator.application.usecase.ListOperatorTranslationsUseCase;
+import com.vointika.touroperator.application.usecase.GetOperatorTranslationUseCase;
+import com.vointika.touroperator.application.usecase.UpsertOperatorTranslationUseCase;
 
 @Configuration("tourOperatorUseCaseConfig")
 public class TourOperatorUseCaseConfig {
@@ -322,5 +330,64 @@ public class TourOperatorUseCaseConfig {
         return new ReplaceMenuItemsUseCase(menuRepository, menuItemRepository,
                 tourOperatorRepository, experienceOwnershipQuery, pageOwnershipQuery,
                 membershipCheck, idGenerator, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpsertOperatorTranslationUseCase upsertOperatorTranslationUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorTranslationRepository translationRepository,
+            OperatorLocalesQuery operatorLocalesQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertOperatorTranslationUseCase(tourOperatorRepository, translationRepository,
+                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetOperatorTranslationUseCase getOperatorTranslationUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetOperatorTranslationUseCase(
+                tourOperatorRepository, translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public ListOperatorTranslationsUseCase listOperatorTranslationsUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListOperatorTranslationsUseCase(
+                tourOperatorRepository, translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public DeleteOperatorTranslationUseCase deleteOperatorTranslationUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteOperatorTranslationUseCase(tourOperatorRepository, translationRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetOperatorSeoUseCase getOperatorSeoUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetOperatorSeoUseCase(tourOperatorRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpdateOperatorSeoUseCase updateOperatorSeoUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            MediaKeyBatchQuery mediaKeyBatchQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateOperatorSeoUseCase(tourOperatorRepository, mediaKeyBatchQuery,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 }

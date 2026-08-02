@@ -64,6 +64,17 @@ public class TourOperatorJpaEntity {
     @Column(columnDefinition = "text")
     private String passwordMessage;
 
+    /** Shop-level SEO defaults — the fallback every page type resolves through. */
+    @Column(length = 70)
+    private String seoTitle;
+
+    @Column(length = 320)
+    private String seoDescription;
+
+    /** Bare media id; resolved to a URL at read time (PATTERNS §5), like logoMediaId. */
+    @Column
+    private UUID ogImageMediaId;
+
     /** The content locales this operator supports — child table, eager (small set). */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(schema = "touroperator", name = "tour_operator_locales",

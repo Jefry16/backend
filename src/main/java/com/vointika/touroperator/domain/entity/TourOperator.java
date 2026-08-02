@@ -3,6 +3,8 @@ package com.vointika.touroperator.domain.entity;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Slug;
+import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
+import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 
@@ -34,6 +36,9 @@ public class TourOperator {
     private boolean passwordEnabled;
     private String storefrontPassword;
     private String passwordMessage;
+    private OperatorSeoTitle seoTitle;
+    private OperatorSeoDescription seoDescription;
+    private UUID ogImageMediaId;
     private final UUID createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -82,7 +87,7 @@ public class TourOperator {
                         LocaleCode primaryLocale,
                         Set<LocaleCode> supportedLocales) {
         this(id, name, slug, timezoneId, currencyId, address, createdBy, createdAt, updatedAt,
-                logoMediaId, primaryLocale, supportedLocales, false, null, null);
+                logoMediaId, primaryLocale, supportedLocales, false, null, null, null, null, null);
     }
 
     // Constructor for reconstituting from persistence
@@ -100,7 +105,10 @@ public class TourOperator {
                         Set<LocaleCode> supportedLocales,
                         boolean passwordEnabled,
                         String storefrontPassword,
-                        String passwordMessage) {
+                        String passwordMessage,
+                        OperatorSeoTitle seoTitle,
+                        OperatorSeoDescription seoDescription,
+                        UUID ogImageMediaId) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -113,6 +121,9 @@ public class TourOperator {
         this.passwordEnabled = passwordEnabled;
         this.storefrontPassword = storefrontPassword;
         this.passwordMessage = passwordMessage;
+        this.seoTitle = seoTitle;
+        this.seoDescription = seoDescription;
+        this.ogImageMediaId = ogImageMediaId;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -181,6 +192,21 @@ public class TourOperator {
         this.updatedAt = Instant.now();
     }
 
+    /**
+     * Replaces the shop-level SEO defaults. Each argument is the whole new value:
+     * null clears the override, which is what the storefront reads as "fall back"
+     * — an empty string would be a title of zero characters, not the absence of
+     * one.
+     */
+    public void updateSeo(OperatorSeoTitle newSeoTitle,
+                          OperatorSeoDescription newSeoDescription,
+                          UUID newOgImageMediaId) {
+        this.seoTitle = newSeoTitle;
+        this.seoDescription = newSeoDescription;
+        this.ogImageMediaId = newOgImageMediaId;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() { return id; }
     public TourOperatorName getName() { return name; }
     public Slug getSlug() { return slug; }
@@ -193,6 +219,9 @@ public class TourOperator {
     public boolean isPasswordEnabled() { return passwordEnabled; }
     public String getStorefrontPassword() { return storefrontPassword; }
     public String getPasswordMessage() { return passwordMessage; }
+    public OperatorSeoTitle getSeoTitle() { return seoTitle; }
+    public OperatorSeoDescription getSeoDescription() { return seoDescription; }
+    public UUID getOgImageMediaId() { return ogImageMediaId; }
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

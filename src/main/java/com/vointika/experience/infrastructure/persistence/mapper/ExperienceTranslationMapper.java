@@ -6,6 +6,8 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.SeoDescription;
+import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Slug;
@@ -26,7 +28,9 @@ public class ExperienceTranslationMapper {
                 strings(t.highlights(), Highlight::value),
                 strings(t.included(), InclusionItem::value),
                 strings(t.notIncluded(), InclusionItem::value),
-                t.slug() == null ? null : t.slug().value());
+                t.slug() == null ? null : t.slug().value(),
+                t.seoTitle() == null ? null : t.seoTitle().value(),
+                t.seoDescription() == null ? null : t.seoDescription().value());
     }
 
     public static ExperienceTranslation toDomain(ExperienceTranslationJpaEntity jpa) {
@@ -40,7 +44,9 @@ public class ExperienceTranslationMapper {
                 vos(jpa.getHighlights(), Highlight::new),
                 vos(jpa.getIncluded(), InclusionItem::new),
                 vos(jpa.getNotIncluded(), InclusionItem::new),
-                jpa.getSlug() == null ? null : new Slug(jpa.getSlug()));
+                jpa.getSlug() == null ? null : new Slug(jpa.getSlug()),
+                jpa.getSeoTitle() == null ? null : new SeoTitle(jpa.getSeoTitle()),
+                jpa.getSeoDescription() == null ? null : new SeoDescription(jpa.getSeoDescription()));
     }
 
     private static <T> List<String> strings(List<T> vos, Function<T, String> value) {

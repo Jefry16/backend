@@ -9,6 +9,8 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.SeoDescription;
+import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -94,7 +96,9 @@ public class UpsertExperienceTranslationUseCase {
         transactionRunner.run(() -> {
             translationRepository.upsert(new ExperienceTranslation(
                     experienceId, tourOperatorId, locale,
-                    name, description, longDescription, highlights, included, notIncluded, slug));
+                    name, description, longDescription, highlights, included, notIncluded, slug,
+                    blankNull(input.seoTitle()) == null ? null : new SeoTitle(input.seoTitle()),
+                    blankNull(input.seoDescription()) == null ? null : new SeoDescription(input.seoDescription())));
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "EXPERIENCE", experienceId, "experience.translation_updated",

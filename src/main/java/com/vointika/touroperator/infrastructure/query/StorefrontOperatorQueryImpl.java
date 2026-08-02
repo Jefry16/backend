@@ -6,10 +6,12 @@ import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.StorefrontOperatorQuery;
+import com.vointika.shared.port.StorefrontOperatorTranslationView;
 import com.vointika.shared.port.StorefrontOperatorView;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
+import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -17,7 +19,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * touroperator's adapter for the shared {@link StorefrontOperatorQuery} seam:
@@ -35,15 +40,18 @@ public class StorefrontOperatorQueryImpl implements StorefrontOperatorQuery {
     private final CurrencyRepository currencyRepository;
     private final TimezoneRepository timezoneRepository;
     private final MediaUrlBatchResolver mediaUrlBatchResolver;
+    private final TourOperatorTranslationRepository translationRepository;
 
     public StorefrontOperatorQueryImpl(TourOperatorRepository tourOperatorRepository,
                                        CurrencyRepository currencyRepository,
                                        TimezoneRepository timezoneRepository,
-                                       MediaUrlBatchResolver mediaUrlBatchResolver) {
+                                       MediaUrlBatchResolver mediaUrlBatchResolver,
+                                       TourOperatorTranslationRepository translationRepository) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.currencyRepository = currencyRepository;
         this.timezoneRepository = timezoneRepository;
         this.mediaUrlBatchResolver = mediaUrlBatchResolver;
+        this.translationRepository = translationRepository;
     }
 
     @Override
@@ -79,7 +87,27 @@ public class StorefrontOperatorQueryImpl implements StorefrontOperatorQuery {
                         .map(Timezone::getName)
                         .orElse(null),
                 operator.isPasswordEnabled(),
-                operator.getPasswordMessage());
+                operator.getPasswordMessage(),
+                operator.getSeoTitle() == null ? null : operator.getSeoTitle().value(),
+                operator.getSeoDescription() == null ? null : operator.getSeoDescription().value(),
+                mediaUrlBatchResolver.resolveOne(operator.getId(), operator.getOgImageMediaId()),
+                translations(operator.getId()));
+    }
+
+    /**
+     * Every locale this operator has translated, in one query. The seam cannot
+     * take a locale — {@code rendering} resolves it from the primary/supported
+     * pair this very view carries — so the overlays travel with the operator and
+     * the caller picks after choosing.
+     */
+    private Map<String, StorefrontOperatorTranslationView> translations(UUID tourOperatorId) {
+        return translationRepository.findAllByTourOperatorId(tourOperatorId).stream()
+                .collect(Collectors.toMap(
+                        t -> t.locale().value(),
+                        t -> new StorefrontOperatorTranslationView(
+                                t.seoTitle() == null ? null : t.seoTitle().value(),
+                                t.seoDescription() == null ? null : t.seoDescription().value(),
+                                t.passwordMessage())));
     }
 
     /** Primary first, then the remaining published locales alphabetically. */

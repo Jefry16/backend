@@ -56,4 +56,10 @@ public class ExperienceTranslationJpaEntity {
 
     @Column
     private String slug;
+
+    @Column(length = 70)
+    private String seoTitle;
+
+    @Column(length = 320)
+    private String seoDescription;
 }

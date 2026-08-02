@@ -43,9 +43,15 @@ public class TenantResolver {
 
         String locale = LocaleResolver.resolve(operator, requestedLocale);
 
+        // The overlay is applied HERE, after the locale is known: the seam hands
+        // back every translation precisely because it cannot take a locale.
         // Navigation is chrome: it belongs to every page, and this is the one
         // place every page passes through.
         return new ShopRenderContext(
-                operator, locale, navigationAssembler.assemble(operator.id(), locale));
+                operator,
+                locale,
+                navigationAssembler.assemble(operator.id(), locale),
+                SeoResolver.forHome(operator, locale),
+                SeoResolver.passwordMessage(operator, locale));
     }
 }

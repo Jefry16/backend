@@ -20,8 +20,16 @@ import java.util.List;
  *                   it rides on every page type rather than being fetched per
  *                   page — the one-call-per-render contract leaves nowhere else
  *                   for it to come from.
+ * @param seo        the page's resolved SEO block. Top level rather than on the
+ *                   content object, because the home page has no content object
+ *                   and would otherwise be the one page unable to carry SEO.
+ * @param passwordMessage the gate-page copy for this locale, translated where
+ *                   the operator has translated it — resolved here so the
+ *                   canonical value on {@code shop} is never the one rendered.
  */
 public record ShopRenderContext(
         StorefrontOperatorView shop,
         String locale,
-        List<NavigationMenu> navigation) {}
+        List<NavigationMenu> navigation,
+        Seo seo,
+        String passwordMessage) {}
