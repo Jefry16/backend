@@ -4,20 +4,33 @@
 -- idempotent, fail-loud.
 --
 -- Idempotent: every insert is ON CONFLICT DO NOTHING, so the service re-runs
--- on every `docker compose up` without duplicating rows. Fixed UUIDs keep the
+-- on every `docker compose up` without duplicating rows. **DO NOTHING does not
+-- converge**: change a value in this file and an existing database keeps the old
+-- one, silently, while the seed still reports success. Rows whose values are
+-- expected to be edited use ON CONFLICT ... DO UPDATE instead — see the tour
+-- operator. Otherwise `docker compose down -v` is the only way to pick up a
+-- change. Fixed UUIDs keep the
 -- cross-row foreign keys stable across re-runs. ON_ERROR_STOP is set by
 -- run.sh: schema drift (a renamed/dropped column) aborts the WHOLE seed
 -- loudly instead of half-applying — if this file fails after a migration,
 -- update it in the same PR (renames-must-update-dev-seed rule).
 --
--- Seeds: a verified admin user, the demo tour operator (slug `acme`, en+es
--- locales), OWNER membership, two audiences (+es overlay), two pickup
+-- Seeds: a verified admin user, the demo tour operator (slug `acme`, primary
+-- locale `es` plus `en` and `fr`), OWNER membership, two audiences (+es overlay), two pickup
 -- locations, three PUBLISHED experiences (+es overlay on one), two AVAILABLE
 -- slots per experience dated relative to today with per-audience pricing
 -- (one tier carries booked seats so the capacity floor is exercisable),
 -- three CMS pages (2 published, 1 draft, +es overlay on About), and the two
 -- default navigation menus with a small demo tree (+es overlay on Home),
 -- and three contact-inbox messages (2 unread, 1 read).
+--
+-- The operator's primary locale is `es`, and the canonical rows are deliberately
+-- still ENGLISH with `es` overlays on only SOME of them. That is not an
+-- oversight: partial translation is the realistic case and the one where
+-- fallback bugs hide. A fully-translated fixture would render identically
+-- whether the overlay chain worked or not. So `es` exercises overlay-hit and
+-- overlay-miss in the same page, `en` exercises the canonical fallback, and
+-- `fr` is a supported locale with no overlay at all.
 --
 -- Deliberately NOT seeded: media rows (a row without its MinIO object renders
 -- broken images — upload through the admin instead) and audit entries (the
@@ -103,14 +116,26 @@ VALUES
      COALESCE(
          (SELECT id FROM reference.currencies WHERE code = 'EUR'),
          (SELECT id FROM reference.currencies ORDER BY code LIMIT 1)),
-     'Calle Mayor 1, 28013 Madrid', 'en',
+     'Calle Mayor 1, 28013 Madrid', 'es',
      :'user_id', NOW(), NOW())
-ON CONFLICT DO NOTHING;
+-- DO UPDATE, not DO NOTHING: this row's values get edited (the primary locale
+-- has already changed once), and DO NOTHING would skip an existing operator
+-- entirely — the seed would print "done" having applied nothing. Converge the
+-- columns the seed owns; created_by/created_at stay as first written.
+ON CONFLICT (id) DO UPDATE SET
+    name           = EXCLUDED.name,
+    slug           = EXCLUDED.slug,
+    timezone_id    = EXCLUDED.timezone_id,
+    currency_id    = EXCLUDED.currency_id,
+    address        = EXCLUDED.address,
+    primary_locale = EXCLUDED.primary_locale,
+    updated_at     = NOW();
 
 INSERT INTO touroperator.tour_operator_locales (tour_operator_id, locale)
 VALUES
+    (:'operator_id', 'es'),
     (:'operator_id', 'en'),
-    (:'operator_id', 'es')
+    (:'operator_id', 'fr')
 ON CONFLICT DO NOTHING;
 
 -- 3. OWNER membership (name/email denormalized per the roster model).
