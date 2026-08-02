@@ -30,11 +30,6 @@ public class TourOperatorRepositoryImpl implements TourOperatorRepository {
     }
 
     @Override
-    public Optional<TourOperator> findByHandle(String handle) {
-        return jpaRepository.findByHandle(handle).map(TourOperatorMapper::toDomain);
-    }
-
-    @Override
     public boolean existsByHandle(String handle) {
         return jpaRepository.existsByHandle(handle);
     }

@@ -137,13 +137,14 @@ second**. That makes them one namespace on the read side, so uniqueness has to b
 checked across both on every write — otherwise one silently shadows the other and
 the shadowed page becomes unreachable in that locale, with no error at any point.
 
-> **The read half is parked (2026-08-01).** `findPublishedByHandle` /
-> `findPublishedByHandle` went with the experience and page render contexts when the
-> storefront surface was cut back to `/shop`, so nothing resolves a handle that way
-> today — only `publishedHandles`, which navigation calls with ids, not handles.
+> **The read half is gone entirely (2026-08-02).** The whole storefront serving
+> side was deleted — the `rendering` context and all four `Storefront*Query` seams
+> — so nothing in this codebase resolves a handle at all today. Whatever renders
+> the public site next has to build that read path, and this section describes the
+> rule it must honour.
 > **The write guards below were kept anyway.** They cost nothing, and dropping them
-> would let a shadowing handle be stored during the gap and only surface as an
-> unreachable page the day the detail read returns — a defect committed now and
+> would let a shadowing handle be stored while nothing can observe it, surfacing as
+> an unreachable page the day a read path returns — a defect committed now and
 > discovered much later. Restore this section's present tense with that read path.
 
 `page` shipped with each namespace checked only against itself, which is the natural
@@ -281,33 +282,6 @@ that is the honest best-effort. Actor name is frozen at write (filter-only,
 never sortable — it's nullable and keyset cursors need non-null sort keys).
 Canonical: any experience/audience mutating use case; the port impl lives in
 `audit/infrastructure/integration`.
-
-## 8c. BFF endpoints — `/api/storefront/**`
-
-The public storefront never talks to this API: its BFF does, server-to-server.
-That surface is authenticated by a **shared secret**, not a JWT. Page reads live
-in `rendering`; an internal endpoint that *mutates* belongs to the context owning
-the data (a cart write is cart's, not rendering's) and brings its own registrar.
-Adding one:
-
-1. Map it under `/api/storefront/…` and take the tenant as a **handle** path
-   variable — the storefront knows tenants by subdomain, not by id.
-2. Register the exact pattern in `RenderingPublicRoutes` (a
-   `PublicRouteRegistrar`). This does **not** make it public: it only stops
-   `anyRequest().authenticated()` from demanding a JWT. `InternalApiSecretFilter`
-   still 401s any call whose `X-Storefront-Secret` doesn't match, before any
-   handler runs. Forgetting the registrar → 401 even with the right secret;
-   registering a pattern that doesn't exist → nothing (fail-closed both ways).
-3. Compose the **whole page** in one response. One internal call per page render
-   is the contract — never make the BFF fan out (§6 applies: `rendering` reaches
-   every other context through shared ports and imports none of them, enforced by
-   ArchUnit).
-4. Anything a visitor guesses at (a password, a token) answers **200 with a
-   boolean**, not 401 — a 401 on this surface means "bad shared secret" and
-   nothing else. Unknown tenant and wrong answer must be indistinguishable.
-5. In a `@WebMvcTest`, `@Import` the registrar alongside `SecurityConfig` and pin
-   `app.storefront.shared-secret` via `properties = …` (it has no default). Without
-   the registrar every assertion passes vacuously as 401.
 
 ## 8d. Losing a race against a unique constraint
 

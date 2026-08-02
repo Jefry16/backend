@@ -11,7 +11,4 @@ public interface MenuJpaRepository extends JpaRepository<MenuJpaEntity, UUID> {
     Optional<MenuJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
-
-    /** Storefront navigation: every menu the operator has. */
-    java.util.List<MenuJpaEntity> findByTourOperatorIdOrderByHandleAsc(UUID tourOperatorId);
 }

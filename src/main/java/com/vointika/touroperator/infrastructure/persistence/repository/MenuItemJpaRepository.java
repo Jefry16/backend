@@ -12,9 +12,6 @@ public interface MenuItemJpaRepository extends JpaRepository<MenuItemJpaEntity, 
 
     List<MenuItemJpaEntity> findByMenuIdOrderByPositionAsc(UUID menuId);
 
-    /** Every item of several menus in one query — the storefront reads them all at once. */
-    List<MenuItemJpaEntity> findByMenuIdInOrderByPositionAsc(java.util.Collection<UUID> menuIds);
-
     /**
      * Bulk-clears a menu's items ahead of the same-tx re-insert (translations
      * cascade at DB level). Clear + flush per the house @Modifying convention

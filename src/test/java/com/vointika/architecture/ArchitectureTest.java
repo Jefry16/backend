@@ -79,24 +79,6 @@ public class ArchitectureTest {
                                     .and(not(resideInAPackage("com.vointika.shared.."))))
                     .because("shared is the base module — it must not know about any context");
 
-    // rendering assembles the public storefront's read models. It is the one
-    // context that imports NOTHING but shared — not even reference — so every
-    // fact a storefront page shows arrives through a shared port, already
-    // resolved by the context that owns it. Stated as "outside rendering and
-    // shared" rather than a list of contexts, so a context added later is
-    // fenced off the day it appears.
-    @ArchTest
-    static final ArchRule rendering_depends_only_on_shared =
-            noClasses()
-                    .that().resideInAPackage("com.vointika.rendering..")
-                    .should().dependOnClassesThat(
-                            resideInAPackage("com.vointika..")
-                                    .and(not(resideInAnyPackage(
-                                            "com.vointika.rendering..",
-                                            "com.vointika.shared.."))))
-                    .because("rendering composes storefront read models from shared ports only — "
-                            + "it must never reach into a bounded context directly");
-
     // contact owns the shopper inbox and imports no bounded context — the rule it
     // shipped without in #63. It reached the tenant through StorefrontOperatorQuery
     // until the storefront intake was removed on 2026-08-01; the admin side needs no

@@ -10,9 +10,6 @@ public interface TourOperatorRepository {
 
     Optional<TourOperator> findById(UUID id);
 
-    /** The operator holding this handle — the storefront's tenant lookup. */
-    Optional<TourOperator> findByHandle(String handle);
-
     /** Whether any operator already holds this handle (global uniqueness). */
     boolean existsByHandle(String handle);
 

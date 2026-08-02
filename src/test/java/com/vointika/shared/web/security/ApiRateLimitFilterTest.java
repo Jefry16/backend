@@ -53,18 +53,6 @@ class ApiRateLimitFilterTest {
     }
 
     @Test
-    void storefrontPathPassesThroughEvenWithAuthentication() throws Exception {
-        authenticate();
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/storefront/carts");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        enabledFilter().doFilter(request, response, chain);
-
-        verify(chain).doFilter(request, response);
-        verifyNoInteractions(rateLimiterProvider, rateLimiter);
-    }
-
-    @Test
     void passesThroughWhenDisabledByProperty() throws Exception {
         authenticate();
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/experiences");
