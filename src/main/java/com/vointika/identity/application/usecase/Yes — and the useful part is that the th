@@ -1,0 +1,55 @@
+Yes — and the useful part is that the thing you've been doing by instinct has a literature, including one law that argues you were right to delete.
+
+  The philosophy, named
+
+  Lean software development — Mary & Tom Poppendieck, 2003. Where "lean" in software comes from: the Toyota Production System, ported. Two of its seven principles are doing real work in this
+  repo already. Eliminate waste — anything built that hasn't reached a user is inventory, and inventory rots (the theme was inventory for four slices). Decide as late as possible — the
+  "last responsible moment." Deferring the render path isn't indecision; it's the principle.
+
+  Gall's Law — John Gall, Systemantics, 1975. The strongest defence of what you just did:
+
+  ▎ A complex system that works is invariably found to have evolved from a simple system that worked. A complex system designed from scratch never works and cannot be patched up to make it 
+  ▎ work.
+
+  "Duplication is far cheaper than the wrong abstraction" — Sandi Metz, RailsConf 2014, expanded in her 2016 post The Wrong Abstraction. Your over-engineering rule is this sentence. Her
+  insight is that the wrong abstraction is worse than none, because each new caller bends it further rather than replacing it.
+
+  YAGNI and "do the simplest thing that could possibly work" — Extreme Programming, Beck/Jeffries, late 90s. The ancestors of the rule you wrote.
+
+  Simple Made Easy — Rich Hickey, Strange Loop 2011. The one I'd actually press on you before you pick a render path. Simple means one braid — not interleaved. Easy means near at hand,
+  familiar. They're different axes, and conflating them is how you end up with a framework. Liquid was easy (Shopify-shaped, theme authors know it) and not simple (it owned templating and
+  escaping and i18n and asset URLs and file resolution — five concerns braided into one dependency). That's a sharper diagnosis of why it had to go than "too heavy."
+
+  Chesterton's Fence — the counterweight, and the one that constrains me more than you. Don't remove what you don't understand the purpose of. It's why I flagged the timeout/network split as
+  a cost rather than just deleting it quietly.
+
+  A Philosophy of Software Design — John Ousterhout, 2018. Worth knowing it pushes back on you in two places: he wants deep modules (narrow interface, substantial behaviour) and warns that
+  lean codebases drift into many shallow ones — more interface than substance. And he argues explicitly that "self-documenting code" is usually a rationalisation for under-commenting. Your
+  comment rule survives that critique because it targets restatement, not explanation — but the strongest counterargument is real and respectable.
+
+  One place your rules are more eager than the canon: Fowler's Rule of Three says wait for the third occurrence before abstracting. You wrote "second caller." That's a deliberate half-step
+  tighter; fine, just know it's a choice.
+
+  On defining our patterns
+
+  The backend already sets the house shape, and its entry bar is the good part:
+
+  ▎ a pattern earns a spot only when it's repeated ≥2× and stable
+
+  Applying that bar honestly, the storefront has four today — and the reason it's safe to write them now, before deciding the render path, is that all four are render-agnostic and
+  runtime-agnostic. They survive whatever you pick:
+
+  1. The page-route shape — fetch → failure → gate → locale → answer. Repeated 4×. This is the one that most needs writing down, because a new route that reorders it doesn't look broken, it
+  leaks.
+  2. Decide locally before spending an origin request — shape and host checks run before any internal call, so a scan of the URL space can't be turned into origin amplification.
+  3. Uniform refusal — a wrong host, an unpublished locale, and a locked shop all answer the same way regardless of what exists behind them. Three sites, one rule: a refusal must never be a
+  disclosure.
+  4. Opaque pass-through — the cursor, and now the whole payload. The backend owns the meaning; re-deriving it here is how the BFF stops being thin.
+
+  What I'd deliberately leave out for failing the bar: the internal-client shape (one module), the tenant-scoped signed cookie (one use), 404-vs-502 (one place). They go in when a second
+  instance shows up.
+
+  I'd also keep the split the backend keeps: CLAUDE.md = rules (your four), PATTERNS.md = recipes, STACK.md = versions. Patterns are "here's the shape to copy," not "here's what you must
+  do."
+
+  Want me to write PATTERNS.md with those four? It'd be short — roughly a page — and I'd resist padding it to look substantial.
