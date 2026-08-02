@@ -299,9 +299,9 @@ and list every writer of each branch. Recipe in PATTERNS §4d.
 
 **"Every writer" means every path that *produces* the value, not every path that
 *accepts* one.** The `page` pass predicted the same defect in `experience` and filed it
-as Debt — correctly — but sized it as one write path, reasoning that experience slugs
+as Debt — correctly — but sized it as one write path, reasoning that experience handles
 are immutable so there is no rename to guard. True, and beside the point: the create
-path *generated* a canonical slug while probing only its own table, so generation was a
+path *generated* a canonical handle while probing only its own table, so generation was a
 second door. Immutability rules out later edits; it says nothing about the write that
 sets the value in the first place. When you enumerate writers, list the derivers
 alongside the setters.

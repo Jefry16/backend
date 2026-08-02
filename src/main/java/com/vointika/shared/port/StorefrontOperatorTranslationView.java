@@ -9,7 +9,7 @@ package com.vointika.shared.port;
  * fetched per locale, because the locale is resolved <em>from</em> the operator:
  * {@code LocaleResolver} needs the primary and supported locales before it can
  * choose, so the operator is already loaded by the time the locale is known.
- * Taking a locale on {@code findBySlug} would force either two round trips or
+ * Taking a locale on {@code findByHandle} would force either two round trips or
  * locale resolution moving into {@code touroperator}, which does not own it. An
  * operator has a handful of locales, so carrying them all is one query.
  */

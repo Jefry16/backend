@@ -7,7 +7,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.FieldChange;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.application.dto.output.StorefrontPasswordView;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
@@ -55,7 +55,7 @@ class StorefrontPasswordUseCasesTest {
     }
 
     private TourOperator operator(boolean enabled, String password, String message) {
-        return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Slug("acme"),
+        return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Calle Mayor 1"),
                 USER, Instant.now(), Instant.now(), null,
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")),

@@ -13,7 +13,7 @@ import java.util.UUID;
  * if a render context forgets to check.
  *
  * <p>Reduced to the one method navigation needs. {@code listPublished} and
- * {@code findPublishedBySlug} went with the experience render contexts — the
+ * {@code findPublishedByHandle} went with the experience render contexts — the
  * detail read is what made a localized handle and a canonical one resolve as one
  * namespace, so PATTERNS §4d's read half is parked with it. The write guards it
  * justified are deliberately kept: they are what stops a shadowing handle being

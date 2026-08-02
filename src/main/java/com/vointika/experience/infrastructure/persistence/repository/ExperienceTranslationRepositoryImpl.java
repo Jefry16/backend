@@ -50,13 +50,13 @@ public class ExperienceTranslationRepositoryImpl implements ExperienceTranslatio
     }
 
     @Override
-    public boolean existsByOperatorLocaleSlug(UUID tourOperatorId, String locale, String slug, UUID excludingExperienceId) {
-        return jpaRepository.existsByTourOperatorIdAndLocaleAndSlugAndExperienceIdNot(
-                tourOperatorId, locale, slug, excludingExperienceId);
+    public boolean existsByOperatorLocaleHandle(UUID tourOperatorId, String locale, String handle, UUID excludingExperienceId) {
+        return jpaRepository.existsByTourOperatorIdAndLocaleAndHandleAndExperienceIdNot(
+                tourOperatorId, locale, handle, excludingExperienceId);
     }
 
     @Override
-    public boolean existsBySlugInAnyLocale(UUID tourOperatorId, String slug) {
-        return jpaRepository.existsByTourOperatorIdAndSlug(tourOperatorId, slug);
+    public boolean existsByHandleInAnyLocale(UUID tourOperatorId, String handle) {
+        return jpaRepository.existsByTourOperatorIdAndHandle(tourOperatorId, handle);
     }
 }

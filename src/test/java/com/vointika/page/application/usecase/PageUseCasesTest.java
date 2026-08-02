@@ -14,7 +14,7 @@ import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,7 +63,7 @@ class PageUseCasesTest {
     }
 
     private Page page() {
-        return new Page(PAGE, OP, new PageTitle("About us"), new Slug("about-us"),
+        return new Page(PAGE, OP, new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"), null, null, USER);
     }
 
@@ -195,7 +195,7 @@ class PageUseCasesTest {
     @Test
     void createRejectsAHandleAnotherPageAlreadyUsesAsALocalizedHandle() {
         when(repository.existsByTourOperatorIdAndHandle(OP, "sobre-nosotros")).thenReturn(false);
-        when(translationRepository.existsBySlugInAnyLocale(OP, "sobre-nosotros", null)).thenReturn(true);
+        when(translationRepository.existsByHandleInAnyLocale(OP, "sobre-nosotros", null)).thenReturn(true);
 
         assertThatThrownBy(() -> create().execute(new CreatePageInput(
                 USER, OP, "Sobre nosotros", "sobre-nosotros", "<p>x</p>", null, null)))
@@ -208,7 +208,7 @@ class PageUseCasesTest {
     void renameRejectsAHandleAnotherPageAlreadyUsesAsALocalizedHandle() {
         when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
         when(repository.existsByTourOperatorIdAndHandle(OP, "sobre-nosotros")).thenReturn(false);
-        when(translationRepository.existsBySlugInAnyLocale(OP, "sobre-nosotros", PAGE)).thenReturn(true);
+        when(translationRepository.existsByHandleInAnyLocale(OP, "sobre-nosotros", PAGE)).thenReturn(true);
 
         assertThatThrownBy(() -> rename().execute(OP, PAGE, "sobre-nosotros", USER))
                 .isInstanceOf(ResourceAlreadyExistsException.class);

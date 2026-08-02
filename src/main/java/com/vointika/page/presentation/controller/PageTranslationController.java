@@ -74,7 +74,7 @@ public class PageTranslationController {
             @AuthenticationPrincipal String callerUserId) {
         upsertUseCase.execute(new UpsertPageTranslationInput(
                 UUID.fromString(callerUserId), tourOperatorId, pageId, locale,
-                body.title(), body.body(), body.seoTitle(), body.seoDescription(), body.slug()));
+                body.title(), body.body(), body.seoTitle(), body.seoDescription(), body.handle()));
         return ResponseEntity.noContent().build();
     }
 

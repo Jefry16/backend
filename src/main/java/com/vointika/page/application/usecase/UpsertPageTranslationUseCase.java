@@ -16,10 +16,10 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
@@ -39,7 +39,7 @@ public class UpsertPageTranslationUseCase {
     private final PageRepository pageRepository;
     private final PageTranslationRepository translationRepository;
     private final OperatorLocalesQuery operatorLocalesQuery;
-    private final SlugGenerator slugGenerator;
+    private final HandleGenerator handleGenerator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
@@ -47,14 +47,14 @@ public class UpsertPageTranslationUseCase {
     public UpsertPageTranslationUseCase(PageRepository pageRepository,
                                         PageTranslationRepository translationRepository,
                                         OperatorLocalesQuery operatorLocalesQuery,
-                                        SlugGenerator slugGenerator,
+                                        HandleGenerator handleGenerator,
                                         TourOperatorMembershipCheck membershipCheck,
                                         TransactionRunner transactionRunner,
                                         AuditTrailPort auditTrailPort) {
         this.pageRepository = pageRepository;
         this.translationRepository = translationRepository;
         this.operatorLocalesQuery = operatorLocalesQuery;
-        this.slugGenerator = slugGenerator;
+        this.handleGenerator = handleGenerator;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -72,7 +72,7 @@ public class UpsertPageTranslationUseCase {
                     "Locale '" + locale.value() + "' is not supported by this operator");
         }
 
-        Slug slug = resolveSlug(input, locale);
+        Handle handle = resolveHandle(input, locale);
         PageTranslation translation = new PageTranslation(
                 input.pageId(),
                 input.tourOperatorId(),
@@ -81,7 +81,7 @@ public class UpsertPageTranslationUseCase {
                 blank(input.body()) ? null : new PageBody(input.body()),
                 blank(input.seoTitle()) ? null : new PageSeoTitle(input.seoTitle()),
                 blank(input.seoDescription()) ? null : new PageSeoDescription(input.seoDescription()),
-                slug);
+                handle);
 
         try {
             transactionRunner.run(() -> {
@@ -100,10 +100,10 @@ public class UpsertPageTranslationUseCase {
         }
     }
 
-    private Slug resolveSlug(UpsertPageTranslationInput input, LocaleCode locale) {
-        if (!blank(input.slug())) {
-            Slug explicit = new Slug(input.slug().trim());
-            if (translationRepository.existsBySlug(
+    private Handle resolveHandle(UpsertPageTranslationInput input, LocaleCode locale) {
+        if (!blank(input.handle())) {
+            Handle explicit = new Handle(input.handle().trim());
+            if (translationRepository.existsByHandle(
                     input.tourOperatorId(), locale, explicit.value(), input.pageId())) {
                 throw new ResourceAlreadyExistsException(
                         "The localized handle '" + explicit.value()
@@ -115,8 +115,8 @@ public class UpsertPageTranslationUseCase {
         if (!blank(input.title())) {
             // Probe both namespaces, so a derived handle never lands on another
             // page's canonical one either.
-            return slugGenerator.generateUnique(input.title(), candidate ->
-                    translationRepository.existsBySlug(
+            return handleGenerator.generateUnique(input.title(), candidate ->
+                    translationRepository.existsByHandle(
                             input.tourOperatorId(), locale, candidate, input.pageId())
                             || pageRepository.existsByTourOperatorIdAndHandleExcluding(
                                     input.tourOperatorId(), candidate, input.pageId()));
@@ -130,11 +130,11 @@ public class UpsertPageTranslationUseCase {
      * canonical handle silently shadows that page in this locale. Matching the
      * page's own canonical handle is harmless — it resolves to the same page.
      */
-    private void requireNoCanonicalClash(UpsertPageTranslationInput input, String slug) {
+    private void requireNoCanonicalClash(UpsertPageTranslationInput input, String handle) {
         if (pageRepository.existsByTourOperatorIdAndHandleExcluding(
-                input.tourOperatorId(), slug, input.pageId())) {
+                input.tourOperatorId(), handle, input.pageId())) {
             throw new ResourceAlreadyExistsException(
-                    "Another page already uses '" + slug + "' as its handle");
+                    "Another page already uses '" + handle + "' as its handle");
         }
     }
 

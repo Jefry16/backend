@@ -123,8 +123,8 @@ class MetafieldDefinitionControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("ownerType").description("Which resource kind: experience or page (immutable)"),
-                                fieldWithPath("namespace").description("Slug-shaped namespace half of the identifier (immutable)"),
-                                fieldWithPath("key").description("Slug-shaped key half; namespace.key unique per (operator, owner type) — duplicate → 409 (immutable)"),
+                                fieldWithPath("namespace").description("Handle-shaped namespace half of the identifier (immutable)"),
+                                fieldWithPath("key").description("Handle-shaped key half; namespace.key unique per (operator, owner type) — duplicate → 409 (immutable)"),
                                 fieldWithPath("type").description("single_line_text | multi_line_text | number_integer | number_decimal | boolean | date | url | json | metaobject_reference (immutable)"),
                                 fieldWithPath("metaobjectDefinitionId").type("String").description("Required iff type is metaobject_reference: the pinned metaobject type").optional(),
                                 fieldWithPath("name").description("Display name (1–120)"),

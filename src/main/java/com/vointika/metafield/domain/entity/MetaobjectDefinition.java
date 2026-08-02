@@ -12,7 +12,7 @@ import java.util.UUID;
 
 /**
  * The blueprint of one custom content type (e.g. a "size chart" or "guide
- * profile"): a type slug plus ordered field definitions
+ * profile"): a type handle plus ordered field definitions
  * ({@link MetaobjectField}). {@code type} is IMMUTABLE after create — entries
  * and (later) themes address the definition through it. Only the display name
  * and description are editable.

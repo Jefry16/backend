@@ -25,7 +25,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.FieldChange;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -94,7 +94,7 @@ class MetaobjectEntryUseCasesTest {
     }
 
     private MetaobjectEntry entry() {
-        return new MetaobjectEntry(ENTRY, OP, DEF, new Slug("beginner-chart"),
+        return new MetaobjectEntry(ENTRY, OP, DEF, new Handle("beginner-chart"),
                 new MetaobjectEntryName("Beginner chart"), USER);
     }
 

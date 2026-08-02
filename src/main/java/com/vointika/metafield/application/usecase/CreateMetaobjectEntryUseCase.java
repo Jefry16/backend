@@ -18,7 +18,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class CreateMetaobjectEntryUseCase {
                 .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
 
-        Slug handle = new Slug(input.handle());
+        Handle handle = new Handle(input.handle());
         MetaobjectEntryName name = new MetaobjectEntryName(input.name());
 
         Map<String, MetaobjectField> fieldsByKey = new HashMap<>();

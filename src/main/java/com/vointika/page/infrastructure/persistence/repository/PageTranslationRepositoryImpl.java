@@ -43,17 +43,17 @@ public class PageTranslationRepositoryImpl implements PageTranslationRepository 
     }
 
     @Override
-    public boolean existsBySlug(UUID tourOperatorId, LocaleCode locale, String slug, UUID excludePageId) {
-        return jpa.existsByTourOperatorIdAndLocaleAndSlugAndPageIdNot(
-                tourOperatorId, locale.value(), slug, excludePageId);
+    public boolean existsByHandle(UUID tourOperatorId, LocaleCode locale, String handle, UUID excludePageId) {
+        return jpa.existsByTourOperatorIdAndLocaleAndHandleAndPageIdNot(
+                tourOperatorId, locale.value(), handle, excludePageId);
     }
 
     @Override
-    public boolean existsBySlugInAnyLocale(UUID tourOperatorId, String slug, UUID excludePageId) {
+    public boolean existsByHandleInAnyLocale(UUID tourOperatorId, String handle, UUID excludePageId) {
         // A null exclusion would make the derived `…AndPageIdNot` query match
         // nothing, so create passes a sentinel that cannot be a real page id.
-        return jpa.existsByTourOperatorIdAndSlugAndPageIdNot(
-                tourOperatorId, slug,
+        return jpa.existsByTourOperatorIdAndHandleAndPageIdNot(
+                tourOperatorId, handle,
                 excludePageId == null ? NO_PAGE : excludePageId);
     }
 

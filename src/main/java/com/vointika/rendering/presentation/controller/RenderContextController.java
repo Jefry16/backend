@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * resolves EXPERIENCE and PAGE link targets through the same two queries.
  */
 @RestController
-@RequestMapping("/api/storefront/render-context/{tenantSlug}")
+@RequestMapping("/api/storefront/render-context/{tenantHandle}")
 public class RenderContextController {
 
     private final GetShopRenderContextUseCase getShopUseCase;
@@ -50,9 +50,9 @@ public class RenderContextController {
      */
     @GetMapping
     public ResponseEntity<ShopRenderContextResponse> shop(
-            @PathVariable String tenantSlug,
+            @PathVariable String tenantHandle,
             @RequestParam(required = false) String locale) {
         return ResponseEntity.ok(
-                ShopRenderContextResponse.from(getShopUseCase.execute(tenantSlug, locale)));
+                ShopRenderContextResponse.from(getShopUseCase.execute(tenantHandle, locale)));
     }
 }

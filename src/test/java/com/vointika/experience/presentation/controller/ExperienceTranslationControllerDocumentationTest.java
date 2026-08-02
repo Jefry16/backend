@@ -100,7 +100,7 @@ class ExperienceTranslationControllerDocumentationTest {
               "highlights": ["Grupos pequeños"],
               "included": ["Equipo"],
               "notIncluded": [],
-              "slug": "buceo-al-atardecer"
+              "handle": "buceo-al-atardecer"
             }""";
 
     @Test
@@ -156,7 +156,7 @@ class ExperienceTranslationControllerDocumentationTest {
                                 fieldWithPath("highlights").description("Translated highlights").optional(),
                                 fieldWithPath("included").description("Translated included list").optional(),
                                 fieldWithPath("notIncluded").description("Translated not-included list").optional(),
-                                fieldWithPath("slug").description("Optional localized slug; must not be taken by another experience — as a localized slug in this locale, or as its canonical slug (409 on dup). If omitted, derived from name").optional())));
+                                fieldWithPath("handle").description("Optional localized handle; must not be taken by another experience — as a localized handle in this locale, or as its canonical handle (409 on dup). If omitted, derived from name").optional())));
     }
 
     @Test

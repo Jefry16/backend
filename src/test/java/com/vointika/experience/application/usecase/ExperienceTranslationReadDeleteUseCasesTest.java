@@ -81,7 +81,7 @@ class ExperienceTranslationReadDeleteUseCasesTest {
         verify(membershipCheck).ensureMember(callerId, operatorId);
         assertEquals("fr", view.locale());
         assertNull(view.name());
-        assertNull(view.slug());
+        assertNull(view.handle());
     }
 
     @Test

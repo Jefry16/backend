@@ -1,7 +1,7 @@
 package com.vointika.touroperator.infrastructure.persistence.mapper;
 
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.entity.MenuItem;
 import com.vointika.touroperator.domain.entity.MenuItemTranslation;
@@ -23,7 +23,7 @@ public final class MenuMapper {
 
     public static Menu toDomain(MenuJpaEntity entity) {
         return new Menu(
-                entity.getId(), entity.getTourOperatorId(), new Slug(entity.getHandle()),
+                entity.getId(), entity.getTourOperatorId(), new Handle(entity.getHandle()),
                 entity.getTitle(), entity.getCreatedBy(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

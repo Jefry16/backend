@@ -9,9 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface TourOperatorJpaRepository extends JpaRepository<TourOperatorJpaEntity, UUID> {
-    Optional<TourOperatorJpaEntity> findBySlug(String slug);
+    Optional<TourOperatorJpaEntity> findByHandle(String handle);
 
-    boolean existsBySlug(String slug);
+    boolean existsByHandle(String handle);
 
     boolean existsByCreatedByAndNameIgnoreCase(UUID createdBy, String name);
 

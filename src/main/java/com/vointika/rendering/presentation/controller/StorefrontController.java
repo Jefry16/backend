@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * BFF posts here.
  */
 @RestController
-@RequestMapping("/api/storefront/{tenantSlug}")
+@RequestMapping("/api/storefront/{tenantHandle}")
 public class StorefrontController {
 
     private final VerifyStorefrontPasswordUseCase verifyPasswordUseCase;
@@ -35,9 +35,9 @@ public class StorefrontController {
      */
     @PostMapping("/verify-password")
     public ResponseEntity<VerifyPasswordResponse> verifyPassword(
-            @PathVariable String tenantSlug,
+            @PathVariable String tenantHandle,
             @RequestBody VerifyPasswordRequest request) {
         return ResponseEntity.ok(new VerifyPasswordResponse(
-                verifyPasswordUseCase.execute(tenantSlug, request.password())));
+                verifyPasswordUseCase.execute(tenantHandle, request.password())));
     }
 }

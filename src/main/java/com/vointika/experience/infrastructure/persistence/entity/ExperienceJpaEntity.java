@@ -32,7 +32,7 @@ public class ExperienceJpaEntity {
     private UUID createdBy;
 
     @Column(nullable = false, updatable = false)
-    private String slug;
+    private String handle;
 
     @Column(nullable = false)
     private String name;

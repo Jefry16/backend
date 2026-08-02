@@ -11,5 +11,5 @@ public record UpsertPageTranslationInput(
         String body,
         String seoTitle,
         String seoDescription,
-        String slug) {
+        String handle) {
 }

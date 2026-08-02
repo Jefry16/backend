@@ -18,8 +18,8 @@ ALTER TABLE touroperator.tour_operators
 -- Mirrors experience_translations: composite PK on (entity, locale), every
 -- content column nullable so a row overlays rather than replaces.
 --
--- name, slug and address are deliberately absent: a brand name is not content,
--- and the slug is the URL.
+-- name, handle and address are deliberately absent: a brand name is not content,
+-- and the handle is the URL.
 CREATE TABLE touroperator.tour_operator_translations (
     tour_operator_id UUID         NOT NULL REFERENCES touroperator.tour_operators (id) ON DELETE CASCADE,
     locale           VARCHAR(8)   NOT NULL,

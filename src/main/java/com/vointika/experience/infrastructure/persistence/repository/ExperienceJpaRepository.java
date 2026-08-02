@@ -12,9 +12,9 @@ public interface ExperienceJpaRepository extends JpaRepository<ExperienceJpaEnti
 
     boolean existsByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
-    boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
+    boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 
-    boolean existsByTourOperatorIdAndSlugAndIdNot(UUID tourOperatorId, String slug, UUID excludeExperienceId);
+    boolean existsByTourOperatorIdAndHandleAndIdNot(UUID tourOperatorId, String handle, UUID excludeExperienceId);
 
     /** Navigation: resolve many ids to published experiences at once. */
     java.util.List<ExperienceJpaEntity> findByIdInAndTourOperatorIdAndPublishedTrue(

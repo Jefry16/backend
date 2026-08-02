@@ -15,7 +15,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.touroperator.application.policy.TourOperatorMembershipPolicy;
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
@@ -75,7 +75,7 @@ public class TourOperatorUseCaseConfig {
             MenuRepository menuRepository,
             TimezoneRepository timezoneRepository,
             CurrencyRepository currencyRepository,
-            SlugGenerator slugGenerator,
+            HandleGenerator handleGenerator,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
             UserAccountQuery userAccountQuery,
@@ -88,7 +88,7 @@ public class TourOperatorUseCaseConfig {
                 menuRepository,
                 timezoneRepository,
                 currencyRepository,
-                slugGenerator,
+                handleGenerator,
                 transactionRunner,
                 idGenerator,
                 userAccountQuery,

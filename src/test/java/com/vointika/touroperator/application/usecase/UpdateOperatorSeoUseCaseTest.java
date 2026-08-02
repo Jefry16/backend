@@ -8,7 +8,7 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
@@ -57,7 +57,7 @@ class UpdateOperatorSeoUseCaseTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        operator = new TourOperator(OP, new TourOperatorName("Acme"), new Slug("acme"),
+        operator = new TourOperator(OP, new TourOperatorName("Acme"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1"),
                 USER, Instant.now(), Instant.now(), null,
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")));

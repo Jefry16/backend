@@ -33,12 +33,12 @@ public class TenantResolver {
     /**
      * @param requestedLocale the locale the URL asked for, or null for the bare
      *                        (prefix-less) path
-     * @throws ResourceNotFoundException when no operator holds this slug, so an
+     * @throws ResourceNotFoundException when no operator holds this handle, so an
      *                                   unknown subdomain renders the platform's
      *                                   404 rather than a broken tenant page
      */
-    public ShopRenderContext resolve(String slug, String requestedLocale) {
-        StorefrontOperatorView operator = storefrontOperatorQuery.findBySlug(slug)
+    public ShopRenderContext resolve(String handle, String requestedLocale) {
+        StorefrontOperatorView operator = storefrontOperatorQuery.findByHandle(handle)
                 .orElseThrow(() -> new ResourceNotFoundException("Storefront not found"));
 
         String locale = LocaleResolver.resolve(operator, requestedLocale);

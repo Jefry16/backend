@@ -16,7 +16,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -68,7 +68,7 @@ class UpdateExperienceUseCaseTest {
     }
 
     private Experience existing() {
-        return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Slug("dive"),
+        return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Old"), new Description("d"), new LongDescription("l"),
                 false, List.of(), List.of(), List.of(), List.of(),
                 List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null);
@@ -80,7 +80,7 @@ class UpdateExperienceUseCaseTest {
     }
 
     @Test
-    void updatesEditableFieldsKeepingSlug() {
+    void updatesEditableFieldsKeepingHandle() {
         when(repository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.of(existing()));
 
         useCase.execute(operatorId, experienceId, callerId, input("New Name"));
@@ -90,7 +90,7 @@ class UpdateExperienceUseCaseTest {
         ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
         verify(repository).save(saved.capture());
         assertEquals("New Name", saved.getValue().getName().value());
-        assertEquals("dive", saved.getValue().getSlug().value()); // slug immutable
+        assertEquals("dive", saved.getValue().getHandle().value()); // handle immutable
         assertEquals(true, saved.getValue().isFeatured());
     }
 

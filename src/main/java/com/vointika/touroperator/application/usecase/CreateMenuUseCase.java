@@ -7,7 +7,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.application.dto.input.CreateMenuInput;
 import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.repository.MenuRepository;
@@ -44,7 +44,7 @@ public class CreateMenuUseCase {
     public UUID execute(CreateMenuInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
 
-        Slug handle = new Slug(input.handle());
+        Handle handle = new Handle(input.handle());
         Menu menu = new Menu(idGenerator.newId(), input.tourOperatorId(),
                 handle, input.title(), input.callerUserId());
 

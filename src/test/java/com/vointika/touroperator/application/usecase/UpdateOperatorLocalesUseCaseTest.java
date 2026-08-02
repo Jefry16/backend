@@ -9,7 +9,7 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +69,7 @@ class UpdateOperatorLocalesUseCaseTest {
     }
 
     private TourOperator operator() {
-        return new TourOperator(operatorId, new TourOperatorName("Acme"), new Slug("acme"),
+        return new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St"), UUID.randomUUID());
     }
 

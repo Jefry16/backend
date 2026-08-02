@@ -7,7 +7,7 @@ import com.vointika.shared.port.StorefrontOperatorQuery;
  *
  * <p>Answers with a boolean and never throws for a wrong password or an unknown
  * tenant: the two are indistinguishable by design, so the gate cannot be used to
- * enumerate which slugs exist. A failed attempt is not an error condition — it
+ * enumerate which handles exist. A failed attempt is not an error condition — it
  * is the expected outcome of a guess — so the transport stays 200 and only the
  * body differs (a 401 here would also collide with the shared-secret filter's
  * own 401, which means something entirely different).
@@ -23,7 +23,7 @@ public class VerifyStorefrontPasswordUseCase {
         this.storefrontOperatorQuery = storefrontOperatorQuery;
     }
 
-    public boolean execute(String slug, String candidate) {
-        return storefrontOperatorQuery.verifyStorefrontPassword(slug, candidate);
+    public boolean execute(String handle, String candidate) {
+        return storefrontOperatorQuery.verifyStorefrontPassword(handle, candidate);
     }
 }

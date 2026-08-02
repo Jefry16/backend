@@ -14,9 +14,9 @@ import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,7 +45,7 @@ class PageTranslationUseCasesTest {
     private PageRepository pageRepository;
     private PageTranslationRepository translationRepository;
     private OperatorLocalesQuery operatorLocalesQuery;
-    private SlugGenerator slugGenerator;
+    private HandleGenerator handleGenerator;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private AuditTrailPort auditTrailPort;
@@ -55,7 +55,7 @@ class PageTranslationUseCasesTest {
         pageRepository = mock(PageRepository.class);
         translationRepository = mock(PageTranslationRepository.class);
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
-        slugGenerator = mock(SlugGenerator.class);
+        handleGenerator = mock(HandleGenerator.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         auditTrailPort = mock(AuditTrailPort.class);
@@ -64,24 +64,24 @@ class PageTranslationUseCasesTest {
             return null;
         }).when(transactionRunner).run(any());
         when(pageRepository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(
-                new Page(PAGE, OP, new PageTitle("About us"), new Slug("about-us"),
+                new Page(PAGE, OP, new PageTitle("About us"), new Handle("about-us"),
                         new PageBody("<p>Hello</p>"), null, null, USER)));
         when(operatorLocalesQuery.findSupportedLocales(OP)).thenReturn(Set.of("en", "es"));
     }
 
     private UpsertPageTranslationUseCase upsert() {
         return new UpsertPageTranslationUseCase(pageRepository, translationRepository,
-                operatorLocalesQuery, slugGenerator, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocalesQuery, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    private UpsertPageTranslationInput input(String title, String slug) {
+    private UpsertPageTranslationInput input(String title, String handle) {
         return new UpsertPageTranslationInput(USER, OP, PAGE, "es",
-                title, "<p>Hola</p>", null, null, slug);
+                title, "<p>Hola</p>", null, null, handle);
     }
 
     @Test
-    void upsertStoresOverlayWithExplicitSlugAndAudits() {
-        when(translationRepository.existsBySlug(OP, new LocaleCode("es"), "sobre-nosotros", PAGE))
+    void upsertStoresOverlayWithExplicitHandleAndAudits() {
+        when(translationRepository.existsByHandle(OP, new LocaleCode("es"), "sobre-nosotros", PAGE))
                 .thenReturn(false);
 
         upsert().execute(input("Sobre nosotros", "sobre-nosotros"));
@@ -89,14 +89,14 @@ class PageTranslationUseCasesTest {
         verify(membershipCheck).ensureAdmin(USER, OP);
         ArgumentCaptor<PageTranslation> captor = ArgumentCaptor.forClass(PageTranslation.class);
         verify(translationRepository).upsert(captor.capture());
-        assertThat(captor.getValue().slug().value()).isEqualTo("sobre-nosotros");
+        assertThat(captor.getValue().handle().value()).isEqualTo("sobre-nosotros");
         assertThat(captor.getValue().title().value()).isEqualTo("Sobre nosotros");
         verify(auditTrailPort).append(any());
     }
 
     @Test
-    void upsertExplicitSlugCollisionIs409() {
-        when(translationRepository.existsBySlug(OP, new LocaleCode("es"), "sobre-nosotros", PAGE))
+    void upsertExplicitHandleCollisionIs409() {
+        when(translationRepository.existsByHandle(OP, new LocaleCode("es"), "sobre-nosotros", PAGE))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> upsert().execute(input("Sobre nosotros", "sobre-nosotros")))
@@ -105,31 +105,31 @@ class PageTranslationUseCasesTest {
     }
 
     @Test
-    void upsertDerivesSlugFromTranslatedTitleWhenAbsent() {
-        when(slugGenerator.generateUnique(eq("Sobre nosotros"), any())).thenReturn(new Slug("sobre-nosotros"));
+    void upsertDerivesHandleFromTranslatedTitleWhenAbsent() {
+        when(handleGenerator.generateUnique(eq("Sobre nosotros"), any())).thenReturn(new Handle("sobre-nosotros"));
 
         upsert().execute(input("Sobre nosotros", null));
 
         ArgumentCaptor<PageTranslation> captor = ArgumentCaptor.forClass(PageTranslation.class);
         verify(translationRepository).upsert(captor.capture());
-        assertThat(captor.getValue().slug().value()).isEqualTo("sobre-nosotros");
+        assertThat(captor.getValue().handle().value()).isEqualTo("sobre-nosotros");
     }
 
     @Test
-    void upsertWithoutTitleOrSlugStoresNoLocalizedHandle() {
+    void upsertWithoutTitleOrHandleStoresNoLocalizedHandle() {
         upsert().execute(input(null, null));
 
         ArgumentCaptor<PageTranslation> captor = ArgumentCaptor.forClass(PageTranslation.class);
         verify(translationRepository).upsert(captor.capture());
-        assertThat(captor.getValue().slug()).isNull();
-        verify(slugGenerator, never()).generateUnique(anyString(), any());
+        assertThat(captor.getValue().handle()).isNull();
+        verify(handleGenerator, never()).generateUnique(anyString(), any());
     }
 
     @Test
     void upsertRejectsALocalizedHandleThatIsAnotherPagesCanonicalHandle() {
         // The storefront resolves localized handles BEFORE canonical ones, so
         // allowing this made the other page unreachable in that locale.
-        when(translationRepository.existsBySlug(any(), any(), any(), any())).thenReturn(false);
+        when(translationRepository.existsByHandle(any(), any(), any(), any())).thenReturn(false);
         when(pageRepository.existsByTourOperatorIdAndHandleExcluding(OP, "about-us", PAGE))
                 .thenReturn(true);
 

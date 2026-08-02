@@ -2,7 +2,7 @@ package com.vointika.touroperator.infrastructure.persistence.mapper;
 
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.touroperator.domain.entity.TourOperator;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
@@ -22,7 +22,7 @@ public class TourOperatorMapper {
         return new TourOperatorJpaEntity(
                 operator.getId(),
                 operator.getName().value(),
-                operator.getSlug().value(),
+                operator.getHandle().value(),
                 operator.getTimezoneId(),
                 operator.getCurrencyId(),
                 operator.getAddress().value(),
@@ -48,7 +48,7 @@ public class TourOperatorMapper {
         return new TourOperator(
                 jpa.getId(),
                 new TourOperatorName(jpa.getName()),
-                new Slug(jpa.getSlug()),
+                new Handle(jpa.getHandle()),
                 jpa.getTimezoneId(),
                 jpa.getCurrencyId(),
                 new TourOperatorAddress(jpa.getAddress()),

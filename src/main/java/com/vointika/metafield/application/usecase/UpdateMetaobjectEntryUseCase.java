@@ -19,7 +19,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.FieldChange;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.ArrayList;
@@ -75,7 +75,7 @@ public class UpdateMetaobjectEntryUseCase {
         // uniqueness (per definition).
         MetaobjectEntryName name = input.name() == null
                 ? entry.getName() : new MetaobjectEntryName(input.name());
-        Slug handle = input.handle() == null ? entry.getHandle() : new Slug(input.handle());
+        Handle handle = input.handle() == null ? entry.getHandle() : new Handle(input.handle());
         if (!handle.value().equals(entry.getHandle().value())
                 && entryRepository.existsByDefinitionIdAndHandle(
                         entry.getDefinitionId(), handle.value())) {

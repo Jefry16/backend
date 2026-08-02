@@ -5,7 +5,7 @@ import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -14,7 +14,7 @@ import java.util.UUID;
  * One locale's overlay of a page's content — the experience-translations
  * shape: every content field nullable ({@code null} = untranslated, falls back
  * per-field to canonical at render time), plus an optional per-locale
- * localized handle ({@code slug}) for the localized {@code /pages/{handle}}
+ * localized handle ({@code handle}) for the localized {@code /pages/{handle}}
  * URL. Unlike the prose fields the localized handle has no per-field fallback
  * — its absence means the canonical handle serves the locale.
  */
@@ -26,7 +26,7 @@ public record PageTranslation(
         PageBody body,
         PageSeoTitle seoTitle,
         PageSeoDescription seoDescription,
-        Slug slug
+        Handle handle
 ) {
     public PageTranslation {
         Objects.requireNonNull(pageId, "pageId");

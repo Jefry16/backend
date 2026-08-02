@@ -24,7 +24,7 @@ public class TourOperatorJpaEntity {
     private String name;
 
     @Column(nullable = false, unique = true)
-    private String slug;
+    private String handle;
 
     @Column(nullable = false)
     private UUID timezoneId;

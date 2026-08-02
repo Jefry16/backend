@@ -16,7 +16,7 @@ import com.vointika.shared.list.SortDirection;
 import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +59,7 @@ class ListExperiencesUseCaseTest {
     }
 
     private Experience experience() {
-        return Experience.create(UUID.randomUUID(), operatorId, UUID.randomUUID(), new Slug("s" + UUID.randomUUID()),
+        return Experience.create(UUID.randomUUID(), operatorId, UUID.randomUUID(), new Handle("s" + UUID.randomUUID()),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
                 false, List.of(), List.of(), List.of(), List.of(),
                 List.of(media), media, new DurationMinutes(60), new BookingCutoffHours(0), null, null);

@@ -1,7 +1,7 @@
 package com.vointika.touroperator.domain.entity;
 
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -20,14 +20,14 @@ public class Menu {
 
     private final UUID id;
     private final UUID tourOperatorId;
-    private final Slug handle;
+    private final Handle handle;
     private String title;
     private final UUID createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
 
     /** Creates a brand-new menu. */
-    public Menu(UUID id, UUID tourOperatorId, Slug handle, String title, UUID createdBy) {
+    public Menu(UUID id, UUID tourOperatorId, Handle handle, String title, UUID createdBy) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.handle = handle;
@@ -40,7 +40,7 @@ public class Menu {
     /** Reconstitutes from persistence. */
     public Menu(UUID id,
                 UUID tourOperatorId,
-                Slug handle,
+                Handle handle,
                 String title,
                 UUID createdBy,
                 Instant createdAt,
@@ -82,7 +82,7 @@ public class Menu {
 
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
-    public Slug getHandle() { return handle; }
+    public Handle getHandle() { return handle; }
     public String getTitle() { return title; }
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }

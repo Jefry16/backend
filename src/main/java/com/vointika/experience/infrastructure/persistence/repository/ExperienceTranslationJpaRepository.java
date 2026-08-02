@@ -20,8 +20,8 @@ public interface ExperienceTranslationJpaRepository
             java.util.Collection<UUID> experienceIds, String locale);
 
 
-    boolean existsByTourOperatorIdAndLocaleAndSlugAndExperienceIdNot(
-            UUID tourOperatorId, String locale, String slug, UUID experienceId);
+    boolean existsByTourOperatorIdAndLocaleAndHandleAndExperienceIdNot(
+            UUID tourOperatorId, String locale, String handle, UUID experienceId);
 
-    boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
+    boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 }

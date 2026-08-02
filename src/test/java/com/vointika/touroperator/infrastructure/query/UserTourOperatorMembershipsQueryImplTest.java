@@ -52,13 +52,13 @@ class UserTourOperatorMembershipsQueryImplTest {
                 "Test User", "test@example.test");
     }
 
-    private TourOperatorJpaEntity operator(UUID id, String name, String slug) {
-        return operator(id, name, slug, null);
+    private TourOperatorJpaEntity operator(UUID id, String name, String handle) {
+        return operator(id, name, handle, null);
     }
 
-    private TourOperatorJpaEntity operator(UUID id, String name, String slug, UUID logoMediaId) {
+    private TourOperatorJpaEntity operator(UUID id, String name, String handle, UUID logoMediaId) {
         return new TourOperatorJpaEntity(
-                id, name, slug, tzId, UUID.randomUUID(), "some address", logoMediaId,
+                id, name, handle, tzId, UUID.randomUUID(), "some address", logoMediaId,
                 UUID.randomUUID(), Instant.now(), Instant.now(),
                 "en", false, null, null,
                 null, null, null,

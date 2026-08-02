@@ -13,7 +13,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.application.dto.input.CreateMenuInput;
 import com.vointika.touroperator.application.dto.input.RenameMenuInput;
 import com.vointika.touroperator.application.dto.input.ReplaceMenuItemsInput;
@@ -92,12 +92,12 @@ class MenuUseCasesTest {
     }
 
     private Menu menu() {
-        return new Menu(MENU, OP, new Slug("main-menu"), "Main menu", USER,
+        return new Menu(MENU, OP, new Handle("main-menu"), "Main menu", USER,
                 Instant.parse("2026-07-01T10:00:00Z"), Instant.parse("2026-07-01T10:00:00Z"));
     }
 
     private TourOperator operator() {
-        return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Slug("acme"),
+        return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Calle Mayor 1"),
                 USER, Instant.now(), Instant.now(), null,
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en"), LocaleCode.of("es")));

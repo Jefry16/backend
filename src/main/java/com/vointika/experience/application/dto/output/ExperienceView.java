@@ -23,7 +23,7 @@ public record ExperienceView(
         UUID tourOperatorId,
         UUID createdBy,
         String name,
-        String slug,
+        String handle,
         String description,
         String longDescription,
         boolean featured,
@@ -49,7 +49,7 @@ public record ExperienceView(
         String thumbnailUrl = e.getThumbnailMediaId() == null ? null : urlsById.get(e.getThumbnailMediaId());
         return new ExperienceView(
                 e.getId(), e.getTourOperatorId(), e.getCreatedBy(),
-                e.getName().value(), e.getSlug().value(), e.getDescription().value(),
+                e.getName().value(), e.getHandle().value(), e.getDescription().value(),
                 e.getLongDescription().value(), e.isFeatured(),
                 e.getTags().stream().map(Tag::value).toList(),
                 e.getIncluded().stream().map(InclusionItem::value).toList(),

@@ -8,7 +8,7 @@ CREATE TABLE experience.experiences (
     id                   UUID          NOT NULL PRIMARY KEY,
     tour_operator_id     UUID          NOT NULL REFERENCES touroperator.tour_operators (id),
     created_by           UUID          NOT NULL REFERENCES identity.users (id),
-    slug                 VARCHAR(170)  NOT NULL,
+    handle                 VARCHAR(170)  NOT NULL,
     name                 VARCHAR(200)  NOT NULL,
     description          VARCHAR(500)  NOT NULL,
     long_description     TEXT          NOT NULL,
@@ -25,9 +25,9 @@ CREATE TABLE experience.experiences (
     created_at           TIMESTAMPTZ   NOT NULL
 );
 
--- Canonical slug is unique per operator (immutable).
-CREATE UNIQUE INDEX experiences_operator_slug_unique
-    ON experience.experiences (tour_operator_id, slug);
+-- Canonical handle is unique per operator (immutable).
+CREATE UNIQUE INDEX experiences_operator_handle_unique
+    ON experience.experiences (tour_operator_id, handle);
 
 -- Backs the tenant-scoped, newest-first cursor list.
 CREATE INDEX idx_experiences_operator_created_at

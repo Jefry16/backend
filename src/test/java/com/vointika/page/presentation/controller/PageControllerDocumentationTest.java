@@ -20,7 +20,7 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
@@ -108,7 +108,7 @@ class PageControllerDocumentationTest {
 
     private Page page() {
         return new Page(UUID.fromString(PAGE), UUID.fromString(OP),
-                new PageTitle("About us"), new Slug("about-us"),
+                new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"),
                 new PageSeoTitle("About"), new PageSeoDescription("Who we are"),
                 PageStatus.DRAFT, null,
@@ -183,7 +183,7 @@ class PageControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("title").description("Display title (1–255)"),
-                                fieldWithPath("handle").description("Operator-chosen URL segment (slug-shaped, unique per operator — a collision is a 409, never auto-suffixed)"),
+                                fieldWithPath("handle").description("Operator-chosen URL segment (handle-shaped, unique per operator — a collision is a 409, never auto-suffixed)"),
                                 fieldWithPath("body").description("Raw HTML content (≤256 KiB)"),
                                 fieldWithPath("seoTitle").description("Optional SEO title override (≤70)").optional(),
                                 fieldWithPath("seoDescription").description("Optional SEO meta description (≤320)").optional())));
@@ -247,7 +247,7 @@ class PageControllerDocumentationTest {
                 .andDo(document("pages/rename",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(fieldWithPath("handle")
-                                .description("The new canonical handle (slug-shaped; taken → 409)"))));
+                                .description("The new canonical handle (handle-shaped; taken → 409)"))));
     }
 
     @Test

@@ -20,9 +20,9 @@ public interface PageTranslationJpaRepository
             java.util.Collection<UUID> pageIds, String locale);
 
 
-    boolean existsByTourOperatorIdAndSlugAndPageIdNot(
-            UUID tourOperatorId, String slug, UUID excludePageId);
+    boolean existsByTourOperatorIdAndHandleAndPageIdNot(
+            UUID tourOperatorId, String handle, UUID excludePageId);
 
-    boolean existsByTourOperatorIdAndLocaleAndSlugAndPageIdNot(
-            UUID tourOperatorId, String locale, String slug, UUID pageId);
+    boolean existsByTourOperatorIdAndLocaleAndHandleAndPageIdNot(
+            UUID tourOperatorId, String locale, String handle, UUID pageId);
 }

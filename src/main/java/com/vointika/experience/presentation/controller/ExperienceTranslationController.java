@@ -68,7 +68,7 @@ public class ExperienceTranslationController {
     }
 
     /**
-     * Creates or replaces a locale's overlay. ADMIN+. Unsupported locale → 422; a slug
+     * Creates or replaces a locale's overlay. ADMIN+. Unsupported locale → 422; a handle
      * already used by another experience — localized in this locale, or canonical → 409.
      */
     @PutMapping("/{locale}")

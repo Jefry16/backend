@@ -17,7 +17,7 @@ import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
@@ -85,7 +85,7 @@ class CreateTourOperatorUseCaseTest {
         useCase = new CreateTourOperatorUseCase(
                 tourOperatorRepository, memberRepository, menuRepository,
                 timezoneRepository, currencyRepository,
-                new SlugGenerator(), transactionRunner, idGenerator,
+                new HandleGenerator(), transactionRunner, idGenerator,
                 userAccountQuery, eventPublisher, auditTrailPort, diagnosticLog);
 
         // Happy-path defaults; individual tests override.
@@ -111,7 +111,7 @@ class CreateTourOperatorUseCaseTest {
         verify(tourOperatorRepository).save(opCaptor.capture());
         TourOperator saved = opCaptor.getValue();
         assertEquals("Acme Tours", saved.getName().value());
-        assertEquals("acme-tours", saved.getSlug().value());
+        assertEquals("acme-tours", saved.getHandle().value());
         assertEquals(userId, saved.getCreatedBy());
         assertEquals(saved.getId(), out.id());
 
@@ -225,14 +225,14 @@ class CreateTourOperatorUseCaseTest {
     }
 
     @Test
-    void slugCollisionAppendsANumericSuffix() {
-        when(tourOperatorRepository.existsBySlug("acme-tours")).thenReturn(true);
-        when(tourOperatorRepository.existsBySlug("acme-tours-2")).thenReturn(false);
+    void handleCollisionAppendsANumericSuffix() {
+        when(tourOperatorRepository.existsByHandle("acme-tours")).thenReturn(true);
+        when(tourOperatorRepository.existsByHandle("acme-tours-2")).thenReturn(false);
 
         useCase.execute(input());
 
         ArgumentCaptor<TourOperator> opCaptor = ArgumentCaptor.forClass(TourOperator.class);
         verify(tourOperatorRepository).save(opCaptor.capture());
-        assertEquals("acme-tours-2", opCaptor.getValue().getSlug().value());
+        assertEquals("acme-tours-2", opCaptor.getValue().getHandle().value());
     }
 }

@@ -6,7 +6,7 @@ import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ConflictException;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -22,7 +22,7 @@ import java.util.UUID;
  *
  * <p>The {@code handle} is the page's URL segment ({@code /pages/{handle}}),
  * unique per operator and operator-chosen. It changes only through
- * {@link #rename(Slug)} — a deliberate act on its own endpoint (slug-history
+ * {@link #rename(Handle)} — a deliberate act on its own endpoint (handle-history
  * 301s for old URLs are deferred to the storefront arc). Status moves only
  * through {@link #publish()}/{@link #unpublish()}, mirroring experiences; a
  * new page starts DRAFT.
@@ -32,7 +32,7 @@ public class Page {
     private final UUID id;
     private final UUID tourOperatorId;
     private PageTitle title;
-    private Slug handle;
+    private Handle handle;
     private PageBody body;
     private PageSeoTitle seoTitle;
     private PageSeoDescription seoDescription;
@@ -46,7 +46,7 @@ public class Page {
     public Page(UUID id,
                 UUID tourOperatorId,
                 PageTitle title,
-                Slug handle,
+                Handle handle,
                 PageBody body,
                 PageSeoTitle seoTitle,
                 PageSeoDescription seoDescription,
@@ -69,7 +69,7 @@ public class Page {
     public Page(UUID id,
                 UUID tourOperatorId,
                 PageTitle title,
-                Slug handle,
+                Handle handle,
                 PageBody body,
                 PageSeoTitle seoTitle,
                 PageSeoDescription seoDescription,
@@ -95,7 +95,7 @@ public class Page {
     /**
      * Whole replace of the editable content. Handle and status are
      * intentionally not touched here — the handle changes only through
-     * {@link #rename(Slug)} and status moves through
+     * {@link #rename(Handle)} and status moves through
      * {@link #publish()}/{@link #unpublish()}. {@code null} SEO fields /
      * template suffix clear them.
      */
@@ -135,7 +135,7 @@ public class Page {
      * uniqueness among the operator's handles (409) — see
      * {@code RenamePageUseCase}.
      */
-    public void rename(Slug newHandle) {
+    public void rename(Handle newHandle) {
         this.handle = newHandle;
         this.updatedAt = Instant.now();
     }
@@ -161,7 +161,7 @@ public class Page {
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
     public PageTitle getTitle() { return title; }
-    public Slug getHandle() { return handle; }
+    public Handle getHandle() { return handle; }
     public PageBody getBody() { return body; }
     public Optional<PageSeoTitle> getSeoTitle() { return Optional.ofNullable(seoTitle); }
     public Optional<PageSeoDescription> getSeoDescription() { return Optional.ofNullable(seoDescription); }

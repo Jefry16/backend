@@ -15,7 +15,7 @@ import com.vointika.metafield.infrastructure.persistence.entity.MetaobjectDefini
 import com.vointika.metafield.infrastructure.persistence.entity.MetaobjectEntryJpaEntity;
 import com.vointika.metafield.infrastructure.persistence.entity.MetaobjectEntryValueJpaEntity;
 import com.vointika.metafield.infrastructure.persistence.entity.MetaobjectFieldJpaEntity;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 public final class MetaobjectMapper {
 
@@ -63,7 +63,7 @@ public final class MetaobjectMapper {
     public static MetaobjectEntry toDomain(MetaobjectEntryJpaEntity e) {
         return new MetaobjectEntry(
                 e.getId(), e.getTourOperatorId(), e.getDefinitionId(),
-                new Slug(e.getHandle()), new MetaobjectEntryName(e.getName()), e.isPublished(),
+                new Handle(e.getHandle()), new MetaobjectEntryName(e.getName()), e.isPublished(),
                 e.getCreatedBy(), e.getCreatedAt(), e.getUpdatedAt());
     }
 

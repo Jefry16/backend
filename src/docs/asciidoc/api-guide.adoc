@@ -386,7 +386,7 @@ operation::media/delete[]
 The operator's sellable products. Reads are member-visible; create / update /
 publish are ADMIN+. Media ids must belong to the operator's own library
 (validated on write); responses resolve them to absolute URLs. The canonical
-`slug` is generated from the name, unique per operator, and immutable.
+`handle` is generated from the name, unique per operator, and immutable.
 
 [[resources-experiences-list]]
 ==== List Experiences
@@ -415,7 +415,7 @@ operation::experiences/create[]
 [[resources-experiences-update]]
 ==== Update an Experience
 
-ADMIN+ only. Replaces the editable fields (slug and the published flag are not
+ADMIN+ only. Replaces the editable fields (handle and the published flag are not
 changed here). 204.
 
 operation::experiences/update[]
@@ -439,7 +439,7 @@ operation::experiences/unpublish[]
 
 Per-locale overlays on an experience — translated `name`/`description`/
 `longDescription`/`highlights`/`included`/`notIncluded` plus an optional
-localized `slug`. Every content field is nullable (falls back to the canonical
+localized `handle`. Every content field is nullable (falls back to the canonical
 experience). `tags` are not translated; media is shared. Reads are
 member-visible; upsert/delete are ADMIN+. A translation's locale must be one the
 operator supports (`PATCH /locales`) or → 422.
@@ -463,8 +463,8 @@ operation::experiences/translations/get[]
 ==== Upsert a Translation
 
 ADMIN+ only. Creates or replaces a locale's overlay. Unsupported locale → 422; a
-localized slug already used for this operator+locale → 409. If `slug` is omitted
-but `name` is given, a localized slug is derived from the name.
+localized handle already used for this operator+locale → 409. If `handle` is omitted
+but `name` is given, a localized handle is derived from the name.
 
 operation::experiences/translations/upsert[]
 

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 class RenderContextUseCasesTest {
 
-    private static final String SLUG = "acme";
+    private static final String HANDLE = "acme";
     private static final UUID OP = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
 
     private StorefrontOperatorQuery storefrontOperatorQuery;
@@ -51,7 +51,7 @@ class RenderContextUseCasesTest {
         return new StorefrontOperatorView(
                 OP,
                 "Acme Tours",
-                SLUG,
+                HANDLE,
                 "https://media.example.com/logo.png",
                 primary,
                 supported,
@@ -62,7 +62,7 @@ class RenderContextUseCasesTest {
     }
 
     private void givenOperator(StorefrontOperatorView view) {
-        when(storefrontOperatorQuery.findBySlug(SLUG)).thenReturn(Optional.of(view));
+        when(storefrontOperatorQuery.findByHandle(HANDLE)).thenReturn(Optional.of(view));
     }
 
     // ---------- shop render context ----------
@@ -71,7 +71,7 @@ class RenderContextUseCasesTest {
     void returns_the_tenant_and_its_primary_locale_for_the_bare_path() {
         givenOperator(operator("en", List.of("en", "es")));
 
-        ShopRenderContext context = getShopUseCase.execute(SLUG, null);
+        ShopRenderContext context = getShopUseCase.execute(HANDLE, null);
 
         assertThat(context.shop().name()).isEqualTo("Acme Tours");
         assertThat(context.shop().logoUrl()).isEqualTo("https://media.example.com/logo.png");
@@ -83,14 +83,14 @@ class RenderContextUseCasesTest {
     void renders_in_a_requested_locale_the_operator_publishes() {
         givenOperator(operator("en", List.of("en", "es")));
 
-        assertThat(getShopUseCase.execute(SLUG, "es").locale()).isEqualTo("es");
+        assertThat(getShopUseCase.execute(HANDLE, "es").locale()).isEqualTo("es");
     }
 
     @Test
     void normalizes_a_requested_locale_to_lowercase() {
         givenOperator(operator("en", List.of("en", "es")));
 
-        assertThat(getShopUseCase.execute(SLUG, "ES").locale()).isEqualTo("es");
+        assertThat(getShopUseCase.execute(HANDLE, "ES").locale()).isEqualTo("es");
     }
 
     @Test
@@ -103,7 +103,7 @@ class RenderContextUseCasesTest {
             // renders in English — on some machines and not others.
             Locale.setDefault(Locale.forLanguageTag("tr"));
 
-            assertThat(getShopUseCase.execute(SLUG, "IT").locale()).isEqualTo("it");
+            assertThat(getShopUseCase.execute(HANDLE, "IT").locale()).isEqualTo("it");
         } finally {
             Locale.setDefault(original);
         }
@@ -113,7 +113,7 @@ class RenderContextUseCasesTest {
     void trims_a_padded_locale() {
         givenOperator(operator("en", List.of("en", "es")));
 
-        assertThat(getShopUseCase.execute(SLUG, " es ").locale()).isEqualTo("es");
+        assertThat(getShopUseCase.execute(HANDLE, " es ").locale()).isEqualTo("es");
     }
 
     @Test
@@ -122,19 +122,19 @@ class RenderContextUseCasesTest {
 
         // Lenient by design: the BFF 404s an unpublished URL prefix before it
         // gets here, so anything arriving by another route renders, not breaks.
-        assertThat(getShopUseCase.execute(SLUG, "fr").locale()).isEqualTo("en");
+        assertThat(getShopUseCase.execute(HANDLE, "fr").locale()).isEqualTo("en");
     }
 
     @Test
     void falls_back_to_primary_for_a_malformed_locale() {
         givenOperator(operator("en", List.of("en", "es")));
 
-        assertThat(getShopUseCase.execute(SLUG, "not-a-locale").locale()).isEqualTo("en");
+        assertThat(getShopUseCase.execute(HANDLE, "not-a-locale").locale()).isEqualTo("en");
     }
 
     @Test
-    void unknown_slug_is_not_found() {
-        when(storefrontOperatorQuery.findBySlug("nobody")).thenReturn(Optional.empty());
+    void unknown_handle_is_not_found() {
+        when(storefrontOperatorQuery.findByHandle("nobody")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> getShopUseCase.execute("nobody", null))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -143,10 +143,10 @@ class RenderContextUseCasesTest {
     @Test
     void carries_the_gate_state_so_the_bff_always_knows_to_gate() {
         givenOperator(new StorefrontOperatorView(
-                OP, "Acme Tours", SLUG, null, "en", List.of("en"), "USD",
+                OP, "Acme Tours", HANDLE, null, "en", List.of("en"), "USD",
                 "America/Santo_Domingo", true, "We open on Monday.", null, null, null, java.util.Map.of()));
 
-        ShopRenderContext context = getShopUseCase.execute(SLUG, null);
+        ShopRenderContext context = getShopUseCase.execute(HANDLE, null);
 
         assertThat(context.shop().passwordEnabled()).isTrue();
         assertThat(context.shop().passwordMessage()).isEqualTo("We open on Monday.");
@@ -156,16 +156,16 @@ class RenderContextUseCasesTest {
 
     @Test
     void verifies_a_correct_password() {
-        when(storefrontOperatorQuery.verifyStorefrontPassword(SLUG, "opensesame")).thenReturn(true);
+        when(storefrontOperatorQuery.verifyStorefrontPassword(HANDLE, "opensesame")).thenReturn(true);
 
-        assertThat(verifyPasswordUseCase.execute(SLUG, "opensesame")).isTrue();
+        assertThat(verifyPasswordUseCase.execute(HANDLE, "opensesame")).isTrue();
     }
 
     @Test
     void rejects_a_wrong_password_without_throwing() {
-        when(storefrontOperatorQuery.verifyStorefrontPassword(SLUG, "guess")).thenReturn(false);
+        when(storefrontOperatorQuery.verifyStorefrontPassword(HANDLE, "guess")).thenReturn(false);
 
-        assertThat(verifyPasswordUseCase.execute(SLUG, "guess")).isFalse();
+        assertThat(verifyPasswordUseCase.execute(HANDLE, "guess")).isFalse();
     }
 
     @Test

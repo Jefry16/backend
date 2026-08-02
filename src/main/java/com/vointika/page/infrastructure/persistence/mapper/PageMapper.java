@@ -7,7 +7,7 @@ import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.page.infrastructure.persistence.entity.PageJpaEntity;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 public final class PageMapper {
 
@@ -34,7 +34,7 @@ public final class PageMapper {
                 e.getId(),
                 e.getTourOperatorId(),
                 new PageTitle(e.getTitle()),
-                new Slug(e.getHandle()),
+                new Handle(e.getHandle()),
                 new PageBody(e.getBody()),
                 e.getSeoTitle() == null ? null : new PageSeoTitle(e.getSeoTitle()),
                 e.getSeoDescription() == null ? null : new PageSeoDescription(e.getSeoDescription()),

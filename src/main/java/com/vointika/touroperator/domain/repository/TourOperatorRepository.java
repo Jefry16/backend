@@ -10,11 +10,11 @@ public interface TourOperatorRepository {
 
     Optional<TourOperator> findById(UUID id);
 
-    /** The operator holding this slug — the storefront's tenant lookup. */
-    Optional<TourOperator> findBySlug(String slug);
+    /** The operator holding this handle — the storefront's tenant lookup. */
+    Optional<TourOperator> findByHandle(String handle);
 
-    /** Whether any operator already holds this slug (global uniqueness). */
-    boolean existsBySlug(String slug);
+    /** Whether any operator already holds this handle (global uniqueness). */
+    boolean existsByHandle(String handle);
 
     /** Whether this owner already has an operator with this name (case-insensitive). */
     boolean existsByOwnerAndName(UUID createdBy, String name);

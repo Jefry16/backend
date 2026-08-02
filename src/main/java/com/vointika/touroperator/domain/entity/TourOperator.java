@@ -2,7 +2,7 @@ package com.vointika.touroperator.domain.entity;
 
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
@@ -15,7 +15,7 @@ import java.util.UUID;
 
 /**
  * A tour operator — the tenant aggregate. This is the create-slice shape:
- * identity (name, slug), the two reference ids it operates under (timezone,
+ * identity (name, handle), the two reference ids it operates under (timezone,
  * currency), a postal address, and provenance (createdBy + timestamps).
  *
  * <p>Deliberately minimal — status/lifecycle, logo, fee, branding, locales and
@@ -26,7 +26,7 @@ public class TourOperator {
 
     private final UUID id;
     private TourOperatorName name;
-    private final Slug slug;
+    private final Handle handle;
     private UUID timezoneId;
     private UUID currencyId;
     private TourOperatorAddress address;
@@ -52,14 +52,14 @@ public class TourOperator {
     // Constructor for creating a brand new tour operator (no logo; default locale)
     public TourOperator(UUID id,
                         TourOperatorName name,
-                        Slug slug,
+                        Handle handle,
                         UUID timezoneId,
                         UUID currencyId,
                         TourOperatorAddress address,
                         UUID createdBy) {
         this.id = id;
         this.name = name;
-        this.slug = slug;
+        this.handle = handle;
         this.timezoneId = timezoneId;
         this.currencyId = currencyId;
         this.address = address;
@@ -76,7 +76,7 @@ public class TourOperator {
     // constructor below.
     public TourOperator(UUID id,
                         TourOperatorName name,
-                        Slug slug,
+                        Handle handle,
                         UUID timezoneId,
                         UUID currencyId,
                         TourOperatorAddress address,
@@ -86,14 +86,14 @@ public class TourOperator {
                         UUID logoMediaId,
                         LocaleCode primaryLocale,
                         Set<LocaleCode> supportedLocales) {
-        this(id, name, slug, timezoneId, currencyId, address, createdBy, createdAt, updatedAt,
+        this(id, name, handle, timezoneId, currencyId, address, createdBy, createdAt, updatedAt,
                 logoMediaId, primaryLocale, supportedLocales, false, null, null, null, null, null);
     }
 
     // Constructor for reconstituting from persistence
     public TourOperator(UUID id,
                         TourOperatorName name,
-                        Slug slug,
+                        Handle handle,
                         UUID timezoneId,
                         UUID currencyId,
                         TourOperatorAddress address,
@@ -111,7 +111,7 @@ public class TourOperator {
                         UUID ogImageMediaId) {
         this.id = id;
         this.name = name;
-        this.slug = slug;
+        this.handle = handle;
         this.timezoneId = timezoneId;
         this.currencyId = currencyId;
         this.address = address;
@@ -209,7 +209,7 @@ public class TourOperator {
 
     public UUID getId() { return id; }
     public TourOperatorName getName() { return name; }
-    public Slug getSlug() { return slug; }
+    public Handle getHandle() { return handle; }
     public UUID getTimezoneId() { return timezoneId; }
     public UUID getCurrencyId() { return currencyId; }
     public TourOperatorAddress getAddress() { return address; }

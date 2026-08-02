@@ -7,7 +7,7 @@ import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.page.infrastructure.persistence.entity.PageTranslationJpaEntity;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 public final class PageTranslationMapper {
 
@@ -18,7 +18,7 @@ public final class PageTranslationMapper {
                 t.pageId(),
                 t.locale().value(),
                 t.tourOperatorId(),
-                t.slug() == null ? null : t.slug().value(),
+                t.handle() == null ? null : t.handle().value(),
                 t.title() == null ? null : t.title().value(),
                 t.body() == null ? null : t.body().value(),
                 t.seoTitle() == null ? null : t.seoTitle().value(),
@@ -34,6 +34,6 @@ public final class PageTranslationMapper {
                 e.getBody() == null ? null : new PageBody(e.getBody()),
                 e.getSeoTitle() == null ? null : new PageSeoTitle(e.getSeoTitle()),
                 e.getSeoDescription() == null ? null : new PageSeoDescription(e.getSeoDescription()),
-                e.getSlug() == null ? null : new Slug(e.getSlug()));
+                e.getHandle() == null ? null : new Handle(e.getHandle()));
     }
 }

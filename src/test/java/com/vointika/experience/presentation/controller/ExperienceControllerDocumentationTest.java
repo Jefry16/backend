@@ -168,7 +168,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].id").description("The experience id"),
                                 fieldWithPath("data[].context").description("The entity's collection: \"experiences\""),
                                 fieldWithPath("data[].name").description("Display name"),
-                                fieldWithPath("data[].slug").description("Canonical slug (immutable; unique per operator across canonical and localized slugs)"),
+                                fieldWithPath("data[].handle").description("Canonical handle (immutable; unique per operator across canonical and localized handles)"),
                                 fieldWithPath("data[].description").description("Short description"),
                                 fieldWithPath("data[].longDescription").description("Long description"),
                                 fieldWithPath("data[].featured").description("Featured flag"),

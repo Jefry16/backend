@@ -18,7 +18,7 @@ public class GetShopRenderContextUseCase {
         this.tenantResolver = tenantResolver;
     }
 
-    public ShopRenderContext execute(String slug, String requestedLocale) {
-        return tenantResolver.resolve(slug, requestedLocale);
+    public ShopRenderContext execute(String handle, String requestedLocale) {
+        return tenantResolver.resolve(handle, requestedLocale);
     }
 }

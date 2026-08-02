@@ -12,7 +12,7 @@ import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEntity;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 public class ExperienceMapper {
 
@@ -21,7 +21,7 @@ public class ExperienceMapper {
                 e.getId(),
                 e.getTourOperatorId(),
                 e.getCreatedBy(),
-                e.getSlug().value(),
+                e.getHandle().value(),
                 e.getName().value(),
                 e.getDescription().value(),
                 e.getLongDescription().value(),
@@ -45,7 +45,7 @@ public class ExperienceMapper {
                 jpa.getId(),
                 jpa.getTourOperatorId(),
                 jpa.getCreatedBy(),
-                new Slug(jpa.getSlug()),
+                new Handle(jpa.getHandle()),
                 jpa.getCreatedAt(),
                 new ExperienceName(jpa.getName()),
                 new Description(jpa.getDescription()),

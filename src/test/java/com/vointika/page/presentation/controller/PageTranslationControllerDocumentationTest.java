@@ -10,7 +10,7 @@ import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
@@ -88,7 +88,7 @@ class PageTranslationControllerDocumentationTest {
     private PageTranslation translation() {
         return new PageTranslation(UUID.fromString(PAGE), UUID.fromString(OP),
                 new LocaleCode("es"), new PageTitle("Sobre nosotros"),
-                new PageBody("<p>Hola</p>"), null, null, new Slug("sobre-nosotros"));
+                new PageBody("<p>Hola</p>"), null, null, new Handle("sobre-nosotros"));
     }
 
     @Test
@@ -109,7 +109,7 @@ class PageTranslationControllerDocumentationTest {
                                 fieldWithPath("[].body").description("Translated raw-HTML body; null = falls back").optional(),
                                 fieldWithPath("[].seoTitle").type("String").description("Translated SEO title; null = falls back").optional(),
                                 fieldWithPath("[].seoDescription").type("String").description("Translated SEO description; null = falls back").optional(),
-                                fieldWithPath("[].slug").description("Localized handle; null = the canonical handle serves this locale").optional())));
+                                fieldWithPath("[].handle").description("Localized handle; null = the canonical handle serves this locale").optional())));
     }
 
     @Test
@@ -121,7 +121,7 @@ class PageTranslationControllerDocumentationTest {
         mockMvc.perform(get("/api/tour-operators/{id}/pages/{pageId}/translations/{locale}", OP, PAGE, "es")
                         .header("Authorization", BEARER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("sobre-nosotros"))
+                .andExpect(jsonPath("$.handle").value("sobre-nosotros"))
                 .andDo(document("page-translations/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
@@ -134,7 +134,7 @@ class PageTranslationControllerDocumentationTest {
                         .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Sobre nosotros\",\"body\":\"<p>Hola</p>\",\"slug\":\"sobre-nosotros\"}"))
+                        .content("{\"title\":\"Sobre nosotros\",\"body\":\"<p>Hola</p>\",\"handle\":\"sobre-nosotros\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("page-translations/upsert",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -143,7 +143,7 @@ class PageTranslationControllerDocumentationTest {
                                 fieldWithPath("body").description("Translated raw-HTML body; blank/absent = untranslated").optional(),
                                 fieldWithPath("seoTitle").type("String").description("Translated SEO title; blank/absent = untranslated").optional(),
                                 fieldWithPath("seoDescription").type("String").description("Translated SEO description; blank/absent = untranslated").optional(),
-                                fieldWithPath("slug").description("Localized handle: explicit (taken → 409), absent with a translated title derives one, absent without = canonical serves the locale").optional())));
+                                fieldWithPath("handle").description("Localized handle: explicit (taken → 409), absent with a translated title derives one, absent without = canonical serves the locale").optional())));
     }
 
     @Test

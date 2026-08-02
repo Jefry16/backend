@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 /**
  * Namespace half of a metafield identifier ({@code namespace.key}). Groups an
  * operator's related definitions (e.g. {@code custom.difficulty}).
- * Slug-shaped so themes can address it with Liquid dot access.
+ * Handle-shaped so themes can address it with Liquid dot access.
  */
 public record MetafieldNamespace(String value) {
 
@@ -19,7 +19,7 @@ public record MetafieldNamespace(String value) {
         }
         if (value.length() > 64 || !PATTERN.matcher(value).matches()) {
             throw new InvalidFieldException(
-                    "Metafield namespace must be slug-shaped (lowercase letters, digits, hyphens) and at most 64 characters");
+                    "Metafield namespace must be handle-shaped (lowercase letters, digits, hyphens) and at most 64 characters");
         }
     }
 }

@@ -139,11 +139,11 @@ class MetaobjectDefinitionControllerDocumentationTest {
                 .andDo(document("metaobject-definitions/create",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
-                                fieldWithPath("type").description("Slug-shaped type identifier, unique per operator — duplicate → 409 (immutable)"),
+                                fieldWithPath("type").description("Handle-shaped type identifier, unique per operator — duplicate → 409 (immutable)"),
                                 fieldWithPath("name").description("Display name (1–120)"),
                                 fieldWithPath("description").description("Optional help text (≤500)").optional(),
                                 fieldWithPath("fields[]").description("The initial fields in order (at least one)"),
-                                fieldWithPath("fields[].key").description("Slug-shaped key, unique within the definition (immutable)"),
+                                fieldWithPath("fields[].key").description("Handle-shaped key, unique within the definition (immutable)"),
                                 fieldWithPath("fields[].type").description("single_line_text | multi_line_text | number_integer | number_decimal | boolean | date | url | json (immutable)"),
                                 fieldWithPath("fields[].name").description("The field's display name (1–120)"))));
     }
@@ -252,7 +252,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
                 .andDo(document("metaobject-definitions/add-field",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
-                                fieldWithPath("key").description("Slug-shaped key, unique within the definition — duplicate → 409 (immutable)"),
+                                fieldWithPath("key").description("Handle-shaped key, unique within the definition — duplicate → 409 (immutable)"),
                                 fieldWithPath("type").description("The value type code (immutable)"),
                                 fieldWithPath("name").description("The field's display name (1–120)"))));
     }

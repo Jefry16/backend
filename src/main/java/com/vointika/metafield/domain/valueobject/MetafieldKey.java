@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 /**
  * Key half of a metafield identifier ({@code namespace.key}). Unique per
- * (tour operator, owner type, namespace). Slug-shaped so themes can address
+ * (tour operator, owner type, namespace). Handle-shaped so themes can address
  * it with Liquid dot access.
  */
 public record MetafieldKey(String value) {
@@ -19,7 +19,7 @@ public record MetafieldKey(String value) {
         }
         if (value.length() > 64 || !PATTERN.matcher(value).matches()) {
             throw new InvalidFieldException(
-                    "Metafield key must be slug-shaped (lowercase letters, digits, hyphens) and at most 64 characters");
+                    "Metafield key must be handle-shaped (lowercase letters, digits, hyphens) and at most 64 characters");
         }
     }
 }

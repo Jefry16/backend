@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 /**
  * A metaobject definition's type identifier ({@code size-chart},
  * {@code guide-profile}) — unique per operator, immutable after create.
- * Slug-shaped so themes can later address it with Liquid dot access.
+ * Handle-shaped so themes can later address it with Liquid dot access.
  */
 public record MetaobjectType(String value) {
 
@@ -19,7 +19,7 @@ public record MetaobjectType(String value) {
         }
         if (value.length() > 64 || !PATTERN.matcher(value).matches()) {
             throw new InvalidFieldException(
-                    "Metaobject type must be slug-shaped (lowercase letters, digits, hyphens) and at most 64 characters");
+                    "Metaobject type must be handle-shaped (lowercase letters, digits, hyphens) and at most 64 characters");
         }
     }
 }

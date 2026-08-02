@@ -15,7 +15,7 @@
 -- loudly instead of half-applying — if this file fails after a migration,
 -- update it in the same PR (renames-must-update-dev-seed rule).
 --
--- Seeds: a verified admin user, the demo tour operator (slug `acme`, primary
+-- Seeds: a verified admin user, the demo tour operator (handle `acme`, primary
 -- locale `es` plus `en` and `fr`, canonical + `es` SEO), OWNER membership, two audiences (+es overlay), two pickup
 -- locations, three PUBLISHED experiences (+es overlay on one), two AVAILABLE
 -- slots per experience dated relative to today with per-audience pricing
@@ -106,7 +106,7 @@ ON CONFLICT DO NOTHING;
 -- 2. Tour operator. Timezone/currency resolve by name/code with a fallback to
 -- the first reference row, so a changed reference set still seeds.
 INSERT INTO touroperator.tour_operators
-    (id, name, slug, timezone_id, currency_id, address, primary_locale,
+    (id, name, handle, timezone_id, currency_id, address, primary_locale,
      seo_title, seo_description, created_by, created_at, updated_at)
 VALUES
     (:'operator_id', 'Acme Tours', 'acme',
@@ -129,7 +129,7 @@ VALUES
 -- columns the seed owns; created_by/created_at stay as first written.
 ON CONFLICT (id) DO UPDATE SET
     name           = EXCLUDED.name,
-    slug           = EXCLUDED.slug,
+    handle           = EXCLUDED.handle,
     timezone_id    = EXCLUDED.timezone_id,
     currency_id    = EXCLUDED.currency_id,
     address         = EXCLUDED.address,
@@ -196,7 +196,7 @@ ON CONFLICT DO NOTHING;
 -- 6. Experiences: PUBLISHED so lists/pickers have real rows. media_ids stay
 -- empty (see header — no seeded media). +es overlay on the sunset sail.
 INSERT INTO experience.experiences
-    (id, tour_operator_id, created_by, slug, name, description, long_description,
+    (id, tour_operator_id, created_by, handle, name, description, long_description,
      featured, tags, included, not_included, highlights,
      duration_minutes, booking_cutoff_hours, published, created_at)
 VALUES
@@ -222,7 +222,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO experience.experience_translations
     (experience_id, tour_operator_id, locale, name, description, long_description,
-     highlights, included, not_included, slug)
+     highlights, included, not_included, handle)
 VALUES
     (:'experience_a_id', :'operator_id', 'es', 'Paseo en velero al atardecer',
      'Crucero a la hora dorada por la costa con patrón local.', NULL,
@@ -312,7 +312,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO page.page_translations
-    (page_id, locale, tour_operator_id, slug, title, body, seo_title, seo_description)
+    (page_id, locale, tour_operator_id, handle, title, body, seo_title, seo_description)
 VALUES
     (:'page_about_id', 'es', :'operator_id', 'sobre-nosotros', 'Sobre nosotros',
      '<h1>Quiénes somos</h1>' || E'\n' ||

@@ -12,7 +12,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorInvitationReposit
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.InviteeEmail;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ class GetInvitationPreviewUseCaseTest {
 
     private TourOperator operator() {
         return new TourOperator(operatorId, new TourOperatorName("Acme Tours"),
-                new Slug("acme-tours"), UUID.randomUUID(), UUID.randomUUID(),
+                new Handle("acme-tours"), UUID.randomUUID(), UUID.randomUUID(),
                 new TourOperatorAddress("123 Beach Rd"), UUID.randomUUID());
     }
 

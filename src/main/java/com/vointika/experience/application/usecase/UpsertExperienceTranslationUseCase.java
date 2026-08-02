@@ -19,10 +19,10 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.util.List;
 import java.util.Map;
@@ -35,16 +35,16 @@ import java.util.function.Function;
  *
  * <p>Guards: caller not ADMIN+ → 403; experience not under this operator → 404;
  * bad-shape or unsupported locale → 422 (the locale must be in the operator's
- * supported set — {@link OperatorLocalesQuery}); an explicit localized slug
- * already used by another experience — as a localized slug in this locale, or as
- * its canonical slug — → 409. A blank field is treated as untranslated (null →
+ * supported set — {@link OperatorLocalesQuery}); an explicit localized handle
+ * already used by another experience — as a localized handle in this locale, or as
+ * its canonical handle — → 409. A blank field is treated as untranslated (null →
  * falls back to canonical).
  *
- * <p>Slug precedence: an explicit slug is validated + uniqueness-probed (no
+ * <p>Handle precedence: an explicit handle is validated + uniqueness-probed (no
  * auto-suffix — the admin chose it); else a translated {@code name} derives a
- * unique localized slug (auto-suffix); else null. Both probe <em>both</em>
- * namespaces: the storefront resolves a slug against localized slugs first and
- * canonical ones second, so a slug taken from either shadows the other (PATTERNS
+ * unique localized handle (auto-suffix); else null. Both probe <em>both</em>
+ * namespaces: the storefront resolves a handle against localized handles first and
+ * canonical ones second, so a handle taken from either shadows the other (PATTERNS
  * §4d). No audit (no audit context yet).
  */
 public class UpsertExperienceTranslationUseCase {
@@ -52,7 +52,7 @@ public class UpsertExperienceTranslationUseCase {
     private final ExperienceRepository experienceRepository;
     private final ExperienceTranslationRepository translationRepository;
     private final OperatorLocalesQuery operatorLocalesQuery;
-    private final SlugGenerator slugGenerator;
+    private final HandleGenerator handleGenerator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
@@ -60,14 +60,14 @@ public class UpsertExperienceTranslationUseCase {
     public UpsertExperienceTranslationUseCase(ExperienceRepository experienceRepository,
                                               ExperienceTranslationRepository translationRepository,
                                               OperatorLocalesQuery operatorLocalesQuery,
-                                              SlugGenerator slugGenerator,
+                                              HandleGenerator handleGenerator,
                                               TourOperatorMembershipCheck membershipCheck,
                                               TransactionRunner transactionRunner,
                                               AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
         this.translationRepository = translationRepository;
         this.operatorLocalesQuery = operatorLocalesQuery;
-        this.slugGenerator = slugGenerator;
+        this.handleGenerator = handleGenerator;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -91,12 +91,12 @@ public class UpsertExperienceTranslationUseCase {
         List<Highlight> highlights = mapList(input.highlights(), Highlight::new);
         List<InclusionItem> included = mapList(input.included(), InclusionItem::new);
         List<InclusionItem> notIncluded = mapList(input.notIncluded(), InclusionItem::new);
-        Slug slug = resolveSlug(tourOperatorId, experienceId, locale, input.slug(), name);
+        Handle handle = resolveHandle(tourOperatorId, experienceId, locale, input.handle(), name);
 
         transactionRunner.run(() -> {
             translationRepository.upsert(new ExperienceTranslation(
                     experienceId, tourOperatorId, locale,
-                    name, description, longDescription, highlights, included, notIncluded, slug,
+                    name, description, longDescription, highlights, included, notIncluded, handle,
                     blankNull(input.seoTitle()) == null ? null : new SeoTitle(input.seoTitle()),
                     blankNull(input.seoDescription()) == null ? null : new SeoDescription(input.seoDescription())));
             auditTrailPort.append(new NewAuditEntry(
@@ -106,26 +106,26 @@ public class UpsertExperienceTranslationUseCase {
         });
     }
 
-    private Slug resolveSlug(UUID operatorId, UUID experienceId, LocaleCode locale,
-                             String explicitSlug, ExperienceName name) {
-        if (explicitSlug != null && !explicitSlug.isBlank()) {
-            Slug slug = new Slug(explicitSlug.trim());
-            if (translationRepository.existsByOperatorLocaleSlug(operatorId, locale.value(), slug.value(), experienceId)) {
+    private Handle resolveHandle(UUID operatorId, UUID experienceId, LocaleCode locale,
+                             String explicitHandle, ExperienceName name) {
+        if (explicitHandle != null && !explicitHandle.isBlank()) {
+            Handle handle = new Handle(explicitHandle.trim());
+            if (translationRepository.existsByOperatorLocaleHandle(operatorId, locale.value(), handle.value(), experienceId)) {
                 throw new ResourceAlreadyExistsException(
-                        "The localized slug '" + slug.value() + "' is already in use for this language");
+                        "The localized handle '" + handle.value() + "' is already in use for this language");
             }
-            // Excluding this experience: matching its own canonical slug resolves
+            // Excluding this experience: matching its own canonical handle resolves
             // to the same experience, so only another one's is a clash.
-            if (experienceRepository.existsByTourOperatorIdAndSlugExcluding(operatorId, slug.value(), experienceId)) {
+            if (experienceRepository.existsByTourOperatorIdAndHandleExcluding(operatorId, handle.value(), experienceId)) {
                 throw new ResourceAlreadyExistsException(
-                        "Another experience already uses '" + slug.value() + "' as its slug");
+                        "Another experience already uses '" + handle.value() + "' as its handle");
             }
-            return slug;
+            return handle;
         }
         if (name != null) {
-            return slugGenerator.generateUnique(name.value(), candidate ->
-                    translationRepository.existsByOperatorLocaleSlug(operatorId, locale.value(), candidate, experienceId)
-                            || experienceRepository.existsByTourOperatorIdAndSlugExcluding(operatorId, candidate, experienceId));
+            return handleGenerator.generateUnique(name.value(), candidate ->
+                    translationRepository.existsByOperatorLocaleHandle(operatorId, locale.value(), candidate, experienceId)
+                            || experienceRepository.existsByTourOperatorIdAndHandleExcluding(operatorId, candidate, experienceId));
         }
         return null;
     }

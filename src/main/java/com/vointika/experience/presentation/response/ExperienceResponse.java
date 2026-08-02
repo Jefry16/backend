@@ -17,7 +17,7 @@ public record ExperienceResponse(
         UUID id,
         String context,
         String name,
-        String slug,
+        String handle,
         String description,
         String longDescription,
         boolean featured,
@@ -37,7 +37,7 @@ public record ExperienceResponse(
 
     public static ExperienceResponse from(ExperienceView v) {
         return new ExperienceResponse(
-                v.id(), "experiences", v.name(), v.slug(), v.description(), v.longDescription(),
+                v.id(), "experiences", v.name(), v.handle(), v.description(), v.longDescription(),
                 v.featured(), v.tags(), v.included(), v.notIncluded(), v.highlights(),
                 v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
                 v.durationMinutes(), v.bookingCutoffHours(),

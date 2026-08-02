@@ -7,7 +7,7 @@ package com.vointika.shared.exception;
  * for that). Examples: "slot is no longer OPEN", "slot is fully booked
  * for this audience", "cart is already checked out".
  *
- * <p>If the conflict is a unique-constraint duplicate (slug collision,
+ * <p>If the conflict is a unique-constraint duplicate (handle collision,
  * email already registered, etc.), throw {@link ResourceAlreadyExistsException}
  * instead.
  */

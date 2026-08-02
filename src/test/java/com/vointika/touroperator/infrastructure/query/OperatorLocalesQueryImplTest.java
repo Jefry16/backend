@@ -2,7 +2,7 @@ package com.vointika.touroperator.infrastructure.query;
 
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.touroperator.domain.entity.TourOperator;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
@@ -34,7 +34,7 @@ class OperatorLocalesQueryImplTest {
 
     @Test
     void returnsTheOperatorsSupportedLocaleCodes() {
-        TourOperator op = new TourOperator(operatorId, new TourOperatorName("Acme"), new Slug("acme"),
+        TourOperator op = new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St"), UUID.randomUUID());
         op.updateLocales(LocaleCode.of("en"),
                 new LinkedHashSet<>(List.of(LocaleCode.of("en"), LocaleCode.of("es"))));

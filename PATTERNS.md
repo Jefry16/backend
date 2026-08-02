@@ -137,7 +137,7 @@ second**. That makes them one namespace on the read side, so uniqueness has to b
 checked across both on every write — otherwise one silently shadows the other and
 the shadowed page becomes unreachable in that locale, with no error at any point.
 
-> **The read half is parked (2026-08-01).** `findPublishedBySlug` /
+> **The read half is parked (2026-08-01).** `findPublishedByHandle` /
 > `findPublishedByHandle` went with the experience and page render contexts when the
 > storefront surface was cut back to `/shop`, so nothing resolves a handle that way
 > today — only `publishedHandles`, which navigation calls with ids, not handles.
@@ -165,10 +165,10 @@ write paths that feed each and make every one of them check both.
 knowing before you read the two side by side and think one is wrong. **Whether a
 cross-namespace collision is a 409 or a suffix depends on who chose the value, not on
 which namespace it came from.** A page handle is operator-chosen and permanent, so a
-clash is a 409 the operator can act on. An experience's canonical slug is *derived from
+clash is a 409 the operator can act on. An experience's canonical handle is *derived from
 its name*, so its create path widens the probe instead — the auto-suffix simply steps
-over localized slugs too, and the operator sees a `-2` rather than a 409 for a value
-they never typed and have no field to correct. The explicit localized slug is
+over localized handles too, and the operator sees a `-2` rather than a 409 for a value
+they never typed and have no field to correct. The explicit localized handle is
 operator-chosen in both, and 409s in both.
 
 One consequence: the any-locale probe needs an exclusion parameter only where a *rename*
@@ -290,7 +290,7 @@ in `rendering`; an internal endpoint that *mutates* belongs to the context ownin
 the data (a cart write is cart's, not rendering's) and brings its own registrar.
 Adding one:
 
-1. Map it under `/api/storefront/…` and take the tenant as a **slug** path
+1. Map it under `/api/storefront/…` and take the tenant as a **handle** path
    variable — the storefront knows tenants by subdomain, not by id.
 2. Register the exact pattern in `RenderingPublicRoutes` (a
    `PublicRouteRegistrar`). This does **not** make it public: it only stops
@@ -424,7 +424,7 @@ next `V`. Curated reference/seed data lives in the migration.
 - Multi-line email templates end `</body>\n\n</html>` — assert `endsWith("</html>")`,
   not `</body></html>`.
 - **Case-fold with `Locale.ROOT`, never the JVM default.** `"IT".toLowerCase()`
-  under a Turkish default locale is `"ıt"` (dotless), so locale codes, slugs and
+  under a Turkish default locale is `"ıt"` (dotless), so locale codes, handles and
   handles silently stop matching depending on which machine served the request.
   `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**

@@ -11,7 +11,7 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.AuditChanges;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
@@ -20,10 +20,10 @@ import java.util.UUID;
 /**
  * Renames a page's canonical handle — its own endpoint (not part of the
  * content PATCH) because changing the permanent URL is a deliberate act.
- * ADMIN+ only. The new handle is Slug-validated (422) and must be free among
+ * ADMIN+ only. The new handle is Handle-validated (422) and must be free among
  * the operator's handles (409, no auto-suffix — double-guarded by the
  * pre-check and the DB unique index). Renaming to the current handle is a
- * no-op (no timestamp churn, no audit entry). Slug-history 301s for the old
+ * no-op (no timestamp churn, no audit entry). Handle-history 301s for the old
  * URL are deferred to the storefront arc.
  */
 public class RenamePageUseCase {
@@ -51,14 +51,14 @@ public class RenamePageUseCase {
         Page page = pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
 
-        Slug handle = new Slug(newHandle);
+        Handle handle = new Handle(newHandle);
         if (page.getHandle().value().equals(handle.value())) {
             return;
         }
         if (pageRepository.existsByTourOperatorIdAndHandle(tourOperatorId, handle.value())) {
             throw new ResourceAlreadyExistsException("A page with this handle already exists");
         }
-        if (translationRepository.existsBySlugInAnyLocale(
+        if (translationRepository.existsByHandleInAnyLocale(
                 tourOperatorId, handle.value(), pageId)) {
             throw new ResourceAlreadyExistsException(
                     "A page already uses this handle as a localized handle");

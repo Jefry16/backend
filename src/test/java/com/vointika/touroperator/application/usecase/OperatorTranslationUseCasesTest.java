@@ -9,7 +9,7 @@ import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.application.dto.input.UpsertOperatorTranslationInput;
 import com.vointika.touroperator.application.dto.output.OperatorTranslationView;
 import com.vointika.touroperator.domain.entity.TourOperator;
@@ -72,7 +72,7 @@ class OperatorTranslationUseCasesTest {
     }
 
     private TourOperator operator() {
-        return new TourOperator(OP, new TourOperatorName("Acme"), new Slug("acme"),
+        return new TourOperator(OP, new TourOperatorName("Acme"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1"),
                 USER, Instant.now(), Instant.now(), null,
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en"), LocaleCode.of("es")));

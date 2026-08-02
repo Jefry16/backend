@@ -12,7 +12,7 @@ import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -22,7 +22,7 @@ import java.util.UUID;
 
 /**
  * An operator's sellable product. The core aggregate: identity (name, immutable
- * per-operator {@link Slug}), prose, content lists, media references (bare
+ * per-operator {@link Handle}), prose, content lists, media references (bare
  * media-ids validated at the write boundary, resolved to URLs at read),
  * duration + booking cutoff, and a DRAFT↔PUBLISHED lifecycle. Slots, pricing,
  * pickup, and translations are separate aggregates/overlays.
@@ -40,7 +40,7 @@ public class Experience {
     private final UUID id;
     private final UUID tourOperatorId;
     private final UUID createdBy;
-    private final Slug slug;                 // immutable, unique per operator
+    private final Handle handle;                 // immutable, unique per operator
     private final Instant createdAt;
 
     private ExperienceName name;
@@ -61,14 +61,14 @@ public class Experience {
     private SeoDescription seoDescription;
 
     /** A brand-new experience — always unpublished (a draft). */
-    public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Slug slug,
+    public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle,
                                     ExperienceName name, Description description, LongDescription longDescription,
                                     boolean featured, List<Tag> tags, List<InclusionItem> included,
                                     List<InclusionItem> notIncluded, List<Highlight> highlights,
                                     List<UUID> mediaIds, UUID thumbnailMediaId,
                                     DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
                                     SeoTitle seoTitle, SeoDescription seoDescription) {
-        Experience e = new Experience(id, tourOperatorId, createdBy, slug, Instant.now(),
+        Experience e = new Experience(id, tourOperatorId, createdBy, handle, Instant.now(),
                 name, description, longDescription, featured, tags, included, notIncluded, highlights,
                 mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false,
                 seoTitle, seoDescription);
@@ -77,7 +77,7 @@ public class Experience {
     }
 
     // Reconstitution from persistence.
-    public Experience(UUID id, UUID tourOperatorId, UUID createdBy, Slug slug, Instant createdAt,
+    public Experience(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle, Instant createdAt,
                       ExperienceName name, Description description, LongDescription longDescription,
                       boolean featured, List<Tag> tags, List<InclusionItem> included,
                       List<InclusionItem> notIncluded, List<Highlight> highlights,
@@ -87,7 +87,7 @@ public class Experience {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.createdBy = createdBy;
-        this.slug = slug;
+        this.handle = handle;
         this.createdAt = createdAt;
         this.name = name;
         this.description = description;
@@ -106,7 +106,7 @@ public class Experience {
         this.seoDescription = seoDescription;
     }
 
-    /** Replaces the editable fields (everything but id/operator/slug/status/createdAt). */
+    /** Replaces the editable fields (everything but id/operator/handle/status/createdAt). */
     public void update(ExperienceName name, Description description, LongDescription longDescription,
                        boolean featured, List<Tag> tags, List<InclusionItem> included,
                        List<InclusionItem> notIncluded, List<Highlight> highlights,
@@ -170,7 +170,7 @@ public class Experience {
     /**
      * The auditable fields as JSON-native values — the exposure guard for the
      * audit log's field diffs (only what appears here can enter the trail).
-     * Slug is immutable and status changes only via publish/unpublish, so
+     * Handle is immutable and status changes only via publish/unpublish, so
      * neither belongs in the update diff; {@code published} is diffed by the
      * publish/unpublish use cases against this same snapshot.
      */
@@ -192,7 +192,7 @@ public class Experience {
         return snapshot;
     }
 
-    public Slug getSlug() { return slug; }
+    public Handle getHandle() { return handle; }
     public Instant getCreatedAt() { return createdAt; }
     public ExperienceName getName() { return name; }
     public Description getDescription() { return description; }

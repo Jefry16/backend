@@ -6,7 +6,7 @@
 CREATE TABLE touroperator.tour_operators (
     id           UUID          NOT NULL PRIMARY KEY,
     name         VARCHAR(150)  NOT NULL,
-    slug         VARCHAR(170)  NOT NULL CONSTRAINT tour_operators_slug_unique UNIQUE,
+    handle         VARCHAR(170)  NOT NULL CONSTRAINT tour_operators_handle_unique UNIQUE,
     timezone_id  UUID          NOT NULL REFERENCES reference.timezones (id),
     currency_id  UUID          NOT NULL REFERENCES reference.currencies (id),
     address      VARCHAR(500)  NOT NULL,

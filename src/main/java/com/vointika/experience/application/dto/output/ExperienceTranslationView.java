@@ -18,7 +18,7 @@ public record ExperienceTranslationView(
         List<String> highlights,
         List<String> included,
         List<String> notIncluded,
-        String slug) {
+        String handle) {
 
     public static ExperienceTranslationView from(ExperienceTranslation t) {
         return new ExperienceTranslationView(
@@ -29,6 +29,6 @@ public record ExperienceTranslationView(
                 t.highlights() == null ? null : t.highlights().stream().map(Highlight::value).toList(),
                 t.included() == null ? null : t.included().stream().map(InclusionItem::value).toList(),
                 t.notIncluded() == null ? null : t.notIncluded().stream().map(InclusionItem::value).toList(),
-                t.slug() == null ? null : t.slug().value());
+                t.handle() == null ? null : t.handle().value());
     }
 }

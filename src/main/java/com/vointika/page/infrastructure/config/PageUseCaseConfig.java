@@ -19,7 +19,7 @@ import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -104,12 +104,12 @@ public class PageUseCaseConfig {
             PageRepository pageRepository,
             PageTranslationRepository pageTranslationRepository,
             OperatorLocalesQuery operatorLocalesQuery,
-            SlugGenerator slugGenerator,
+            HandleGenerator handleGenerator,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertPageTranslationUseCase(pageRepository, pageTranslationRepository,
-                operatorLocalesQuery, slugGenerator, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocalesQuery, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean

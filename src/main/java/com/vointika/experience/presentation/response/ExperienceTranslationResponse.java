@@ -16,11 +16,11 @@ public record ExperienceTranslationResponse(
         List<String> highlights,
         List<String> included,
         List<String> notIncluded,
-        String slug) {
+        String handle) {
 
     public static ExperienceTranslationResponse from(ExperienceTranslationView v) {
         return new ExperienceTranslationResponse(
                 v.locale(), v.name(), v.description(), v.longDescription(),
-                v.highlights(), v.included(), v.notIncluded(), v.slug());
+                v.highlights(), v.included(), v.notIncluded(), v.handle());
     }
 }

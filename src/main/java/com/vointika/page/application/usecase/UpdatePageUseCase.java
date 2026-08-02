@@ -15,7 +15,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.valueobject.FieldChange;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +24,7 @@ import java.util.Map;
  * Whole replace of the editable content (title/body required; null/blank SEO
  * fields and template suffix clear them). ADMIN+ only. Handle and status stay
  * untouched — the handle changes through rename, status through
- * publish/unpublish. The template suffix is validated slug-shaped; whether the
+ * publish/unpublish. The template suffix is validated handle-shaped; whether the
  * variant template exists is a render-time concern (the theme arc), mirroring
  * experiences' dangling-suffix fallback.
  */
@@ -59,7 +59,7 @@ public class UpdatePageUseCase {
                 ? null : new PageSeoDescription(input.seoDescription());
         String templateSuffix = (input.templateSuffix() == null || input.templateSuffix().isBlank())
                 ? null
-                : new Slug(input.templateSuffix()).value();
+                : new Handle(input.templateSuffix()).value();
 
         Map<String, Object> before = page.auditSnapshot();
         page.update(title, body, seoTitle, seoDescription, templateSuffix);

@@ -8,7 +8,7 @@ import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.util.List;
 import java.util.Objects;
@@ -17,8 +17,8 @@ import java.util.UUID;
 /**
  * A per-locale overlay on an {@link Experience}. Every content field is nullable:
  * a null field falls back to the canonical experience value at render time. The
- * {@code slug} is an optional localized URL handle (null = use the canonical
- * slug). {@code tags} are deliberately not translated (filter facets); media is
+ * {@code handle} is an optional localized URL handle (null = use the canonical
+ * handle). {@code tags} are deliberately not translated (filter facets); media is
  * shared with the canonical experience.
  */
 public record ExperienceTranslation(
@@ -31,7 +31,7 @@ public record ExperienceTranslation(
         List<Highlight> highlights,
         List<InclusionItem> included,
         List<InclusionItem> notIncluded,
-        Slug slug,
+        Handle handle,
         SeoTitle seoTitle,
         SeoDescription seoDescription) {
 

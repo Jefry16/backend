@@ -31,7 +31,7 @@ public class PageTranslationJpaEntity {
     private UUID tourOperatorId;
 
     @Column(length = 170)
-    private String slug;
+    private String handle;
 
     @Column(length = 255)
     private String title;

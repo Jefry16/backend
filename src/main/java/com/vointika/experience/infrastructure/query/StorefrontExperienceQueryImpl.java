@@ -59,9 +59,9 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
             ExperienceTranslationJpaEntity overlay = overlays.get(experience.getId());
             handles.put(
                     experience.getId(),
-                    overlay != null && overlay.getSlug() != null
-                            ? overlay.getSlug()
-                            : experience.getSlug());
+                    overlay != null && overlay.getHandle() != null
+                            ? overlay.getHandle()
+                            : experience.getHandle());
         }
         return Map.copyOf(handles);
     }

@@ -1,7 +1,7 @@
 -- Metafield definitions: the schema of one custom field an operator attaches
 -- to a resource kind (v1 owner types: EXPERIENCE, PAGE — both exist in the
 -- rebuild, so both ship from day one). Identified by namespace.key per
--- (operator, owner type); namespace/key are slug-shaped so themes can later
+-- (operator, owner type); namespace/key are handle-shaped so themes can later
 -- address them with Liquid dot access (resource.metafields.namespace.key).
 CREATE TABLE metafield.metafield_definitions (
     id                 UUID           NOT NULL PRIMARY KEY,

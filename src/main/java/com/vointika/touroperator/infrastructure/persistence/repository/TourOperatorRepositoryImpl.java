@@ -30,13 +30,13 @@ public class TourOperatorRepositoryImpl implements TourOperatorRepository {
     }
 
     @Override
-    public Optional<TourOperator> findBySlug(String slug) {
-        return jpaRepository.findBySlug(slug).map(TourOperatorMapper::toDomain);
+    public Optional<TourOperator> findByHandle(String handle) {
+        return jpaRepository.findByHandle(handle).map(TourOperatorMapper::toDomain);
     }
 
     @Override
-    public boolean existsBySlug(String slug) {
-        return jpaRepository.existsBySlug(slug);
+    public boolean existsByHandle(String handle) {
+        return jpaRepository.existsByHandle(handle);
     }
 
     @Override

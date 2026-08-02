@@ -12,9 +12,9 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.shared.valueobject.AuditActor;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.UUID;
@@ -25,23 +25,23 @@ import java.util.UUID;
  * ({@link ExperienceInputMapper}); media references are validated against the
  * operator's library ({@link MediaReferenceValidator}, 422 on a foreign id).
  *
- * <p>The canonical slug is generated per-operator, unique across <em>both</em>
- * canonical and localized slugs: the storefront resolves a slug against localized
- * slugs first and canonical ones second, so a canonical slug that lands on some
- * experience's localized slug would shadow it (PATTERNS §4d). The slug is derived,
+ * <p>The canonical handle is generated per-operator, unique across <em>both</em>
+ * canonical and localized handles: the storefront resolves a handle against localized
+ * handles first and canonical ones second, so a canonical handle that lands on some
+ * experience's localized handle would shadow it (PATTERNS §4d). The handle is derived,
  * not operator-chosen, so a collision auto-suffixes rather than answering 409. On a
- * slug race the tx rolls back and we retry with a fresh slug (mirrors
+ * handle race the tx rolls back and we retry with a fresh handle (mirrors
  * CreateTourOperatorUseCase).
  */
 public class CreateExperienceUseCase {
 
-    private static final int MAX_SLUG_ATTEMPTS = 5;
+    private static final int MAX_HANDLE_ATTEMPTS = 5;
 
     private final ExperienceRepository experienceRepository;
     private final ExperienceTranslationRepository translationRepository;
     private final MediaReferenceValidator mediaReferenceValidator;
     private final TourOperatorMembershipCheck membershipCheck;
-    private final SlugGenerator slugGenerator;
+    private final HandleGenerator handleGenerator;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
@@ -50,7 +50,7 @@ public class CreateExperienceUseCase {
                                    ExperienceTranslationRepository translationRepository,
                                    MediaReferenceValidator mediaReferenceValidator,
                                    TourOperatorMembershipCheck membershipCheck,
-                                   SlugGenerator slugGenerator,
+                                   HandleGenerator handleGenerator,
                                    IdGenerator idGenerator,
                                    TransactionRunner transactionRunner,
                                    AuditTrailPort auditTrailPort) {
@@ -58,7 +58,7 @@ public class CreateExperienceUseCase {
         this.translationRepository = translationRepository;
         this.mediaReferenceValidator = mediaReferenceValidator;
         this.membershipCheck = membershipCheck;
-        this.slugGenerator = slugGenerator;
+        this.handleGenerator = handleGenerator;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -81,12 +81,12 @@ public class CreateExperienceUseCase {
         mediaReferenceValidator.validate(tourOperatorId, mediaIds, input.thumbnailMediaId());
 
         Experience saved = null;
-        for (int attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
-            Slug slug = slugGenerator.generateUnique(name.value(), candidate ->
-                    experienceRepository.existsByTourOperatorIdAndSlug(tourOperatorId, candidate)
-                            || translationRepository.existsBySlugInAnyLocale(tourOperatorId, candidate));
+        for (int attempt = 0; attempt < MAX_HANDLE_ATTEMPTS; attempt++) {
+            Handle handle = handleGenerator.generateUnique(name.value(), candidate ->
+                    experienceRepository.existsByTourOperatorIdAndHandle(tourOperatorId, candidate)
+                            || translationRepository.existsByHandleInAnyLocale(tourOperatorId, candidate));
             Experience experience = Experience.create(
-                    idGenerator.newId(), tourOperatorId, callerUserId, slug,
+                    idGenerator.newId(), tourOperatorId, callerUserId, handle,
                     name, description, longDescription, input.featured(),
                     tags, included, notIncluded, highlights,
                     mediaIds, input.thumbnailMediaId(), duration, cutoff,
@@ -101,11 +101,11 @@ public class CreateExperienceUseCase {
                 });
                 break;
             } catch (UniqueConstraintViolationException e) {
-                // slug race — regenerate and retry
+                // handle race — regenerate and retry
             }
         }
         if (saved == null) {
-            throw new InvalidFieldException("Could not generate a unique slug — please retry");
+            throw new InvalidFieldException("Could not generate a unique handle — please retry");
         }
         return saved.getId();
     }

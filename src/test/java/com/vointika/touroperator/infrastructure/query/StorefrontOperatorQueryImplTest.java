@@ -7,7 +7,7 @@ import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.StorefrontOperatorView;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
@@ -61,25 +61,25 @@ class StorefrontOperatorQueryImplTest {
 
     private TourOperator operator(LocaleCode primary, Set<LocaleCode> supported,
                                   boolean passwordEnabled, String password) {
-        return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Slug("acme"),
+        return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Handle("acme"),
                 TIMEZONE, CURRENCY, new TourOperatorAddress("Calle Mayor 1"),
                 USER, Instant.now(), Instant.now(), null,
                 primary, supported, passwordEnabled, password, null, null, null, null);
     }
 
     private void givenOperator(TourOperator operator) {
-        when(tourOperatorRepository.findBySlug("acme")).thenReturn(Optional.of(operator));
+        when(tourOperatorRepository.findByHandle("acme")).thenReturn(Optional.of(operator));
     }
 
     @Test
     void resolves_currency_and_timezone_through_reference() {
         givenOperator(operator(LocaleCode.of("en"), Set.of(LocaleCode.of("en")), false, null));
 
-        StorefrontOperatorView view = query.findBySlug("acme").orElseThrow();
+        StorefrontOperatorView view = query.findByHandle("acme").orElseThrow();
 
         assertThat(view.currency()).isEqualTo("DOP");
         assertThat(view.timezone()).isEqualTo("America/Santo_Domingo");
-        assertThat(view.slug()).isEqualTo("acme");
+        assertThat(view.handle()).isEqualTo("acme");
     }
 
     @Test
@@ -90,17 +90,17 @@ class StorefrontOperatorQueryImplTest {
                 LocaleCode.of("it"), LocaleCode.of("es"), LocaleCode.of("en"), LocaleCode.of("fr")));
         givenOperator(operator(LocaleCode.of("es"), supported, false, null));
 
-        StorefrontOperatorView view = query.findBySlug("acme").orElseThrow();
+        StorefrontOperatorView view = query.findByHandle("acme").orElseThrow();
 
         assertThat(view.supportedLocales()).containsExactly("es", "en", "fr", "it");
         assertThat(view.primaryLocale()).isEqualTo("es");
     }
 
     @Test
-    void unknown_slug_resolves_to_empty() {
-        when(tourOperatorRepository.findBySlug("nobody")).thenReturn(Optional.empty());
+    void unknown_handle_resolves_to_empty() {
+        when(tourOperatorRepository.findByHandle("nobody")).thenReturn(Optional.empty());
 
-        assertThat(query.findBySlug("nobody")).isEmpty();
+        assertThat(query.findByHandle("nobody")).isEmpty();
     }
 
     @Test
@@ -125,7 +125,7 @@ class StorefrontOperatorQueryImplTest {
 
     @Test
     void an_unknown_tenant_verifies_nothing() {
-        when(tourOperatorRepository.findBySlug("nobody")).thenReturn(Optional.empty());
+        when(tourOperatorRepository.findByHandle("nobody")).thenReturn(Optional.empty());
 
         assertThat(query.verifyStorefrontPassword("nobody", "opensesame")).isFalse();
     }
@@ -136,6 +136,6 @@ class StorefrontOperatorQueryImplTest {
 
         // The record's own toString is the leak surface most likely to reach a
         // log line; assert the secret is absent from the whole view.
-        assertThat(query.findBySlug("acme").orElseThrow().toString()).doesNotContain("opensesame");
+        assertThat(query.findByHandle("acme").orElseThrow().toString()).doesNotContain("opensesame");
     }
 }

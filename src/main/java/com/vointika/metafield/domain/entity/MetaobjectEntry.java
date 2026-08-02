@@ -2,7 +2,7 @@ package com.vointika.metafield.domain.entity;
 
 import com.vointika.metafield.domain.valueobject.MetaobjectEntryName;
 import com.vointika.shared.exception.ConflictException;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -20,7 +20,7 @@ public class MetaobjectEntry {
     private final UUID id;
     private final UUID tourOperatorId;
     private final UUID definitionId;
-    private Slug handle;
+    private Handle handle;
     private MetaobjectEntryName name;
     private boolean published;
     private final UUID createdBy;
@@ -31,7 +31,7 @@ public class MetaobjectEntry {
     public MetaobjectEntry(UUID id,
                            UUID tourOperatorId,
                            UUID definitionId,
-                           Slug handle,
+                           Handle handle,
                            MetaobjectEntryName name,
                            UUID createdBy) {
         this.id = id;
@@ -49,7 +49,7 @@ public class MetaobjectEntry {
     public MetaobjectEntry(UUID id,
                            UUID tourOperatorId,
                            UUID definitionId,
-                           Slug handle,
+                           Handle handle,
                            MetaobjectEntryName name,
                            boolean published,
                            UUID createdBy,
@@ -67,7 +67,7 @@ public class MetaobjectEntry {
     }
 
     /** Full replace of name + handle (handle uniqueness is the caller's concern). */
-    public void update(MetaobjectEntryName newName, Slug newHandle) {
+    public void update(MetaobjectEntryName newName, Handle newHandle) {
         this.name = newName;
         this.handle = newHandle;
         this.updatedAt = Instant.now();
@@ -92,7 +92,7 @@ public class MetaobjectEntry {
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
     public UUID getDefinitionId() { return definitionId; }
-    public Slug getHandle() { return handle; }
+    public Handle getHandle() { return handle; }
     public MetaobjectEntryName getName() { return name; }
     public boolean isPublished() { return published; }
     public UUID getCreatedBy() { return createdBy; }

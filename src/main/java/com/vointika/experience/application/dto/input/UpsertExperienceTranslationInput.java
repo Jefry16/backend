@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * The translatable fields of an experience for one locale. Every field is
  * optional — a null (or absent) field means "not translated, fall back to
- * canonical". {@code slug} is an optional localized URL handle.
+ * canonical". {@code handle} is an optional localized URL handle.
  */
 public record UpsertExperienceTranslationInput(
         String name,
@@ -14,7 +14,7 @@ public record UpsertExperienceTranslationInput(
         List<String> highlights,
         List<String> included,
         List<String> notIncluded,
-        String slug,
+        String handle,
         String seoTitle,
         String seoDescription) {
 }

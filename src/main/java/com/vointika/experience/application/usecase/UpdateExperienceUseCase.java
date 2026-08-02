@@ -20,9 +20,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Updates an experience's editable fields (everything but slug/status). ADMIN+
+ * Updates an experience's editable fields (everything but handle/status). ADMIN+
  * only. Guards: caller not ADMIN+ → 403; id not under this operator → 404;
- * invalid field or media ref → 422. The slug is immutable and the status is
+ * invalid field or media ref → 422. The handle is immutable and the status is
  * changed only via publish/unpublish.
  *
  * <p>Slots snapshot the experience's name/description at creation — when either

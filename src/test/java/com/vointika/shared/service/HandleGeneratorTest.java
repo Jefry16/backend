@@ -8,12 +8,12 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SlugGeneratorTest {
+class HandleGeneratorTest {
 
-    private final SlugGenerator generator = new SlugGenerator();
+    private final HandleGenerator generator = new HandleGenerator();
 
     @Test
-    void slugifiesNameLowercasingAndDashing() {
+    void handleifiesNameLowercasingAndDashing() {
         assertEquals("acme-tours",
                 generator.generateUnique("Acme Tours", s -> false).value());
     }

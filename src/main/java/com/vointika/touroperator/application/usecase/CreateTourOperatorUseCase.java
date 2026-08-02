@@ -16,7 +16,7 @@ import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import com.vointika.touroperator.domain.entity.Menu;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorMember;
@@ -25,7 +25,7 @@ import com.vointika.touroperator.domain.repository.MenuRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.shared.valueobject.AuditActor;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
@@ -48,15 +48,15 @@ import java.util.UUID;
 public class CreateTourOperatorUseCase {
 
 
-    /** Bounded slug-collision retries; each attempt regenerates the slug in a fresh tx. */
-    private static final int MAX_SLUG_ATTEMPTS = 5;
+    /** Bounded handle-collision retries; each attempt regenerates the handle in a fresh tx. */
+    private static final int MAX_HANDLE_ATTEMPTS = 5;
 
     private final TourOperatorRepository tourOperatorRepository;
     private final TourOperatorMemberRepository memberRepository;
     private final MenuRepository menuRepository;
     private final TimezoneRepository timezoneRepository;
     private final CurrencyRepository currencyRepository;
-    private final SlugGenerator slugGenerator;
+    private final HandleGenerator handleGenerator;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
     private final UserAccountQuery userAccountQuery;
@@ -70,7 +70,7 @@ public class CreateTourOperatorUseCase {
             MenuRepository menuRepository,
             TimezoneRepository timezoneRepository,
             CurrencyRepository currencyRepository,
-            SlugGenerator slugGenerator,
+            HandleGenerator handleGenerator,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
             UserAccountQuery userAccountQuery,
@@ -82,7 +82,7 @@ public class CreateTourOperatorUseCase {
         this.menuRepository = menuRepository;
         this.timezoneRepository = timezoneRepository;
         this.currencyRepository = currencyRepository;
-        this.slugGenerator = slugGenerator;
+        this.handleGenerator = handleGenerator;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
         this.userAccountQuery = userAccountQuery;
@@ -130,15 +130,15 @@ public class CreateTourOperatorUseCase {
         UserContactView ownerContact = userAccountQuery.findContact(createdBy)
                 .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
 
-        // 5. Generate a slug + save operator and OWNER member in one tx. On a
-        //    slug collision (DIV at commit) the whole tx rolls back and we retry
-        //    with a fresh slug.
+        // 5. Generate a handle + save operator and OWNER member in one tx. On a
+        //    handle collision (DIV at commit) the whole tx rolls back and we retry
+        //    with a fresh handle.
         TourOperator tourOperator = null;
-        for (int attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
-            Slug slug = slugGenerator.generateUnique(
-                    name.value(), tourOperatorRepository::existsBySlug);
+        for (int attempt = 0; attempt < MAX_HANDLE_ATTEMPTS; attempt++) {
+            Handle handle = handleGenerator.generateUnique(
+                    name.value(), tourOperatorRepository::existsByHandle);
             TourOperator candidate = new TourOperator(
-                    idGenerator.newId(), name, slug,
+                    idGenerator.newId(), name, handle,
                     input.timezoneId(), input.currencyId(), address, createdBy);
             try {
                 tourOperator = transactionRunner.call(() -> {
@@ -153,30 +153,30 @@ public class CreateTourOperatorUseCase {
                     // menus (ordinary, deletable) — part of the operator's
                     // initial state, so they ride the same transaction.
                     menuRepository.save(new Menu(idGenerator.newId(), candidate.getId(),
-                            new Slug("main-menu"), "Main menu", createdBy));
+                            new Handle("main-menu"), "Main menu", createdBy));
                     menuRepository.save(new Menu(idGenerator.newId(), candidate.getId(),
-                            new Slug("footer"), "Footer", createdBy));
+                            new Handle("footer"), "Footer", createdBy));
                     auditTrailPort.append(new NewAuditEntry(
                             candidate.getId(), AuditActor.user(createdBy),
                             "TOUR_OPERATOR", candidate.getId(), "tour_operator.created",
-                            Map.of("name", name.value(), "slug", candidate.getSlug().value())));
+                            Map.of("name", name.value(), "handle", candidate.getHandle().value())));
                     return candidate;
                 });
                 break;
             } catch (UniqueConstraintViolationException e) {
-                // Distinguish a concurrent duplicate-name from a slug race: if a
+                // Distinguish a concurrent duplicate-name from a handle race: if a
                 // sibling request just committed this name, surface the duplicate
                 // rather than burning retries on a collision that never clears.
                 if (tourOperatorRepository.existsByOwnerAndName(createdBy, name.value())) {
                     throw new ResourceAlreadyExistsException(
                             "You already have an operator named \"" + name.value() + "\"");
                 }
-                // otherwise slug race — regenerate and retry
+                // otherwise handle race — regenerate and retry
             }
         }
         if (tourOperator == null) {
             throw new InvalidFieldException(
-                    "Could not generate a unique slug — try a different name");
+                    "Could not generate a unique handle — try a different name");
         }
 
         // 6. Welcome the creator. After-commit + fire-and-forget: an email

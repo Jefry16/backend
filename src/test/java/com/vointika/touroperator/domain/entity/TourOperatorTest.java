@@ -1,6 +1,6 @@
 package com.vointika.touroperator.domain.entity;
 
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ class TourOperatorTest {
         return new TourOperator(
                 UUID.randomUUID(),
                 new TourOperatorName("Acme Tours"),
-                new Slug("acme-tours"),
+                new Handle("acme-tours"),
                 UUID.randomUUID(), UUID.randomUUID(),
                 new TourOperatorAddress("123 Beach Rd"),
                 UUID.randomUUID());
@@ -34,14 +34,14 @@ class TourOperatorTest {
         TourOperator op = new TourOperator(
                 id,
                 new TourOperatorName("Acme Tours"),
-                new Slug("acme-tours"),
+                new Handle("acme-tours"),
                 tz, cur,
                 new TourOperatorAddress("123 Beach Rd"),
                 owner);
 
         assertEquals(id, op.getId());
         assertEquals("Acme Tours", op.getName().value());
-        assertEquals("acme-tours", op.getSlug().value());
+        assertEquals("acme-tours", op.getHandle().value());
         assertEquals(tz, op.getTimezoneId());
         assertEquals(cur, op.getCurrencyId());
         assertEquals("123 Beach Rd", op.getAddress().value());

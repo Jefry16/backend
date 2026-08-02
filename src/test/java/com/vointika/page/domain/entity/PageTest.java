@@ -6,7 +6,7 @@ import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ConflictException;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -19,7 +19,7 @@ class PageTest {
 
     private Page page() {
         return new Page(UUID.randomUUID(), UUID.randomUUID(),
-                new PageTitle("About us"), new Slug("about-us"),
+                new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"),
                 new PageSeoTitle("About"), new PageSeoDescription("Who we are"),
                 UUID.randomUUID());

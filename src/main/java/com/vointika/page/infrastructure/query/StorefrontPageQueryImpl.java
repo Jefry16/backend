@@ -53,9 +53,9 @@ public class StorefrontPageQueryImpl implements StorefrontPageQuery {
         Map<UUID, String> localized = translationRepository
                 .findByPageIdInAndLocale(published.stream().map(PageJpaEntity::getId).toList(), locale)
                 .stream()
-                .filter(translation -> translation.getSlug() != null)
+                .filter(translation -> translation.getHandle() != null)
                 .collect(Collectors.toMap(
-                        PageTranslationJpaEntity::getPageId, PageTranslationJpaEntity::getSlug));
+                        PageTranslationJpaEntity::getPageId, PageTranslationJpaEntity::getHandle));
 
         Map<UUID, String> handles = new HashMap<>();
         for (PageJpaEntity page : published) {

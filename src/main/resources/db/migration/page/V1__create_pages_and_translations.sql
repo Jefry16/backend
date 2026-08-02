@@ -4,7 +4,7 @@
 -- operator-authored raw HTML, size-capped at the API boundary, never sanitized
 -- in storage (escaping is a render/consumer concern).
 --
--- Deferred with the storefront arc (deliberately absent here): slug-history
+-- Deferred with the storefront arc (deliberately absent here): handle-history
 -- tables for 301s on renamed handles, and the render-side read ports.
 CREATE TABLE page.pages (
     id                 UUID           NOT NULL PRIMARY KEY,
@@ -33,7 +33,7 @@ CREATE INDEX idx_pages_operator_created_at
 
 -- Per-locale content overlay — the experience/audience translations shape:
 -- every content column nullable (null = untranslated, per-field fallback to
--- canonical at render time); slug = the optional per-locale LOCALIZED handle
+-- canonical at render time); handle = the optional per-locale LOCALIZED handle
 -- (no per-field fallback: absent means the canonical handle serves the
 -- locale); tour_operator_id denormalized so localized-handle uniqueness stays
 -- a single-schema check.
@@ -41,7 +41,7 @@ CREATE TABLE page.page_translations (
     page_id            UUID           NOT NULL REFERENCES page.pages(id) ON DELETE CASCADE,
     locale             VARCHAR(8)     NOT NULL,
     tour_operator_id   UUID           NOT NULL,
-    slug               VARCHAR(170),
+    handle               VARCHAR(170),
     title              VARCHAR(255),
     body               TEXT,
     seo_title          VARCHAR(70),
@@ -49,6 +49,6 @@ CREATE TABLE page.page_translations (
     PRIMARY KEY (page_id, locale)
 );
 
-CREATE UNIQUE INDEX uq_page_translations_operator_locale_slug
-    ON page.page_translations (tour_operator_id, locale, slug)
-    WHERE slug IS NOT NULL;
+CREATE UNIQUE INDEX uq_page_translations_operator_locale_handle
+    ON page.page_translations (tour_operator_id, locale, handle)
+    WHERE handle IS NOT NULL;

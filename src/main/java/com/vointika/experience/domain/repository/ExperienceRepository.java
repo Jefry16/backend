@@ -19,9 +19,9 @@ public interface ExperienceRepository {
     /** The operator's experiences, cursor-paginated + filtered. */
     CursorPage<Experience> list(ListQuery query);
 
-    /** Whether this operator already has an experience with this slug (per-operator uniqueness). */
-    boolean existsByTourOperatorIdAndSlug(UUID tourOperatorId, String slug);
+    /** Whether this operator already has an experience with this handle (per-operator uniqueness). */
+    boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 
-    /** As above, ignoring one experience — its own canonical slug never clashes with itself. */
-    boolean existsByTourOperatorIdAndSlugExcluding(UUID tourOperatorId, String slug, UUID excludeExperienceId);
+    /** As above, ignoring one experience — its own canonical handle never clashes with itself. */
+    boolean existsByTourOperatorIdAndHandleExcluding(UUID tourOperatorId, String handle, UUID excludeExperienceId);
 }

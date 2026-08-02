@@ -15,7 +15,7 @@ import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
@@ -102,7 +102,7 @@ class MetaobjectControllerDocumentationTest {
     private MetaobjectEntryView view() {
         MetaobjectEntry entry = new MetaobjectEntry(
                 UUID.fromString(ENTRY), UUID.fromString(OP), UUID.fromString(DEF),
-                new Slug("beginner-chart"), new MetaobjectEntryName("Beginner chart"), false,
+                new Handle("beginner-chart"), new MetaobjectEntryName("Beginner chart"), false,
                 UUID.fromString(USER),
                 Instant.parse("2026-07-28T10:00:00Z"), Instant.parse("2026-07-28T10:00:00Z"));
         return new MetaobjectEntryView(entry, List.of(
@@ -128,7 +128,7 @@ class MetaobjectControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("definitionId").description("The definition (type) this entry belongs to"),
-                                fieldWithPath("handle").description("Slug-shaped handle, unique per definition — duplicate → 409"),
+                                fieldWithPath("handle").description("Handle-shaped handle, unique per definition — duplicate → 409"),
                                 fieldWithPath("name").description("Display name (1–120)"),
                                 subsectionWithPath("values").description("field key → raw value; unknown key → 422, bad value → 422, null/blank stays unset").optional())));
     }

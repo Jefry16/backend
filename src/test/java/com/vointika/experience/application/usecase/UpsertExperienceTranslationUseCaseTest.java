@@ -13,7 +13,7 @@ import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -70,22 +70,22 @@ class UpsertExperienceTranslationUseCaseTest {
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
-                operatorLocalesQuery, new SlugGenerator(), membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocalesQuery, new HandleGenerator(), membershipCheck, transactionRunner, auditTrailPort);
 
         when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId))
                 .thenReturn(Optional.of(mock(Experience.class)));
         when(operatorLocalesQuery.findSupportedLocales(operatorId)).thenReturn(Set.of("en", "es"));
-        when(translationRepository.existsByOperatorLocaleSlug(any(), any(), any(), any())).thenReturn(false);
+        when(translationRepository.existsByOperatorLocaleHandle(any(), any(), any(), any())).thenReturn(false);
         when(translationRepository.upsert(any())).thenAnswer(a -> a.getArgument(0));
     }
 
-    private UpsertExperienceTranslationInput input(String name, String slug) {
+    private UpsertExperienceTranslationInput input(String name, String handle) {
         return new UpsertExperienceTranslationInput(name, "Buceo", "Larga", List.of("Grupo pequeño"),
-                List.of("Equipo"), List.of(), slug, null, null);
+                List.of("Equipo"), List.of(), handle, null, null);
     }
 
     @Test
-    void upsertsWithAnExplicitLocalizedSlug() {
+    void upsertsWithAnExplicitLocalizedHandle() {
         useCase.execute(operatorId, experienceId, "es", input("Buceo al atardecer", "buceo-atardecer"), callerId);
 
         verify(membershipCheck).ensureAdmin(callerId, operatorId);
@@ -93,25 +93,25 @@ class UpsertExperienceTranslationUseCaseTest {
         verify(translationRepository).upsert(saved.capture());
         assertEquals("es", saved.getValue().locale().value());
         assertEquals("Buceo al atardecer", saved.getValue().name().value());
-        assertEquals("buceo-atardecer", saved.getValue().slug().value());
+        assertEquals("buceo-atardecer", saved.getValue().handle().value());
     }
 
     @Test
-    void derivesLocalizedSlugFromNameWhenNoExplicitSlug() {
+    void derivesLocalizedHandleFromNameWhenNoExplicitHandle() {
         useCase.execute(operatorId, experienceId, "es", input("Buceo al atardecer", null), callerId);
 
         ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
         verify(translationRepository).upsert(saved.capture());
-        assertEquals("buceo-al-atardecer", saved.getValue().slug().value());
+        assertEquals("buceo-al-atardecer", saved.getValue().handle().value());
     }
 
     @Test
-    void nullSlugAndNullNameLeavesSlugNull() {
+    void nullHandleAndNullNameLeavesHandleNull() {
         useCase.execute(operatorId, experienceId, "es",
                 new UpsertExperienceTranslationInput(null, "only desc", null, null, null, null, null, null, null), callerId);
         ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
         verify(translationRepository).upsert(saved.capture());
-        assertNull(saved.getValue().slug());
+        assertNull(saved.getValue().handle());
         assertNull(saved.getValue().name());
         assertEquals("only desc", saved.getValue().description().value());
     }
@@ -124,8 +124,8 @@ class UpsertExperienceTranslationUseCaseTest {
     }
 
     @Test
-    void duplicateExplicitSlugIs409() {
-        when(translationRepository.existsByOperatorLocaleSlug(eq(operatorId), eq("es"), eq("taken"), eq(experienceId)))
+    void duplicateExplicitHandleIs409() {
+        when(translationRepository.existsByOperatorLocaleHandle(eq(operatorId), eq("es"), eq("taken"), eq(experienceId)))
                 .thenReturn(true);
         assertThrows(ResourceAlreadyExistsException.class,
                 () -> useCase.execute(operatorId, experienceId, "es", input("X", "taken"), callerId));
@@ -133,37 +133,37 @@ class UpsertExperienceTranslationUseCaseTest {
     }
 
     @Test
-    void explicitSlugMatchingAnotherExperiencesCanonicalSlugIs409() {
-        when(experienceRepository.existsByTourOperatorIdAndSlugExcluding(operatorId, "buceo", experienceId))
+    void explicitHandleMatchingAnotherExperiencesCanonicalHandleIs409() {
+        when(experienceRepository.existsByTourOperatorIdAndHandleExcluding(operatorId, "buceo", experienceId))
                 .thenReturn(true);
         assertThrows(ResourceAlreadyExistsException.class,
                 () -> useCase.execute(operatorId, experienceId, "es", input("X", "buceo"), callerId));
         verify(translationRepository, never()).upsert(any());
     }
 
-    // The guard excludes this experience, so its own canonical slug is not a clash —
+    // The guard excludes this experience, so its own canonical handle is not a clash —
     // it resolves to the same experience. Pins the Excluding half of the query.
     @Test
-    void explicitSlugMatchingItsOwnCanonicalSlugIsAllowed() {
-        when(experienceRepository.existsByTourOperatorIdAndSlug(operatorId, "buceo")).thenReturn(true);
+    void explicitHandleMatchingItsOwnCanonicalHandleIsAllowed() {
+        when(experienceRepository.existsByTourOperatorIdAndHandle(operatorId, "buceo")).thenReturn(true);
 
         useCase.execute(operatorId, experienceId, "es", input("Buceo", "buceo"), callerId);
 
         ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
         verify(translationRepository).upsert(saved.capture());
-        assertEquals("buceo", saved.getValue().slug().value());
+        assertEquals("buceo", saved.getValue().handle().value());
     }
 
     @Test
-    void derivedSlugSkipsAnotherExperiencesCanonicalSlug() {
-        when(experienceRepository.existsByTourOperatorIdAndSlugExcluding(
+    void derivedHandleSkipsAnotherExperiencesCanonicalHandle() {
+        when(experienceRepository.existsByTourOperatorIdAndHandleExcluding(
                 operatorId, "buceo-al-atardecer", experienceId)).thenReturn(true);
 
         useCase.execute(operatorId, experienceId, "es", input("Buceo al atardecer", null), callerId);
 
         ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
         verify(translationRepository).upsert(saved.capture());
-        assertEquals("buceo-al-atardecer-2", saved.getValue().slug().value());
+        assertEquals("buceo-al-atardecer-2", saved.getValue().handle().value());
     }
 
     @Test

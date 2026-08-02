@@ -20,21 +20,21 @@ public interface ExperienceTranslationRepository {
     boolean deleteByExperienceIdAndLocale(UUID experienceId, String locale);
 
     /**
-     * Whether another experience already uses this localized slug for the same
+     * Whether another experience already uses this localized handle for the same
      * operator + locale (the {@code excludingExperienceId} lets an experience keep
-     * its own slug on re-upsert).
+     * its own handle on re-upsert).
      */
-    boolean existsByOperatorLocaleSlug(UUID tourOperatorId, String locale, String slug, UUID excludingExperienceId);
+    boolean existsByOperatorLocaleHandle(UUID tourOperatorId, String locale, String handle, UUID excludingExperienceId);
 
     /**
-     * Whether any experience of this operator uses this slug as a localized slug
-     * in <em>any</em> locale. The storefront resolves a slug against localized
-     * slugs first and canonical ones second, so the two namespaces are read as one
-     * and must be validated as one (PATTERNS §4d) — a canonical slug equal to
-     * another experience's localized slug silently shadows it in that locale.
+     * Whether any experience of this operator uses this handle as a localized handle
+     * in <em>any</em> locale. The storefront resolves a handle against localized
+     * handles first and canonical ones second, so the two namespaces are read as one
+     * and must be validated as one (PATTERNS §4d) — a canonical handle equal to
+     * another experience's localized handle silently shadows it in that locale.
      *
      * <p>No exclusion parameter: the only caller is experience creation, which has
      * no id to exclude yet.
      */
-    boolean existsBySlugInAnyLocale(UUID tourOperatorId, String slug);
+    boolean existsByHandleInAnyLocale(UUID tourOperatorId, String handle);
 }

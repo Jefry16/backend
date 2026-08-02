@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * touroperator's adapter for the shared {@link StorefrontOperatorQuery} seam:
- * resolves a tenant from its storefront slug and hands back everything the
+ * resolves a tenant from its storefront handle and hands back everything the
  * public site needs about the operator, fully resolved.
  *
  * <p>Three reference/media lookups ride along (logo id → URL, currency → code,
@@ -55,16 +55,16 @@ public class StorefrontOperatorQueryImpl implements StorefrontOperatorQuery {
     }
 
     @Override
-    public Optional<StorefrontOperatorView> findBySlug(String slug) {
-        return tourOperatorRepository.findBySlug(slug).map(this::toView);
+    public Optional<StorefrontOperatorView> findByHandle(String handle) {
+        return tourOperatorRepository.findByHandle(handle).map(this::toView);
     }
 
     @Override
-    public boolean verifyStorefrontPassword(String slug, String candidate) {
+    public boolean verifyStorefrontPassword(String handle, String candidate) {
         if (candidate == null) {
             return false;
         }
-        return tourOperatorRepository.findBySlug(slug)
+        return tourOperatorRepository.findByHandle(handle)
                 .filter(TourOperator::isPasswordEnabled)
                 .map(TourOperator::getStorefrontPassword)
                 .filter(stored -> stored != null && matches(stored, candidate))
@@ -76,7 +76,7 @@ public class StorefrontOperatorQueryImpl implements StorefrontOperatorQuery {
         return new StorefrontOperatorView(
                 operator.getId(),
                 operator.getName().value(),
-                operator.getSlug().value(),
+                operator.getHandle().value(),
                 mediaUrlBatchResolver.resolveOne(operator.getId(), operator.getLogoMediaId()),
                 primaryLocale,
                 orderedLocales(operator, primaryLocale),

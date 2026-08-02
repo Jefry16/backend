@@ -55,7 +55,7 @@ public class ExperienceTranslationJpaEntity {
     private List<String> notIncluded;
 
     @Column
-    private String slug;
+    private String handle;
 
     @Column(length = 70)
     private String seoTitle;

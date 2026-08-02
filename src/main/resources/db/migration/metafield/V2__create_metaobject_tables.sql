@@ -1,6 +1,6 @@
 -- Metaobjects: free-standing custom content types (size guides, FAQs, guide
 -- profiles) an operator defines and fills, living beside metafields in the
--- custom-data context. A DEFINITION is the blueprint (type slug + ordered
+-- custom-data context. A DEFINITION is the blueprint (type handle + ordered
 -- field definitions reusing the metafield type catalogue); an ENTRY is one
 -- piece of content of that type (handle + name + one value per field).
 

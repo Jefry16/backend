@@ -5,7 +5,7 @@ import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 
 /** One locale's overlay; every content field nullable (null = untranslated, falls back to canonical). */
 public record PageTranslationResponse(
@@ -14,7 +14,7 @@ public record PageTranslationResponse(
         String body,
         String seoTitle,
         String seoDescription,
-        String slug) {
+        String handle) {
 
     public static PageTranslationResponse from(PageTranslation t) {
         return new PageTranslationResponse(
@@ -23,6 +23,6 @@ public record PageTranslationResponse(
                 t.body() == null ? null : t.body().value(),
                 t.seoTitle() == null ? null : t.seoTitle().value(),
                 t.seoDescription() == null ? null : t.seoDescription().value(),
-                t.slug() == null ? null : t.slug().value());
+                t.handle() == null ? null : t.handle().value());
     }
 }

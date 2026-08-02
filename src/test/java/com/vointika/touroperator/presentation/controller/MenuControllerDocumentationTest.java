@@ -5,7 +5,7 @@ import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.valueobject.Slug;
+import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.MenuDetail;
@@ -101,7 +101,7 @@ class MenuControllerDocumentationTest {
     }
 
     private Menu menu() {
-        return new Menu(UUID.fromString(MENU), UUID.fromString(OP), new Slug("main-menu"),
+        return new Menu(UUID.fromString(MENU), UUID.fromString(OP), new Handle("main-menu"),
                 "Main menu", UUID.fromString(USER),
                 Instant.parse("2026-07-28T10:00:00Z"), Instant.parse("2026-07-28T10:00:00Z"));
     }
@@ -129,7 +129,7 @@ class MenuControllerDocumentationTest {
                 .andDo(document("menus/create",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
-                                fieldWithPath("handle").description("Slug-shaped theme-facing identifier, unique per operator, immutable — duplicate → 409"),
+                                fieldWithPath("handle").description("Handle-shaped theme-facing identifier, unique per operator, immutable — duplicate → 409"),
                                 fieldWithPath("title").description("Display title (1–120)"))));
     }
 

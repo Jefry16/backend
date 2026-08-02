@@ -11,7 +11,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
-import com.vointika.shared.service.SlugGenerator;
+import com.vointika.shared.service.HandleGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,14 +52,14 @@ class CreateExperienceUseCaseTest {
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         IdGenerator idGenerator = mock(IdGenerator.class);
         when(idGenerator.newId()).thenReturn(newId);
-        when(repository.existsByTourOperatorIdAndSlug(eq(operatorId), any())).thenReturn(false);
+        when(repository.existsByTourOperatorIdAndHandle(eq(operatorId), any())).thenReturn(false);
         when(repository.save(any())).thenAnswer(a -> a.getArgument(0));
         TransactionRunner tx = new TransactionRunner() {
             @Override public <T> T call(Supplier<T> work) { return work.get(); }
             @Override public void run(Runnable work) { work.run(); }
         };
         useCase = new CreateExperienceUseCase(repository, translationRepository, mediaValidator,
-                membershipCheck, new SlugGenerator(), idGenerator, tx, auditTrailPort);
+                membershipCheck, new HandleGenerator(), idGenerator, tx, auditTrailPort);
     }
 
     private ExperienceInput input(String name) {
@@ -68,7 +68,7 @@ class CreateExperienceUseCaseTest {
     }
 
     @Test
-    void createsDraftWithGeneratedSlug() {
+    void createsDraftWithGeneratedHandle() {
         UUID id = useCase.execute(operatorId, callerId, input("Dive Trip"));
 
         assertEquals(newId, id);
@@ -77,21 +77,21 @@ class CreateExperienceUseCaseTest {
         ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
         verify(repository).save(saved.capture());
         org.junit.jupiter.api.Assertions.assertFalse(saved.getValue().isPublished());
-        assertEquals("dive-trip", saved.getValue().getSlug().value());
+        assertEquals("dive-trip", saved.getValue().getHandle().value());
         assertEquals(callerId, saved.getValue().getCreatedBy());
     }
 
-    // The generated slug is derived, not operator-chosen, so a clash with a
-    // localized slug auto-suffixes rather than answering 409.
+    // The generated handle is derived, not operator-chosen, so a clash with a
+    // localized handle auto-suffixes rather than answering 409.
     @Test
-    void generatedSlugSkipsAnExistingLocalizedSlug() {
-        when(translationRepository.existsBySlugInAnyLocale(operatorId, "dive-trip")).thenReturn(true);
+    void generatedHandleSkipsAnExistingLocalizedHandle() {
+        when(translationRepository.existsByHandleInAnyLocale(operatorId, "dive-trip")).thenReturn(true);
 
         useCase.execute(operatorId, callerId, input("Dive Trip"));
 
         ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
         verify(repository).save(saved.capture());
-        assertEquals("dive-trip-2", saved.getValue().getSlug().value());
+        assertEquals("dive-trip-2", saved.getValue().getHandle().value());
     }
 
     @Test
