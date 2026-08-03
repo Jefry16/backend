@@ -48,9 +48,11 @@ class StorefrontHomeControllerTest {
         when(tenantHandleResolver.resolve("acme.localhost:8080")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme")).thenReturn(Optional.of(new HomePageOutput(
                 "Acme Tours - day trips", "Acme Tours", "Boat tours and day trips",
-                "tour-operators/1/logo.png", null)));
+                "tour-operators/1/logo.png", "tour-operators/1/og.png")));
         when(mediaUrlResolver.toUrl("tour-operators/1/logo.png"))
                 .thenReturn("http://localhost:9000/avatars/tour-operators/1/logo.png");
+        when(mediaUrlResolver.toUrl("tour-operators/1/og.png"))
+                .thenReturn("http://localhost:9000/avatars/tour-operators/1/og.png");
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
@@ -59,7 +61,9 @@ class StorefrontHomeControllerTest {
                         containsString("<title>Acme Tours - day trips</title>"),
                         containsString("<h1>Acme Tours</h1>"),
                         containsString("Boat tours and day trips"),
-                        containsString("http://localhost:9000/avatars/tour-operators/1/logo.png"))));
+                        containsString("<img src=\"http://localhost:9000/avatars/tour-operators/1/logo.png\""),
+                        containsString("<meta property=\"og:image\" "
+                                + "content=\"http://localhost:9000/avatars/tour-operators/1/og.png\">"))));
     }
 
     /**

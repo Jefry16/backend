@@ -42,7 +42,6 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
         Map<UUID, String> keys = mediaKeys(operator);
         return new StorefrontShopView(
                 operator.getName(),
-                operator.getHandle(),
                 keyOf(keys, operator.getLogoMediaId()),
                 keyOf(keys, operator.getOgImageMediaId()),
                 operator.getSeoTitle(),

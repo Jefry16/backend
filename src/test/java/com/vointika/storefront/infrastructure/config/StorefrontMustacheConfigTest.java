@@ -32,7 +32,13 @@ public class StorefrontMustacheConfigTest {
         }
     }
 
-    public record Seo(String title) {}
+    public interface Branded {
+        default String badge() {
+            return "from-a-default-method";
+        }
+    }
+
+    public record Seo(String title) implements Branded {}
 
     @Test
     void aPrivateFieldIsUnreachableFromATemplate() {
@@ -55,6 +61,20 @@ public class StorefrontMustacheConfigTest {
     @Test
     void aJavaBeanGetterIsNotAnAccessor() {
         assertThat(compiler.compile("[{{shopName}}]").execute(new Shop())).isEqualTo("[]");
+    }
+
+    /**
+     * The limit of the rule above, and it is genuinely surprising: a default
+     * <em>interface</em> method still resolves. {@code DefaultCollector.getIfaceMethod}
+     * is dead with coercion off — it ends in {@code makeAccessible}, which returns
+     * null — but nothing reaches it, because {@code clazz.getMethod(name)} already
+     * returns inherited public interface methods. Reading the two code paths
+     * suggests otherwise, which is why this is a test and not a comment.
+     */
+    @Test
+    void aDefaultInterfaceMethodIsStillAnAccessor() {
+        assertThat(compiler.compile("[{{badge}}]").execute(new Seo(null)))
+                .isEqualTo("[from-a-default-method]");
     }
 
     @Test

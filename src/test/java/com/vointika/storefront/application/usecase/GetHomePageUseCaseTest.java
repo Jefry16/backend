@@ -26,7 +26,7 @@ class GetHomePageUseCaseTest {
     @Test
     void returnsThePageForAKnownHandle() {
         when(storefrontShopQuery.findByHandle("acme")).thenReturn(Optional.of(new StorefrontShopView(
-                "Acme Tours", "acme", "tour-operators/1/logo.png", "tour-operators/1/og.png",
+                "Acme Tours", "tour-operators/1/logo.png", "tour-operators/1/og.png",
                 "Acme Tours — day trips", "Boat tours and day trips")));
 
         HomePageOutput page = useCase.execute("acme").orElseThrow();
@@ -48,7 +48,7 @@ class GetHomePageUseCaseTest {
     @Test
     void titleFallsBackToTheShopNameWhenNoSeoTitleIsSet() {
         when(storefrontShopQuery.findByHandle("acme")).thenReturn(Optional.of(
-                new StorefrontShopView("Acme Tours", "acme", null, null, null, null)));
+                new StorefrontShopView("Acme Tours", null, null, null, null)));
 
         assertThat(useCase.execute("acme").orElseThrow().title()).isEqualTo("Acme Tours");
     }
@@ -57,7 +57,7 @@ class GetHomePageUseCaseTest {
     @Test
     void nullMediaKeysPassThroughAsNull() {
         when(storefrontShopQuery.findByHandle("acme")).thenReturn(Optional.of(
-                new StorefrontShopView("Acme Tours", "acme", null, null, null, null)));
+                new StorefrontShopView("Acme Tours", null, null, null, null)));
 
         HomePageOutput page = useCase.execute("acme").orElseThrow();
 

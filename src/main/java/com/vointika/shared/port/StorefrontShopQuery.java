@@ -28,7 +28,6 @@ public interface StorefrontShopQuery {
      */
     record StorefrontShopView(
             String name,
-            String handle,
             String logoKey,
             String ogImageKey,
             String seoTitle,

@@ -85,8 +85,13 @@ bites, so the next session reads it instead of re-discovering it.
   `name()`/`get<Name>()`/`is<Name>()` search to a plain `clazz.getMethod(name)`, and
   `getField` to `clazz.getField(name)`. So a context object must expose **exactly-named
   public accessors**: a `record` works, `getShopName()` for `{{shopName}}` does not —
-  and it fails by rendering an empty page, never by throwing. Pinned in
-  `StorefrontMustacheConfigTest`. (MAP open decision 6 §4 describes the *default*
+  and it fails by rendering an empty page, never by throwing. **A default *interface*
+  method still resolves**, which reading the source suggests it should not:
+  `getIfaceMethod` really is dead with coercion off (it ends in `makeAccessible`,
+  which returns null), but nothing reaches it, because `clazz.getMethod` already
+  returns inherited public interface methods. Both halves pinned in
+  `StorefrontMustacheConfigTest`; the interface one was settled by running it, after
+  two readings of the same source disagreed. (MAP open decision 6 §4 describes the *default*
   collector's three-form search; that half stops being true the moment coercion is off.)
 - **A view model reached reflectively must be `public`, enclosing types included.** With
   coercion off, `Method.invoke` on a public accessor of a package-private class is an

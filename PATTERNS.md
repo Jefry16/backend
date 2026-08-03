@@ -399,8 +399,12 @@ token leaves in an httpOnly cookie. That pair stays.
   slices from the package structure, so a context is fenced the day its package
   appears — that rule *replaced* five hand-written ones precisely because the list
   rotted and left seven contexts unfenced. `storefront` landed with no new rule.
-  Still add a **client fence** for a confined library (mirroring the Redis/Kafka
-  fences) — that is not derivable.
+  A **client fence** (mirroring the Redis/Kafka ones) is still not derivable, but
+  it is for a *client library* confined to one adapter package — a driver holding
+  a connection, credentials or a socket. Not every third-party jar: neither
+  Thymeleaf nor jmustache is fenced, because a template engine is used at the
+  presentation/config boundary by design, and a fence there would restate the
+  layer rules ArchUnit already enforces.
 
 ## 10. Migrations
 
