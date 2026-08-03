@@ -75,6 +75,13 @@ app:
     enabled: ${APP_RATE_LIMIT_ENABLED:true}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  storefront:
+    # Every storefront is one label in front of this domain, and that label is
+    # the tenant handle. `{anything}.localhost` resolves to 127.0.0.1 on Linux
+    # with no DNS and no hosts file, so dev needs no infrastructure; production
+    # sets the real storefront domain (e.g. myvointika.com), which is why this
+    # is configuration and not a constant.
+    base-domain: ${APP_STOREFRONT_BASE_DOMAIN:localhost}
   identity:
     # Admin-UI languages a user may pick as their profile preference — lowercase
     # locale codes matching the frontend's message catalogs. Growing a language =

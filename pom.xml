@@ -39,6 +39,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
+        <!-- Mustache — the storefront's render engine (MAP open decision 6). The
+             starter brings the Boot-managed jmustache and its
+             MustacheResourceTemplateLoader; both the Compiler and the
+             TemplateLoader beans are @ConditionalOnMissingBean, so
+             StorefrontMustacheConfig replaces the compiler without fighting the
+             autoconfiguration. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mustache</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
