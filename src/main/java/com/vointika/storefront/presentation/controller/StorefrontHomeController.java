@@ -5,14 +5,13 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.GetHomePageUseCase;
 import com.vointika.storefront.presentation.view.HomeView;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -29,6 +28,14 @@ import java.util.Map;
  * the not-found template; an exception would reach
  * {@code GlobalExceptionHandler}, a global {@code @ControllerAdvice} that would
  * answer an HTML request with a JSON body.
+ *
+ * <p>The tenant comes from {@code getServerName()} rather than the raw
+ * {@code Host} header, and the difference only shows up behind a proxy:
+ * {@code ForwardedHeaderFilter} (enabled by {@code server.forward-headers-strategy},
+ * which {@code EndpointRateLimitFilter} already wants for the client IP) makes
+ * the servlet API honour {@code X-Forwarded-Host} and strips the forwarded
+ * headers. A {@code @RequestHeader("Host")} would keep reading the literal header
+ * and quietly resolve a different tenant from the rest of the app.
  */
 @Controller
 public class StorefrontHomeController {
@@ -54,9 +61,8 @@ public class StorefrontHomeController {
     }
 
     @GetMapping(path = "/", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> home(
-            @RequestHeader(value = HttpHeaders.HOST, required = false) String host) {
-        return tenantHandleResolver.resolve(host)
+    public ResponseEntity<String> home(HttpServletRequest request) {
+        return tenantHandleResolver.resolve(request.getServerName())
                 .flatMap(getHomePageUseCase::execute)
                 .map(page -> ResponseEntity.ok()
                         .contentType(HTML_UTF8)

@@ -43,9 +43,17 @@ class StorefrontHomeControllerTest {
     @MockitoBean private MediaUrlResolver mediaUrlResolver;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
 
+    /**
+     * The stubbed host has <em>no port</em> while the request's does: the
+     * controller reads {@code getServerName()}, not the raw {@code Host} header,
+     * and {@code MockHttpServletRequest} derives the former from the latter with
+     * the port stripped. Read the raw header instead and this stub misses, the
+     * mock returns empty, and the assertions below fail on a 404 — so this test
+     * is the regression guard for that choice.
+     */
     @Test
     void rendersTheShopForAKnownHost() throws Exception {
-        when(tenantHandleResolver.resolve("acme.localhost:8080")).thenReturn(Optional.of("acme"));
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme")).thenReturn(Optional.of(new HomePageOutput(
                 "Acme Tours - day trips", "Acme Tours", "Boat tours and day trips",
                 "tour-operators/1/logo.png", "tour-operators/1/og.png")));
@@ -62,6 +70,7 @@ class StorefrontHomeControllerTest {
                         containsString("<h1>Acme Tours</h1>"),
                         containsString("Boat tours and day trips"),
                         containsString("<img src=\"http://localhost:9000/avatars/tour-operators/1/logo.png\""),
+                        containsString("<meta property=\"og:type\" content=\"website\">"),
                         containsString("<meta property=\"og:image\" "
                                 + "content=\"http://localhost:9000/avatars/tour-operators/1/og.png\">"))));
     }

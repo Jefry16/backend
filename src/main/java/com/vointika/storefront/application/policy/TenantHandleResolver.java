@@ -17,6 +17,13 @@ import java.util.Optional;
  * and both the controller that supplies the header and the config that supplies
  * the base domain may depend on this layer, while they may not depend on each
  * other.
+ *
+ * <p>It takes a host in either form a caller can hold one — with or without a
+ * port — and strips the port itself. The controller feeds it
+ * {@code getServerName()}, which never carries one, so that branch is
+ * normalization rather than a live path; it stays because the argument is
+ * a <em>host</em> and a partial function over host strings is the kind of
+ * sharp edge that gets rediscovered by a caller, not by a test.
  */
 public class TenantHandleResolver {
 
