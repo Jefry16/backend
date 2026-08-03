@@ -14,6 +14,7 @@ import com.vointika.storefront.application.dto.output.HomePageOutput;
  * public — at render time, not compile time.
  */
 public record HomeView(
+        String locale,
         String title,
         String shopName,
         String description,
@@ -23,6 +24,7 @@ public record HomeView(
 
     public static HomeView from(HomePageOutput page, MediaUrlResolver mediaUrlResolver) {
         return new HomeView(
+                page.locale(),
                 page.title(),
                 page.shopName(),
                 page.description(),

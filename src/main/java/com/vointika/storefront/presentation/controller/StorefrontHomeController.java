@@ -2,6 +2,7 @@ package com.vointika.storefront.presentation.controller;
 
 import com.samskivert.mustache.Template;
 import com.vointika.shared.media.MediaUrlResolver;
+import com.vointika.storefront.application.policy.LocaleResolver;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.GetHomePageUseCase;
 import com.vointika.storefront.presentation.view.HomeView;
@@ -12,12 +13,26 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
- * The storefront home page: one tenant, one template, rendered in-process.
+ * The storefront home page: one tenant, one template, rendered in-process, in
+ * one of the operator's locales.
+ *
+ * <p>The locale route is {@link LocaleResolver#PATH_TEMPLATE}, whose variable is
+ * constrained rather than bare: the same string is registered as a
+ * {@code PublicRoute}, and a bare {@code /{locale}} would open every
+ * single-segment path in the application.
+ *
+ * <p>It would still match the literal {@code /password} if the constraint were
+ * loosened; Spring's {@code PathPattern} prefers the literal, so the password
+ * page would win anyway. That is a property of the matcher rather than of this
+ * class, and every future top-level literal route inherits the same collision —
+ * {@code PasswordPageControllerTest} asserts it so the next one breaks a test
+ * rather than a page.
  *
  * <p>It renders and writes the string itself rather than returning a view name,
  * because Spring's {@code MustacheView} recompiles the template on every
@@ -62,8 +77,22 @@ public class StorefrontHomeController {
 
     @GetMapping(path = "/", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> home(HttpServletRequest request) {
+        return render(request, null);
+    }
+
+    /**
+     * A secondary locale the operator publishes. The primary is <b>not</b> served
+     * here — it lives at {@code /}, and two URLs for one page is duplicate
+     * content — so {@code /{primary}} is a 404 like any unsupported locale.
+     */
+    @GetMapping(path = LocaleResolver.PATH_TEMPLATE, produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> localizedHome(@PathVariable String locale, HttpServletRequest request) {
+        return render(request, locale);
+    }
+
+    private ResponseEntity<String> render(HttpServletRequest request, String pathLocale) {
         return tenantHandleResolver.resolve(request.getServerName())
-                .flatMap(getHomePageUseCase::execute)
+                .flatMap(handle -> getHomePageUseCase.execute(handle, pathLocale))
                 .map(page -> ResponseEntity.ok()
                         .contentType(HTML_UTF8)
                         .body(homeTemplate.execute(HomeView.from(page, mediaUrlResolver))))
