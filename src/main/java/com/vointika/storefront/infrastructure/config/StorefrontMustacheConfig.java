@@ -59,4 +59,9 @@ public class StorefrontMustacheConfig {
     public Template storefrontNotFoundTemplate(Mustache.Compiler compiler) {
         return compiler.loadTemplate("storefront/not-found");
     }
+
+    @Bean
+    public Template storefrontPasswordTemplate(Mustache.Compiler compiler) {
+        return compiler.loadTemplate("storefront/password");
+    }
 }

@@ -1,0 +1,50 @@
+package com.vointika.storefront.application.usecase;
+
+import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
+import com.vointika.storefront.application.port.UnlockTokenPort;
+
+/**
+ * Whether a storefront will answer this visitor at all — asked once, before any
+ * locale exists, for every storefront path.
+ *
+ * <p>Ordering is the whole point. Resolving the locale first would make a locked
+ * store answer {@code /es} with a 404 and {@code /fr} with a redirect, which
+ * tells an anonymous visitor that the store exists and which locales it
+ * publishes, from behind the gate. Locked means every path answers identically.
+ */
+public class CheckStorefrontLockUseCase {
+
+    public enum LockState { NO_SUCH_TENANT, UNLOCKED, LOCKED }
+
+    private final StorefrontShopQuery storefrontShopQuery;
+    private final UnlockTokenPort unlockToken;
+
+    public CheckStorefrontLockUseCase(StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
+        this.storefrontShopQuery = storefrontShopQuery;
+        this.unlockToken = unlockToken;
+    }
+
+    /**
+     * @param presentedToken the unlock cookie's value, or {@code null} when the
+     *                       visitor presented none
+     */
+    public LockState execute(String handle, String presentedToken) {
+        return storefrontShopQuery.findGate(handle)
+                .map(gate -> state(gate, presentedToken))
+                .orElse(LockState.NO_SUCH_TENANT);
+    }
+
+    private LockState state(StorefrontGateView gate, String presentedToken) {
+        if (!gate.passwordEnabled()) {
+            return LockState.UNLOCKED;
+        }
+        // The gate on with no password set is reachable through the admin API. It
+        // is locked with no way in — treating it as unlocked would open a store by
+        // leaving a field blank, which is why the port refuses rather than
+        // comparing null to null.
+        return unlockToken.matches(presentedToken, gate.storefrontPassword(), gate.tourOperatorId())
+                ? LockState.UNLOCKED
+                : LockState.LOCKED;
+    }
+}

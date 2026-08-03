@@ -40,6 +40,16 @@ POJO and `@Bean` it from the context's config. `storefront`'s
 rejected it in three places; it takes the host as a `String` and knows nothing
 about servlets, so `application/policy` is where it belongs anyway.
 
+**`application/policy` is now the settled home for that kind of rule** —
+`TenantHandleResolver` (host → tenant) and `LocaleResolver` (path locale +
+operator config → the locale to render) are both there. A policy that holds
+configuration is an instance `@Bean`ed from the config; a pure function of its
+arguments is `static` with no bean at all (`LocaleResolver`), and the choice is
+just whether there is state to inject. **A constant two layers need also goes
+here** — the storefront's unlock-cookie name lives on `UnlockTokenPort` for
+exactly that reason: the interceptor that reads it and the controller that writes
+it cannot see each other.
+
 `shared` and `reference` are shared kernels — importable by any context.
 Everything else is isolated: a context reaches another only via a shared query
 port or an event (never a direct import).
@@ -338,6 +348,13 @@ needed a JSON parser, so it asks `JsonSyntaxPort.isWellFormed(value)` and the Ja
 call lives in `infrastructure/port`. The application layer has no exemptions — a
 library in a use case means a port is missing.
 
+**`javax.*` is not `java.*`, and the allowlist means it literally.** The rule permits
+`com.vointika..` and `java..`; `javax.crypto.Mac` matches neither, so HMAC in a use case
+fails the build exactly like a third-party jar would. `storefront`'s unlock cookie was
+written as an `application/policy` class on the assumption that "pure JDK" was enough —
+`UnlockTokenPort` + `HmacUnlockToken` in `infrastructure/security` is what it became.
+Reading the rule says this; only running it proves it, which is the point.
+
 **Logging follows the same rule.** If a *side effect* fails and the caller does not
 care — deleting an object whose row is already gone, enqueuing a welcome email — the
 adapter swallows and logs it, and the port documents that it never throws. Only when
@@ -424,6 +441,21 @@ next `V`. Curated reference/seed data lives in the migration.
   under a Turkish default locale is `"ıt"` (dotless), so locale codes, handles and
   handles silently stop matching depending on which machine served the request.
   `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
+- **Two classes with one simple name are one bean name, and the context refuses.**
+  Component scanning derives the bean name from the simple name regardless of
+  package, so `storefront.…StorefrontPasswordController` beside
+  `touroperator.…StorefrontPasswordController` is a `ConflictingBeanDefinitionException`
+  at startup — not a warning. Every sliced `@WebMvcTest` still passed; only
+  `VointikaApplicationTests.contextLoads`, which loads all thirteen contexts at once,
+  catches it. Rename rather than reaching for an explicit bean name: the collision is
+  the signal that one of the two names is describing the wrong thing (here the public
+  gate page, now `PasswordPageController`).
+- **A `WebMvcConfigurer` is pulled into *every* `@WebMvcTest`, not just its own
+  context's.** So the collaborators an interceptor needs must be `ObjectProvider`s
+  resolved per request, or every controller test in the codebase fails to construct
+  the config. Both `WebConfig` (touroperator) and `StorefrontWebConfig` do this, and
+  their path patterns are what keep the resolution from ever happening on a foreign
+  route.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
   table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
   Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space
