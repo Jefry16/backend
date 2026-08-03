@@ -75,6 +75,8 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 
 Public (unauthenticated) routes are opt-in per context via the `PublicRouteRegistrar` SPI; rate-limit rules likewise via `RateLimitRuleRegistrar`. Never add either to a central hardcoded map.
 
+**A `PublicRoute` matches one HTTP method, so a page route needs `GET` *and* `HEAD`.** Spring MVC serves HEAD from a `@GetMapping` for free; Spring Security does not — a GET-only entry rejects HEAD at the filter chain as a **401 in the JSON error shape**, never reaching MVC. Harmless on a JSON API nobody HEADs, wrong on a public page: crawlers, link checkers, uptime monitors and CDNs all send HEAD. `storefront` shipped without it because every test and curl used GET; it took a request against the built stack to find. Pinned by `StorefrontHomeControllerTest.servesHeadAsWellAsGet`.
+
 ### Migrations
 
 Flyway runs **once per domain**, each into its own Postgres schema, in the order listed in `shared/infrastructure/flyway/FlywayPerDomainConfig.DOMAINS` — the order matters wherever cross-schema FKs exist. A new context adds its folder `src/main/resources/db/migration/<ctx>/` **and** an entry in `DOMAINS`. **Never modify an applied migration**; add the next `V`. Curated reference/seed data lives in the migration itself; dev-only fixtures live in `docker/dev-seed/`.
