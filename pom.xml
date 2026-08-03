@@ -198,20 +198,16 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!--
-                      Test-only secrets. application.yml ships NO defaults for
-                      these so a misconfigured production deploy fails closed
-                      (missing env var aborts startup). Tests still need
-                      deterministic values, so feed the ${APP_*} placeholders
-                      here at the JVM level. This keeps the suite self-contained
-                      (passes in IDE / CI / Docker without an ambient env var)
-                      and does not weaken the production posture.
-                      APP_INTERNAL_SHARED_SECRET must stay equal to the constant
-                      the internal-API documentation tests send as
-                      X-Internal-Secret.
+                      Test-only secret. application.yml ships NO default for it
+                      so a misconfigured production deploy fails closed (missing
+                      env var aborts startup). Tests still need a deterministic
+                      value, so feed the ${APP_JWT_SECRET} placeholder here at
+                      the JVM level. This keeps the suite self-contained (passes
+                      in IDE / CI / Docker without an ambient env var) and does
+                      not weaken the production posture.
                     -->
                     <systemPropertyVariables>
                         <APP_JWT_SECRET>test-jwt-signing-secret-at-least-32-bytes-long-0123456789</APP_JWT_SECRET>
-                        <APP_INTERNAL_SHARED_SECRET>dev-internal-secret-change-me-in-production</APP_INTERNAL_SHARED_SECRET>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
