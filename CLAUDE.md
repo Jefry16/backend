@@ -77,6 +77,8 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 
 Public (unauthenticated) routes are opt-in per context via the `PublicRouteRegistrar` SPI; rate-limit rules likewise via `RateLimitRuleRegistrar`. Never add either to a central hardcoded map.
 
+**A `PublicRoute` pattern is a security pattern before it is a route, so an unconstrained path variable is a hole.** `/{locale}` reads like one page route and `permitAll`s **every single-segment path in the application** — `/error` today, whatever `/health` or `/metrics` lands later, silently. Constrain the variable and define the pattern **once** for the mapping, the `PublicRoute` entries and any interceptor patterns (`LocaleResolver.PATH_TEMPLATE`). The group must be non-capturing — `PathPatternParser` rejects capture groups outright (PATTERNS §11).
+
 **A `PublicRoute` matches one HTTP method, so a page route needs `GET` *and* `HEAD`.** Spring MVC serves HEAD from a `@GetMapping` for free; Spring Security does not — a GET-only entry rejects HEAD at the filter chain as a **401 in the JSON error shape**, never reaching MVC. Harmless on a JSON API nobody HEADs, wrong on a public page: crawlers, link checkers, uptime monitors and CDNs all send HEAD. `storefront` shipped without it because every test and curl used GET; it took a request against the built stack to find. Pinned by `servesHeadAsWellAsGet` in both storefront controller tests — one per page route, because the entry is per route as well as per method.
 
 ### Migrations

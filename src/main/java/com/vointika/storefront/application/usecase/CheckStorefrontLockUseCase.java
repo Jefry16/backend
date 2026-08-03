@@ -39,10 +39,13 @@ public class CheckStorefrontLockUseCase {
         if (!gate.passwordEnabled()) {
             return LockState.UNLOCKED;
         }
-        // The gate on with no password set is reachable through the admin API. It
-        // is locked with no way in — treating it as unlocked would open a store by
-        // leaving a field blank, which is why the port refuses rather than
-        // comparing null to null.
+        // The gate on with no password set is locked with no way in, never open —
+        // treating it as unlocked would open a store by leaving a field blank,
+        // which is why the port refuses rather than comparing null to null.
+        // The admin API will not produce that row (enabling with no password is a
+        // 422, checked against the running stack), so this is defence in depth
+        // against a direct write or a future path that forgets the guard, not a
+        // live case.
         return unlockToken.matches(presentedToken, gate.storefrontPassword(), gate.tourOperatorId())
                 ? LockState.UNLOCKED
                 : LockState.LOCKED;

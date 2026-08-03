@@ -441,6 +441,18 @@ next `V`. Curated reference/seed data lives in the migration.
   under a Turkish default locale is `"ıt"` (dotless), so locale codes, handles and
   handles silently stop matching depending on which machine served the request.
   `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
+- **A `PublicRoute` pattern is a security pattern first and a route second.** The
+  same string that maps a handler decides what `permitAll` covers, and an
+  unconstrained path variable is far wider as the latter: `/{locale}` opens
+  **every single-segment path in the application**, silently, and keeps opening
+  each new one. Constrain the variable (`/{locale:[a-z]{2}(?:-[a-z0-9]{2,4})?}`)
+  and define it **once** — the mapping, the `PublicRoute` entries and any
+  interceptor patterns must not drift apart. The group has to be **non-capturing**:
+  `PathPatternParser` throws `IllegalArgumentException: No capture groups allowed
+  in the constraint regex`; nested `{n}` braces are fine. Constraining a variable
+  against a database allowlist creates a two-lists-must-agree coupling — pin it
+  (`LocalePathTemplateTest`), or the day a wider code is seeded it is a 404 on a
+  page the operator published and nothing says why.
 - **Two classes with one simple name are one bean name, and the context refuses.**
   Component scanning derives the bean name from the simple name regardless of
   package, so `storefront.…StorefrontPasswordController` beside

@@ -4,6 +4,7 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.dto.output.HomePageOutput;
+import com.vointika.storefront.application.policy.LocaleResolver;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.port.UnlockTokenPort;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
@@ -173,6 +174,52 @@ class StorefrontHomeControllerTest {
         mockMvc.perform(head("/en").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("text/html"));
+    }
+
+    /**
+     * <b>The locale route is a security pattern as well as a route.</b> It is
+     * registered verbatim as a {@code PublicRoute}, so a bare {@code /{locale}}
+     * would {@code permitAll} every single-segment path in the application —
+     * {@code /error} and {@code /favicon.ico} today, and whatever {@code /health}
+     * or {@code /metrics} someone adds later, silently and with nothing failing.
+     * Loosen {@link LocaleResolver#PATH_TEMPLATE} to {@code /&#123;locale&#125;}
+     * and these stop being 401.
+     */
+    @Test
+    void theLocaleRouteDoesNotOpenEveryOtherSingleSegmentPath() throws Exception {
+        when(tenantHandleResolver.resolve(any())).thenReturn(Optional.of("acme"));
+
+        for (String path : new String[]{"/error", "/favicon.ico", "/health", "/metrics", "/api"}) {
+            mockMvc.perform(get(path).header("Host", "acme.localhost"))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    /** A locale-shaped path still routes, including the regional form the template leaves room for. */
+    @Test
+    void theConstrainedTemplateStillMatchesARealLocale() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", "pt-br")).thenReturn(Optional.of(
+                new HomePageOutput("pt-br", "Acme Tours", "Acme Tours", null, null, null)));
+
+        mockMvc.perform(get("/pt-br").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<html lang=\"pt-br\">")));
+    }
+
+    /**
+     * The gate covers the storefront's own pages, not the container's error
+     * dispatch: a genuine 500 on a locked store has to stay a 500 rather than
+     * being rewritten into a redirect to {@code /password}. Widen the
+     * interceptor's patterns back to {@code /*} and this becomes a 302.
+     */
+    @Test
+    void aLockedStoreDoesNotRedirectTheContainersErrorDispatch() throws Exception {
+        when(tenantHandleResolver.resolve(any())).thenReturn(Optional.of("acme"));
+        when(checkStorefrontLockUseCase.execute(any(), any())).thenReturn(LockState.LOCKED);
+
+        mockMvc.perform(get("/error").header("Host", "acme.localhost"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
