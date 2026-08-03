@@ -103,6 +103,21 @@ bites, so the next session reads it instead of re-discovering it.
   `MustacheAutoConfiguration` into the web slice from its own jar. Reading only
   `spring-boot-webmvc-test`'s copy says the opposite. Same modularization lesson as the
   Kafka starter above: check the module that owns the feature.
+- **jmustache template inheritance works, with two behaviours worth knowing before
+  you write a layout.** `{{<parent}} … {{$block}}…{{/block}} … {{/parent}}` is real
+  (`ParentTemplateSegment`/`BlockSegment`), the close tag repeats the parent's full
+  name (`{{/storefront/layout}}`), and it gives Dawn's `theme.liquid` +
+  `content_for_layout` shape natively. (1) **Anything inside the parent call that is
+  not a block is discarded** — `removeNonBlocks` throws it away, so a child template
+  is only its block definitions. (2) **Whitespace between a block tag and its
+  content is output**, so block tags have to hug the markup
+  (`{{$content}}    <h1>…</h1>{{/content}}`) or the page gains blank lines; the
+  storefront's layout carries a comment saying so. The parent is loaded by the
+  *loader* on first render and pinned into the compiled `Template`, so a layout
+  needs **no bean of its own** — one compiled graph per page template.
+- **A Mustache comment cannot contain `}}`.** `{{! … }}` ends at the first `}}`,
+  so a comment mentioning `{{$content}}` renders the rest of itself into the page.
+  Found by doing it; the fix is to describe tags in words.
 - **Spring's `MustacheView` recompiles the template on every request**
   (`renderMergedTemplateModel` → `compiler.compile(reader)`); the caching view resolver
   above it caches the *View*, not the compiled `Template`. Fine for a few app templates,

@@ -49,10 +49,23 @@ public class StorefrontMustacheConfig {
      * recompiles on every render (the caching view resolver above it caches the
      * <em>View</em>, not the {@code Template}), which is why this slice writes
      * the rendered string itself instead of returning a view name.
+     *
+     * <p>This one and {@link #storefrontExperienceListTemplate} both inherit from
+     * {@code storefront/layout}, which needs no bean of its own: a parent
+     * template is resolved through the same loader on <em>first render</em> and
+     * then pinned into the compiled {@code Template} for good. So the layout is
+     * compiled once per page that uses it, not once per request — and the day
+     * templates come from a tenant's theme rather than the classpath, that
+     * pinning is what forces the theme version into the cache key.
      */
     @Bean
     public Template storefrontHomeTemplate(Mustache.Compiler compiler) {
         return compiler.loadTemplate("storefront/home");
+    }
+
+    @Bean
+    public Template storefrontExperienceListTemplate(Mustache.Compiler compiler) {
+        return compiler.loadTemplate("storefront/experiences");
     }
 
     @Bean

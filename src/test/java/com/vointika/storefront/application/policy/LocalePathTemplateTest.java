@@ -85,6 +85,21 @@ class LocalePathTemplateTest {
         assertThat(locale.matcher("").matches()).isFalse();
     }
 
+    /**
+     * The storefront's top-level literal routes must stay out of the template's
+     * reach. Eleven characters do not match two today, so {@code /experiences}
+     * routes to its own controller — but that is a property of the constraint,
+     * not of the words, and loosening the template to a bare {@code &#123;locale&#125;}
+     * would make every one of them a locale prefix instead.
+     */
+    @Test
+    void theTemplateDoesNotSwallowTheStorefrontsOwnLiteralRoutes() {
+        Pattern locale = localeRegex();
+
+        assertThat(locale.matcher("experiences").matches()).isFalse();
+        assertThat(locale.matcher("password").matches()).isFalse();
+    }
+
     /** Reads the real migrations, so adding a language in a new `V` is covered without editing this test. */
     private static List<String> seededLanguageCodes() throws IOException {
         File[] migrations = new ClassPathResource("db/migration/reference").getFile().listFiles();

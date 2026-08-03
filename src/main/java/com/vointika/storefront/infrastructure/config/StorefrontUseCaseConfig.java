@@ -1,9 +1,11 @@
 package com.vointika.storefront.infrastructure.config;
 
+import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.port.UnlockTokenPort;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
+import com.vointika.storefront.application.usecase.GetExperienceListPageUseCase;
 import com.vointika.storefront.application.usecase.GetHomePageUseCase;
 import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
 import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
@@ -18,6 +20,13 @@ public class StorefrontUseCaseConfig {
     @Bean
     public GetHomePageUseCase getHomePageUseCase(StorefrontShopQuery storefrontShopQuery) {
         return new GetHomePageUseCase(storefrontShopQuery);
+    }
+
+    @Bean
+    public GetExperienceListPageUseCase getExperienceListPageUseCase(
+            StorefrontShopQuery storefrontShopQuery,
+            StorefrontExperienceQuery storefrontExperienceQuery) {
+        return new GetExperienceListPageUseCase(storefrontShopQuery, storefrontExperienceQuery);
     }
 
     @Bean
