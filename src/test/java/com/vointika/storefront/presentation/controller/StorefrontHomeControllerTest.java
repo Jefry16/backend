@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -92,6 +93,26 @@ class StorefrontHomeControllerTest {
                         not(containsString("og:image")),
                         not(containsString("<img")),
                         not(containsString("name=\"description\"")))));
+    }
+
+    /**
+     * HEAD has to be registered alongside GET in {@link StorefrontPublicRoutes}:
+     * Spring MVC serves it from the {@code @GetMapping} for free, but Spring
+     * Security matches on the exact method and would reject it at the filter
+     * chain — a 401 in a JSON shape, on a public page. Drop the HEAD entry and
+     * this fails on the status. Crawlers, link checkers and uptime monitors all
+     * send HEAD, and the whole slice shipped without noticing because every other
+     * test and curl used GET.
+     */
+    @Test
+    void servesHeadAsWellAsGet() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme")).thenReturn(Optional.of(
+                new HomePageOutput("Acme Tours", "Acme Tours", null, null, null)));
+
+        mockMvc.perform(head("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"));
     }
 
     @Test
