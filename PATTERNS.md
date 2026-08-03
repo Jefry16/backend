@@ -17,7 +17,7 @@ you do, either it's a one-off (don't touch this file) or it's the new pattern
 
 ## 1. Context shapes
 
-Every bounded context is one of two shapes. The layer DAG
+Every bounded context is one of three shapes. The layer DAG
 (`domain ← application ← {infrastructure, presentation}`) and cross-context
 isolation are ArchUnit-enforced; `domain` stays pure (no Spring/JPA/Jackson).
 
@@ -27,6 +27,18 @@ isolation are ArchUnit-enforced; `domain` stays pure (no Spring/JPA/Jackson).
 - **Worker module** — reacts to events, owns no entities and no HTTP. Layers:
   `application / infrastructure` only (no `domain`, no `presentation`).
   Canonical: `notification`.
+- **Read surface** — owns an HTTP surface and **no entities**: every row it
+  renders belongs to another context and arrives through a shared query port.
+  Layers: `application / infrastructure / presentation`, no `domain`.
+  Canonical: `storefront`.
+
+**The layer DAG bites hardest in the shape with no domain.** `presentation` and
+`infrastructure` may not reach each other, so a helper the *controller* uses and
+the *config* wires cannot live in either — put it in `application` as a plain
+POJO and `@Bean` it from the context's config. `storefront`'s
+`TenantHandleResolver` was written in `infrastructure/web` first and ArchUnit
+rejected it in three places; it takes the host as a `String` and knows nothing
+about servlets, so `application/policy` is where it belongs anyway.
 
 `shared` and `reference` are shared kernels — importable by any context.
 Everything else is isolated: a context reaches another only via a shared query
@@ -48,7 +60,9 @@ port or an event (never a direct import).
   — adapter impls of application/shared ports. `infrastructure/query` — impls of
   shared query ports this context provides. `infrastructure/security`,
   `infrastructure/consumer` (workers).
-- `presentation/{controller,request,response}`.
+- `presentation/{controller,request,response}`, plus `presentation/view` where a
+  context server-renders: a template's context object is not a serialized JSON
+  response, and calling it one would mislead. Canonical: `storefront`'s `HomeView`.
 
 ## 3. Persistence per aggregate — the 6-file recipe
 
@@ -380,8 +394,17 @@ token leaves in an httpOnly cookie. That pair stays.
   public route), collaborators `@MockitoBean`, assertions + RestDocs
   `document(...)`. Authenticated endpoints send `Authorization: Bearer …` and
   stub `AccessTokenValidatorPort.isValid/extractUserId`.
-- **ArchUnit** — when a context lands, add its per-context isolation rule (and a
-  client fence for any confined library, mirroring the Redis/Kafka fences).
+- **ArchUnit** — **do not add a per-context isolation rule.** This line used to say
+  to add one; it was stale. `contexts_do_not_depend_on_each_other` derives the
+  slices from the package structure, so a context is fenced the day its package
+  appears — that rule *replaced* five hand-written ones precisely because the list
+  rotted and left seven contexts unfenced. `storefront` landed with no new rule.
+  A **client fence** (mirroring the Redis/Kafka ones) is still not derivable, but
+  it is for a *client library* confined to one adapter package — a driver holding
+  a connection, credentials or a socket. Not every third-party jar: neither
+  Thymeleaf nor jmustache is fenced, because a template engine is used at the
+  presentation/config boundary by design, and a fence there would restate the
+  layer rules ArchUnit already enforces.
 
 ## 10. Migrations
 
