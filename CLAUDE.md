@@ -54,7 +54,7 @@ That second line matters: `rsync -a` preserves mtimes, so a stale compiled class
 
 ## Architecture
 
-A modular monolith: `com.vointika.<context>`, one package per bounded context, each **fully hexagonal** with the layer DAG `domain ← application ← {infrastructure, presentation}`. `domain` is pure — no Spring, JPA, or Jackson.
+A modular monolith: `com.vointika.<context>`, one package per bounded context, each **fully hexagonal** with the layer DAG `domain ← application ← {infrastructure, presentation}`. `domain` is pure — no Spring, JPA, or Jackson. A context that owns no entities has no `domain` (`notification`, `storefront` — PATTERNS §1); the DAG is unchanged, and in those contexts it bites harder, because `presentation` and `infrastructure` still may not reach each other.
 
 **ArchUnit enforces the boundaries** (`src/test/java/com/vointika/architecture/ArchitectureTest.java`), so a violation is a failing test, not a review comment. Context isolation is **derived from the package structure** — a new context is fenced the day its package appears, with no rule to remember to add. (It used to be one hand-written rule per context; seven contexts landed without one, and the rules that existed only named the original four.)
 
@@ -69,9 +69,9 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 
 ### One API surface, one auth model
 
-**The admin/operator API** — JWT bearer tokens, and nothing else: the storefront serving side was deleted on 2026-08-02, so there is no `/api/storefront/**` surface and no shared secret anywhere. Tenant-scoped routes live under `/api/tour-operators/{tourOperatorId}/**` and are gated in **two layers**: a membership interceptor (non-member → **404**, byte-identical to a missing operator) plus per-use-case role gates (`ensureAdmin`/`ensureOwner`) through the `TourOperatorMembershipCheck` port. Authorization belongs in the use case, not only the router — the router's matching is looser than the id binder, which is how an IDOR got in once.
+**The admin/operator API** — JWT bearer tokens. There is no `/api/storefront/**` surface and **no shared secret anywhere**: the storefront does not call in over HTTP, it renders in-process. Tenant-scoped routes live under `/api/tour-operators/{tourOperatorId}/**` and are gated in **two layers**: a membership interceptor (non-member → **404**, byte-identical to a missing operator) plus per-use-case role gates (`ensureAdmin`/`ensureOwner`) through the `TourOperatorMembershipCheck` port. Authorization belongs in the use case, not only the router — the router's matching is looser than the id binder, which is how an IDOR got in once.
 
-Whatever renders the public site next brings its own surface and its own auth decision back with it (MAP open decision 6). Nothing here presumes one.
+**The storefront is the second surface, and its auth decision is "none yet."** `storefront` server-renders the public site in-process (MAP open decision 6) and registers `GET /` through the same `PublicRouteRegistrar` every other public route uses — not a host-matched `SecurityFilterChain`. That is where it ends up, but nothing today needs storefront requests to have *different* security, only *no* authentication: `JwtAuthenticationFilter` ignores anonymous requests and `ApiRateLimitFilter` passes through anything without a JWT principal. Revisit when the storefront needs its own CORS, error shape or rate limit.
 
 Public (unauthenticated) routes are opt-in per context via the `PublicRouteRegistrar` SPI; rate-limit rules likewise via `RateLimitRuleRegistrar`. Never add either to a central hardcoded map.
 

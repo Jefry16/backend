@@ -49,6 +49,7 @@ a version-specific gotcha.
 | AWS SDK for Java v2 (sesv2, s3) | `2.42.33` | https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/ · API: https://sdk.amazonaws.com/java/api/latest/ |
 | uuid-creator | `6.1.1` | https://github.com/f4b6a3/uuid-creator |
 | Thymeleaf (thymeleaf-spring6) | (via Boot 4.0.5) | https://www.thymeleaf.org/documentation.html |
+| jmustache (`com.samskivert:jmustache`) | `1.16` (transitively via `spring-boot-starter-mustache` 4.0.5 → `spring-boot-mustache` 4.0.5) | https://github.com/samskivert/jmustache · Boot integration: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.spring-mvc.template-engines |
 | ArchUnit (test) | `1.4.1` | https://www.archunit.org/userguide/html/000_Index.html |
 | Spring REST Docs (test) | `4.0.0` (mockmvc via Boot 4.0.5) | https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/ |
 | spring-restdocs-asciidoctor (build) | `4.0.0` | https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/#working-with-asciidoctor |
@@ -72,3 +73,33 @@ bites, so the next session reads it instead of re-discovering it.
 - **The autoconfigured `KafkaTemplate` is typed `KafkaTemplate<?, ?>`.** A
   `KafkaTemplate<String, Object>` injection point does not match it — inject the raw
   `KafkaTemplate` (single candidate by raw type).
+- **jmustache's stock compiler throws on a null or missing variable.**
+  `Mustache.compiler()` ships `nullValue=null` / `missingIsNull=false`, so
+  `{{seoTitle}}` over an operator who never filled it in is a
+  `MustacheException.Context` — a 500, not an empty string. `.defaultValue("")` fixes
+  both. Sections are already lenient. Confirmed by reverting the setting and watching
+  the test error, not by reading.
+- **`new DefaultCollector(false)` also removes the JavaBean-getter fallback.** Turning
+  access coercion off is the fix for the collector reading *private* fields and
+  methods — but the same flag switches `getMethod` from the
+  `name()`/`get<Name>()`/`is<Name>()` search to a plain `clazz.getMethod(name)`, and
+  `getField` to `clazz.getField(name)`. So a context object must expose **exactly-named
+  public accessors**: a `record` works, `getShopName()` for `{{shopName}}` does not —
+  and it fails by rendering an empty page, never by throwing. Pinned in
+  `StorefrontMustacheConfigTest`. (MAP open decision 6 §4 describes the *default*
+  collector's three-form search; that half stops being true the moment coercion is off.)
+- **A view model reached reflectively must be `public`, enclosing types included.** With
+  coercion off, `Method.invoke` on a public accessor of a package-private class is an
+  `IllegalAccessException` at render time. A `public` class nested in a package-private
+  one counts as package-private for this.
+- **Boot 4 test slices are assembled per module.** `@WebMvcTest`'s autoconfiguration list
+  is not one file: each module contributes its own
+  `META-INF/spring/…AutoConfigureWebMvc.imports`, so `spring-boot-mustache` registers
+  `MustacheAutoConfiguration` into the web slice from its own jar. Reading only
+  `spring-boot-webmvc-test`'s copy says the opposite. Same modularization lesson as the
+  Kafka starter above: check the module that owns the feature.
+- **Spring's `MustacheView` recompiles the template on every request**
+  (`renderMergedTemplateModel` → `compiler.compile(reader)`); the caching view resolver
+  above it caches the *View*, not the compiled `Template`. Fine for a few app templates,
+  wrong for multi-tenant themes — the storefront compiles once at startup and writes the
+  rendered string itself rather than returning a view name.
