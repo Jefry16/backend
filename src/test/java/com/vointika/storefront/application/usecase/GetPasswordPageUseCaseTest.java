@@ -38,7 +38,7 @@ class GetPasswordPageUseCaseTest {
         when(storefrontShopQuery.findGate("acme")).thenReturn(Optional.of(new StorefrontGateView(
                 OPERATOR, true, "hunter2", "Volvemos pronto", "es", Set.of("es", "en"))));
         when(storefrontShopQuery.findContent(OPERATOR, "es")).thenReturn(Optional.of(
-                new StorefrontShopView("Acme Tours", null, null, null, null)));
+                new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null, "EUR", "€", null, null)));
 
         PasswordPageOutput page = useCase.execute("acme").orElseThrow();
 

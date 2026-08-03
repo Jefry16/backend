@@ -3,7 +3,12 @@ package com.vointika.storefront.presentation.controller;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
-import com.vointika.storefront.application.dto.output.HomePageOutput;
+import com.vointika.storefront.application.dto.output.LocalizationData;
+import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
+import com.vointika.storefront.application.dto.output.PageData;
+import com.vointika.storefront.application.dto.output.ShopData;
+import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
+import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import com.vointika.storefront.application.policy.LocaleResolver;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.port.UnlockTokenPort;
@@ -22,6 +27,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.allOf;
@@ -45,6 +51,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@link StorefrontMustacheConfig} renders operator-authored text safely, and
  * that the gate registered by {@link StorefrontWebConfig} runs in front of the
  * locale rule rather than after it.
+ *
+ * <p>Since the home page <em>is</em> the global envelope, these assertions are
+ * also the readable specification of what {@code shop}, {@code page},
+ * {@code routes} and {@code localization} put on a page.
  */
 @WebMvcTest(StorefrontHomeController.class)
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontMustacheConfig.class,
@@ -75,8 +85,8 @@ class StorefrontHomeControllerTest {
     @Test
     void rendersTheShopForAKnownHost() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
-        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new HomePageOutput(
-                "es", "Acme Tours - day trips", "Acme Tours", "Boat tours and day trips",
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es", "Acme Tours - day trips", "Boat tours and day trips",
                 "tour-operators/1/logo.png", "tour-operators/1/og.png")));
         when(mediaUrlResolver.toUrl("tour-operators/1/logo.png"))
                 .thenReturn("http://localhost:9000/avatars/tour-operators/1/logo.png");
@@ -98,14 +108,63 @@ class StorefrontHomeControllerTest {
     }
 
     /**
+     * The three things the object model added to every page: the logo is a link
+     * home, the footer carries the operator's address, and the switcher lists
+     * every locale the shop publishes with the current one marked rather than
+     * linked.
+     */
+    @Test
+    void theChromeCarriesTheHomeLinkTheAddressAndTheSwitcher() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es", "Acme Tours", null, "logo.png", null)));
+        when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<a href=\"/\"><img src=\"http://localhost:9000/logo.png\" "
+                                + "alt=\"Acme Tours\"></a>"),
+                        containsString("<span lang=\"es\">es</span>"),
+                        containsString("<a href=\"/en\" lang=\"en\">en</a>"),
+                        containsString("<a href=\"/fr\" lang=\"fr\">fr</a>"),
+                        containsString("<p>Calle Mayor 1, 28013 Madrid</p>"))));
+    }
+
+    /**
+     * Under a locale prefix the logo goes home <em>in that locale</em> and the
+     * switcher's own links do not move: each language always points at its own
+     * address, and the primary's is the bare one.
+     */
+    @Test
+    void theChromeFollowsTheLocaleThePathArrivedUnder() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", "en")).thenReturn(Optional.of(page(
+                "en", "Acme Tours", null, "logo.png", null,
+                new LanguageData("es", false, null),
+                new LanguageData("en", true, "en"),
+                new LanguageData("fr", false, "fr"))));
+        when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
+
+        mockMvc.perform(get("/en").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<a href=\"/en\"><img"),
+                        containsString("<a href=\"/\" lang=\"es\">es</a>"),
+                        containsString("<span lang=\"en\">en</span>"),
+                        containsString("<a href=\"/fr\" lang=\"fr\">fr</a>"))));
+    }
+
+    /**
      * A published secondary is served under its own prefix, in its own language,
-     * and says so in {@code lang} — the reason the locale reaches the view at all.
+     * and says so in {@code lang} — the reason {@code localization.locale} reaches
+     * the view at all.
      */
     @Test
     void rendersASecondaryLocaleUnderItsPrefix() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
-        when(getHomePageUseCase.execute("acme", "en")).thenReturn(Optional.of(new HomePageOutput(
-                "en", "Acme Tours - day trips", "Acme Tours", null, null, null)));
+        when(getHomePageUseCase.execute("acme", "en")).thenReturn(Optional.of(page(
+                "en", "Acme Tours - day trips", null, null, null)));
 
         mockMvc.perform(get("/en").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
@@ -141,7 +200,7 @@ class StorefrontHomeControllerTest {
     void omitsTheOptionalTagsWhenNothingIsSet() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(
-                new HomePageOutput("es", "Acme Tours", "Acme Tours", null, null, null)));
+                page("es", "Acme Tours", null, null, null)));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
@@ -158,26 +217,26 @@ class StorefrontHomeControllerTest {
      * actually risks: whitespace between a block tag and its content is output
      * verbatim (STACK.md), and a reformat of {@code home.mustache} that looks
      * tidier ships blank lines into every page. Pinning the seam — where the
-     * block's last line meets the layout's closing tags — is what catches that.
+     * block's last line meets the layout's footer — is what catches that.
      *
-     * <p>Found in review by diffing the rendered page against {@code main}, which
-     * is also how the extra newline after {@code </html>} turned up: the parent's
-     * close tag owns the child template's own line ending, so the output is the
-     * old one plus that byte and nothing here could have said so.
+     * <p>It pins the header seam for the same reason: the switcher is written as
+     * one long line precisely because a readable one would ship its own
+     * indentation into every rendered page.
      */
     @Test
     void theLayoutJoinsThePageWithoutLeakingWhitespace() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
-        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new HomePageOutput(
-                "es", "Acme Tours", "Acme Tours", null, "logo.png", null)));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es", "Acme Tours", null, "logo.png", null)));
         when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
 
         mockMvc.perform(get("/").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         startsWith("<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n"),
-                        containsString("<body>\n    <img src=\"http://localhost:9000/logo.png\" alt=\"Acme Tours\">\n"
-                                + "    <h1>Acme Tours</h1>\n</body>\n</html>"))));
+                        containsString("</header>\n    <h1>Acme Tours</h1>\n    <footer>\n"
+                                + "        <p>Calle Mayor 1, 28013 Madrid</p>\n"
+                                + "    </footer>\n</body>\n</html>"))));
     }
 
     /**
@@ -193,9 +252,9 @@ class StorefrontHomeControllerTest {
     void servesHeadAsWellAsGet() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(
-                new HomePageOutput("es", "Acme Tours", "Acme Tours", null, null, null)));
+                page("es", "Acme Tours", null, null, null)));
         when(getHomePageUseCase.execute("acme", "en")).thenReturn(Optional.of(
-                new HomePageOutput("en", "Acme Tours", "Acme Tours", null, null, null)));
+                page("en", "Acme Tours", null, null, null)));
 
         mockMvc.perform(head("/").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
@@ -229,7 +288,7 @@ class StorefrontHomeControllerTest {
     void theConstrainedTemplateStillMatchesARealLocale() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme", "pt-br")).thenReturn(Optional.of(
-                new HomePageOutput("pt-br", "Acme Tours", "Acme Tours", null, null, null)));
+                page("pt-br", "Acme Tours", null, null, null)));
 
         mockMvc.perform(get("/pt-br").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
@@ -274,13 +333,17 @@ class StorefrontHomeControllerTest {
     @Test
     void escapesOperatorAuthoredText() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
-        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new HomePageOutput(
-                "es", "<script>alert(1)</script>", "<script>alert(1)</script>", null, null, null)));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new StorefrontPageData(
+                new ShopData("<script>alert(1)</script>", "<img onerror=x>", null,
+                        new CurrencyData("EUR", "€")),
+                new PageData("<script>alert(1)</script>", null, null),
+                new LocalizationData("es", List.of(new LanguageData("es", true, null))))));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         not(containsString("<script>")),
+                        not(containsString("<img onerror")),
                         containsString("&lt;script&gt;"))));
     }
 
@@ -323,7 +386,7 @@ class StorefrontHomeControllerTest {
         when(checkStorefrontLockUseCase.execute("acme", null)).thenReturn(LockState.LOCKED);
         when(checkStorefrontLockUseCase.execute("acme", "a-valid-token")).thenReturn(LockState.UNLOCKED);
         when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(
-                new HomePageOutput("es", "Acme Tours", "Acme Tours", null, null, null)));
+                page("es", "Acme Tours", null, null, null)));
 
         mockMvc.perform(get("/")
                         .header("Host", "acme.localhost")
@@ -340,5 +403,19 @@ class StorefrontHomeControllerTest {
         mockMvc.perform(get("/").header("Host", "localhost:8080"))
                 .andExpect(status().isNotFound());
         verify(checkStorefrontLockUseCase, never()).execute(any(), any());
+    }
+
+    /** The shop this test class renders: `es` primary, `en` and `fr` published beside it. */
+    private static StorefrontPageData page(String locale, String title, String description,
+                                           String logoKey, String ogImageKey, LanguageData... languages) {
+        List<LanguageData> switcher = languages.length > 0 ? List.of(languages) : List.of(
+                new LanguageData("es", true, null),
+                new LanguageData("en", false, "en"),
+                new LanguageData("fr", false, "fr"));
+        return new StorefrontPageData(
+                new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid", logoKey,
+                        new CurrencyData("EUR", "€")),
+                new PageData(title, description, ogImageKey),
+                new LocalizationData(locale, switcher));
     }
 }
