@@ -70,11 +70,6 @@ public class GetExperienceListPageUseCase {
                 cards);
     }
 
-    /**
-     * {@code featured} stops here: it ordered the list in the query that produced
-     * it and the page says nothing about it, so carrying it into a view model
-     * would be a field with no reader (LAW §2.4).
-     */
     private static ExperienceCard toCard(StorefrontExperienceCard card) {
         return new ExperienceCard(
                 card.handle(),

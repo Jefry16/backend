@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
@@ -130,10 +129,8 @@ class StorefrontExperienceQueryImplTest {
                 experience(KAYAK, "kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120, false));
 
         assertThat(query.findPublished(OPERATOR, "es"))
-                .extracting(StorefrontExperienceCard::name, StorefrontExperienceCard::featured)
-                .containsExactly(
-                        tuple("Sunset Sailing Tour", true),
-                        tuple("Kayak Cave Adventure", false));
+                .extracting(StorefrontExperienceCard::name)
+                .containsExactly("Sunset Sailing Tour", "Kayak Cave Adventure");
     }
 
     /**

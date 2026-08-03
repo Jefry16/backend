@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -149,6 +150,34 @@ class StorefrontHomeControllerTest {
                         not(containsString("og:image")),
                         not(containsString("<img")),
                         not(containsString("name=\"description\"")))));
+    }
+
+    /**
+     * <b>The one assertion in this class that can see whitespace.</b> Every other
+     * one is {@code containsString}, so none of them can observe what the layout
+     * actually risks: whitespace between a block tag and its content is output
+     * verbatim (STACK.md), and a reformat of {@code home.mustache} that looks
+     * tidier ships blank lines into every page. Pinning the seam — where the
+     * block's last line meets the layout's closing tags — is what catches that.
+     *
+     * <p>Found in review by diffing the rendered page against {@code main}, which
+     * is also how the extra newline after {@code </html>} turned up: the parent's
+     * close tag owns the child template's own line ending, so the output is the
+     * old one plus that byte and nothing here could have said so.
+     */
+    @Test
+    void theLayoutJoinsThePageWithoutLeakingWhitespace() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new HomePageOutput(
+                "es", "Acme Tours", "Acme Tours", null, "logo.png", null)));
+        when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        startsWith("<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n"),
+                        containsString("<body>\n    <img src=\"http://localhost:9000/logo.png\" alt=\"Acme Tours\">\n"
+                                + "    <h1>Acme Tours</h1>\n</body>\n</html>"))));
     }
 
     /**

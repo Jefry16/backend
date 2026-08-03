@@ -46,7 +46,7 @@ class GetExperienceListPageUseCaseTest {
         content("es", new StorefrontShopView("Acme Tours", "logo.png", "og.png",
                 "Acme Tours — excursiones", "Salidas en velero"));
         cards("es", new StorefrontExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado",
-                "tour-operators/1/sunset.jpg", 150, true));
+                "tour-operators/1/sunset.jpg", 150));
 
         ExperienceListPageOutput page = useCase.execute("acme", null).orElseThrow();
 
@@ -65,7 +65,7 @@ class GetExperienceListPageUseCaseTest {
     void aSupportedSecondaryAsksForThatLocalesCards() {
         content("en", new StorefrontShopView("Acme Tours", null, null, null, null));
         cards("en", new StorefrontExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour",
-                "Golden-hour cruise", null, 150, true));
+                "Golden-hour cruise", null, 150));
 
         ExperienceListPageOutput page = useCase.execute("acme", "en").orElseThrow();
 

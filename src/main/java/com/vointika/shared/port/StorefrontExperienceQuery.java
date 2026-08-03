@@ -16,6 +16,9 @@ import java.util.UUID;
  * <p><b>Ordering is part of the contract, not the caller's business.</b> A
  * listing that reorders between requests is a bug report, so the order is
  * decided once, here: <b>featured first, then oldest first, tie-broken on id</b>.
+ * The card carries no {@code featured} flag of its own — the flag is spent in the
+ * {@code ORDER BY}, which runs before the record exists, and nothing marks a
+ * featured card on the page. Add it back the day something renders it.
  *
  * <p>Every text field is <b>nullable-wins-canonical</b>: a translation row has
  * every content column nullable, so a null column falls back to the experience's
@@ -47,7 +50,6 @@ public interface StorefrontExperienceQuery {
             String name,
             String description,
             String thumbnailKey,
-            int durationMinutes,
-            boolean featured
+            int durationMinutes
     ) {}
 }
