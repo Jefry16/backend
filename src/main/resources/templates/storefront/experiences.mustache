@@ -1,0 +1,15 @@
+{{<storefront/layout}}
+{{$content}}    <h1>{{shopName}}</h1>
+    <ul>
+        {{#experiences}}
+        <li>
+            <a href="{{url}}">
+                {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{name}}">{{/thumbnailUrl}}
+                <h2>{{name}}</h2>
+            </a>
+            {{#description}}<p>{{description}}</p>{{/description}}
+            <p>{{durationMinutes}} min</p>
+        </li>
+        {{/experiences}}
+    </ul>{{/content}}
+{{/storefront/layout}}

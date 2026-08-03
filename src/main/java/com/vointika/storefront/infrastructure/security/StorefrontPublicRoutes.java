@@ -3,6 +3,7 @@ package com.vointika.storefront.infrastructure.security;
 import com.vointika.shared.web.security.PublicRoute;
 import com.vointika.shared.web.security.PublicRouteRegistrar;
 import com.vointika.storefront.application.policy.LocaleResolver;
+import com.vointika.storefront.application.policy.StorefrontRoutes;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +47,10 @@ public class StorefrontPublicRoutes implements PublicRouteRegistrar {
                 new PublicRoute(HttpMethod.HEAD, "/"),
                 new PublicRoute(HttpMethod.GET, LocaleResolver.PATH_TEMPLATE),
                 new PublicRoute(HttpMethod.HEAD, LocaleResolver.PATH_TEMPLATE),
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.EXPERIENCES),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.EXPERIENCES),
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_EXPERIENCES),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_EXPERIENCES),
                 new PublicRoute(HttpMethod.GET, "/password"),
                 new PublicRoute(HttpMethod.HEAD, "/password"),
                 new PublicRoute(HttpMethod.POST, "/password")

@@ -1,6 +1,7 @@
 package com.vointika.storefront.infrastructure.web;
 
 import com.vointika.storefront.application.policy.LocaleResolver;
+import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import org.springframework.beans.factory.ObjectProvider;
@@ -38,6 +39,7 @@ public class StorefrontWebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new StorefrontLockInterceptor(tenantHandleResolver, checkStorefrontLock))
-                .addPathPatterns("/", LocaleResolver.PATH_TEMPLATE);
+                .addPathPatterns("/", LocaleResolver.PATH_TEMPLATE,
+                        StorefrontRoutes.EXPERIENCES, StorefrontRoutes.LOCALIZED_EXPERIENCES);
     }
 }

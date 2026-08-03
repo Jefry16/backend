@@ -15,6 +15,12 @@ public interface ExperienceTranslationJpaRepository
 
     List<ExperienceTranslationJpaEntity> findByExperienceId(UUID experienceId);
 
+    /**
+     * Every overlay one operator has authored in one locale — one query for a
+     * whole storefront listing rather than one per card.
+     */
+    List<ExperienceTranslationJpaEntity> findByTourOperatorIdAndLocale(UUID tourOperatorId, String locale);
+
     boolean existsByTourOperatorIdAndLocaleAndHandleAndExperienceIdNot(
             UUID tourOperatorId, String locale, String handle, UUID experienceId);
 

@@ -441,6 +441,16 @@ next `V`. Curated reference/seed data lives in the migration.
   under a Turkish default locale is `"ıt"` (dotless), so locale codes, handles and
   handles silently stop matching depending on which machine served the request.
   `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
+- **A storefront page route has to be registered in four places, and only one of
+  them fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
+  needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method
+  (miss either and it is a 401 in the JSON error shape); and
+  `StorefrontWebConfig` needs the pattern too, or a locked store serves the page.
+  Only the first is visible without a test. So define the pattern **once** — in
+  `application/policy`, where both layers can see it (`StorefrontRoutes`, built
+  from `LocaleResolver.PATH_TEMPLATE` rather than retyping the regex) — and pin
+  the other three: `servesHeadAsWellAsGet` and a locked-store test per route.
+  Canonical: `storefront`'s `/experiences` pair.
 - **A `PublicRoute` pattern is a security pattern first and a route second.** The
   same string that maps a handler decides what `permitAll` covers, and an
   unconstrained path variable is far wider as the latter: `/{locale}` opens
