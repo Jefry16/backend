@@ -4,9 +4,9 @@ import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceQuery.StorefrontExperienceCard;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
-import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput.ExperienceCard;
+import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import com.vointika.storefront.application.policy.LocaleResolver;
 
 import java.util.List;
@@ -49,25 +49,15 @@ public class GetExperienceListPageUseCase {
     private Optional<ExperienceListPageOutput> render(StorefrontGateView gate, String pathLocale) {
         return LocaleResolver.resolve(pathLocale, gate.primaryLocale(), gate.supportedLocales())
                 .flatMap(locale -> storefrontShopQuery.findContent(gate.tourOperatorId(), locale)
-                        .map(shop -> toOutput(shop, locale, cards(gate.tourOperatorId(), locale))));
+                        .map(shop -> new ExperienceListPageOutput(
+                                StorefrontPageData.from(gate, shop, locale),
+                                cards(gate.tourOperatorId(), locale))));
     }
 
     private List<ExperienceCard> cards(UUID tourOperatorId, String locale) {
         return storefrontExperienceQuery.findPublished(tourOperatorId, locale).stream()
                 .map(GetExperienceListPageUseCase::toCard)
                 .toList();
-    }
-
-    private static ExperienceListPageOutput toOutput(StorefrontShopView shop, String locale,
-                                                     List<ExperienceCard> cards) {
-        return new ExperienceListPageOutput(
-                locale,
-                shop.seoTitle() == null ? shop.name() : shop.seoTitle(),
-                shop.name(),
-                shop.seoDescription(),
-                shop.logoKey(),
-                shop.ogImageKey(),
-                cards);
     }
 
     private static ExperienceCard toCard(StorefrontExperienceCard card) {

@@ -1,5 +1,7 @@
 package com.vointika.touroperator.infrastructure.query;
 
+import com.vointika.reference.domain.entity.Currency;
+import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.shared.port.MediaKeyBatchQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
@@ -26,6 +28,10 @@ import java.util.UUID;
  * <p>Both overlays are nullable-wins-canonical, per the port. The gate's message
  * overlays from the <b>primary</b> locale, because the gate answers before any
  * locale has been resolved.
+ *
+ * <p>The currency is a direct read of {@code reference}, not a second port:
+ * {@code reference} is a shared kernel every context may import, and this
+ * context already FKs into it.
  */
 @Component
 public class StorefrontShopQueryImpl implements StorefrontShopQuery {
@@ -33,13 +39,16 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     private final TourOperatorJpaRepository operatorRepository;
     private final TourOperatorTranslationJpaRepository translationRepository;
     private final MediaKeyBatchQuery mediaKeyBatchQuery;
+    private final CurrencyRepository currencyRepository;
 
     public StorefrontShopQueryImpl(TourOperatorJpaRepository operatorRepository,
                                    TourOperatorTranslationJpaRepository translationRepository,
-                                   MediaKeyBatchQuery mediaKeyBatchQuery) {
+                                   MediaKeyBatchQuery mediaKeyBatchQuery,
+                                   CurrencyRepository currencyRepository) {
         this.operatorRepository = operatorRepository;
         this.translationRepository = translationRepository;
         this.mediaKeyBatchQuery = mediaKeyBatchQuery;
+        this.currencyRepository = currencyRepository;
     }
 
     @Override
@@ -69,10 +78,16 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     private StorefrontShopView toContentView(TourOperatorJpaEntity operator, String locale) {
         Optional<TourOperatorTranslationJpaEntity> translation = translation(operator.getId(), locale);
         Map<UUID, String> keys = mediaKeys(operator);
+        // A NOT NULL FK, so the row is there; absent is treated like an absent
+        // media key rather than thrown, because a public page must still render.
+        Optional<Currency> currency = currencyRepository.findById(operator.getCurrencyId());
         return new StorefrontShopView(
                 operator.getName(),
+                operator.getAddress(),
                 keyOf(keys, operator.getLogoMediaId()),
                 keyOf(keys, operator.getOgImageMediaId()),
+                currency.map(Currency::getCode).orElse(null),
+                currency.map(Currency::getSymbol).orElse(null),
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getSeoTitle).orElse(null),
                         operator.getSeoTitle()),
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getSeoDescription).orElse(null),

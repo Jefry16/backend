@@ -2,8 +2,7 @@ package com.vointika.storefront.application.usecase;
 
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
-import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
-import com.vointika.storefront.application.dto.output.HomePageOutput;
+import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import com.vointika.storefront.application.policy.LocaleResolver;
 
 import java.util.Optional;
@@ -19,6 +18,10 @@ import java.util.Optional;
  * the content be asked for with that locale's translations overlaid. Keeping
  * both stages here rather than in the controller puts the ordering in one place
  * and keeps the query port out of {@code presentation}.
+ *
+ * <p>It returns the {@link StorefrontPageData} envelope with nothing wrapped
+ * around it, because the home page <em>is</em> the envelope — it renders the
+ * shop and has no collection, entity or copy of its own.
  */
 public class GetHomePageUseCase {
 
@@ -32,23 +35,13 @@ public class GetHomePageUseCase {
      * @param pathLocale the locale prefix in the URL, or {@code null} for a bare
      *                   {@code /}
      */
-    public Optional<HomePageOutput> execute(String handle, String pathLocale) {
+    public Optional<StorefrontPageData> execute(String handle, String pathLocale) {
         return storefrontShopQuery.findGate(handle).flatMap(gate -> render(gate, pathLocale));
     }
 
-    private Optional<HomePageOutput> render(StorefrontGateView gate, String pathLocale) {
+    private Optional<StorefrontPageData> render(StorefrontGateView gate, String pathLocale) {
         return LocaleResolver.resolve(pathLocale, gate.primaryLocale(), gate.supportedLocales())
                 .flatMap(locale -> storefrontShopQuery.findContent(gate.tourOperatorId(), locale)
-                        .map(shop -> toOutput(shop, locale)));
-    }
-
-    private static HomePageOutput toOutput(StorefrontShopView shop, String locale) {
-        return new HomePageOutput(
-                locale,
-                shop.seoTitle() == null ? shop.name() : shop.seoTitle(),
-                shop.name(),
-                shop.seoDescription(),
-                shop.logoKey(),
-                shop.ogImageKey());
+                        .map(shop -> StorefrontPageData.from(gate, shop, locale)));
     }
 }

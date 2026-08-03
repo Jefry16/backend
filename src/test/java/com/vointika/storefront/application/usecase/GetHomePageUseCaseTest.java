@@ -3,15 +3,21 @@ package com.vointika.storefront.application.usecase;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
-import com.vointika.storefront.application.dto.output.HomePageOutput;
+import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
+import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -30,33 +36,35 @@ class GetHomePageUseCaseTest {
     void setUp() {
         storefrontShopQuery = mock(StorefrontShopQuery.class);
         useCase = new GetHomePageUseCase(storefrontShopQuery);
-        when(storefrontShopQuery.findGate("acme")).thenReturn(Optional.of(new StorefrontGateView(
-                OPERATOR, false, null, null, "es", Set.of("es", "en", "fr"))));
+        gate(false, null);
     }
 
     @Test
     void aBarePathRendersThePrimaryLocale() {
-        content("es", new StorefrontShopView("Acme Tours", "logo.png", "og.png",
-                "Acme Tours — excursiones", "Salidas en velero"));
+        content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "logo.png", "og.png",
+                "EUR", "€", "Acme Tours — excursiones", "Salidas en velero"));
 
-        HomePageOutput page = useCase.execute("acme", null).orElseThrow();
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
-        assertThat(page.locale()).isEqualTo("es");
-        assertThat(page.title()).isEqualTo("Acme Tours — excursiones");
-        assertThat(page.shopName()).isEqualTo("Acme Tours");
-        assertThat(page.description()).isEqualTo("Salidas en velero");
-        assertThat(page.logoKey()).isEqualTo("logo.png");
-        assertThat(page.ogImageKey()).isEqualTo("og.png");
+        assertThat(page.localization().locale()).isEqualTo("es");
+        assertThat(page.shop().name()).isEqualTo("Acme Tours");
+        assertThat(page.shop().address()).isEqualTo("Calle Mayor 1");
+        assertThat(page.shop().logoKey()).isEqualTo("logo.png");
+        assertThat(page.shop().currency().code()).isEqualTo("EUR");
+        assertThat(page.shop().currency().symbol()).isEqualTo("€");
+        assertThat(page.page().title()).isEqualTo("Acme Tours — excursiones");
+        assertThat(page.page().description()).isEqualTo("Salidas en velero");
+        assertThat(page.page().ogImageKey()).isEqualTo("og.png");
     }
 
     @Test
     void aSupportedSecondaryRendersItsOwnContent() {
-        content("en", new StorefrontShopView("Acme Tours", null, null, "Acme Tours — day trips", null));
+        content("en", shop("Acme Tours — day trips"));
 
-        HomePageOutput page = useCase.execute("acme", "en").orElseThrow();
+        StorefrontPageData page = useCase.execute("acme", "en").orElseThrow();
 
-        assertThat(page.locale()).isEqualTo("en");
-        assertThat(page.title()).isEqualTo("Acme Tours — day trips");
+        assertThat(page.localization().locale()).isEqualTo("en");
+        assertThat(page.page().title()).isEqualTo("Acme Tours — day trips");
     }
 
     /** The primary lives at {@code /}; a second URL for it would be duplicate content. */
@@ -79,26 +87,115 @@ class GetHomePageUseCaseTest {
         assertThat(useCase.execute("nope", null)).isEmpty();
     }
 
+    /**
+     * The title is the <em>page's</em>, and it falls back through the shop's SEO
+     * title to the shop's name. Splitting {@code page} from {@code shop} is what
+     * keeps that legible: {@code shop.name} is the operator, {@code page.title} is
+     * what goes in the tab.
+     */
     @Test
-    void titleFallsBackToTheShopNameWhenNoSeoTitleIsSet() {
-        content("es", new StorefrontShopView("Acme Tours", null, null, null, null));
+    void theTitleFallsBackToTheShopNameWhenNoSeoTitleIsSet() {
+        content("es", shop(null));
 
-        assertThat(useCase.execute("acme", null).orElseThrow().title()).isEqualTo("Acme Tours");
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(page.page().title()).isEqualTo("Acme Tours");
+        assertThat(page.shop().name()).isEqualTo("Acme Tours");
     }
 
     /** Absent media stay absent — nothing invents an empty string for the resolver. */
     @Test
     void nullMediaKeysPassThroughAsNull() {
-        content("es", new StorefrontShopView("Acme Tours", null, null, null, null));
+        content("es", shop(null));
 
-        HomePageOutput page = useCase.execute("acme", null).orElseThrow();
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
-        assertThat(page.logoKey()).isNull();
-        assertThat(page.ogImageKey()).isNull();
-        assertThat(page.description()).isNull();
+        assertThat(page.shop().logoKey()).isNull();
+        assertThat(page.page().ogImageKey()).isNull();
+        assertThat(page.page().description()).isNull();
+    }
+
+    /**
+     * <b>The switcher's contract.</b> Every locale the operator publishes appears
+     * once, the primary leads (a {@code Set} has no order and a switcher that
+     * reorders between requests reads as a bug), the primary is the one with no
+     * path prefix, and exactly one entry is {@code current} — which is what lets a
+     * theme mark the active language without comparing strings.
+     */
+    @Test
+    void everyPublishedLocaleIsListedWithThePrimaryBareAndSecondariesPrefixed() {
+        content("es", shop(null));
+
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(page.localization().languages())
+                .extracting(LanguageData::code, LanguageData::current, LanguageData::pathLocale)
+                .containsExactly(
+                        tuple("es", true, null),
+                        tuple("en", false, "en"),
+                        tuple("fr", false, "fr"));
+    }
+
+    /** {@code current} follows the rendered locale, not the primary. */
+    @Test
+    void theCurrentLanguageIsTheOneBeingRendered() {
+        content("en", shop(null));
+
+        StorefrontPageData page = useCase.execute("acme", "en").orElseThrow();
+
+        assertThat(page.localization().languages())
+                .filteredOn(LanguageData::current)
+                .extracting(LanguageData::code)
+                .containsExactly("en");
+    }
+
+    /**
+     * <b>The gate's plaintext password must not reach a view model.</b> It exists
+     * to be compared inside the gate; anything that carries it onto a page is a
+     * plaintext password served to the public. This walks the whole envelope
+     * reflectively rather than naming fields, so a component added anywhere below
+     * it is covered on the day it is added.
+     */
+    @Test
+    void theGatesPasswordNeverReachesTheEnvelope() {
+        gate(true, "open-sesame");
+        content("es", shop("Acme Tours"));
+
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(everyStringIn(page)).isNotEmpty().doesNotContain("open-sesame");
+    }
+
+    private void gate(boolean passwordEnabled, String password) {
+        when(storefrontShopQuery.findGate("acme")).thenReturn(Optional.of(new StorefrontGateView(
+                OPERATOR, passwordEnabled, password, null, "es", Set.of("es", "en", "fr"))));
     }
 
     private void content(String locale, StorefrontShopView shop) {
         when(storefrontShopQuery.findContent(OPERATOR, locale)).thenReturn(Optional.of(shop));
+    }
+
+    private static StorefrontShopView shop(String seoTitle) {
+        return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null, "EUR", "€", seoTitle, null);
+    }
+
+    private static List<String> everyStringIn(Object value) {
+        return switch (value) {
+            case null -> List.of();
+            case String string -> List.of(string);
+            case Collection<?> collection -> collection.stream().flatMap(e -> everyStringIn(e).stream()).toList();
+            case Record record -> Arrays.stream(record.getClass().getRecordComponents())
+                    .flatMap(component -> everyStringIn(read(component, record)).stream())
+                    .toList();
+            default -> List.of();
+        };
+    }
+
+    private static Object read(RecordComponent component, Object owner) {
+        try {
+            return component.getAccessor().invoke(owner);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 }

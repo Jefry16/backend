@@ -1,19 +1,25 @@
 <!DOCTYPE html>
-<html lang="{{locale}}">
+<html lang="{{localization.locale}}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{title}}</title>
-    {{#description}}<meta name="description" content="{{description}}">{{/description}}
+    <title>{{page.title}}</title>
+    {{#page.description}}<meta name="description" content="{{page.description}}">{{/page.description}}
     <meta property="og:type" content="website">
-    <meta property="og:title" content="{{title}}">
-    {{#description}}<meta property="og:description" content="{{description}}">{{/description}}
-    {{#ogImageUrl}}<meta property="og:image" content="{{ogImageUrl}}">{{/ogImageUrl}}
+    <meta property="og:title" content="{{page.title}}">
+    {{#page.description}}<meta property="og:description" content="{{page.description}}">{{/page.description}}
+    {{#page.ogImageUrl}}<meta property="og:image" content="{{page.ogImageUrl}}">{{/page.ogImageUrl}}
 </head>
 <body>
-    {{#logoUrl}}<img src="{{logoUrl}}" alt="{{shopName}}">{{/logoUrl}}
+    <header>
+        {{#shop.logoUrl}}<a href="{{routes.root}}"><img src="{{shop.logoUrl}}" alt="{{shop.name}}"></a>{{/shop.logoUrl}}
+        <nav>{{#localization.languages}}{{#current}}<span lang="{{code}}">{{code}}</span>{{/current}}{{^current}}<a href="{{url}}" lang="{{code}}">{{code}}</a>{{/current}}{{/localization.languages}}</nav>
+    </header>
 {{!A page's block tags hug its markup on purpose: whitespace between a block tag
     and the content it holds is whitespace in the rendered page.}}
 {{$content}}{{/content}}
+    <footer>
+        <p>{{shop.address}}</p>
+    </footer>
 </body>
 </html>

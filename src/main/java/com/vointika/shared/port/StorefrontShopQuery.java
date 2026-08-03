@@ -72,11 +72,24 @@ public interface StorefrontShopQuery {
      * truthiness treats the empty string as <em>truthy</em>, so a section
      * guarding an optional tag would emit it empty. (The compiler also sets
      * {@code emptyStringIsFalse}; both, belt and braces.)
+     *
+     * @param address        the operator's own address, a NOT NULL column and
+     *                       deliberately <b>not</b> translated — one street
+     *                       exists in one language.
+     * @param currencyCode   the operator's currency, joined from
+     *                       {@code reference.currencies}. {@code reference} is a
+     *                       shared kernel, so this is a join inside
+     *                       {@code touroperator}'s adapter rather than a second
+     *                       port. Both halves are {@code null} only if the
+     *                       reference row has gone, which the FK forbids.
      */
     record StorefrontShopView(
             String name,
+            String address,
             String logoKey,
             String ogImageKey,
+            String currencyCode,
+            String currencySymbol,
             String seoTitle,
             String seoDescription
     ) {}

@@ -74,6 +74,56 @@ port or an event (never a direct import).
   context server-renders: a template's context object is not a serialized JSON
   response, and calling it one would mislead. Canonical: `storefront`'s `HomeView`.
 
+## 2a. The render envelope (a server-rendered page's context object)
+
+A page a template renders takes **named objects, never a flat bag of scalars**,
+and the same set on every page. `storefront` is the canonical one:
+
+```
+shop          name, address, logoUrl, currency { code, symbol }
+page          title, description, ogImageUrl
+routes        root, experiences
+localization  locale, languages [ { code, current, url } ]
+```
+
+It exists **twice, in key form and URL form** — `ShopData`/`PageData`/
+`LocalizationData` under one `StorefrontPageData` in `application/dto/output`,
+and `Shop`/`Page`/`Routes`/`Localization` in `presentation/view`. That is
+PATTERNS §5 applied to a page: application deals in storage keys and locale
+codes, presentation resolves both (`routes` has no application half at all — a
+route is a URL). Every one is a `public record` with a `public` enclosing type,
+and so is every nested one, because the compiler runs with access coercion off.
+
+Two rules decide what goes in, and **both** must hold:
+
+- **Expose what the row has.** A field with no column behind it is invention.
+- **Have a renderer in this slice, or a named caller in the next.** This is what
+  keeps the first rule from admitting every column: `shop.address` went in with
+  the footer that renders it, `shop.timezone` stayed out because nothing renders
+  a time until slots land.
+
+**A page-specific record wraps the envelope rather than flattening it**
+(`ExperienceListPageOutput(StorefrontPageData envelope, List<ExperienceCard>
+cards)`), and a page with nothing of its own returns the envelope directly —
+the home page does.
+
+**The four components are repeated across every page view, and that is
+accepted.** Records cannot extend, and nesting them would put
+`{{envelope.shop.name}}` in every template. Revisit when sections make the
+render context globals-plus-a-section — likely a `Map` — which is the first real
+second consumer; do not build the map before it.
+
+**Where a URL that varies per page is built:** `application` says *where* a thing
+lives (a nullable `pathLocale`, null for the locale that serves bare),
+`presentation` says *what its URL is*. The language switcher needs "this page in
+that language", which differs per page, so `Localization.from` takes a
+`Function<Routes, String>` and each view passes `Routes::root` or
+`Routes::experiences` — one prefix rule, in `Routes`, and no page hard-codes a
+path.
+
+**Renaming a component here is a breaking change** once operators author themes.
+Decide the shape while there are four records to change, not forty templates.
+
 ## 3. Persistence per aggregate — the 6-file recipe
 
 For an aggregate `Foo`:

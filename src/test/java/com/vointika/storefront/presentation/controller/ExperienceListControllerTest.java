@@ -5,9 +5,15 @@ import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput.ExperienceCard;
+import com.vointika.storefront.application.dto.output.LocalizationData;
+import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
+import com.vointika.storefront.application.dto.output.PageData;
+import com.vointika.storefront.application.dto.output.ShopData;
+import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
+import com.vointika.storefront.application.dto.output.StorefrontPageData;
+import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
-import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.GetExperienceListPageUseCase;
 import com.vointika.storefront.infrastructure.config.StorefrontMustacheConfig;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
@@ -89,21 +95,44 @@ class ExperienceListControllerTest {
     }
 
     /**
+     * The chrome is the layout's and therefore identical on both pages — except
+     * for the switcher, whose links are "this page in that language" and so point
+     * at the listing rather than at the home page. That difference is the whole
+     * reason {@link com.vointika.storefront.presentation.view.Localization} takes
+     * a route rather than building one.
+     */
+    @Test
+    void theSwitcherLinksToThisPageInEachLanguage() throws Exception {
+        when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page("es")));
+
+        mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<span lang=\"es\">es</span>"),
+                        containsString("<a href=\"/en/experiences\" lang=\"en\">en</a>"),
+                        containsString("<a href=\"/fr/experiences\" lang=\"fr\">fr</a>"),
+                        containsString("<p>Calle Mayor 1, 28013 Madrid</p>"))));
+    }
+
+    /**
      * The localized route renders the locale's own text and links into that
      * locale — including the translation's own handle, which is the reader the
-     * localized handle would otherwise not have.
+     * localized handle would otherwise not have. The logo goes home in that
+     * locale too.
      */
     @Test
     void theLocalizedRouteRendersTheLocalesNamesAndPrefixedLinks() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", "es")).thenReturn(Optional.of(page(
                 "es", new ExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado", null, 150))));
+        when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
 
         mockMvc.perform(get("/es/experiences").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         containsString("<html lang=\"es\">"),
                         containsString("<h2>Paseo en velero</h2>"),
-                        containsString("<a href=\"/es/experiences/paseo-en-velero\">"))));
+                        containsString("<a href=\"/es/experiences/paseo-en-velero\">"),
+                        containsString("<a href=\"/es\"><img"))));
     }
 
     /** An operator with nothing published still has a storefront: a page, with no cards. */
@@ -192,6 +221,14 @@ class ExperienceListControllerTest {
 
     private static ExperienceListPageOutput page(String locale, ExperienceCard... cards) {
         return new ExperienceListPageOutput(
-                locale, "Acme Tours", "Acme Tours", null, null, null, List.of(cards));
+                new StorefrontPageData(
+                        new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid", "logo.png",
+                                new CurrencyData("EUR", "€")),
+                        new PageData("Acme Tours", null, null),
+                        new LocalizationData(locale, List.of(
+                                new LanguageData("es", "es".equals(locale), null),
+                                new LanguageData("en", "en".equals(locale), "en"),
+                                new LanguageData("fr", "fr".equals(locale), "fr")))),
+                List.of(cards));
     }
 }
