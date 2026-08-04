@@ -18,7 +18,8 @@ import com.vointika.storefront.application.dto.output.ShopData;
  * compared inside the gate; a template that could read it would be a plaintext
  * password on a public page.
  */
-public record Shop(String name, String address, String logoUrl, Currency currency) {
+public record Shop(String name, String address, String phone, String email,
+                   String logoUrl, Currency currency) {
 
     public record Currency(String code, String symbol) {}
 
@@ -26,6 +27,8 @@ public record Shop(String name, String address, String logoUrl, Currency currenc
         return new Shop(
                 shop.name(),
                 shop.address(),
+                shop.phone(),
+                shop.email(),
                 mediaUrlResolver.toUrl(shop.logoKey()),
                 new Currency(shop.currency().code(), shop.currency().symbol()));
     }

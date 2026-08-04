@@ -38,6 +38,8 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
                 new ShopData(
                         shop.name(),
                         shop.address(),
+                        shop.phone(),
+                        shop.email(),
                         shop.logoKey(),
                         new CurrencyData(shop.currencyCode(), shop.currencySymbol())),
                 new PageData(

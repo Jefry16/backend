@@ -19,7 +19,12 @@
     and the content it holds is whitespace in the rendered page.}}
 {{$content}}{{/content}}
     <footer>
-        <p>{{shop.address}}</p>
+{{!Each optional line opens its section at the end of the line before it, so an
+    operator who publishes neither emits nothing here rather than two blank
+    lines. Same hugging rule as the content block above.}}
+        <p>{{shop.address}}</p>{{#shop.phone}}
+        <p><a href="tel:{{shop.phone}}">{{shop.phone}}</a></p>{{/shop.phone}}{{#shop.email}}
+        <p><a href="mailto:{{shop.email}}">{{shop.email}}</a></p>{{/shop.email}}
     </footer>
 </body>
 </html>

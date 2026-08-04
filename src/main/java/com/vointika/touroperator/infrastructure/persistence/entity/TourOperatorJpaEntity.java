@@ -35,6 +35,24 @@ public class TourOperatorJpaEntity {
     @Column(nullable = false)
     private String address;
 
+    /**
+     * The shop's public contact details (V9), <b>mapped read-only on purpose</b>.
+     *
+     * <p>There is no write path yet, and the domain {@code TourOperator} does not
+     * carry them — so {@code TourOperatorMapper.toJpa} rebuilds this entity from a
+     * domain object that has nothing to put here. Left writable, that means every
+     * unrelated operator save (a logo, a locale set, an SEO edit) would issue an
+     * UPDATE nulling both columns. {@code insertable/updatable = false} keeps them
+     * out of every INSERT and UPDATE Hibernate generates, so a read-only column
+     * cannot be clobbered by a write that never meant to touch it. The slice that
+     * adds the write path flips these two flags, deliberately.
+     */
+    @Column(length = 30, insertable = false, updatable = false)
+    private String phone;
+
+    @Column(length = 320, insertable = false, updatable = false)
+    private String email;
+
     /** Nullable reference to one of this operator's media records (bare id, no FK). */
     @Column
     private UUID logoMediaId;

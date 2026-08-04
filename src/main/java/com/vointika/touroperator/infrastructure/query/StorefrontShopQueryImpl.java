@@ -84,6 +84,8 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
         return new StorefrontShopView(
                 operator.getName(),
                 operator.getAddress(),
+                operator.getPhone(),
+                operator.getEmail(),
                 keyOf(keys, operator.getLogoMediaId()),
                 keyOf(keys, operator.getOgImageMediaId()),
                 currency.map(Currency::getCode).orElse(null),
