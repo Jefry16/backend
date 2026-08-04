@@ -60,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(StorefrontHomeController.class)
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontMustacheConfig.class,
-        StorefrontWebConfig.class})
+        StorefrontWebConfig.class, ThemeContextDump.class})
 class StorefrontHomeControllerTest {
 
     private static final UUID SHOP_ID = UUID.fromString("01900000-0000-7000-8000-000000000002");
@@ -322,6 +322,24 @@ class StorefrontHomeControllerTest {
                 .andExpect(content().string(allOf(
                         containsString("<link rel=\"canonical\" href=\"http://acme.localhost/en\">"),
                         containsString("<meta property=\"og:url\" content=\"http://acme.localhost/en\">"))));
+    }
+
+    /**
+     * The default. {@code ?format=json} is not a parameter unless
+     * {@code app.storefront.context-endpoint} says so, so a storefront serves a
+     * page and nothing else — including the fields the envelope carries with no
+     * renderer, which is most of {@code shop}.
+     */
+    @Test
+    void theContextDumpIsOffSoTheParameterStillRendersThePage() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(
+                page("es", "Acme Tours", null, null, null)));
+
+        mockMvc.perform(get("/?format=json").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"))
+                .andExpect(content().string(containsString("<h1>Acme Tours</h1>")));
     }
 
     @Test

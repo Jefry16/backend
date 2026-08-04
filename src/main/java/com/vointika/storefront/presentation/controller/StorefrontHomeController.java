@@ -62,17 +62,20 @@ public class StorefrontHomeController {
     private final MediaUrlResolver mediaUrlResolver;
     private final Template homeTemplate;
     private final Template notFoundTemplate;
+    private final ThemeContextDump contextDump;
 
     public StorefrontHomeController(TenantHandleResolver tenantHandleResolver,
                                     GetHomePageUseCase getHomePageUseCase,
                                     MediaUrlResolver mediaUrlResolver,
                                     @Qualifier("storefrontHomeTemplate") Template homeTemplate,
-                                    @Qualifier("storefrontNotFoundTemplate") Template notFoundTemplate) {
+                                    @Qualifier("storefrontNotFoundTemplate") Template notFoundTemplate,
+                                    ThemeContextDump contextDump) {
         this.tenantHandleResolver = tenantHandleResolver;
         this.getHomePageUseCase = getHomePageUseCase;
         this.mediaUrlResolver = mediaUrlResolver;
         this.homeTemplate = homeTemplate;
         this.notFoundTemplate = notFoundTemplate;
+        this.contextDump = contextDump;
     }
 
     @GetMapping(path = "/", produces = MediaType.TEXT_HTML_VALUE)
@@ -93,12 +96,24 @@ public class StorefrontHomeController {
     private ResponseEntity<String> render(HttpServletRequest request, String pathLocale) {
         return tenantHandleResolver.resolve(request.getServerName())
                 .flatMap(handle -> getHomePageUseCase.execute(handle, pathLocale))
-                .map(page -> ResponseEntity.ok()
-                        .contentType(HTML_UTF8)
-                        .body(homeTemplate.execute(HomeView.from(page, pathLocale, mediaUrlResolver,
-                                RequestOrigin.of(request), request.getRequestURI()))))
+                .map(page -> respond(
+                        HomeView.from(page, pathLocale, mediaUrlResolver,
+                                RequestOrigin.of(request), request.getRequestURI()),
+                        homeTemplate, request))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .contentType(HTML_UTF8)
                         .body(notFoundTemplate.execute(Map.of())));
+    }
+
+    /**
+     * The page, or the object the page would have rendered from — see
+     * {@link ThemeContextDump}. The 404 branch has no context object, so it is
+     * always the not-found page.
+     */
+    private ResponseEntity<String> respond(Object view, Template template, HttpServletRequest request) {
+        if (contextDump.requestedIn(request)) {
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(contextDump.of(view));
+        }
+        return ResponseEntity.ok().contentType(HTML_UTF8).body(template.execute(view));
     }
 }

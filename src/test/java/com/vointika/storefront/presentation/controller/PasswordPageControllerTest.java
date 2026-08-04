@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest({PasswordPageController.class, StorefrontHomeController.class})
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontMustacheConfig.class,
-        StorefrontWebConfig.class})
+        StorefrontWebConfig.class, ThemeContextDump.class})
 class PasswordPageControllerTest {
 
     @Autowired private MockMvc mockMvc;

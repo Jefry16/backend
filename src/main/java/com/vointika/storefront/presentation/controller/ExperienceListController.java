@@ -46,17 +46,20 @@ public class ExperienceListController {
     private final MediaUrlResolver mediaUrlResolver;
     private final Template experienceListTemplate;
     private final Template notFoundTemplate;
+    private final ThemeContextDump contextDump;
 
     public ExperienceListController(TenantHandleResolver tenantHandleResolver,
                                     GetExperienceListPageUseCase getExperienceListPageUseCase,
                                     MediaUrlResolver mediaUrlResolver,
                                     @Qualifier("storefrontExperienceListTemplate") Template experienceListTemplate,
-                                    @Qualifier("storefrontNotFoundTemplate") Template notFoundTemplate) {
+                                    @Qualifier("storefrontNotFoundTemplate") Template notFoundTemplate,
+                                    ThemeContextDump contextDump) {
         this.tenantHandleResolver = tenantHandleResolver;
         this.getExperienceListPageUseCase = getExperienceListPageUseCase;
         this.mediaUrlResolver = mediaUrlResolver;
         this.experienceListTemplate = experienceListTemplate;
         this.notFoundTemplate = notFoundTemplate;
+        this.contextDump = contextDump;
     }
 
     @GetMapping(path = StorefrontRoutes.EXPERIENCES, produces = MediaType.TEXT_HTML_VALUE)
@@ -77,13 +80,24 @@ public class ExperienceListController {
     private ResponseEntity<String> render(HttpServletRequest request, String pathLocale) {
         return tenantHandleResolver.resolve(request.getServerName())
                 .flatMap(handle -> getExperienceListPageUseCase.execute(handle, pathLocale))
-                .map(page -> ResponseEntity.ok()
-                        .contentType(HTML_UTF8)
-                        .body(experienceListTemplate.execute(
-                                ExperienceListView.from(page, pathLocale, mediaUrlResolver,
-                                RequestOrigin.of(request), request.getRequestURI()))))
+                .map(page -> respond(
+                        ExperienceListView.from(page, pathLocale, mediaUrlResolver,
+                                RequestOrigin.of(request), request.getRequestURI()),
+                        experienceListTemplate, request))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .contentType(HTML_UTF8)
                         .body(notFoundTemplate.execute(Map.of())));
+    }
+
+    /**
+     * The page, or the object the page would have rendered from — see
+     * {@link ThemeContextDump}. The 404 branch has no context object, so it is
+     * always the not-found page.
+     */
+    private ResponseEntity<String> respond(Object view, Template template, HttpServletRequest request) {
+        if (contextDump.requestedIn(request)) {
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(contextDump.of(view));
+        }
+        return ResponseEntity.ok().contentType(HTML_UTF8).body(template.execute(view));
     }
 }
