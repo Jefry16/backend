@@ -96,6 +96,8 @@ public interface StorefrontShopQuery {
             String ogImageKey,
             String currencyCode,
             String currencySymbol,
+            String timezoneName,
+            String timezoneCity,
             String seoTitle,
             String seoDescription
     ) {}

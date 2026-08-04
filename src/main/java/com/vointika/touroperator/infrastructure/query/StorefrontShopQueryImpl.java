@@ -1,7 +1,9 @@
 package com.vointika.touroperator.infrastructure.query;
 
 import com.vointika.reference.domain.entity.Currency;
+import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.CurrencyRepository;
+import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.MediaKeyBatchQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
@@ -40,15 +42,18 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     private final TourOperatorTranslationJpaRepository translationRepository;
     private final MediaKeyBatchQuery mediaKeyBatchQuery;
     private final CurrencyRepository currencyRepository;
+    private final TimezoneRepository timezoneRepository;
 
     public StorefrontShopQueryImpl(TourOperatorJpaRepository operatorRepository,
                                    TourOperatorTranslationJpaRepository translationRepository,
                                    MediaKeyBatchQuery mediaKeyBatchQuery,
-                                   CurrencyRepository currencyRepository) {
+                                   CurrencyRepository currencyRepository,
+                                   TimezoneRepository timezoneRepository) {
         this.operatorRepository = operatorRepository;
         this.translationRepository = translationRepository;
         this.mediaKeyBatchQuery = mediaKeyBatchQuery;
         this.currencyRepository = currencyRepository;
+        this.timezoneRepository = timezoneRepository;
     }
 
     @Override
@@ -81,6 +86,7 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
         // A NOT NULL FK, so the row is there; absent is treated like an absent
         // media key rather than thrown, because a public page must still render.
         Optional<Currency> currency = currencyRepository.findById(operator.getCurrencyId());
+        Optional<Timezone> timezone = timezoneRepository.findById(operator.getTimezoneId());
         return new StorefrontShopView(
                 operator.getName(),
                 operator.getAddress(),
@@ -90,6 +96,8 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                 keyOf(keys, operator.getOgImageMediaId()),
                 currency.map(Currency::getCode).orElse(null),
                 currency.map(Currency::getSymbol).orElse(null),
+                timezone.map(Timezone::getName).orElse(null),
+                timezone.map(Timezone::getCityName).orElse(null),
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getSeoTitle).orElse(null),
                         operator.getSeoTitle()),
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getSeoDescription).orElse(null),
