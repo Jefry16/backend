@@ -440,6 +440,7 @@ class StorefrontHomeControllerTest {
                 new ShopData(SHOP_ID, "<script>alert(1)</script>", "<img onerror=x>",
                         "\"><script>alert(1)</script>", "x\" onmouseover=\"alert(1)", null,
                         "A shop description",
+                        "Opening soon — ask us for the password.",
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData("<script>alert(1)</script>", null, null),
@@ -524,6 +525,7 @@ class StorefrontHomeControllerTest {
                 new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid",
                         "+34 910 000 000", "hola@acme.test", logoKey,
                         "A shop description",
+                        "Opening soon — ask us for the password.",
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, description, ogImageKey),
@@ -535,6 +537,7 @@ class StorefrontHomeControllerTest {
         return new StorefrontPageData(
                 new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null, null,
                         "A shop description",
+                        "Opening soon — ask us for the password.",
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, null, null),

@@ -19,7 +19,7 @@ import com.vointika.storefront.application.dto.output.ShopData;
  * password on a public page.
  */
 public record Shop(String id, String name, String address, String phone, String email,
-                   String logoUrl, String url, String description,
+                   String logoUrl, String url, String description, String passwordMessage,
                    Currency currency, Timezone timezone) {
 
     public record Currency(String code, String symbol) {}
@@ -44,6 +44,7 @@ public record Shop(String id, String name, String address, String phone, String 
                 mediaUrlResolver.toUrl(shop.logoKey()),
                 url,
                 shop.description(),
+                shop.passwordMessage(),
                 new Currency(shop.currency().code(), shop.currency().symbol()),
                 new Timezone(shop.timezone().name(), shop.timezone().city()));
     }

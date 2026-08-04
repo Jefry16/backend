@@ -47,7 +47,7 @@ class GetExperienceListPageUseCaseTest {
     void aBarePathRendersThePrimaryLocalesCardsUnderTheShopsOwnTitle() {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
                 "logo.png", "og.png",
-                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero"));
+                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero", "Ask us for the password"));
         cards("es", new StorefrontExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado",
                 "tour-operators/1/sunset.jpg", 150));
 
@@ -153,6 +153,6 @@ class GetExperienceListPageUseCaseTest {
 
     private static StorefrontShopView shop(String seoTitle) {
         return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null);
+                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null);
     }
 }

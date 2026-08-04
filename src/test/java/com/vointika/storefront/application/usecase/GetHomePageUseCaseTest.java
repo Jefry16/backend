@@ -43,7 +43,7 @@ class GetHomePageUseCaseTest {
     void aBarePathRendersThePrimaryLocale() {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
                 "logo.png", "og.png",
-                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero"));
+                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero", "Ask us for the password"));
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
@@ -58,6 +58,9 @@ class GetHomePageUseCaseTest {
         assertThat(page.shop().description()).isEqualTo("Salidas en velero");
         assertThat(page.shop().timezone().name()).isEqualTo("Europe/Madrid");
         assertThat(page.shop().timezone().city()).isEqualTo("Madrid");
+        // Overlaid for the locale being rendered, unlike the gate's copy, which is
+        // primary-only because the gate answers before a locale is resolved.
+        assertThat(page.shop().passwordMessage()).isEqualTo("Ask us for the password");
         // The id comes off the gate row, not the content row: the caller already
         // resolved the tenant, so the content query is not asked for it again.
         assertThat(page.shop().id()).isEqualTo(OPERATOR);
@@ -202,7 +205,7 @@ class GetHomePageUseCaseTest {
 
     private static StorefrontShopView shop(String seoTitle) {
         return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null);
+                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null);
     }
 
     private static List<String> everyStringIn(Object value) {

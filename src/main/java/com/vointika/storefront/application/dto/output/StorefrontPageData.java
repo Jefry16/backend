@@ -44,6 +44,7 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
                         shop.email(),
                         shop.logoKey(),
                         shop.seoDescription(),
+                        shop.passwordMessage(),
                         new CurrencyData(shop.currencyCode(), shop.currencySymbol()),
                         new TimezoneData(shop.timezoneName(), shop.timezoneCity())),
                 new PageData(
