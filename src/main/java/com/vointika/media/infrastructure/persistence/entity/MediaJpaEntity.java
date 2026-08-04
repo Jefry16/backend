@@ -37,6 +37,29 @@ public class MediaJpaEntity {
     @Column(nullable = false, updatable = false)
     private String originalName;
 
+    /**
+     * What a rendered {@code <img>} needs beyond its {@code src} — the shape
+     * Shopify's image object carries. <b>Mapped read-only, and for the reason
+     * {@code TourOperatorJpaEntity}'s phone and email are</b> (#94): the domain
+     * {@code Media} carries none of them, so {@code MediaMapper} rebuilds this
+     * entity with nulls and a writable column would be wiped by any unrelated
+     * save. The slice that adds a write path flips these flags.
+     *
+     * <p>{@code alt} cannot be derived — only the uploader knows it, so it needs
+     * an admin field. {@code width}/{@code height} must be measured at upload,
+     * which needs a port: {@code javax.imageio} is not {@code java.*}, and the
+     * application layer's allowlist has no exemptions (the trap #91 hit with
+     * {@code javax.crypto}). A theme derives the aspect ratio from the pair.
+     */
+    @Column(length = 500, insertable = false, updatable = false)
+    private String alt;
+
+    @Column(insertable = false, updatable = false)
+    private Integer width;
+
+    @Column(insertable = false, updatable = false)
+    private Integer height;
+
     @Column(nullable = false, updatable = false)
     private UUID createdBy;
 

@@ -13,6 +13,12 @@ public class MediaMapper {
                 media.getContentType(),
                 media.getSizeBytes(),
                 media.getOriginalName(),
+                // alt/width/height: the domain carries none of them, and the entity
+                // maps all three insertable/updatable = false, so these are ignored
+                // on write rather than persisted as nulls.
+                null,
+                null,
+                null,
                 media.getCreatedBy(),
                 media.getCreatedByName(),
                 media.getCreatedAt());
