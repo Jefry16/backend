@@ -99,6 +99,7 @@ public interface StorefrontShopQuery {
             String timezoneName,
             String timezoneCity,
             String seoTitle,
-            String seoDescription
+            String seoDescription,
+            String passwordMessage
     ) {}
 }

@@ -253,6 +253,7 @@ class ExperienceListControllerTest {
                         new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid",
                                 "+34 910 000 000", "hola@acme.test", "logo.png",
                                 "A shop description",
+                        "Opening soon — ask us for the password.",
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                         new PageData("Acme Tours", null, null),

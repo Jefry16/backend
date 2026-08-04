@@ -32,6 +32,7 @@ public record ShopData(
         String email,
         String logoKey,
         String description,
+        String passwordMessage,
         CurrencyData currency,
         TimezoneData timezone
 ) {

@@ -101,7 +101,9 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getSeoTitle).orElse(null),
                         operator.getSeoTitle()),
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getSeoDescription).orElse(null),
-                        operator.getSeoDescription()));
+                        operator.getSeoDescription()),
+                overlay(translation.map(TourOperatorTranslationJpaEntity::getPasswordMessage).orElse(null),
+                        operator.getPasswordMessage()));
     }
 
     private Optional<TourOperatorTranslationJpaEntity> translation(UUID tourOperatorId, String locale) {
