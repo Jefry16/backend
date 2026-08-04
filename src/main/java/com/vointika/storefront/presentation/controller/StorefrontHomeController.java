@@ -95,7 +95,8 @@ public class StorefrontHomeController {
                 .flatMap(handle -> getHomePageUseCase.execute(handle, pathLocale))
                 .map(page -> ResponseEntity.ok()
                         .contentType(HTML_UTF8)
-                        .body(homeTemplate.execute(HomeView.from(page, pathLocale, mediaUrlResolver))))
+                        .body(homeTemplate.execute(HomeView.from(page, pathLocale, mediaUrlResolver,
+                                RequestOrigin.of(request), request.getRequestURI()))))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .contentType(HTML_UTF8)
                         .body(notFoundTemplate.execute(Map.of())));

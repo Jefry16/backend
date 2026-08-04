@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{page.title}}</title>
     {{#page.description}}<meta name="description" content="{{page.description}}">{{/page.description}}
+{{!Mustache concatenates by juxtaposition, so an absolute URL needs no filter:
+    shop.url is the origin, page.path is this page. The pair matters on a
+    multi-locale site, where / and /en serve near-identical pages.}}
+    <link rel="canonical" href="{{shop.url}}{{page.path}}">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="{{shop.url}}{{page.path}}">
     <meta property="og:title" content="{{page.title}}">
     {{#page.description}}<meta property="og:description" content="{{page.description}}">{{/page.description}}
     {{#page.ogImageUrl}}<meta property="og:image" content="{{page.ogImageUrl}}">{{/page.ogImageUrl}}

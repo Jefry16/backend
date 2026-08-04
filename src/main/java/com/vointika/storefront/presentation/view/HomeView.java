@@ -31,10 +31,11 @@ public record HomeView(Shop shop, Page page, Routes routes, Localization localiz
      *                   locale</b> — see {@link Routes}.
      */
     public static HomeView from(StorefrontPageData page, String pathLocale,
-                                MediaUrlResolver mediaUrlResolver) {
+                                MediaUrlResolver mediaUrlResolver,
+                                       String origin, String path) {
         return new HomeView(
-                Shop.from(page.shop(), mediaUrlResolver),
-                Page.from(page.page(), mediaUrlResolver),
+                Shop.from(page.shop(), mediaUrlResolver, origin),
+                Page.from(page.page(), mediaUrlResolver, path),
                 Routes.forPathLocale(pathLocale),
                 Localization.from(page.localization(), Routes::root));
     }

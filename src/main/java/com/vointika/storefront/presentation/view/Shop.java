@@ -19,17 +19,25 @@ import com.vointika.storefront.application.dto.output.ShopData;
  * password on a public page.
  */
 public record Shop(String name, String address, String phone, String email,
-                   String logoUrl, Currency currency) {
+                   String logoUrl, String url, Currency currency) {
 
     public record Currency(String code, String symbol) {}
 
-    public static Shop from(ShopData shop, MediaUrlResolver mediaUrlResolver) {
+    /**
+     * @param url the absolute origin this request arrived on, so a theme can form
+     *            an absolute address for anything {@code routes} names —
+     *            {@code {{shop.url}}{{routes.experiences}}}. Mustache concatenates
+     *            by juxtaposition, so this needs no filter and no Java string
+     *            building.
+     */
+    public static Shop from(ShopData shop, MediaUrlResolver mediaUrlResolver, String url) {
         return new Shop(
                 shop.name(),
                 shop.address(),
                 shop.phone(),
                 shop.email(),
                 mediaUrlResolver.toUrl(shop.logoKey()),
+                url,
                 new Currency(shop.currency().code(), shop.currency().symbol()));
     }
 }
