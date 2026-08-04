@@ -8,6 +8,7 @@ import com.vointika.storefront.application.dto.output.LocalizationData.LanguageD
 import com.vointika.storefront.application.dto.output.PageData;
 import com.vointika.storefront.application.dto.output.ShopData;
 import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
+import com.vointika.storefront.application.dto.output.ShopData.TimezoneData;
 import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import com.vointika.storefront.application.policy.LocaleResolver;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
@@ -29,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -60,6 +62,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontMustacheConfig.class,
         StorefrontWebConfig.class})
 class StorefrontHomeControllerTest {
+
+    private static final UUID SHOP_ID = UUID.fromString("01900000-0000-7000-8000-000000000002");
 
     @Autowired private MockMvc mockMvc;
 
@@ -415,9 +419,11 @@ class StorefrontHomeControllerTest {
     void escapesOperatorAuthoredText() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new StorefrontPageData(
-                new ShopData("<script>alert(1)</script>", "<img onerror=x>",
+                new ShopData(SHOP_ID, "<script>alert(1)</script>", "<img onerror=x>",
                         "\"><script>alert(1)</script>", "x\" onmouseover=\"alert(1)", null,
-                        new CurrencyData("EUR", "€")),
+                        "A shop description",
+                        new CurrencyData("EUR", "€"),
+                        new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData("<script>alert(1)</script>", null, null),
                 new LocalizationData("es", List.of(new LanguageData("es", true, null))))));
 
@@ -497,9 +503,11 @@ class StorefrontHomeControllerTest {
                 new LanguageData("en", false, "en"),
                 new LanguageData("fr", false, "fr"));
         return new StorefrontPageData(
-                new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid",
+                new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid",
                         "+34 910 000 000", "hola@acme.test", logoKey,
-                        new CurrencyData("EUR", "€")),
+                        "A shop description",
+                        new CurrencyData("EUR", "€"),
+                        new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, description, ogImageKey),
                 new LocalizationData(locale, switcher));
     }
@@ -507,8 +515,10 @@ class StorefrontHomeControllerTest {
     /** An operator who has published neither contact detail — both columns are nullable. */
     private static StorefrontPageData pageWithoutContactDetails(String locale, String title) {
         return new StorefrontPageData(
-                new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null, null,
-                        new CurrencyData("EUR", "€")),
+                new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null, null,
+                        "A shop description",
+                        new CurrencyData("EUR", "€"),
+                        new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, null, null),
                 new LocalizationData(locale, List.of(new LanguageData("es", true, null))));
     }

@@ -43,7 +43,7 @@ class GetHomePageUseCaseTest {
     void aBarePathRendersThePrimaryLocale() {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
                 "logo.png", "og.png",
-                "EUR", "€", "Acme Tours — excursiones", "Salidas en velero"));
+                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero"));
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
@@ -55,6 +55,12 @@ class GetHomePageUseCaseTest {
         assertThat(page.shop().logoKey()).isEqualTo("logo.png");
         assertThat(page.shop().currency().code()).isEqualTo("EUR");
         assertThat(page.shop().currency().symbol()).isEqualTo("€");
+        assertThat(page.shop().description()).isEqualTo("Salidas en velero");
+        assertThat(page.shop().timezone().name()).isEqualTo("Europe/Madrid");
+        assertThat(page.shop().timezone().city()).isEqualTo("Madrid");
+        // The id comes off the gate row, not the content row: the caller already
+        // resolved the tenant, so the content query is not asked for it again.
+        assertThat(page.shop().id()).isEqualTo(OPERATOR);
         assertThat(page.page().title()).isEqualTo("Acme Tours — excursiones");
         assertThat(page.page().description()).isEqualTo("Salidas en velero");
         assertThat(page.page().ogImageKey()).isEqualTo("og.png");
@@ -196,7 +202,7 @@ class GetHomePageUseCaseTest {
 
     private static StorefrontShopView shop(String seoTitle) {
         return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                null, null, "EUR", "€", seoTitle, null);
+                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null);
     }
 
     private static List<String> everyStringIn(Object value) {

@@ -10,6 +10,7 @@ import com.vointika.storefront.application.dto.output.LocalizationData.LanguageD
 import com.vointika.storefront.application.dto.output.PageData;
 import com.vointika.storefront.application.dto.output.ShopData;
 import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
+import com.vointika.storefront.application.dto.output.ShopData.TimezoneData;
 import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
@@ -28,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -54,6 +56,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontMustacheConfig.class,
         StorefrontWebConfig.class})
 class ExperienceListControllerTest {
+
+    private static final UUID SHOP_ID = UUID.fromString("01900000-0000-7000-8000-000000000002");
 
     @Autowired private MockMvc mockMvc;
 
@@ -246,9 +250,11 @@ class ExperienceListControllerTest {
     private static ExperienceListPageOutput page(String locale, ExperienceCard... cards) {
         return new ExperienceListPageOutput(
                 new StorefrontPageData(
-                        new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid",
+                        new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid",
                                 "+34 910 000 000", "hola@acme.test", "logo.png",
-                                new CurrencyData("EUR", "€")),
+                                "A shop description",
+                        new CurrencyData("EUR", "€"),
+                        new TimezoneData("Europe/Madrid", "Madrid")),
                         new PageData("Acme Tours", null, null),
                         new LocalizationData(locale, List.of(
                                 new LanguageData("es", "es".equals(locale), null),

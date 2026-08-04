@@ -1,13 +1,21 @@
 package com.vointika.storefront.application.dto.output;
 
+import java.util.UUID;
+
 /**
  * The shop itself — what is true of the operator on every page, in <b>key</b>
  * form, because turning a storage key into a URL is presentation's job
  * (PATTERNS §5).
  *
- * <p>Every field here has a column behind it and a renderer in front of it. The
- * timezone has the first and not the second, so it is absent until something
- * renders a time.
+ * <p><b>The admission rule changed, deliberately.</b> This used to say every
+ * field had a column behind it <em>and a renderer in front of it</em>, which is
+ * why the timezone was left out. That rule was right for a page and wrong for a
+ * contract: {@code shop} is API the day an operator authors a theme, and a field
+ * added later is a breaking change while a field added now costs one component
+ * of a record we already load. So the rule is now the first half only — <b>expose
+ * what the row has, invent nothing</b> — and a field is omitted only when there
+ * is no column behind it (social links, a slogan) or when it belongs somewhere
+ * else (theme settings, {@code localization}).
  *
  * @param phone the shop's public contact details, <b>nullable and null on every
  *              row today</b> — V9 added the columns and nothing writes them yet,
@@ -17,12 +25,15 @@ package com.vointika.storefront.application.dto.output;
  *              has them.
  */
 public record ShopData(
+        UUID id,
         String name,
         String address,
         String phone,
         String email,
         String logoKey,
-        CurrencyData currency
+        String description,
+        CurrencyData currency,
+        TimezoneData timezone
 ) {
 
     /**
@@ -32,4 +43,13 @@ public record ShopData(
      * field the row already has.
      */
     public record CurrencyData(String code, String symbol) {}
+
+    /**
+     * The operator's IANA zone ({@code Europe/Madrid}) and the city it is named
+     * for, joined from {@code reference}. <b>Shopify's {@code shop} has no
+     * equivalent</b> — a catalogue of products does not need one. A departure
+     * time does: every slot a theme renders is an instant that means nothing
+     * without the zone it was scheduled in.
+     */
+    public record TimezoneData(String name, String city) {}
 }

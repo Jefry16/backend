@@ -18,10 +18,14 @@ import com.vointika.storefront.application.dto.output.ShopData;
  * compared inside the gate; a template that could read it would be a plaintext
  * password on a public page.
  */
-public record Shop(String name, String address, String phone, String email,
-                   String logoUrl, String url, Currency currency) {
+public record Shop(String id, String name, String address, String phone, String email,
+                   String logoUrl, String url, String description,
+                   Currency currency, Timezone timezone) {
 
     public record Currency(String code, String symbol) {}
+
+    /** The IANA zone and its city — {@code Europe/Madrid}, {@code Madrid}. */
+    public record Timezone(String name, String city) {}
 
     /**
      * @param url the absolute origin this request arrived on, so a theme can form
@@ -32,12 +36,15 @@ public record Shop(String name, String address, String phone, String email,
      */
     public static Shop from(ShopData shop, MediaUrlResolver mediaUrlResolver, String url) {
         return new Shop(
+                shop.id().toString(),
                 shop.name(),
                 shop.address(),
                 shop.phone(),
                 shop.email(),
                 mediaUrlResolver.toUrl(shop.logoKey()),
                 url,
-                new Currency(shop.currency().code(), shop.currency().symbol()));
+                shop.description(),
+                new Currency(shop.currency().code(), shop.currency().symbol()),
+                new Timezone(shop.timezone().name(), shop.timezone().city()));
     }
 }

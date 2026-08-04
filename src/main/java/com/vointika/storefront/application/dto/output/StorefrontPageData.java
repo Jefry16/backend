@@ -4,6 +4,7 @@ import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
+import com.vointika.storefront.application.dto.output.ShopData.TimezoneData;
 
 import java.util.Comparator;
 import java.util.List;
@@ -36,12 +37,15 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
     public static StorefrontPageData from(StorefrontGateView gate, StorefrontShopView shop, String locale) {
         return new StorefrontPageData(
                 new ShopData(
+                        gate.tourOperatorId(),
                         shop.name(),
                         shop.address(),
                         shop.phone(),
                         shop.email(),
                         shop.logoKey(),
-                        new CurrencyData(shop.currencyCode(), shop.currencySymbol())),
+                        shop.seoDescription(),
+                        new CurrencyData(shop.currencyCode(), shop.currencySymbol()),
+                        new TimezoneData(shop.timezoneName(), shop.timezoneCity())),
                 new PageData(
                         // The shop's SEO title is the page's title until a page type
                         // carries one of its own; its name is the last fallback.
