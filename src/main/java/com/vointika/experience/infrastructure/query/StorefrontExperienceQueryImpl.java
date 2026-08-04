@@ -4,7 +4,8 @@ import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEn
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  *
  * <p><b>Three queries for the whole page, whatever the card count.</b> The rows,
  * the operator's overlays for that one locale, and one
- * {@link MediaKeyBatchQuery} call for every thumbnail together — the batch port
+ * {@link MediaAssetBatchQuery} call for every thumbnail together — the batch port
  * takes a {@code Set} precisely so a listing is not N round trips. A media id
  * the operator no longer owns is simply absent from the result, so the card
  * renders without a thumbnail rather than erroring.
@@ -34,14 +35,14 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
 
     private final ExperienceJpaRepository experienceRepository;
     private final ExperienceTranslationJpaRepository translationRepository;
-    private final MediaKeyBatchQuery mediaKeyBatchQuery;
+    private final MediaAssetBatchQuery mediaAssetBatchQuery;
 
     public StorefrontExperienceQueryImpl(ExperienceJpaRepository experienceRepository,
                                          ExperienceTranslationJpaRepository translationRepository,
-                                         MediaKeyBatchQuery mediaKeyBatchQuery) {
+                                         MediaAssetBatchQuery mediaAssetBatchQuery) {
         this.experienceRepository = experienceRepository;
         this.translationRepository = translationRepository;
-        this.mediaKeyBatchQuery = mediaKeyBatchQuery;
+        this.mediaAssetBatchQuery = mediaAssetBatchQuery;
     }
 
     @Override
@@ -52,9 +53,9 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
             return List.of();
         }
         Map<UUID, ExperienceTranslationJpaEntity> overlays = overlays(tourOperatorId, locale);
-        Map<UUID, String> thumbnailKeys = thumbnailKeys(tourOperatorId, experiences);
+        Map<UUID, MediaAsset> thumbnails = thumbnails(tourOperatorId, experiences);
         return experiences.stream()
-                .map(experience -> toCard(experience, overlays.get(experience.getId()), thumbnailKeys))
+                .map(experience -> toCard(experience, overlays.get(experience.getId()), thumbnails))
                 .toList();
     }
 
@@ -63,24 +64,24 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
                 .collect(Collectors.toMap(ExperienceTranslationJpaEntity::getExperienceId, Function.identity()));
     }
 
-    private Map<UUID, String> thumbnailKeys(UUID tourOperatorId, List<ExperienceJpaEntity> experiences) {
+    private Map<UUID, MediaAsset> thumbnails(UUID tourOperatorId, List<ExperienceJpaEntity> experiences) {
         Set<UUID> ids = new HashSet<>();
         for (ExperienceJpaEntity experience : experiences) {
             if (experience.getThumbnailMediaId() != null) {
                 ids.add(experience.getThumbnailMediaId());
             }
         }
-        return ids.isEmpty() ? Map.of() : mediaKeyBatchQuery.findKeysByIds(tourOperatorId, ids);
+        return ids.isEmpty() ? Map.of() : mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, ids);
     }
 
     private static StorefrontExperienceCard toCard(ExperienceJpaEntity experience,
                                                    ExperienceTranslationJpaEntity overlay,
-                                                   Map<UUID, String> thumbnailKeys) {
+                                                   Map<UUID, MediaAsset> thumbnails) {
         return new StorefrontExperienceCard(
                 overlay(overlay == null ? null : overlay.getHandle(), experience.getHandle()),
                 overlay(overlay == null ? null : overlay.getName(), experience.getName()),
                 overlay(overlay == null ? null : overlay.getDescription(), experience.getDescription()),
-                keyOf(thumbnailKeys, experience.getThumbnailMediaId()),
+                keyOf(thumbnails, experience.getThumbnailMediaId()),
                 experience.getDurationMinutes());
     }
 
@@ -93,8 +94,15 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
         return translated != null ? translated : canonical;
     }
 
-    /** Never {@code keys.get(null)} — an immutable {@code Map.of()} throws on a null key. */
-    private static String keyOf(Map<UUID, String> keys, UUID mediaId) {
-        return mediaId == null ? null : keys.get(mediaId);
+    /**
+     * The card carries the key alone; the rest of the asset has no reader until
+     * a card renders an {@code <img>} with dimensions.
+     *
+     * <p>Never {@code assets.get(null)} — an immutable {@code Map.of()} throws on
+     * a null key.
+     */
+    private static String keyOf(Map<UUID, MediaAsset> assets, UUID mediaId) {
+        MediaAsset asset = mediaId == null ? null : assets.get(mediaId);
+        return asset == null ? null : asset.storageKey();
     }
 }

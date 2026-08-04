@@ -30,7 +30,6 @@ public class TourOperatorMapper {
                 // insertable/updatable = false, so these are ignored on write.
                 null,
                 null,
-                operator.getLogoMediaId(),
                 operator.getCreatedBy(),
                 operator.getCreatedAt(),
                 operator.getUpdatedAt(),
@@ -59,7 +58,6 @@ public class TourOperatorMapper {
                 jpa.getCreatedBy(),
                 jpa.getCreatedAt(),
                 jpa.getUpdatedAt(),
-                jpa.getLogoMediaId(),
                 LocaleCode.of(jpa.getPrimaryLocale()),
                 supported,
                 jpa.isPasswordEnabled(),

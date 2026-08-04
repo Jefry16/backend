@@ -8,7 +8,7 @@ import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.ExperienceOwnershipQuery;
 import com.vointika.shared.port.InvitedUserProvisioning;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.PageOwnershipQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -45,6 +45,7 @@ import com.vointika.touroperator.domain.repository.MenuItemRepository;
 import com.vointika.touroperator.domain.repository.MenuRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
+import com.vointika.touroperator.domain.repository.TourOperatorBrandRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -162,22 +163,24 @@ public class TourOperatorUseCaseConfig {
     @Bean
     public SetOperatorLogoUseCase setOperatorLogoUseCase(
             TourOperatorRepository tourOperatorRepository,
-            MediaKeyBatchQuery mediaKeyBatchQuery,
+            TourOperatorBrandRepository tourOperatorBrandRepository,
+            MediaAssetBatchQuery mediaAssetBatchQuery,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new SetOperatorLogoUseCase(tourOperatorRepository, mediaKeyBatchQuery,
-                membershipCheck, transactionRunner, auditTrailPort);
+        return new SetOperatorLogoUseCase(tourOperatorRepository, tourOperatorBrandRepository,
+                mediaAssetBatchQuery, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
     public ClearOperatorLogoUseCase clearOperatorLogoUseCase(
             TourOperatorRepository tourOperatorRepository,
+            TourOperatorBrandRepository tourOperatorBrandRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new ClearOperatorLogoUseCase(tourOperatorRepository, membershipCheck,
-                transactionRunner, auditTrailPort);
+        return new ClearOperatorLogoUseCase(tourOperatorRepository, tourOperatorBrandRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -383,11 +386,11 @@ public class TourOperatorUseCaseConfig {
     @Bean
     public UpdateOperatorSeoUseCase updateOperatorSeoUseCase(
             TourOperatorRepository tourOperatorRepository,
-            MediaKeyBatchQuery mediaKeyBatchQuery,
+            MediaAssetBatchQuery mediaAssetBatchQuery,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new UpdateOperatorSeoUseCase(tourOperatorRepository, mediaKeyBatchQuery,
+        return new UpdateOperatorSeoUseCase(tourOperatorRepository, mediaAssetBatchQuery,
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 }

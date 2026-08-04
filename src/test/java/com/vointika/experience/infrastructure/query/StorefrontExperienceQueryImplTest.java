@@ -4,8 +4,9 @@ import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEn
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.StorefrontExperienceQuery.StorefrontExperienceCard;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
@@ -36,15 +37,15 @@ class StorefrontExperienceQueryImplTest {
 
     private ExperienceJpaRepository experienceRepository;
     private ExperienceTranslationJpaRepository translationRepository;
-    private MediaKeyBatchQuery mediaKeyBatchQuery;
+    private MediaAssetBatchQuery mediaAssetBatchQuery;
     private StorefrontExperienceQueryImpl query;
 
     @BeforeEach
     void setUp() {
         experienceRepository = mock(ExperienceJpaRepository.class);
         translationRepository = mock(ExperienceTranslationJpaRepository.class);
-        mediaKeyBatchQuery = mock(MediaKeyBatchQuery.class);
-        query = new StorefrontExperienceQueryImpl(experienceRepository, translationRepository, mediaKeyBatchQuery);
+        mediaAssetBatchQuery = mock(MediaAssetBatchQuery.class);
+        query = new StorefrontExperienceQueryImpl(experienceRepository, translationRepository, mediaAssetBatchQuery);
         when(translationRepository.findByTourOperatorIdAndLocale(any(), any())).thenReturn(List.of());
     }
 
@@ -89,14 +90,14 @@ class StorefrontExperienceQueryImplTest {
         published(
                 experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", THUMBNAIL, 150, true),
                 experience(KAYAK, "kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120, false));
-        when(mediaKeyBatchQuery.findKeysByIds(OPERATOR, Set.of(THUMBNAIL)))
-                .thenReturn(Map.of(THUMBNAIL, "tour-operators/1/sunset.jpg"));
+        when(mediaAssetBatchQuery.findAssetsByIds(OPERATOR, Set.of(THUMBNAIL)))
+                .thenReturn(Map.of(THUMBNAIL, new MediaAsset("tour-operators/1/sunset.jpg", null, null, null)));
 
         List<StorefrontExperienceCard> cards = query.findPublished(OPERATOR, "es");
 
         assertThat(cards).extracting(StorefrontExperienceCard::thumbnailKey)
                 .containsExactly("tour-operators/1/sunset.jpg", null);
-        verify(mediaKeyBatchQuery).findKeysByIds(OPERATOR, Set.of(THUMBNAIL));
+        verify(mediaAssetBatchQuery).findAssetsByIds(OPERATOR, Set.of(THUMBNAIL));
     }
 
     /**
@@ -108,7 +109,7 @@ class StorefrontExperienceQueryImplTest {
     @Test
     void aThumbnailIdThatNoLongerResolvesIsSimplyNoThumbnail() {
         published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", THUMBNAIL, 150, true));
-        when(mediaKeyBatchQuery.findKeysByIds(OPERATOR, Set.of(THUMBNAIL))).thenReturn(Map.of());
+        when(mediaAssetBatchQuery.findAssetsByIds(OPERATOR, Set.of(THUMBNAIL))).thenReturn(Map.of());
 
         assertThat(query.findPublished(OPERATOR, "es").getFirst().thumbnailKey()).isNull();
     }
@@ -118,7 +119,7 @@ class StorefrontExperienceQueryImplTest {
         published();
 
         assertThat(query.findPublished(OPERATOR, "es")).isEmpty();
-        verify(mediaKeyBatchQuery, never()).findKeysByIds(any(), anySet());
+        verify(mediaAssetBatchQuery, never()).findAssetsByIds(any(), anySet());
     }
 
     /** The order is the query's; sorting again here would be a second copy of the rule. */

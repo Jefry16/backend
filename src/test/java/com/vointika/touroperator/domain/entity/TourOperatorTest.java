@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TourOperatorTest {
@@ -48,27 +47,6 @@ class TourOperatorTest {
         assertEquals(owner, op.getCreatedBy());
         assertNotNull(op.getCreatedAt());
         assertNotNull(op.getUpdatedAt());
-        assertNull(op.getLogoMediaId(), "a brand-new operator has no logo");
-    }
-
-    @Test
-    void setLogoPointsAtTheMediaId() {
-        TourOperator op = operator();
-        UUID logoId = UUID.randomUUID();
-
-        op.setLogo(logoId);
-
-        assertEquals(logoId, op.getLogoMediaId());
-    }
-
-    @Test
-    void clearLogoRemovesIt() {
-        TourOperator op = operator();
-        op.setLogo(UUID.randomUUID());
-
-        op.clearLogo();
-
-        assertNull(op.getLogoMediaId());
     }
 
     @Test

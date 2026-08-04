@@ -4,8 +4,10 @@ import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorMemberJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorMemberJpaRepository;
 import org.springframework.stereotype.Component;
@@ -23,27 +25,32 @@ import java.util.stream.Collectors;
  * operator memberships in their identity profile (the operator switcher).
  * Retires {@code MembershipsQueryFallbackConfig}.
  *
- * <p>Two lookups + a small reference join, all in memory (a user has a handful
- * of memberships): memberships → their operators → timezone names.
- * {@code logoUrl} is null until the operator-logo feature lands (the create
- * slice's model has no logo). {@code timezone} is the IANA name resolved from
- * the operator's {@code timezone_id} via {@code reference}.
+ * <p>Three lookups + a small reference join, all in memory (a user has a handful
+ * of memberships): memberships → their operators → their brand rows → timezone
+ * names. {@code timezone} is the IANA name resolved from the operator's
+ * {@code timezone_id} via {@code reference}.
+ *
+ * <p>The logo is read off the <b>brand</b> row, where V10 moved it. An operator
+ * created since the migration has no brand row yet, which is simply no logo.
  */
 @Component
 public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMembershipsQuery {
 
     private final TourOperatorMemberJpaRepository memberRepository;
     private final TourOperatorJpaRepository operatorRepository;
+    private final TourOperatorBrandJpaRepository brandRepository;
     private final TimezoneRepository timezoneRepository;
     private final MediaUrlBatchResolver mediaUrlBatchResolver;
 
     public UserTourOperatorMembershipsQueryImpl(
             TourOperatorMemberJpaRepository memberRepository,
             TourOperatorJpaRepository operatorRepository,
+            TourOperatorBrandJpaRepository brandRepository,
             TimezoneRepository timezoneRepository,
             MediaUrlBatchResolver mediaUrlBatchResolver) {
         this.memberRepository = memberRepository;
         this.operatorRepository = operatorRepository;
+        this.brandRepository = brandRepository;
         this.timezoneRepository = timezoneRepository;
         this.mediaUrlBatchResolver = mediaUrlBatchResolver;
     }
@@ -61,6 +68,11 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
                 .toList();
         Map<UUID, TourOperatorJpaEntity> operators = operatorRepository.findByIdIn(operatorIds).stream()
                 .collect(Collectors.toMap(TourOperatorJpaEntity::getId, Function.identity()));
+        Map<UUID, UUID> logoMediaIds = brandRepository.findAllById(operatorIds).stream()
+                .filter(brand -> brand.getLogoMediaId() != null)
+                .collect(Collectors.toMap(
+                        TourOperatorBrandJpaEntity::getTourOperatorId,
+                        TourOperatorBrandJpaEntity::getLogoMediaId));
         Map<UUID, String> timezoneNames = timezoneRepository.findAll().stream()
                 .collect(Collectors.toMap(Timezone::getId, Timezone::getName));
 
@@ -74,7 +86,7 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
                             op.getId(),
                             op.getName(),
                             // logo id → url through the media seam; null if unset or since-deleted
-                            mediaUrlBatchResolver.resolveOne(op.getId(), op.getLogoMediaId()),
+                            mediaUrlBatchResolver.resolveOne(op.getId(), logoMediaIds.get(op.getId())),
                             timezoneNames.get(op.getTimezoneId()),
                             m.isDefault(),
                             m.getRole().name());

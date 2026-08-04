@@ -4,8 +4,10 @@ import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery.TourOperatorMembershipView;
 import com.vointika.touroperator.domain.enums.MemberRole;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorMemberJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorMemberJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +29,7 @@ class UserTourOperatorMembershipsQueryImplTest {
 
     private TourOperatorMemberJpaRepository memberRepository;
     private TourOperatorJpaRepository operatorRepository;
+    private TourOperatorBrandJpaRepository brandRepository;
     private TimezoneRepository timezoneRepository;
     private com.vointika.shared.media.MediaUrlBatchResolver mediaUrlBatchResolver;
     private UserTourOperatorMembershipsQueryImpl query;
@@ -38,10 +41,15 @@ class UserTourOperatorMembershipsQueryImplTest {
     void setUp() {
         memberRepository = mock(TourOperatorMemberJpaRepository.class);
         operatorRepository = mock(TourOperatorJpaRepository.class);
+        brandRepository = mock(TourOperatorBrandJpaRepository.class);
         timezoneRepository = mock(TimezoneRepository.class);
         mediaUrlBatchResolver = mock(com.vointika.shared.media.MediaUrlBatchResolver.class);
         query = new UserTourOperatorMembershipsQueryImpl(
-                memberRepository, operatorRepository, timezoneRepository, mediaUrlBatchResolver);
+                memberRepository, operatorRepository, brandRepository, timezoneRepository,
+                mediaUrlBatchResolver);
+        // An operator with no brand row is the ordinary case for anything created
+        // since V10, and it is simply no logo.
+        when(brandRepository.findAllById(any())).thenReturn(List.of());
         when(timezoneRepository.findAll()).thenReturn(List.of(
                 new Timezone(tzId, "America/Santo_Domingo", "Santo Domingo", null)));
     }
@@ -53,16 +61,18 @@ class UserTourOperatorMembershipsQueryImplTest {
     }
 
     private TourOperatorJpaEntity operator(UUID id, String name, String handle) {
-        return operator(id, name, handle, null);
-    }
-
-    private TourOperatorJpaEntity operator(UUID id, String name, String handle, UUID logoMediaId) {
         return new TourOperatorJpaEntity(
-                id, name, handle, tzId, UUID.randomUUID(), "some address", null, null, logoMediaId,
+                id, name, handle, tzId, UUID.randomUUID(), "some address", null, null,
                 UUID.randomUUID(), Instant.now(), Instant.now(),
                 "en", false, null, null,
                 null, null, null,
                 new java.util.LinkedHashSet<>(java.util.Set.of("en")));
+    }
+
+    /** The logo lives on the brand row since V10 — see {@code TourOperatorBrandJpaEntity}. */
+    private TourOperatorBrandJpaEntity brandWithLogo(UUID operatorId, UUID logoMediaId) {
+        return new TourOperatorBrandJpaEntity(
+                operatorId, null, null, logoMediaId, null, null, null, Instant.now(), Instant.now());
     }
 
     @Test
@@ -92,7 +102,7 @@ class UserTourOperatorMembershipsQueryImplTest {
         assertTrue(first.isDefault());
         assertEquals("OWNER", first.role());
         assertEquals("America/Santo_Domingo", first.timezone());
-        assertNull(first.logoUrl(), "no logo set → resolver returns null");
+        assertNull(first.logoUrl(), "no brand row → no logo");
 
         assertEquals("Acme Tours", views.get(1).name());
         assertFalse(views.get(1).isDefault());
@@ -122,7 +132,8 @@ class UserTourOperatorMembershipsQueryImplTest {
         UUID logoId = UUID.randomUUID();
         when(memberRepository.findByUserId(userId)).thenReturn(List.of(member(op, MemberRole.OWNER, true)));
         when(operatorRepository.findByIdIn(any()))
-                .thenReturn(List.of(operator(op, "Logo Co", "logo-co", logoId)));
+                .thenReturn(List.of(operator(op, "Logo Co", "logo-co")));
+        when(brandRepository.findAllById(any())).thenReturn(List.of(brandWithLogo(op, logoId)));
         when(mediaUrlBatchResolver.resolveOne(op, logoId))
                 .thenReturn("https://media.example.com/tour-operators/x/logo.png");
 

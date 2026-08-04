@@ -80,34 +80,76 @@ A page a template renders takes **named objects, never a flat bag of scalars**,
 and the same set on every page. `storefront` is the canonical one:
 
 ```
-shop          name, address, logoUrl, currency { code, symbol }
-page          title, description, ogImageUrl
+shop          id, name, address, phone, email, url, description, passwordMessage,
+              brand { slogan, shortDescription,
+                      colors { primary [ {background, foreground} ], secondary [ … ] },
+                      logo, squareLogo, favicon, coverImage,   -- Image or null
+                      socialLinks [ { platform, url } ] },
+              currency { code, symbol }, timezone { name, city }
+page          title, description, ogImageUrl, path
 routes        root, experiences
 localization  locale, languages [ { code, current, url } ]
 ```
 
+**Anything a theme renders as an `<img>` is one shared `Image`** —
+`{ url, alt, width, height, aspectRatio }`. `aspectRatio` is **derived**
+(`width / height` when both are present, null otherwise) and never stored: a
+third column can disagree with the two it comes from. `alt`, `width` and
+`height` are null on every row today, and that is the shape being the contract
+ahead of the data, not a defect — the media columns exist and their write paths
+are their own slices. An absent media reference is a **null `Image`**, not an
+`Image` with a null URL, because the template guards on the object.
+
+**There is no `shop.logoUrl`.** The logo is `shop.brand.logo`, where Shopify
+keeps it — their shop object has no logo of its own. Removing it was a breaking
+change to a published contract, made deliberately while no operator theme
+existed to break (#100).
+
 It exists **twice, in key form and URL form** — `ShopData`/`PageData`/
-`LocalizationData` under one `StorefrontPageData` in `application/dto/output`,
-and `Shop`/`Page`/`Routes`/`Localization` in `presentation/view`. That is
-PATTERNS §5 applied to a page: application deals in storage keys and locale
-codes, presentation resolves both (`routes` has no application half at all — a
-route is a URL). Every one is a `public record` with a `public` enclosing type,
-and so is every nested one, because the compiler runs with access coercion off.
+`BrandData`/`ImageData`/`LocalizationData` under one `StorefrontPageData` in
+`application/dto/output`, and `Shop`/`Page`/`Brand`/`Image`/`Routes`/
+`Localization` in `presentation/view`. That is PATTERNS §5 applied to a page:
+application deals in storage keys and locale codes, presentation resolves both
+(`routes` has no application half at all — a route is a URL, and `aspectRatio`
+is derived on the same side for the same reason). Every one is a `public record`
+with a `public` enclosing type, and so is every nested one, because the compiler
+runs with access coercion off.
 
-Two rules decide what goes in, and **both** must hold:
+**A collection the owning context orders is ordered by the query, and split by
+the query too.** The palette is `colors.primary[0].background`, so its order is a
+promise a theme indexes into — it lives in the derived query's name
+(`findByTourOperatorIdOrderByPositionAsc`) and nowhere else, pinned by parsing
+that name with Spring Data's `PartTree` (§9's shape, from the experiences
+listing). And the *role* split happens in the owning context's adapter, not the
+caller's: a role is a `touroperator` enum, so a flat list tagged with a role
+string would force `storefront` to compare against literals — a second copy of an
+enum it is fenced from seeing.
 
-- **Expose what the row has.** A field with no column behind it is invention.
-- **Have a renderer in this slice, or a named caller in the next.** This is what
-  keeps the first rule from admitting every column: `shop.address` went in with
-  the footer that renders it, `shop.timezone` stayed out because nothing renders
-  a time until slots land.
+**One rule decides what goes in: expose what the row has, invent nothing.** A
+field with no column behind it is invention and stays out; a field with a column
+goes in whether or not this slice renders it.
+
+That used to be two rules — the second demanding "a renderer in this slice or a
+named caller in the next", which is what kept `shop.timezone` out. It was right
+for a page and wrong for a contract, and #96 dropped it: `shop` is API the day an
+operator authors a theme, so a field added later is a breaking change while a
+field added now costs one record component. `shop.timezone` is in. So are
+`brand.slogan` and the palette, which nothing renders yet — the shape is the
+contract and the data follows. A field is omitted only when no column backs it,
+or when it belongs somewhere else (theme settings, `localization`).
+
+**A contract filled in data-first needs a way to see it.** Most of `shop` is
+invisible in the page, so `?format=json` (`ThemeContextDump`, off unless
+`app.storefront.context-endpoint` says otherwise) renders the object a template
+would receive instead of the page. It is the diagnostic that makes this rule
+verifiable against a running system rather than only against a test.
 
 **A page-specific record wraps the envelope rather than flattening it**
 (`ExperienceListPageOutput(StorefrontPageData envelope, List<ExperienceCard>
 cards)`), and a page with nothing of its own returns the envelope directly —
 the home page does.
 
-**The four components are repeated across every page view, and that is
+**The four top-level components are repeated across every page view, and that is
 accepted.** Records cannot extend, and nesting them would put
 `{{envelope.shop.name}}` in every template. Revisit when sections make the
 render context globals-plus-a-section — likely a `Map` — which is the first real

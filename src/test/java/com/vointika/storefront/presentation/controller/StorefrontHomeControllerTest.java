@@ -3,6 +3,11 @@ package com.vointika.storefront.presentation.controller;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
+import com.vointika.storefront.application.dto.output.BrandData;
+import com.vointika.storefront.application.dto.output.BrandData.ColorData;
+import com.vointika.storefront.application.dto.output.BrandData.ColorsData;
+import com.vointika.storefront.application.dto.output.BrandData.SocialLinkData;
+import com.vointika.storefront.application.dto.output.ImageData;
 import com.vointika.storefront.application.dto.output.LocalizationData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.PageData;
@@ -133,6 +138,50 @@ class StorefrontHomeControllerTest {
                         containsString("<a href=\"/en\" lang=\"en\">en</a>"),
                         containsString("<a href=\"/fr\" lang=\"fr\">fr</a>"),
                         containsString("<p>Calle Mayor 1, 28013 Madrid</p>"))));
+    }
+
+    /**
+     * <b>The logo comes from {@code shop.brand.logo}</b> — V10 moved the column
+     * onto the brand and {@code shop.logoUrl} is gone with it, because Shopify's
+     * shop object has no logo of its own. Point the layout back at a
+     * {@code shop.*} key and the {@code <img>} disappears silently: a missing
+     * variable renders empty rather than throwing, which is the compiler's
+     * {@code defaultValue("")} doing what it is there for.
+     */
+    @Test
+    void theLogoRendersFromTheBrand() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es", "Acme Tours", null, "brand/logo.png", null)));
+        when(mediaUrlResolver.toUrl("brand/logo.png")).thenReturn("http://localhost:9000/brand/logo.png");
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "<a href=\"/\"><img src=\"http://localhost:9000/brand/logo.png\" "
+                                + "alt=\"Acme Tours\"></a>")));
+    }
+
+    /**
+     * <b>An operator with no brand row at all</b> — every field null, both colour
+     * lists empty. V10 backfilled a row per operator but nothing writes one at
+     * creation, so this is a real state and not a hypothetical. It must emit no
+     * empty {@code <img>} and no stray anchor, which is the section guard rather
+     * than a null check anywhere in Java.
+     */
+    @Test
+    void aBrandWithNothingSetEmitsNoMarkup() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(pageWithoutBrand()));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<h1>Acme Tours</h1>"),
+                        not(containsString("<img")),
+                        not(containsString("<a href=\"/\">")),
+                        containsString("    <header>\n"
+                                + "        <nav>"))));
     }
 
     /**
@@ -280,6 +329,13 @@ class StorefrontHomeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         startsWith("<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n"),
+                        // The logo sits behind a standalone {{! }} comment explaining
+                        // where it reads from. A standalone comment line is stripped
+                        // whole; write it inline and the blank line ships on every page.
+                        containsString("    <header>\n"
+                                + "        <a href=\"/\"><img src=\"http://localhost:9000/logo.png\" "
+                                + "alt=\"Acme Tours\"></a>\n"
+                                + "        <nav>"),
                         containsString("</header>\n    <h1>Acme Tours</h1>\n    <footer>\n"
                                 + "        <p>Calle Mayor 1, 28013 Madrid</p>\n"
                                 + "        <p><a href=\"tel:+34 910 000 000\">+34 910 000 000</a></p>\n"
@@ -438,9 +494,10 @@ class StorefrontHomeControllerTest {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new StorefrontPageData(
                 new ShopData(SHOP_ID, "<script>alert(1)</script>", "<img onerror=x>",
-                        "\"><script>alert(1)</script>", "x\" onmouseover=\"alert(1)", null,
+                        "\"><script>alert(1)</script>", "x\" onmouseover=\"alert(1)",
                         "A shop description",
                         "Opening soon — ask us for the password.",
+                        noBrand(),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData("<script>alert(1)</script>", null, null),
@@ -523,24 +580,64 @@ class StorefrontHomeControllerTest {
                 new LanguageData("fr", false, "fr"));
         return new StorefrontPageData(
                 new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid",
-                        "+34 910 000 000", "hola@acme.test", logoKey,
+                        "+34 910 000 000", "hola@acme.test",
                         "A shop description",
                         "Opening soon — ask us for the password.",
+                        brand(logoKey),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, description, ogImageKey),
                 new LocalizationData(locale, switcher));
     }
 
+    /** An operator with no brand row — the state anything created since V10 is in. */
+    private static StorefrontPageData pageWithoutBrand() {
+        return new StorefrontPageData(
+                new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null,
+                        null, null, noBrand(),
+                        new CurrencyData("EUR", "€"),
+                        new TimezoneData("Europe/Madrid", "Madrid")),
+                new PageData("Acme Tours", null, null),
+                new LocalizationData("es", List.of(new LanguageData("es", true, null))));
+    }
+
     /** An operator who has published neither contact detail — both columns are nullable. */
     private static StorefrontPageData pageWithoutContactDetails(String locale, String title) {
         return new StorefrontPageData(
-                new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null, null,
+                new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null,
                         "A shop description",
                         "Opening soon — ask us for the password.",
+                        brand(null),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, null, null),
                 new LocalizationData(locale, List.of(new LanguageData("es", true, null))));
+    }
+
+    /**
+     * The brand these pages render through. <b>The logo is
+     * {@code shop.brand.logo}</b> since V10 — {@code shop.logoUrl} is gone,
+     * because Shopify's shop object never had a logo of its own.
+     *
+     * <p>{@code alt} and the dimensions are non-null here and null on every real
+     * row: the media columns exist and nothing populates them yet, which is why
+     * the layout writes the shop's name into the {@code alt} the way Dawn does.
+     */
+    private static BrandData brand(String logoKey) {
+        return new BrandData(
+                "Sail the coast, not the crowds.",
+                "Small-group sailing since 2011.",
+                new ColorsData(
+                        List.of(new ColorData("#0b3d5c", "#ffffff"), new ColorData("#1c7ba8", "#ffffff")),
+                        List.of(new ColorData("#f2a541", "#1a1a1a"))),
+                logoKey == null ? null : new ImageData(logoKey, "The Acme burgee", 400, 200),
+                null, null, null,
+                List.of(new SocialLinkData("INSTAGRAM", "https://instagram.com/acmetours")));
+    }
+
+    /** An operator with no brand row at all — everything null, both lists empty. */
+    private static BrandData noBrand() {
+        return new BrandData(null, null, new ColorsData(List.of(), List.of()),
+                null, null, null, null, List.of());
     }
 }

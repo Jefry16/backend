@@ -1,6 +1,7 @@
 package com.vointika.shared.media;
 
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 class MediaUrlBatchResolverTest {
 
-    private MediaKeyBatchQuery mediaKeyBatchQuery;
+    private MediaAssetBatchQuery mediaAssetBatchQuery;
     private MediaUrlBatchResolver resolver;
 
     private final UUID operatorId = UUID.randomUUID();
@@ -26,14 +27,14 @@ class MediaUrlBatchResolverTest {
 
     @BeforeEach
     void setUp() {
-        mediaKeyBatchQuery = mock(MediaKeyBatchQuery.class);
-        resolver = new MediaUrlBatchResolver(mediaKeyBatchQuery, new MediaUrlResolver("https://cdn.example.com"));
+        mediaAssetBatchQuery = mock(MediaAssetBatchQuery.class);
+        resolver = new MediaUrlBatchResolver(mediaAssetBatchQuery, new MediaUrlResolver("https://cdn.example.com"));
     }
 
     @Test
     void resolvesKeyToAbsoluteUrl() {
-        when(mediaKeyBatchQuery.findKeysByIds(operatorId, Set.of(mediaId)))
-                .thenReturn(Map.of(mediaId, "tour-operators/x/logo.png"));
+        when(mediaAssetBatchQuery.findAssetsByIds(operatorId, Set.of(mediaId)))
+                .thenReturn(Map.of(mediaId, asset("tour-operators/x/logo.png")));
 
         assertEquals("https://cdn.example.com/tour-operators/x/logo.png",
                 resolver.resolveOne(operatorId, mediaId));
@@ -42,12 +43,17 @@ class MediaUrlBatchResolverTest {
     @Test
     void nullIdShortCircuitsWithoutQuerying() {
         assertNull(resolver.resolveOne(operatorId, null));
-        verify(mediaKeyBatchQuery, never()).findKeysByIds(any(), any());
+        verify(mediaAssetBatchQuery, never()).findAssetsByIds(any(), any());
     }
 
     @Test
     void unownedOrDeletedMediaResolvesToNull() {
-        when(mediaKeyBatchQuery.findKeysByIds(operatorId, Set.of(mediaId))).thenReturn(Map.of());
+        when(mediaAssetBatchQuery.findAssetsByIds(operatorId, Set.of(mediaId))).thenReturn(Map.of());
         assertNull(resolver.resolveOne(operatorId, mediaId));
+    }
+
+    /** This resolver wants the key alone; alt and the dimensions are another caller's. */
+    private static MediaAsset asset(String storageKey) {
+        return new MediaAsset(storageKey, null, null, null);
     }
 }

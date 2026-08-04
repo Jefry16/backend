@@ -8,7 +8,7 @@ import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -36,18 +36,18 @@ import java.util.UUID;
 public class UpdateOperatorSeoUseCase {
 
     private final TourOperatorRepository tourOperatorRepository;
-    private final MediaKeyBatchQuery mediaKeyBatchQuery;
+    private final MediaAssetBatchQuery mediaAssetBatchQuery;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public UpdateOperatorSeoUseCase(TourOperatorRepository tourOperatorRepository,
-                                    MediaKeyBatchQuery mediaKeyBatchQuery,
+                                    MediaAssetBatchQuery mediaAssetBatchQuery,
                                     TourOperatorMembershipCheck membershipCheck,
                                     TransactionRunner transactionRunner,
                                     AuditTrailPort auditTrailPort) {
         this.tourOperatorRepository = tourOperatorRepository;
-        this.mediaKeyBatchQuery = mediaKeyBatchQuery;
+        this.mediaAssetBatchQuery = mediaAssetBatchQuery;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -64,7 +64,7 @@ public class UpdateOperatorSeoUseCase {
                 blank(rawSeoDescription) ? null : new OperatorSeoDescription(rawSeoDescription);
 
         if (ogImageMediaId != null
-                && !mediaKeyBatchQuery.findKeysByIds(tourOperatorId, Set.of(ogImageMediaId))
+                && !mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, Set.of(ogImageMediaId))
                         .containsKey(ogImageMediaId)) {
             throw new InvalidFieldException("Media not found in this operator's library");
         }

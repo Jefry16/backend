@@ -99,7 +99,7 @@ class MenuUseCasesTest {
     private TourOperator operator() {
         return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Calle Mayor 1"),
-                USER, Instant.now(), Instant.now(), null,
+                USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en"), LocaleCode.of("es")));
     }
 

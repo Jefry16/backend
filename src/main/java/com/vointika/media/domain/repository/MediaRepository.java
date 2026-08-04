@@ -3,6 +3,7 @@ package com.vointika.media.domain.repository;
 import com.vointika.media.domain.entity.Media;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 
 import java.util.Map;
 import java.util.Optional;
@@ -23,9 +24,9 @@ public interface MediaRepository {
     boolean deleteByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
     /**
-     * id → storage key for the given ids that belong to this operator. Ids not
-     * owned by the operator are absent from the map — backs the tenant-scoped
+     * id → the stored asset for the given ids that belong to this operator. Ids
+     * not owned by the operator are absent from the map — backs the tenant-scoped
      * cross-context resolver.
      */
-    Map<UUID, String> findKeysByTourOperatorIdAndIds(UUID tourOperatorId, Set<UUID> ids);
+    Map<UUID, MediaAsset> findAssetsByTourOperatorIdAndIds(UUID tourOperatorId, Set<UUID> ids);
 }

@@ -16,8 +16,17 @@
     {{#page.ogImageUrl}}<meta property="og:image" content="{{page.ogImageUrl}}">{{/page.ogImageUrl}}
 </head>
 <body>
-    <header>
-        {{#shop.logoUrl}}<a href="{{routes.root}}"><img src="{{shop.logoUrl}}" alt="{{shop.name}}"></a>{{/shop.logoUrl}}
+{{!The logo is shop.brand.logo — Shopify's shop object has no logo of its own.
+    Inside the section, url is the image's; routes and shop resolve through the
+    parent-context fallback, which is on because standards mode is off. The alt
+    is the shop's name, as Dawn's header does: the image's own alt is null on
+    every row until there is a write path for it.
+    The section hugs its markup, same rule as the footer below: on its own line
+    it is not standalone, so an operator with no logo ships the indentation of
+    the line the tag sat on.
+    NB a comment ends at the first close-brace pair, so it may not quote a tag.}}
+    <header>{{#shop.brand.logo}}
+        <a href="{{routes.root}}"><img src="{{url}}" alt="{{shop.name}}"></a>{{/shop.brand.logo}}
         <nav>{{#localization.languages}}{{#current}}<span lang="{{code}}">{{code}}</span>{{/current}}{{^current}}<a href="{{url}}" lang="{{code}}">{{code}}</a>{{/current}}{{/localization.languages}}</nav>
     </header>
 {{!A page's block tags hug its markup on purpose: whitespace between a block tag

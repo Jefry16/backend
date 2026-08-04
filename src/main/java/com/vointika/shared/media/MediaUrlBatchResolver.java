@@ -1,6 +1,7 @@
 package com.vointika.shared.media;
 
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -11,7 +12,7 @@ import java.util.UUID;
 
 /**
  * Resolves a media-id reference to its absolute URL, composing the two seams:
- * {@link MediaKeyBatchQuery} (id → storage key, tenant-scoped) then
+ * {@link MediaAssetBatchQuery} (id → the stored asset, tenant-scoped) then
  * {@link MediaUrlResolver} (key → URL against the current asset base). The one
  * place consumers (operator logo, and later experience galleries) turn a stored
  * media id back into something the client can load.
@@ -23,11 +24,11 @@ import java.util.UUID;
 @Component
 public class MediaUrlBatchResolver {
 
-    private final MediaKeyBatchQuery mediaKeyBatchQuery;
+    private final MediaAssetBatchQuery mediaAssetBatchQuery;
     private final MediaUrlResolver mediaUrlResolver;
 
-    public MediaUrlBatchResolver(MediaKeyBatchQuery mediaKeyBatchQuery, MediaUrlResolver mediaUrlResolver) {
-        this.mediaKeyBatchQuery = mediaKeyBatchQuery;
+    public MediaUrlBatchResolver(MediaAssetBatchQuery mediaAssetBatchQuery, MediaUrlResolver mediaUrlResolver) {
+        this.mediaAssetBatchQuery = mediaAssetBatchQuery;
         this.mediaUrlResolver = mediaUrlResolver;
     }
 
@@ -36,8 +37,8 @@ public class MediaUrlBatchResolver {
         if (mediaId == null) {
             return null;
         }
-        String key = mediaKeyBatchQuery.findKeysByIds(tourOperatorId, Set.of(mediaId)).get(mediaId);
-        return key == null ? null : mediaUrlResolver.toUrl(key);
+        MediaAsset asset = mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, Set.of(mediaId)).get(mediaId);
+        return asset == null ? null : mediaUrlResolver.toUrl(asset.storageKey());
     }
 
     /**
@@ -49,9 +50,9 @@ public class MediaUrlBatchResolver {
         if (mediaIds == null || mediaIds.isEmpty()) {
             return Map.of();
         }
-        Map<UUID, String> keys = mediaKeyBatchQuery.findKeysByIds(tourOperatorId, Set.copyOf(mediaIds));
-        Map<UUID, String> urls = new HashMap<>(keys.size());
-        keys.forEach((id, key) -> urls.put(id, mediaUrlResolver.toUrl(key)));
+        Map<UUID, MediaAsset> assets = mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, Set.copyOf(mediaIds));
+        Map<UUID, String> urls = new HashMap<>(assets.size());
+        assets.forEach((id, asset) -> urls.put(id, mediaUrlResolver.toUrl(asset.storageKey())));
         return urls;
     }
 }

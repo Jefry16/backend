@@ -6,18 +6,17 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.domain.entity.TourOperator;
+import com.vointika.touroperator.domain.repository.TourOperatorBrandRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,6 +44,7 @@ class ClearOperatorLogoUseCaseTest {
     private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private TourOperatorRepository operatorRepository;
+    private TourOperatorBrandRepository brandRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private ClearOperatorLogoUseCase useCase;
 
@@ -54,28 +54,27 @@ class ClearOperatorLogoUseCaseTest {
     @BeforeEach
     void setUp() {
         operatorRepository = mock(TourOperatorRepository.class);
+        brandRepository = mock(TourOperatorBrandRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new ClearOperatorLogoUseCase(operatorRepository, membershipCheck, transactionRunner, auditTrailPort);
-        when(operatorRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        useCase = new ClearOperatorLogoUseCase(operatorRepository, brandRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    private TourOperator operatorWithLogo() {
-        TourOperator op = new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
+    private TourOperator operator() {
+        return new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St"), UUID.randomUUID());
-        op.setLogo(UUID.randomUUID());
-        return op;
     }
 
+    /** The logo is the brand's column since V10, so clearing writes null there. */
     @Test
     void clearsTheLogo() {
-        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operatorWithLogo()));
+        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
+        when(brandRepository.findLogoMediaId(operatorId)).thenReturn(Optional.of(UUID.randomUUID()));
 
         useCase.execute(operatorId, callerId);
 
         verify(membershipCheck).ensureAdmin(callerId, operatorId);
-        ArgumentCaptor<TourOperator> saved = ArgumentCaptor.forClass(TourOperator.class);
-        verify(operatorRepository).save(saved.capture());
-        assertNull(saved.getValue().getLogoMediaId());
+        verify(brandRepository).setLogoMediaId(operatorId, null);
     }
 
     @Test
@@ -85,7 +84,7 @@ class ClearOperatorLogoUseCaseTest {
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(operatorId, callerId));
         verify(operatorRepository, never()).findById(any());
-        verify(operatorRepository, never()).save(any());
+        verify(brandRepository, never()).setLogoMediaId(any(), any());
     }
 
     @Test

@@ -1,8 +1,15 @@
 package com.vointika.storefront.application.usecase;
 
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorsView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandSocialLinkView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
+import com.vointika.storefront.application.dto.output.BrandData.ColorData;
+import com.vointika.storefront.application.dto.output.BrandData.SocialLinkData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,8 +49,9 @@ class GetHomePageUseCaseTest {
     @Test
     void aBarePathRendersThePrimaryLocale() {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
-                "logo.png", "og.png",
-                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero", "Ask us for the password"));
+                "og.png",
+                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero",
+                "Ask us for the password", brand()));
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
@@ -52,7 +60,6 @@ class GetHomePageUseCaseTest {
         assertThat(page.shop().address()).isEqualTo("Calle Mayor 1");
         assertThat(page.shop().phone()).isEqualTo("+34 910 000 000");
         assertThat(page.shop().email()).isEqualTo("hola@acme.test");
-        assertThat(page.shop().logoKey()).isEqualTo("logo.png");
         assertThat(page.shop().currency().code()).isEqualTo("EUR");
         assertThat(page.shop().currency().symbol()).isEqualTo("€");
         assertThat(page.shop().description()).isEqualTo("Salidas en velero");
@@ -67,6 +74,56 @@ class GetHomePageUseCaseTest {
         assertThat(page.page().title()).isEqualTo("Acme Tours — excursiones");
         assertThat(page.page().description()).isEqualTo("Salidas en velero");
         assertThat(page.page().ogImageKey()).isEqualTo("og.png");
+    }
+
+    /**
+     * {@code shop.brand} is where the logo lives — Shopify's shop object has none
+     * and neither does ours. The palette arrives already split by role, ordered
+     * within each, because the role is the owning context's enum and cannot cross
+     * the seam.
+     */
+    @Test
+    void theBrandCarriesTheLogoThePaletteAndTheLinks() {
+        content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null, null,
+                "EUR", "€", "Europe/Madrid", "Madrid", null, null, null, brand()));
+
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(page.shop().brand().slogan()).isEqualTo("Navega la costa");
+        assertThat(page.shop().brand().shortDescription()).isEqualTo("Salidas en grupos pequeños");
+        assertThat(page.shop().brand().logo().storageKey()).isEqualTo("brand/logo.png");
+        assertThat(page.shop().brand().logo().alt()).isEqualTo("The Acme burgee");
+        assertThat(page.shop().brand().logo().width()).isEqualTo(400);
+        assertThat(page.shop().brand().logo().height()).isEqualTo(200);
+        assertThat(page.shop().brand().squareLogo()).isNull();
+        assertThat(page.shop().brand().colors().primary())
+                .extracting(ColorData::background)
+                .containsExactly("#0b3d5c", "#1c7ba8");
+        assertThat(page.shop().brand().colors().secondary())
+                .extracting(ColorData::background)
+                .containsExactly("#f2a541");
+        assertThat(page.shop().brand().socialLinks())
+                .extracting(SocialLinkData::platform)
+                .containsExactly("INSTAGRAM");
+    }
+
+    /**
+     * V10 backfilled a brand row per operator, but one created since has none —
+     * and the brand still has no write path. A page must render on that, so the
+     * envelope's brand is an object with nothing in it rather than a null.
+     */
+    @Test
+    void anOperatorWithNoBrandRowStillGetsABrandObject() {
+        content("es", shop(null));
+
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(page.shop().brand()).isNotNull();
+        assertThat(page.shop().brand().slogan()).isNull();
+        assertThat(page.shop().brand().logo()).isNull();
+        assertThat(page.shop().brand().colors().primary()).isEmpty();
+        assertThat(page.shop().brand().colors().secondary()).isEmpty();
+        assertThat(page.shop().brand().socialLinks()).isEmpty();
     }
 
     @Test
@@ -122,7 +179,7 @@ class GetHomePageUseCaseTest {
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
-        assertThat(page.shop().logoKey()).isNull();
+        assertThat(page.shop().brand().logo()).isNull();
         assertThat(page.page().ogImageKey()).isNull();
         assertThat(page.page().description()).isNull();
     }
@@ -205,8 +262,28 @@ class GetHomePageUseCaseTest {
 
     private static StorefrontShopView shop(String seoTitle) {
         return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null);
+                null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null, noBrand());
     }
+
+    /** The brand a real operator has: a translated slogan, an ordered palette, one link, one image. */
+    private static StorefrontBrandView brand() {
+        return new StorefrontBrandView(
+                "Navega la costa", "Salidas en grupos pequeños",
+                new MediaAsset("brand/logo.png", "The Acme burgee", 400, 200),
+                null, null, null,
+                new StorefrontBrandColorsView(
+                        List.of(new StorefrontBrandColorView("#0b3d5c", "#ffffff"),
+                                new StorefrontBrandColorView("#1c7ba8", "#ffffff")),
+                        List.of(new StorefrontBrandColorView("#f2a541", "#1a1a1a"))),
+                List.of(new StorefrontBrandSocialLinkView("INSTAGRAM", "https://instagram.com/acmetours")));
+    }
+
+    /** What an operator with no brand row gets — the port never answers null. */
+    private static StorefrontBrandView noBrand() {
+        return new StorefrontBrandView(null, null, null, null, null, null,
+                new StorefrontBrandColorsView(List.of(), List.of()), List.of());
+    }
+
 
     private static List<String> everyStringIn(Object value) {
         return switch (value) {

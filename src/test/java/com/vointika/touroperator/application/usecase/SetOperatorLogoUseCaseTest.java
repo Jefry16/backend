@@ -5,9 +5,11 @@ import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.domain.entity.TourOperator;
+import com.vointika.touroperator.domain.repository.TourOperatorBrandRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
@@ -24,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -48,7 +51,8 @@ class SetOperatorLogoUseCaseTest {
     private final AuditTrailPort auditTrailPort = mock(AuditTrailPort.class);
 
     private TourOperatorRepository operatorRepository;
-    private MediaKeyBatchQuery mediaKeyBatchQuery;
+    private TourOperatorBrandRepository brandRepository;
+    private MediaAssetBatchQuery mediaAssetBatchQuery;
     private TourOperatorMembershipCheck membershipCheck;
     private SetOperatorLogoUseCase useCase;
 
@@ -59,10 +63,12 @@ class SetOperatorLogoUseCaseTest {
     @BeforeEach
     void setUp() {
         operatorRepository = mock(TourOperatorRepository.class);
-        mediaKeyBatchQuery = mock(MediaKeyBatchQuery.class);
+        brandRepository = mock(TourOperatorBrandRepository.class);
+        mediaAssetBatchQuery = mock(MediaAssetBatchQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
-        useCase = new SetOperatorLogoUseCase(operatorRepository, mediaKeyBatchQuery, membershipCheck, transactionRunner, auditTrailPort);
-        when(operatorRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        useCase = new SetOperatorLogoUseCase(operatorRepository, brandRepository, mediaAssetBatchQuery,
+                membershipCheck, transactionRunner, auditTrailPort);
+        when(brandRepository.findLogoMediaId(operatorId)).thenReturn(Optional.empty());
     }
 
     private TourOperator operator() {
@@ -72,31 +78,32 @@ class SetOperatorLogoUseCaseTest {
 
     @Test
     void setsLogoWhenMediaBelongsToOperator() {
-        when(mediaKeyBatchQuery.findKeysByIds(operatorId, java.util.Set.of(mediaId)))
-                .thenReturn(Map.of(mediaId, "tour-operators/x/logo.png"));
+        when(mediaAssetBatchQuery.findAssetsByIds(operatorId, java.util.Set.of(mediaId)))
+                .thenReturn(Map.of(mediaId, new MediaAsset("tour-operators/x/logo.png", null, null, null)));
         when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
 
         useCase.execute(operatorId, mediaId, callerId);
 
         verify(membershipCheck).ensureAdmin(callerId, operatorId);
-        ArgumentCaptor<TourOperator> saved = ArgumentCaptor.forClass(TourOperator.class);
-        verify(operatorRepository).save(saved.capture());
-        assertEquals(mediaId, saved.getValue().getLogoMediaId());
+        // The logo is the brand's column since V10, not the operator's.
+        ArgumentCaptor<UUID> saved = ArgumentCaptor.forClass(UUID.class);
+        verify(brandRepository).setLogoMediaId(eq(operatorId), saved.capture());
+        assertEquals(mediaId, saved.getValue());
     }
 
     @Test
     void foreignOrUnknownMediaIs422() {
-        when(mediaKeyBatchQuery.findKeysByIds(operatorId, java.util.Set.of(mediaId)))
+        when(mediaAssetBatchQuery.findAssetsByIds(operatorId, java.util.Set.of(mediaId)))
                 .thenReturn(Map.of()); // not owned by this operator
 
         assertThrows(InvalidFieldException.class, () -> useCase.execute(operatorId, mediaId, callerId));
-        verify(operatorRepository, never()).save(any());
+        verify(brandRepository, never()).setLogoMediaId(any(), any());
     }
 
     @Test
     void nullMediaIdIs422() {
         assertThrows(InvalidFieldException.class, () -> useCase.execute(operatorId, null, callerId));
-        verify(operatorRepository, never()).save(any());
+        verify(brandRepository, never()).setLogoMediaId(any(), any());
     }
 
     @Test
@@ -105,14 +112,14 @@ class SetOperatorLogoUseCaseTest {
                 .when(membershipCheck).ensureAdmin(callerId, operatorId);
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(operatorId, mediaId, callerId));
-        verify(mediaKeyBatchQuery, never()).findKeysByIds(any(), any());
-        verify(operatorRepository, never()).save(any());
+        verify(mediaAssetBatchQuery, never()).findAssetsByIds(any(), any());
+        verify(brandRepository, never()).setLogoMediaId(any(), any());
     }
 
     @Test
     void missingOperatorIs404() {
-        when(mediaKeyBatchQuery.findKeysByIds(operatorId, java.util.Set.of(mediaId)))
-                .thenReturn(Map.of(mediaId, "tour-operators/x/logo.png"));
+        when(mediaAssetBatchQuery.findAssetsByIds(operatorId, java.util.Set.of(mediaId)))
+                .thenReturn(Map.of(mediaId, new MediaAsset("tour-operators/x/logo.png", null, null, null)));
         when(operatorRepository.findById(operatorId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(operatorId, mediaId, callerId));
