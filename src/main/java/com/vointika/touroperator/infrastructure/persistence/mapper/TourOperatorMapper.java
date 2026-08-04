@@ -26,6 +26,10 @@ public class TourOperatorMapper {
                 operator.getTimezoneId(),
                 operator.getCurrencyId(),
                 operator.getAddress().value(),
+                // phone/email: the domain has neither, and the entity maps both
+                // insertable/updatable = false, so these are ignored on write.
+                null,
+                null,
                 operator.getLogoMediaId(),
                 operator.getCreatedBy(),
                 operator.getCreatedAt(),

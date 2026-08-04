@@ -41,7 +41,8 @@ class GetHomePageUseCaseTest {
 
     @Test
     void aBarePathRendersThePrimaryLocale() {
-        content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "logo.png", "og.png",
+        content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
+                "logo.png", "og.png",
                 "EUR", "€", "Acme Tours — excursiones", "Salidas en velero"));
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
@@ -49,6 +50,8 @@ class GetHomePageUseCaseTest {
         assertThat(page.localization().locale()).isEqualTo("es");
         assertThat(page.shop().name()).isEqualTo("Acme Tours");
         assertThat(page.shop().address()).isEqualTo("Calle Mayor 1");
+        assertThat(page.shop().phone()).isEqualTo("+34 910 000 000");
+        assertThat(page.shop().email()).isEqualTo("hola@acme.test");
         assertThat(page.shop().logoKey()).isEqualTo("logo.png");
         assertThat(page.shop().currency().code()).isEqualTo("EUR");
         assertThat(page.shop().currency().symbol()).isEqualTo("€");
@@ -116,6 +119,22 @@ class GetHomePageUseCaseTest {
     }
 
     /**
+     * V9's columns are nullable and no write path fills them, so this is the
+     * state every operator is in. Null, never {@code ""} — the footer guards them
+     * with a section, and Mustache treats the empty string as truthy.
+     */
+    @Test
+    void absentContactDetailsStayNull() {
+        content("es", shop(null));
+
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(page.shop().phone()).isNull();
+        assertThat(page.shop().email()).isNull();
+        assertThat(page.shop().address()).isEqualTo("Calle Mayor 1");
+    }
+
+    /**
      * <b>The switcher's contract.</b> Every locale the operator publishes appears
      * once, the primary leads (a {@code Set} has no order and a switcher that
      * reorders between requests reads as a bug), the primary is the one with no
@@ -176,7 +195,8 @@ class GetHomePageUseCaseTest {
     }
 
     private static StorefrontShopView shop(String seoTitle) {
-        return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null, "EUR", "€", seoTitle, null);
+        return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
+                null, null, "EUR", "€", seoTitle, null);
     }
 
     private static List<String> everyStringIn(Object value) {

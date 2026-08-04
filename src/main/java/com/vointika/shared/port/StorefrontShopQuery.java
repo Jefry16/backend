@@ -76,6 +76,10 @@ public interface StorefrontShopQuery {
      * @param address        the operator's own address, a NOT NULL column and
      *                       deliberately <b>not</b> translated — one street
      *                       exists in one language.
+     * @param phone          public contact details, both nullable and both
+     *                       untranslated for the same reason as {@code address}.
+     *                       <b>Null on every row today</b>: V9 added the columns
+     *                       and no write path sets them yet.
      * @param currencyCode   the operator's currency, joined from
      *                       {@code reference.currencies}. {@code reference} is a
      *                       shared kernel, so this is a join inside
@@ -86,6 +90,8 @@ public interface StorefrontShopQuery {
     record StorefrontShopView(
             String name,
             String address,
+            String phone,
+            String email,
             String logoKey,
             String ogImageKey,
             String currencyCode,

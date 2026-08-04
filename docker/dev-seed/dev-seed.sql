@@ -106,7 +106,7 @@ ON CONFLICT DO NOTHING;
 -- 2. Tour operator. Timezone/currency resolve by name/code with a fallback to
 -- the first reference row, so a changed reference set still seeds.
 INSERT INTO touroperator.tour_operators
-    (id, name, handle, timezone_id, currency_id, address, primary_locale,
+    (id, name, handle, timezone_id, currency_id, address, phone, email, primary_locale,
      seo_title, seo_description, created_by, created_at, updated_at)
 VALUES
     (:'operator_id', 'Acme Tours', 'acme',
@@ -116,7 +116,11 @@ VALUES
      COALESCE(
          (SELECT id FROM reference.currencies WHERE code = 'EUR'),
          (SELECT id FROM reference.currencies ORDER BY code LIMIT 1)),
-     'Calle Mayor 1, 28013 Madrid', 'es',
+     'Calle Mayor 1, 28013 Madrid',
+     -- V9's contact details. Seeded because there is no write path for them yet
+     -- (read half only), so without this the storefront footer has nothing to
+     -- show and the leg cannot be checked against a running stack.
+     '+34 910 000 000', 'hola@acme.test', 'es',
      -- Canonical SEO is English like every other canonical row here; the `es`
      -- overlay below is what a default visit resolves to. og_image_media_id
      -- stays NULL on purpose — see "Deliberately NOT seeded".
@@ -133,6 +137,8 @@ ON CONFLICT (id) DO UPDATE SET
     timezone_id    = EXCLUDED.timezone_id,
     currency_id    = EXCLUDED.currency_id,
     address         = EXCLUDED.address,
+    phone           = EXCLUDED.phone,
+    email           = EXCLUDED.email,
     primary_locale  = EXCLUDED.primary_locale,
     seo_title       = EXCLUDED.seo_title,
     seo_description = EXCLUDED.seo_description,

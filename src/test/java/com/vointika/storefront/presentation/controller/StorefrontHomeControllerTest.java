@@ -132,6 +132,48 @@ class StorefrontHomeControllerTest {
     }
 
     /**
+     * The contact details V9 added. They are linked rather than printed because a
+     * phone number a visitor cannot tap is a worse storefront, and the scheme is a
+     * literal prefix so an operator-authored value can never choose it.
+     */
+    @Test
+    void theFooterLinksThePhoneAndTheEmail() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es", "Acme Tours", null, null, null)));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<a href=\"tel:+34 910 000 000\">+34 910 000 000</a>"),
+                        containsString("<a href=\"mailto:hola@acme.test\">hola@acme.test</a>"))));
+    }
+
+    /**
+     * <b>Both columns are nullable and nothing writes them yet, so this is the
+     * case every real operator is in today.</b> It asserts the absent shape to the
+     * byte: the footer collapses to the address alone, with no empty
+     * {@code <a>} and — the part {@code containsString} could never see — no
+     * blank lines where the two sections were. That is the hugging rule doing the
+     * work; write the guards on their own lines and this is what breaks.
+     */
+    @Test
+    void omitsTheContactLinesEntirelyWhenNeitherIsSet() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null))
+                .thenReturn(Optional.of(pageWithoutContactDetails("es", "Acme Tours")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        not(containsString("tel:")),
+                        not(containsString("mailto:")),
+                        containsString("    <footer>\n"
+                                + "        <p>Calle Mayor 1, 28013 Madrid</p>\n"
+                                + "    </footer>\n</body>\n</html>"))));
+    }
+
+    /**
      * Under a locale prefix the logo goes home <em>in that locale</em> and the
      * switcher's own links do not move: each language always points at its own
      * address, and the primary's is the bare one.
@@ -236,6 +278,8 @@ class StorefrontHomeControllerTest {
                         startsWith("<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n"),
                         containsString("</header>\n    <h1>Acme Tours</h1>\n    <footer>\n"
                                 + "        <p>Calle Mayor 1, 28013 Madrid</p>\n"
+                                + "        <p><a href=\"tel:+34 910 000 000\">+34 910 000 000</a></p>\n"
+                                + "        <p><a href=\"mailto:hola@acme.test\">hola@acme.test</a></p>\n"
                                 + "    </footer>\n</body>\n</html>"))));
     }
 
@@ -330,11 +374,21 @@ class StorefrontHomeControllerTest {
                 .andExpect(content().string(containsString("<h1>Not found</h1>")));
     }
 
+    /**
+     * <b>The contact details are the first operator-authored values to land in an
+     * attribute rather than in text</b>, and the escaper is HTML-only — it does
+     * not make an {@code href} safe by itself. What does is that {@code tel:} and
+     * {@code mailto:} are literal prefixes, so the value can only ever be a
+     * suffix and never chooses the scheme, and that the seven-pair escape turns
+     * the quote that would close the attribute into {@code &#38;quot;}. Both halves
+     * are asserted here: nothing breaks out, and no event handler appears.
+     */
     @Test
     void escapesOperatorAuthoredText() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(new StorefrontPageData(
-                new ShopData("<script>alert(1)</script>", "<img onerror=x>", null,
+                new ShopData("<script>alert(1)</script>", "<img onerror=x>",
+                        "\"><script>alert(1)</script>", "x\" onmouseover=\"alert(1)", null,
                         new CurrencyData("EUR", "€")),
                 new PageData("<script>alert(1)</script>", null, null),
                 new LocalizationData("es", List.of(new LanguageData("es", true, null))))));
@@ -344,6 +398,8 @@ class StorefrontHomeControllerTest {
                 .andExpect(content().string(allOf(
                         not(containsString("<script>")),
                         not(containsString("<img onerror")),
+                        not(containsString("onmouseover=\"")),
+                        containsString("href=\"tel:&quot;&gt;&lt;script&gt;"),
                         containsString("&lt;script&gt;"))));
     }
 
@@ -413,9 +469,19 @@ class StorefrontHomeControllerTest {
                 new LanguageData("en", false, "en"),
                 new LanguageData("fr", false, "fr"));
         return new StorefrontPageData(
-                new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid", logoKey,
+                new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid",
+                        "+34 910 000 000", "hola@acme.test", logoKey,
                         new CurrencyData("EUR", "€")),
                 new PageData(title, description, ogImageKey),
                 new LocalizationData(locale, switcher));
+    }
+
+    /** An operator who has published neither contact detail — both columns are nullable. */
+    private static StorefrontPageData pageWithoutContactDetails(String locale, String title) {
+        return new StorefrontPageData(
+                new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null, null,
+                        new CurrencyData("EUR", "€")),
+                new PageData(title, null, null),
+                new LocalizationData(locale, List.of(new LanguageData("es", true, null))));
     }
 }

@@ -222,7 +222,8 @@ class ExperienceListControllerTest {
     private static ExperienceListPageOutput page(String locale, ExperienceCard... cards) {
         return new ExperienceListPageOutput(
                 new StorefrontPageData(
-                        new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid", "logo.png",
+                        new ShopData("Acme Tours", "Calle Mayor 1, 28013 Madrid",
+                                "+34 910 000 000", "hola@acme.test", "logo.png",
                                 new CurrencyData("EUR", "€")),
                         new PageData("Acme Tours", null, null),
                         new LocalizationData(locale, List.of(
