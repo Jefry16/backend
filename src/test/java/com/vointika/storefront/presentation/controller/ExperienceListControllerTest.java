@@ -54,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(ExperienceListController.class)
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontMustacheConfig.class,
-        StorefrontWebConfig.class})
+        StorefrontWebConfig.class, ThemeContextDump.class})
 class ExperienceListControllerTest {
 
     private static final UUID SHOP_ID = UUID.fromString("01900000-0000-7000-8000-000000000002");
