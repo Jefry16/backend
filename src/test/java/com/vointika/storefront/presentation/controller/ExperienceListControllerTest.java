@@ -136,6 +136,30 @@ class ExperienceListControllerTest {
     }
 
     /** An operator with nothing published still has a storefront: a page, with no cards. */
+    /**
+     * <b>This is where {@code page.path} stops being the same thing as
+     * {@code routes.root}.</b> On the home page the two coincide — {@code /} and
+     * {@code /} — so a home-page assertion cannot tell them apart, and swapping
+     * one for the other would leave every canonical on the listing pointing at
+     * the shop's front door instead of at the listing. That is worse than no
+     * canonical: it tells a crawler this page is a duplicate of another one.
+     */
+    @Test
+    void theCanonicalIsThisPageRatherThanTheLocaleRoot() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page("es")));
+        when(getExperienceListPageUseCase.execute("acme", "en")).thenReturn(Optional.of(page("en")));
+
+        mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))
+                .andExpect(content().string(allOf(
+                        containsString("<link rel=\"canonical\" href=\"http://acme.localhost/experiences\">"),
+                        containsString("<meta property=\"og:url\" content=\"http://acme.localhost/experiences\">"))));
+
+        mockMvc.perform(get("/en/experiences").header("Host", "acme.localhost"))
+                .andExpect(content().string(
+                        containsString("<link rel=\"canonical\" href=\"http://acme.localhost/en/experiences\">")));
+    }
+
     @Test
     void anEmptyListIsAPageWithNoCards() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", null))

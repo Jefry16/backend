@@ -45,11 +45,12 @@ public record ExperienceListView(
      *                   rendered locale</b> — see {@link Routes}.
      */
     public static ExperienceListView from(ExperienceListPageOutput page, String pathLocale,
-                                          MediaUrlResolver mediaUrlResolver) {
+                                          MediaUrlResolver mediaUrlResolver,
+                                       String origin, String path) {
         Routes routes = Routes.forPathLocale(pathLocale);
         return new ExperienceListView(
-                Shop.from(page.envelope().shop(), mediaUrlResolver),
-                Page.from(page.envelope().page(), mediaUrlResolver),
+                Shop.from(page.envelope().shop(), mediaUrlResolver, origin),
+                Page.from(page.envelope().page(), mediaUrlResolver, path),
                 routes,
                 Localization.from(page.envelope().localization(), Routes::experiences),
                 page.cards().stream().map(card -> toCardView(card, routes, mediaUrlResolver)).toList());

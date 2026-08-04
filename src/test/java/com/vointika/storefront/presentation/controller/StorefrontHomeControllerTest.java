@@ -292,6 +292,34 @@ class StorefrontHomeControllerTest {
      * send HEAD, and the home slice shipped without noticing because every other
      * test and curl used GET.
      */
+    /**
+     * <b>The canonical address is the origin plus this page's path</b>, and both
+     * halves are needed: {@code shop.url} alone cannot say which page you are on,
+     * and {@code routes} says where each page lives rather than which one is
+     * being rendered. Mustache concatenates them by juxtaposition.
+     *
+     * <p>It matters most on a multi-locale site, where {@code /} and {@code /en}
+     * serve near-identical pages — without a canonical, they compete.
+     */
+    @Test
+    void theCanonicalAndOgUrlAreAbsoluteAndPerLocale() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(
+                page("es", "Acme Tours", null, null, null)));
+        when(getHomePageUseCase.execute("acme", "en")).thenReturn(Optional.of(
+                page("en", "Acme Tours", null, null, null)));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(content().string(allOf(
+                        containsString("<link rel=\"canonical\" href=\"http://acme.localhost/\">"),
+                        containsString("<meta property=\"og:url\" content=\"http://acme.localhost/\">"))));
+
+        mockMvc.perform(get("/en").header("Host", "acme.localhost"))
+                .andExpect(content().string(allOf(
+                        containsString("<link rel=\"canonical\" href=\"http://acme.localhost/en\">"),
+                        containsString("<meta property=\"og:url\" content=\"http://acme.localhost/en\">"))));
+    }
+
     @Test
     void servesHeadAsWellAsGet() throws Exception {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));

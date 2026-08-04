@@ -80,7 +80,8 @@ public class ExperienceListController {
                 .map(page -> ResponseEntity.ok()
                         .contentType(HTML_UTF8)
                         .body(experienceListTemplate.execute(
-                                ExperienceListView.from(page, pathLocale, mediaUrlResolver))))
+                                ExperienceListView.from(page, pathLocale, mediaUrlResolver,
+                                RequestOrigin.of(request), request.getRequestURI()))))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .contentType(HTML_UTF8)
                         .body(notFoundTemplate.execute(Map.of())));

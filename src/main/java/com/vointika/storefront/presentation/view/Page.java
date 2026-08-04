@@ -10,9 +10,17 @@ import com.vointika.storefront.application.dto.output.PageData;
  *
  * <p>Public for the reason {@link Shop} documents.
  */
-public record Page(String title, String description, String ogImageUrl) {
+public record Page(String title, String description, String ogImageUrl, String path) {
 
-    public static Page from(PageData page, MediaUrlResolver mediaUrlResolver) {
-        return new Page(page.title(), page.description(), mediaUrlResolver.toUrl(page.ogImageKey()));
+    /**
+     * @param path this page's own path, which {@code routes} cannot give: routes
+     *             says where each page <em>lives</em>, not which one you are on.
+     *             Paired with {@code shop.url} it is the canonical address —
+     *             Shopify keeps the same two facts apart, as {@code shop.url} and
+     *             a separate global {@code canonical_url}.
+     */
+    public static Page from(PageData page, MediaUrlResolver mediaUrlResolver, String path) {
+        return new Page(page.title(), page.description(),
+                mediaUrlResolver.toUrl(page.ogImageKey()), path);
     }
 }
