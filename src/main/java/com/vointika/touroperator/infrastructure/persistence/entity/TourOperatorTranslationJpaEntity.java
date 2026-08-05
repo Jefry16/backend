@@ -35,4 +35,22 @@ public class TourOperatorTranslationJpaEntity {
 
     @Column(columnDefinition = "text")
     private String passwordMessage;
+
+    /**
+     * The brand's translatable text (V10), <b>mapped read-only on purpose</b> —
+     * the shape {@code TourOperatorJpaEntity}'s phone and email have, for the
+     * same reason.
+     *
+     * <p>The domain {@code TourOperatorTranslation} carries neither, so
+     * {@code TourOperatorTranslationMapper.toJpa} rebuilds this entity with
+     * nulls in their place. Left writable, that means the existing
+     * {@code PUT .../translations/{locale}} — an SEO edit that never mentions the
+     * brand — wipes both columns. {@code BrandColumnsStayReadOnlyTest} pins the
+     * biconditional: read-only exactly while the domain cannot carry the value.
+     */
+    @Column(length = 80, insertable = false, updatable = false)
+    private String slogan;
+
+    @Column(length = 150, insertable = false, updatable = false)
+    private String shortDescription;
 }

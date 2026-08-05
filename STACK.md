@@ -117,7 +117,18 @@ bites, so the next session reads it instead of re-discovering it.
   needs **no bean of its own** — one compiled graph per page template.
 - **A Mustache comment cannot contain `}}`.** `{{! … }}` ends at the first `}}`,
   so a comment mentioning `{{$content}}` renders the rest of itself into the page.
-  Found by doing it; the fix is to describe tags in words.
+  Found by doing it; the fix is to describe tags in words. *(Hit a second time in
+  #100, by a comment quoting `{{url}}` — this entry existed and was not re-read.
+  A whole-line `{{! … }}` **is** stripped cleanly, which is why the layout's other
+  comments cost nothing.)*
+- **A section tag is only standalone if it is alone on its line — and an
+  inline one leaves its indentation behind when falsey.** jmustache strips a line
+  that holds nothing but a tag; a line like `····{{#x}}<img …>{{/x}}` is not that,
+  so when `x` is absent the four spaces and the newline are still emitted. The
+  storefront's `{{#shop.brand.logo}}` shipped a stray blank line that way. Same
+  fix as the block tags above — hug: open the section at the end of the previous
+  line (`<header>{{#shop.brand.logo}}`) so nothing is left when it is skipped. The
+  footer's phone/email guards already did this; the rule is general.
 - **Spring's `MustacheView` recompiles the template on every request**
   (`renderMergedTemplateModel` → `compiler.compile(reader)`); the caching view resolver
   above it caches the *View*, not the compiled `Template`. Fine for a few app templates,

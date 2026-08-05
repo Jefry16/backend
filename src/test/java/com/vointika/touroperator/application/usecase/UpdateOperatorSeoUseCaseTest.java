@@ -3,7 +3,8 @@ package com.vointika.touroperator.application.usecase;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AuditTrailPort;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -40,7 +41,7 @@ class UpdateOperatorSeoUseCaseTest {
     private static final UUID MEDIA = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
 
     private TourOperatorRepository operatorRepository;
-    private MediaKeyBatchQuery mediaKeyBatchQuery;
+    private MediaAssetBatchQuery mediaAssetBatchQuery;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private AuditTrailPort auditTrailPort;
@@ -49,7 +50,7 @@ class UpdateOperatorSeoUseCaseTest {
     @BeforeEach
     void setUp() {
         operatorRepository = mock(TourOperatorRepository.class);
-        mediaKeyBatchQuery = mock(MediaKeyBatchQuery.class);
+        mediaAssetBatchQuery = mock(MediaAssetBatchQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         auditTrailPort = mock(AuditTrailPort.class);
@@ -59,19 +60,19 @@ class UpdateOperatorSeoUseCaseTest {
         }).when(transactionRunner).run(any());
         operator = new TourOperator(OP, new TourOperatorName("Acme"), new Handle("acme"),
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1"),
-                USER, Instant.now(), Instant.now(), null,
+                USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")));
         when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator));
     }
 
     private UpdateOperatorSeoUseCase useCase() {
-        return new UpdateOperatorSeoUseCase(operatorRepository, mediaKeyBatchQuery,
+        return new UpdateOperatorSeoUseCase(operatorRepository, mediaAssetBatchQuery,
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Test
     void storesTheDefaultsAndAudits() {
-        when(mediaKeyBatchQuery.findKeysByIds(OP, Set.of(MEDIA))).thenReturn(Map.of(MEDIA, "k"));
+        when(mediaAssetBatchQuery.findAssetsByIds(OP, Set.of(MEDIA))).thenReturn(Map.of(MEDIA, new MediaAsset("k", null, null, null)));
 
         useCase().execute(OP, "Acme Tours — diving", "Small-group diving.", MEDIA, USER);
 
@@ -98,7 +99,7 @@ class UpdateOperatorSeoUseCaseTest {
     @Test
     void rejectsAnOgImageOutsideThisOperatorsLibrary() {
         // A bare media id with no FK is only as trustworthy as the check admitting it.
-        when(mediaKeyBatchQuery.findKeysByIds(OP, Set.of(MEDIA))).thenReturn(Map.of());
+        when(mediaAssetBatchQuery.findAssetsByIds(OP, Set.of(MEDIA))).thenReturn(Map.of());
 
         assertThatThrownBy(() -> useCase().execute(OP, "t", null, MEDIA, USER))
                 .isInstanceOf(InvalidFieldException.class);

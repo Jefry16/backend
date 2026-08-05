@@ -53,10 +53,6 @@ public class TourOperatorJpaEntity {
     @Column(length = 320, insertable = false, updatable = false)
     private String email;
 
-    /** Nullable reference to one of this operator's media records (bare id, no FK). */
-    @Column
-    private UUID logoMediaId;
-
     @Column(nullable = false, updatable = false)
     private UUID createdBy;
 

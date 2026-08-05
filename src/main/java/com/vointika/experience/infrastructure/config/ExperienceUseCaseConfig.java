@@ -26,7 +26,7 @@ import com.vointika.experience.application.usecase.UpsertExperienceTranslationUs
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -39,8 +39,8 @@ import org.springframework.context.annotation.Configuration;
 public class ExperienceUseCaseConfig {
 
     @Bean
-    public MediaReferenceValidator mediaReferenceValidator(MediaKeyBatchQuery mediaKeyBatchQuery) {
-        return new MediaReferenceValidator(mediaKeyBatchQuery);
+    public MediaReferenceValidator mediaReferenceValidator(MediaAssetBatchQuery mediaAssetBatchQuery) {
+        return new MediaReferenceValidator(mediaAssetBatchQuery);
     }
 
     @Bean

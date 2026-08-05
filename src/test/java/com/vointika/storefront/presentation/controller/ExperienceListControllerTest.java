@@ -3,8 +3,13 @@ package com.vointika.storefront.presentation.controller;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
+import com.vointika.storefront.application.dto.output.BrandData;
+import com.vointika.storefront.application.dto.output.BrandData.ColorData;
+import com.vointika.storefront.application.dto.output.BrandData.ColorsData;
+import com.vointika.storefront.application.dto.output.BrandData.SocialLinkData;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput.ExperienceCard;
+import com.vointika.storefront.application.dto.output.ImageData;
 import com.vointika.storefront.application.dto.output.LocalizationData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.PageData;
@@ -251,9 +256,10 @@ class ExperienceListControllerTest {
         return new ExperienceListPageOutput(
                 new StorefrontPageData(
                         new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid",
-                                "+34 910 000 000", "hola@acme.test", "logo.png",
+                                "+34 910 000 000", "hola@acme.test",
                                 "A shop description",
                         "Opening soon — ask us for the password.",
+                        brand("logo.png"),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                         new PageData("Acme Tours", null, null),
@@ -262,5 +268,25 @@ class ExperienceListControllerTest {
                                 new LanguageData("en", "en".equals(locale), "en"),
                                 new LanguageData("fr", "fr".equals(locale), "fr")))),
                 List.of(cards));
+    }
+
+    /**
+     * The brand every page in this class renders through. The logo is
+     * {@code shop.brand.logo} since V10 — {@code shop.logoUrl} is gone, because
+     * Shopify's shop object never had one.
+     *
+     * <p>{@code alt} and the dimensions are non-null here and null on every real
+     * row: the media columns exist and nothing populates them yet.
+     */
+    private static BrandData brand(String logoKey) {
+        return new BrandData(
+                "Sail the coast, not the crowds.",
+                "Small-group sailing since 2011.",
+                new ColorsData(
+                        List.of(new ColorData("#0b3d5c", "#ffffff"), new ColorData("#1c7ba8", "#ffffff")),
+                        List.of(new ColorData("#f2a541", "#1a1a1a"))),
+                logoKey == null ? null : new ImageData(logoKey, "The Acme burgee", 400, 200),
+                null, null, null,
+                List.of(new SocialLinkData("INSTAGRAM", "https://instagram.com/acmetours")));
     }
 }

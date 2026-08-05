@@ -14,13 +14,18 @@ import com.vointika.storefront.application.dto.output.ShopData;
  * public — and a record nested in a public record is package-private unless it
  * says otherwise.
  *
+ * <p><b>There is no {@code logoUrl}.</b> The logo is {@code shop.brand.logo},
+ * where Shopify keeps it — their shop object has no logo of its own. Removing it
+ * is a breaking change to a published contract, and it was made while no
+ * operator theme exists to break.
+ *
  * <p>It carries no storefront password. The gate's plaintext value exists to be
  * compared inside the gate; a template that could read it would be a plaintext
  * password on a public page.
  */
 public record Shop(String id, String name, String address, String phone, String email,
-                   String logoUrl, String url, String description, String passwordMessage,
-                   Currency currency, Timezone timezone) {
+                   String url, String description, String passwordMessage,
+                   Brand brand, Currency currency, Timezone timezone) {
 
     public record Currency(String code, String symbol) {}
 
@@ -41,10 +46,10 @@ public record Shop(String id, String name, String address, String phone, String 
                 shop.address(),
                 shop.phone(),
                 shop.email(),
-                mediaUrlResolver.toUrl(shop.logoKey()),
                 url,
                 shop.description(),
                 shop.passwordMessage(),
+                Brand.from(shop.brand(), mediaUrlResolver),
                 new Currency(shop.currency().code(), shop.currency().symbol()),
                 new Timezone(shop.timezone().name(), shop.timezone().city()));
     }

@@ -17,6 +17,11 @@ import java.util.UUID;
  * is no column behind it (social links, a slogan) or when it belongs somewhere
  * else (theme settings, {@code localization}).
  *
+ * <p><b>There is no {@code logoKey} any more.</b> It moved into
+ * {@link BrandData}, where Shopify keeps it — their shop object has no logo, and
+ * a second address for one field is a rename waiting to happen once operators
+ * author themes.
+ *
  * @param phone the shop's public contact details, <b>nullable and null on every
  *              row today</b> — V9 added the columns and nothing writes them yet,
  *              so the footer's guards are what a real operator will exercise.
@@ -30,9 +35,9 @@ public record ShopData(
         String address,
         String phone,
         String email,
-        String logoKey,
         String description,
         String passwordMessage,
+        BrandData brand,
         CurrencyData currency,
         TimezoneData timezone
 ) {

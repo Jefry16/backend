@@ -14,7 +14,12 @@ public class TourOperatorTranslationMapper {
                 t.locale().value(),
                 t.seoTitle() == null ? null : t.seoTitle().value(),
                 t.seoDescription() == null ? null : t.seoDescription().value(),
-                t.passwordMessage());
+                t.passwordMessage(),
+                // slogan/shortDescription: the domain has neither, and the entity
+                // maps both insertable/updatable = false, so these are ignored on
+                // write.
+                null,
+                null);
     }
 
     public static TourOperatorTranslation toDomain(TourOperatorTranslationJpaEntity jpa) {

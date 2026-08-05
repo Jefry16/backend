@@ -16,7 +16,8 @@
 -- update it in the same PR (renames-must-update-dev-seed rule).
 --
 -- Seeds: a verified admin user, the demo tour operator (handle `acme`, primary
--- locale `es` plus `en` and `fr`, canonical + `es` SEO), OWNER membership, two audiences (+es overlay), two pickup
+-- locale `es` plus `en` and `fr`, canonical + `es` SEO, a brand with a palette
+-- and social links), OWNER membership, two audiences (+es overlay), two pickup
 -- locations, three PUBLISHED experiences (+es overlay on one), two AVAILABLE
 -- slots per experience dated relative to today with per-audience pricing
 -- (one tier carries booked seats so the capacity floor is exercisable),
@@ -156,17 +157,65 @@ ON CONFLICT DO NOTHING;
 -- overlay is actually read rather than the canonical always winning.
 -- password_message is left NULL: the gate is off, so a value here renders
 -- nowhere and would be untestable fiction.
+-- slogan is translated and short_description deliberately is NOT: one column per
+-- page proves the overlay, the other proves the canonical fallback, in the same
+-- request.
 INSERT INTO touroperator.tour_operator_translations
-    (tour_operator_id, locale, seo_title, seo_description, password_message)
+    (tour_operator_id, locale, seo_title, seo_description, password_message,
+     slogan, short_description)
 VALUES
     (:'operator_id', 'es',
      'Acme Tours — Vela y buceo en Madrid',
      'Salidas en velero, buceo y excursiones de un día en grupos pequeños desde Madrid, desde 2011.',
-     NULL)
+     NULL,
+     'Navega la costa, no las multitudes.', NULL)
 ON CONFLICT (tour_operator_id, locale) DO UPDATE SET
-    seo_title        = EXCLUDED.seo_title,
-    seo_description  = EXCLUDED.seo_description,
-    password_message = EXCLUDED.password_message;
+    seo_title         = EXCLUDED.seo_title,
+    seo_description   = EXCLUDED.seo_description,
+    password_message  = EXCLUDED.password_message,
+    slogan            = EXCLUDED.slogan,
+    short_description = EXCLUDED.short_description;
+
+-- 2c. Brand. Without it the whole brand leg is unverifiable against a running
+-- stack — the lesson #88 and #92 both had to report.
+--
+-- The four media ids stay NULL for the reason the header gives: a media row
+-- without its MinIO object renders a broken image. logo_media_id is left out of
+-- the DO UPDATE deliberately — the admin PUT .../logo writes that column, and
+-- re-seeding must not undo an operator's logo.
+INSERT INTO touroperator.tour_operator_brand
+    (tour_operator_id, slogan, short_description, created_at, updated_at)
+VALUES
+    (:'operator_id', 'Sail the coast, not the crowds.',
+     'Small-group sailing, diving and coastal day trips out of Madrid since 2011.',
+     NOW(), NOW())
+ON CONFLICT (tour_operator_id) DO UPDATE SET
+    slogan            = EXCLUDED.slogan,
+    short_description = EXCLUDED.short_description,
+    updated_at        = NOW();
+
+-- Two primaries and one secondary. PRIMARY position 1 is inserted BEFORE
+-- position 0 on purpose: Postgres returns unordered rows in roughly heap order,
+-- so a palette read without ORDER BY position comes back visibly wrong here
+-- rather than accidentally right.
+INSERT INTO touroperator.tour_operator_brand_colors
+    (tour_operator_id, role, position, background, foreground)
+VALUES
+    (:'operator_id', 'PRIMARY',   1, '#1c7ba8', '#ffffff'),
+    (:'operator_id', 'PRIMARY',   0, '#0b3d5c', '#ffffff'),
+    (:'operator_id', 'SECONDARY', 0, '#f2a541', '#1a1a1a')
+ON CONFLICT (tour_operator_id, role, position) DO UPDATE SET
+    background = EXCLUDED.background,
+    foreground = EXCLUDED.foreground;
+
+INSERT INTO touroperator.tour_operator_brand_social_links
+    (tour_operator_id, platform, url)
+VALUES
+    (:'operator_id', 'INSTAGRAM', 'https://instagram.com/acmetours'),
+    (:'operator_id', 'FACEBOOK',  'https://facebook.com/acmetours'),
+    (:'operator_id', 'YOUTUBE',   'https://youtube.com/@acmetours')
+ON CONFLICT (tour_operator_id, platform) DO UPDATE SET
+    url = EXCLUDED.url;
 
 -- 3. OWNER membership (name/email denormalized per the roster model).
 INSERT INTO touroperator.tour_operator_members

@@ -8,6 +8,7 @@ import com.vointika.media.infrastructure.persistence.mapper.MediaMapper;
 import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,11 +59,15 @@ public class MediaRepositoryImpl implements MediaRepository {
     }
 
     @Override
-    public Map<UUID, String> findKeysByTourOperatorIdAndIds(UUID tourOperatorId, Set<UUID> ids) {
+    public Map<UUID, MediaAsset> findAssetsByTourOperatorIdAndIds(UUID tourOperatorId, Set<UUID> ids) {
         if (ids.isEmpty()) {
             return Map.of();
         }
         return jpaRepository.findAllByTourOperatorIdAndIdIn(tourOperatorId, ids).stream()
-                .collect(Collectors.toMap(MediaJpaEntity::getId, MediaJpaEntity::getStorageKey));
+                .collect(Collectors.toMap(MediaJpaEntity::getId, MediaRepositoryImpl::toAsset));
+    }
+
+    private static MediaAsset toAsset(MediaJpaEntity media) {
+        return new MediaAsset(media.getStorageKey(), media.getAlt(), media.getWidth(), media.getHeight());
     }
 }

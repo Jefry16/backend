@@ -1,7 +1,8 @@
 package com.vointika.experience.application.service;
 
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.port.MediaKeyBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,22 +20,22 @@ import static org.mockito.Mockito.when;
 
 class MediaReferenceValidatorTest {
 
-    private MediaKeyBatchQuery mediaKeyBatchQuery;
+    private MediaAssetBatchQuery mediaAssetBatchQuery;
     private MediaReferenceValidator validator;
     private final UUID operatorId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        mediaKeyBatchQuery = mock(MediaKeyBatchQuery.class);
-        validator = new MediaReferenceValidator(mediaKeyBatchQuery);
+        mediaAssetBatchQuery = mock(MediaAssetBatchQuery.class);
+        validator = new MediaReferenceValidator(mediaAssetBatchQuery);
     }
 
     @Test
     void passesWhenAllIdsOwned() {
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();
-        when(mediaKeyBatchQuery.findKeysByIds(eq(operatorId), any()))
-                .thenReturn(Map.of(a, "k1", b, "k2"));
+        when(mediaAssetBatchQuery.findAssetsByIds(eq(operatorId), any()))
+                .thenReturn(Map.of(a, asset("k1"), b, asset("k2")));
         validator.validate(operatorId, List.of(a), b); // union {a,b}, both owned
     }
 
@@ -42,8 +43,8 @@ class MediaReferenceValidatorTest {
     void rejectsWhenAnyIdIsForeign() {
         UUID a = UUID.randomUUID();
         UUID foreign = UUID.randomUUID();
-        when(mediaKeyBatchQuery.findKeysByIds(eq(operatorId), any()))
-                .thenReturn(Map.of(a, "k1")); // foreign absent
+        when(mediaAssetBatchQuery.findAssetsByIds(eq(operatorId), any()))
+                .thenReturn(Map.of(a, asset("k1"))); // foreign absent
         assertThrows(InvalidFieldException.class,
                 () -> validator.validate(operatorId, List.of(a, foreign), null));
     }
@@ -51,6 +52,11 @@ class MediaReferenceValidatorTest {
     @Test
     void noIdsShortCircuits() {
         validator.validate(operatorId, List.of(), null);
-        verify(mediaKeyBatchQuery, never()).findKeysByIds(any(), any());
+        verify(mediaAssetBatchQuery, never()).findAssetsByIds(any(), any());
+    }
+
+    /** The validator only asks whether the id came back; the rest of the asset is noise here. */
+    private static MediaAsset asset(String storageKey) {
+        return new MediaAsset(storageKey, null, null, null);
     }
 }

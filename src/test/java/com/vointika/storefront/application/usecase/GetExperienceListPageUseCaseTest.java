@@ -2,7 +2,12 @@ package com.vointika.storefront.application.usecase;
 
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceQuery.StorefrontExperienceCard;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorsView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandSocialLinkView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput;
@@ -46,8 +51,9 @@ class GetExperienceListPageUseCaseTest {
     @Test
     void aBarePathRendersThePrimaryLocalesCardsUnderTheShopsOwnTitle() {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
-                "logo.png", "og.png",
-                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero", "Ask us for the password"));
+                "og.png",
+                "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero",
+                "Ask us for the password", brand()));
         cards("es", new StorefrontExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado",
                 "tour-operators/1/sunset.jpg", 150));
 
@@ -56,7 +62,6 @@ class GetExperienceListPageUseCaseTest {
         assertThat(page.envelope().localization().locale()).isEqualTo("es");
         assertThat(page.envelope().shop().name()).isEqualTo("Acme Tours");
         assertThat(page.envelope().shop().address()).isEqualTo("Calle Mayor 1");
-        assertThat(page.envelope().shop().logoKey()).isEqualTo("logo.png");
         assertThat(page.envelope().shop().currency().symbol()).isEqualTo("€");
         assertThat(page.envelope().page().title()).isEqualTo("Acme Tours — excursiones");
         assertThat(page.envelope().page().description()).isEqualTo("Salidas en velero");
@@ -153,6 +158,26 @@ class GetExperienceListPageUseCaseTest {
 
     private static StorefrontShopView shop(String seoTitle) {
         return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                null, null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null);
+                null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null, noBrand());
     }
+
+    /** The brand a real operator has: a translated slogan, an ordered palette, one link, one image. */
+    private static StorefrontBrandView brand() {
+        return new StorefrontBrandView(
+                "Navega la costa", "Salidas en grupos pequeños",
+                new MediaAsset("brand/logo.png", "The Acme burgee", 400, 200),
+                null, null, null,
+                new StorefrontBrandColorsView(
+                        List.of(new StorefrontBrandColorView("#0b3d5c", "#ffffff"),
+                                new StorefrontBrandColorView("#1c7ba8", "#ffffff")),
+                        List.of(new StorefrontBrandColorView("#f2a541", "#1a1a1a"))),
+                List.of(new StorefrontBrandSocialLinkView("INSTAGRAM", "https://instagram.com/acmetours")));
+    }
+
+    /** What an operator with no brand row gets — the port never answers null. */
+    private static StorefrontBrandView noBrand() {
+        return new StorefrontBrandView(null, null, null, null, null, null,
+                new StorefrontBrandColorsView(List.of(), List.of()), List.of());
+    }
+
 }

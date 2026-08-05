@@ -1,7 +1,13 @@
 package com.vointika.storefront.application.dto.output;
 
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
+import com.vointika.storefront.application.dto.output.BrandData.ColorData;
+import com.vointika.storefront.application.dto.output.BrandData.ColorsData;
+import com.vointika.storefront.application.dto.output.BrandData.SocialLinkData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
 import com.vointika.storefront.application.dto.output.ShopData.TimezoneData;
@@ -42,9 +48,9 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
                         shop.address(),
                         shop.phone(),
                         shop.email(),
-                        shop.logoKey(),
                         shop.seoDescription(),
                         shop.passwordMessage(),
+                        brand(shop.brand()),
                         new CurrencyData(shop.currencyCode(), shop.currencySymbol()),
                         new TimezoneData(shop.timezoneName(), shop.timezoneCity())),
                 new PageData(
@@ -54,6 +60,38 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
                         shop.seoDescription(),
                         shop.ogImageKey()),
                 new LocalizationData(locale, languages(gate, locale)));
+    }
+
+    /**
+     * A straight re-shaping: the port already answers the palette split by role
+     * and ordered within each, because a role is {@code touroperator}'s enum and
+     * cannot cross the seam. Nothing is decided here.
+     */
+    private static BrandData brand(StorefrontBrandView brand) {
+        return new BrandData(
+                brand.slogan(),
+                brand.shortDescription(),
+                new ColorsData(colors(brand.colors().primary()), colors(brand.colors().secondary())),
+                image(brand.logo()),
+                image(brand.squareLogo()),
+                image(brand.favicon()),
+                image(brand.coverImage()),
+                brand.socialLinks().stream()
+                        .map(link -> new SocialLinkData(link.platform(), link.url()))
+                        .toList());
+    }
+
+    private static List<ColorData> colors(List<StorefrontBrandColorView> colors) {
+        return colors.stream()
+                .map(color -> new ColorData(color.background(), color.foreground()))
+                .toList();
+    }
+
+    /** An unset — or since-deleted — media reference is no image at all, not an empty one. */
+    private static ImageData image(MediaAsset asset) {
+        return asset == null
+                ? null
+                : new ImageData(asset.storageKey(), asset.alt(), asset.width(), asset.height());
     }
 
     /**
