@@ -59,6 +59,30 @@ class SlotUseCasesTest {
     private static final UUID AUD = UUID.randomUUID();
     private static final UUID SLOT = UUID.randomUUID();
 
+    /**
+     * The operator's timezone, used for the {@code OperatorTimezoneQuery} stub
+     * <b>and</b> for every date this class builds — they must be the same zone.
+     *
+     * <p>{@code CreateSlotUseCase} judges "is this date in the past" against
+     * {@code LocalDate.now(zone)} for the <em>operator's</em> zone, which is
+     * right: a departure is a wall-clock event where the tour runs. A test that
+     * stubs the zone but builds its dates from the machine's default clock is
+     * therefore comparing two different calendars, and agrees only while that
+     * default zone happens to name the same day as this one.
+     *
+     * <p>That is not hypothetical: it failed at 00:34 CEST on 2026-08-07, when
+     * Madrid had rolled over and UTC had not, so "yesterday" was still today to
+     * the use case and nothing was rejected. It passed again at 02:00. A
+     * container running UTC — which is what the Docker build is — can never
+     * observe it, so this class is only honest if it names its own zone.
+     */
+    private static final ZoneId OPERATOR_ZONE = ZoneId.of("UTC");
+
+    /** Today <b>in the operator's zone</b> — never the machine's default clock. */
+    private static LocalDate today() {
+        return LocalDate.now(OPERATOR_ZONE);
+    }
+
     private ExperienceRepository experienceRepository;
     private SlotRepository slotRepository;
     private SlotAudiencePricingRepository pricingRepository;
@@ -82,7 +106,7 @@ class SlotUseCasesTest {
         when(transactionRunner.call(any())).thenAnswer(i -> ((Supplier<?>) i.getArgument(0)).get());
         doAnswer(i -> { ((Runnable) i.getArgument(0)).run(); return null; })
                 .when(transactionRunner).run(any());
-        when(operatorTimezoneQuery.findZoneId(OP)).thenReturn(Optional.of(ZoneId.of("UTC")));
+        when(operatorTimezoneQuery.findZoneId(OP)).thenReturn(Optional.of(OPERATOR_ZONE));
         when(idGenerator.newId()).thenReturn(SLOT);
         when(slotRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         Experience parent = mock(Experience.class);
@@ -111,7 +135,7 @@ class SlotUseCasesTest {
 
     @Test
     void singleCreatePersistsSlotAndReturnsId() {
-        LocalDateTime start = LocalDate.now().plusDays(2).atTime(10, 0);
+        LocalDateTime start = today().plusDays(2).atTime(10, 0);
         UUID id = createSingle().execute(new CreateSlotInput(
                 USER, OP, EXP, start, start.plusHours(3), prices()));
 
@@ -123,7 +147,7 @@ class SlotUseCasesTest {
     @Test
     void singleCreateRequiresAdmin() {
         doThrow(new ForbiddenException("admin")).when(membershipCheck).ensureAdmin(USER, OP);
-        LocalDateTime start = LocalDate.now().plusDays(2).atTime(10, 0);
+        LocalDateTime start = today().plusDays(2).atTime(10, 0);
         assertThatThrownBy(() -> createSingle().execute(new CreateSlotInput(
                 USER, OP, EXP, start, start.plusHours(3), prices())))
                 .isInstanceOf(ForbiddenException.class);
@@ -131,7 +155,7 @@ class SlotUseCasesTest {
 
     @Test
     void singleCreateRejectsPastDate() {
-        LocalDateTime past = LocalDate.now().minusDays(1).atTime(10, 0);
+        LocalDateTime past = today().minusDays(1).atTime(10, 0);
         assertThatThrownBy(() -> createSingle().execute(new CreateSlotInput(
                 USER, OP, EXP, past, past.plusHours(3), prices())))
                 .isInstanceOf(InvalidFieldException.class);
@@ -141,7 +165,7 @@ class SlotUseCasesTest {
 
     @Test
     void recurringGeneratesOneSlotPerMatchingDay() {
-        LocalDate from = LocalDate.now().plusDays(1);
+        LocalDate from = today().plusDays(1);
         LocalDate to = from.plusDays(13); // a 14-day window
         CreateSlotsInput input = new CreateSlotsInput(
                 USER, OP, EXP, List.of(0, 1, 2, 3, 4, 5, 6), // all weekdays
@@ -154,7 +178,7 @@ class SlotUseCasesTest {
 
     @Test
     void recurringRollsCrossMidnightEndToNextDay() {
-        LocalDate day = LocalDate.now().plusDays(1);
+        LocalDate day = today().plusDays(1);
         int dow = day.getDayOfWeek().getValue() % 7;
         CreateSlotsInput input = new CreateSlotsInput(
                 USER, OP, EXP, List.of(dow),
@@ -172,7 +196,7 @@ class SlotUseCasesTest {
     @Test
     void recurringRejectsAPatternThatMatchesNothing() {
         // A one-day window on a Monday, asking for the other six weekdays.
-        LocalDate day = LocalDate.now().plusDays(1);
+        LocalDate day = today().plusDays(1);
         int dow = day.getDayOfWeek().getValue() % 7;
         List<Integer> everyOtherDay = IntStream.range(0, 7).boxed().filter(d -> d != dow).toList();
 
@@ -187,7 +211,7 @@ class SlotUseCasesTest {
 
     @Test
     void recurringRejectsInvalidDay() {
-        LocalDate day = LocalDate.now().plusDays(1);
+        LocalDate day = today().plusDays(1);
         assertThatThrownBy(() -> createRecurring().execute(new CreateSlotsInput(
                 USER, OP, EXP, List.of(7), LocalTime.of(9, 0), LocalTime.of(11, 0), day, day, prices())))
                 .isInstanceOf(InvalidFieldException.class);
@@ -200,7 +224,7 @@ class SlotUseCasesTest {
     }
 
     private Slot availableSlot() {
-        LocalDateTime start = LocalDate.now().plusDays(2).atTime(10, 0);
+        LocalDateTime start = today().plusDays(2).atTime(10, 0);
         return new Slot(SLOT, EXP, OP, start, start.plusHours(2), "Sunset Tour", "A guided walk");
     }
 

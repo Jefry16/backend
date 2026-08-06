@@ -561,6 +561,22 @@ next `V`. Curated reference/seed data lives in the migration.
   under a Turkish default locale is `"ıt"` (dotless), so locale codes, handles and
   handles silently stop matching depending on which machine served the request.
   `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
+- **A test whose subject reads the clock in a *stubbed* zone must build its dates
+  in that same zone.** `CreateSlotUseCase` judges "is this in the past" against
+  `LocalDate.now(zone)` for the **operator's** zone — correct, a departure is a
+  wall-clock event where the tour runs. `SlotUseCasesTest` stubbed the zone to
+  UTC and then built its dates from a bare `LocalDate.now()`, i.e. the machine's
+  default. The two agree only while both name the same day, so the test failed
+  **at 00:34 CEST** — Madrid had rolled over, UTC had not, so "yesterday" was
+  still today to the use case and nothing was rejected — and passed again at
+  02:00. The window is midnight to the UTC offset, nightly.
+  **The Docker build cannot catch this class of bug**: `eclipse-temurin` sets no
+  `TZ`, so the container is UTC and the two zones can never disagree there. It
+  surfaces only for whoever runs the suite locally from a non-UTC machine, which
+  makes it read as a random red build. The fix is one constant feeding **both**
+  the stub and every date the class builds (`OPERATOR_ZONE` + a `today()`
+  helper), so the two cannot drift apart again. Prefer that to `Clock` injection
+  until something needs to freeze time.
 - **A storefront page route has to be registered in four places, and only one of
   them fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
   needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method
