@@ -40,6 +40,7 @@ public class StorefrontWebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new StorefrontLockInterceptor(tenantHandleResolver, checkStorefrontLock))
                 .addPathPatterns("/", LocaleResolver.PATH_TEMPLATE,
-                        StorefrontRoutes.EXPERIENCES, StorefrontRoutes.LOCALIZED_EXPERIENCES);
+                        StorefrontRoutes.EXPERIENCES, StorefrontRoutes.LOCALIZED_EXPERIENCES,
+                        StorefrontRoutes.POLICY, StorefrontRoutes.LOCALIZED_POLICY);
     }
 }

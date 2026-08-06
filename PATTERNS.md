@@ -85,11 +85,20 @@ shop          id, name, address, phone, email, url, description, passwordMessage
                       colors { primary [ {background, foreground} ], secondary [ … ] },
                       logo, squareLogo, favicon, coverImage,   -- Image or null
                       socialLinks [ { platform, url } ] },
+              policies [ { type, title, url } ],
+              cancellationPolicy, privacyPolicy, termsOfService, legalNotice,
               currency { code, symbol }, timezone { name, city }
 page          title, description, ogImageUrl, path
 routes        root, experiences
 localization  locale, languages [ { code, current, url } ]
 ```
+
+**A named accessor beside a list is Shopify's shape and is worth copying.**
+`shop.policies` iterates; `shop.cancellationPolicy` is the one a booking form
+wants without comparing type strings, and is **null** when the operator has not
+written it, so a template guards on the object. The four names are not derived
+from the type — `TERMS` is `termsOfService`, because that is what a theme author
+coming from Shopify types.
 
 **Anything a theme renders as an `<img>` is one shared `Image`** —
 `{ url, alt, width, height, aspectRatio }`. `aspectRatio` is **derived**
@@ -301,6 +310,25 @@ per namespace, can still land on the same value and produce exactly the shadowin
 guards exist to prevent. The window is small and both `page` and `experience` carry it.
 Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
 making the invariant true.
+
+## 4e. The translation-overlay table (now at its third copy)
+
+A translatable aggregate gets a sibling table keyed on
+`(<owner keys…>, locale)` whose every content column is **nullable**, and the
+read overlays it **nullable-wins-canonical**: a null column falls back to the
+owner's own value, never to an empty string. A row overlays; it does not
+replace. Translating a title and not a body is a Spanish title over an English
+body, which is the realistic partial-translation case and the one fallback bugs
+hide in.
+
+Three tables now do this — `experience_translations`, `page_translations` and
+`tour_operator_translations`, plus `tour_operator_policy_translations` inside
+that last context — and each carries its own hand-written overlay helper. **It
+is a candidate to generalise rather than triplicate a fourth time**; what has
+stopped it so far is that the owners differ in key shape (single id, composite
+`(operator, type)`) and in who does the overlaying (a mapper, a query adapter).
+Decide it when the fourth arrives, with three real shapes to generalise over
+instead of two.
 
 ## 5. Read-time URL resolution (never store URLs)
 

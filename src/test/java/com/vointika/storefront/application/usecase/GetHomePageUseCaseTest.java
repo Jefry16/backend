@@ -7,10 +7,12 @@ import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorsView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandSocialLinkView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontPolicySummaryView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
 import com.vointika.storefront.application.dto.output.BrandData.ColorData;
 import com.vointika.storefront.application.dto.output.BrandData.SocialLinkData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
+import com.vointika.storefront.application.dto.output.PolicyData;
 import com.vointika.storefront.application.dto.output.StorefrontPageData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,7 @@ class GetHomePageUseCaseTest {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", "+34 910 000 000", "hola@acme.test",
                 "og.png",
                 "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero",
-                "Ask us for the password", brand()));
+                "Ask us for the password", brand(), List.of()));
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
@@ -85,7 +87,7 @@ class GetHomePageUseCaseTest {
     @Test
     void theBrandCarriesTheLogoThePaletteAndTheLinks() {
         content("es", new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null, null,
-                "EUR", "€", "Europe/Madrid", "Madrid", null, null, null, brand()));
+                "EUR", "€", "Europe/Madrid", "Madrid", null, null, null, brand(), List.of()));
 
         StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
 
@@ -124,6 +126,35 @@ class GetHomePageUseCaseTest {
         assertThat(page.shop().brand().colors().primary()).isEmpty();
         assertThat(page.shop().brand().colors().secondary()).isEmpty();
         assertThat(page.shop().brand().socialLinks()).isEmpty();
+    }
+
+    /**
+     * <b>Where a policy lives is derived from its type, not stored.</b> The type
+     * <em>is</em> the address, so the slug is the one transform between the two
+     * vocabularies — and it is application's answer to "where", leaving
+     * presentation to say what the URL is (PATTERNS §2a).
+     */
+    @Test
+    void everyPolicyCarriesTheSlugItIsAddressedBy() {
+        content("es", shop(null, List.of(
+                new StorefrontPolicySummaryView("CANCELLATION", "Política de cancelación"),
+                new StorefrontPolicySummaryView("LEGAL_NOTICE", "Aviso legal"))));
+
+        StorefrontPageData page = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(page.shop().policies())
+                .extracting(PolicyData::type, PolicyData::title, PolicyData::slug)
+                .containsExactly(
+                        tuple("CANCELLATION", "Política de cancelación", "cancellation"),
+                        tuple("LEGAL_NOTICE", "Aviso legal", "legal-notice"));
+    }
+
+    /** An operator who has written none is a footer with no links, not a broken page. */
+    @Test
+    void anOperatorWithNoPoliciesGetsAnEmptyList() {
+        content("es", shop(null));
+
+        assertThat(useCase.execute("acme", null).orElseThrow().shop().policies()).isEmpty();
     }
 
     @Test
@@ -261,8 +292,12 @@ class GetHomePageUseCaseTest {
     }
 
     private static StorefrontShopView shop(String seoTitle) {
+        return shop(seoTitle, List.of());
+    }
+
+    private static StorefrontShopView shop(String seoTitle, List<StorefrontPolicySummaryView> policies) {
         return new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null, noBrand());
+                null, "EUR", "€", "Europe/Madrid", "Madrid", seoTitle, null, null, noBrand(), policies);
     }
 
     /** The brand a real operator has: a translated slogan, an ordered palette, one link, one image. */

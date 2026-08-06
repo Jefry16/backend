@@ -129,6 +129,17 @@ bites, so the next session reads it instead of re-discovering it.
   fix as the block tags above — hug: open the section at the end of the previous
   line (`<header>{{#shop.brand.logo}}`) so nothing is left when it is skipped. The
   footer's phone/email guards already did this; the rule is general.
+- **Flyway ignores an applied migration whose version is *ahead* of everything
+  local, and reports it the moment you add one past it.** A branch that lacks a
+  migration another branch already applied to the dev database boots and tests
+  green — the applied version is a "future" migration and validation skips it.
+  Add a higher version on top and the same row becomes a gap:
+  `Detected applied migration not resolved locally: 11`, which fails
+  `flywayInitializer` and therefore the whole context, so
+  `VointikaApplicationTests.contextLoads` is the only test that sees it. Two
+  branches numbering migrations in the same context is the setup; the failure
+  looks like the *new* migration's fault and is not. Read
+  `<schema>.flyway_schema_history` before believing either.
 - **Spring's `MustacheView` recompiles the template on every request**
   (`renderMergedTemplateModel` → `compiler.compile(reader)`); the caching view resolver
   above it caches the *View*, not the compiled `Template`. Fine for a few app templates,

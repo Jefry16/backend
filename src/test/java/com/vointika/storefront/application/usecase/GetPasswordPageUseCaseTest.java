@@ -7,6 +7,7 @@ import com.vointika.storefront.application.dto.output.PasswordPageOutput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -39,7 +40,8 @@ class GetPasswordPageUseCaseTest {
                 OPERATOR, true, "hunter2", "Volvemos pronto", "es", Set.of("es", "en"))));
         when(storefrontShopQuery.findContent(OPERATOR, "es")).thenReturn(Optional.of(
                 new StorefrontShopView("Acme Tours", "Calle Mayor 1", null, null,
-                        null, null, "EUR", "€", "Europe/Madrid", "Madrid", null, null, null)));
+                        null, null, "EUR", "€", "Europe/Madrid", "Madrid", null, null, null,
+                        List.of())));
 
         PasswordPageOutput page = useCase.execute("acme").orElseThrow();
 

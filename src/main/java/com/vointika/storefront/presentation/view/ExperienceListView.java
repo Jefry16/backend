@@ -49,7 +49,7 @@ public record ExperienceListView(
                                        String origin, String path) {
         Routes routes = Routes.forPathLocale(pathLocale);
         return new ExperienceListView(
-                Shop.from(page.envelope().shop(), mediaUrlResolver, origin),
+                Shop.from(page.envelope().shop(), mediaUrlResolver, origin, routes),
                 Page.from(page.envelope().page(), mediaUrlResolver, path),
                 routes,
                 Localization.from(page.envelope().localization(), Routes::experiences),

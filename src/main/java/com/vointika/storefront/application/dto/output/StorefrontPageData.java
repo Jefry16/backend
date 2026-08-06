@@ -4,6 +4,7 @@ import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontGateView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontPolicySummaryView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
 import com.vointika.storefront.application.dto.output.BrandData.ColorData;
 import com.vointika.storefront.application.dto.output.BrandData.ColorsData;
@@ -11,6 +12,7 @@ import com.vointika.storefront.application.dto.output.BrandData.SocialLinkData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
 import com.vointika.storefront.application.dto.output.ShopData.TimezoneData;
+import com.vointika.storefront.application.policy.PolicySlug;
 
 import java.util.Comparator;
 import java.util.List;
@@ -51,6 +53,7 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
                         shop.seoDescription(),
                         shop.passwordMessage(),
                         brand(shop.brand()),
+                        policies(shop.policies()),
                         new CurrencyData(shop.currencyCode(), shop.currencySymbol()),
                         new TimezoneData(shop.timezoneName(), shop.timezoneCity())),
                 new PageData(
@@ -60,6 +63,27 @@ public record StorefrontPageData(ShopData shop, PageData page, LocalizationData 
                         shop.seoDescription(),
                         shop.ogImageKey()),
                 new LocalizationData(locale, languages(gate, locale)));
+    }
+
+    /**
+     * The same envelope with a title this page owns. <b>The policy page is the
+     * first page type to have one</b> — every page before it took the shop's SEO
+     * title, which is exactly the conflation {@link PageData} was split off to
+     * stop, and a policy's title is its title tag because there are no SEO
+     * overrides to consult.
+     */
+    public StorefrontPageData withPageTitle(String title) {
+        return new StorefrontPageData(
+                shop,
+                new PageData(title, page.description(), page.ogImageKey()),
+                localization);
+    }
+
+    /** The type is the address, so where a policy lives is derived rather than stored. */
+    private static List<PolicyData> policies(List<StorefrontPolicySummaryView> policies) {
+        return policies.stream()
+                .map(policy -> new PolicyData(policy.type(), policy.title(), PolicySlug.of(policy.type())))
+                .toList();
     }
 
     /**

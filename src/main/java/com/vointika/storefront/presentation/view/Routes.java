@@ -33,4 +33,22 @@ public record Routes(String root, String experiences) {
                 prefix.isEmpty() ? "/" : prefix,
                 prefix + StorefrontRoutes.EXPERIENCES);
     }
+
+    /**
+     * Where one policy lives under this locale.
+     *
+     * <p><b>A method rather than a fifth component</b>, and both halves of that
+     * are deliberate: a policy's address needs its type, so it is not a URL a
+     * theme could read as {@code {{routes.policy}}}, and there is no
+     * {@code /policies} index page for a bare component to point at. It is also
+     * invisible to a template — the compiler runs with access coercion off, so
+     * only no-argument accessors resolve.
+     *
+     * <p>It is here rather than in {@link Shop} so that the prefix rule stays in
+     * one place, which is the whole reason this record exists.
+     */
+    public String policy(String slug) {
+        String prefix = "/".equals(root) ? "" : root;
+        return prefix + StorefrontRoutes.POLICIES + "/" + slug;
+    }
 }

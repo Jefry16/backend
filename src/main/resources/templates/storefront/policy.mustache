@@ -1,0 +1,16 @@
+{{<storefront/layout}}
+{{$content}}    <h1>{{policy.title}}</h1>
+{{!The body is rendered UNESCAPED, deliberately, and it is the most reviewable
+    line in this file. It is HTML the operator wrote about their own storefront,
+    stored verbatim, and escaping it would print the tags on the page instead of
+    applying them. The rule that bans unescaped output is about MERCHANT-AUTHORED
+    TEMPLATES, which we do not accept; this is our template rendering their
+    content, which is the trust boundary Shopify's own page and policy rendering
+    sits on, and pages.body already stores raw HTML for exactly this reason.
+    It is still a boundary — MAP records it as the first operator-authored HTML
+    rendered raw, so that operator-authored THEMES are visibly a separate
+    decision rather than the same one.
+    NB a Mustache comment ends at the first close-brace pair, so this one cannot
+    quote the tag it is about.}}
+    <div>{{{policy.body}}}</div>{{/content}}
+{{/storefront/layout}}
