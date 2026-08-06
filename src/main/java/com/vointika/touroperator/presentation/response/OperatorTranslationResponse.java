@@ -11,10 +11,13 @@ public record OperatorTranslationResponse(
         String locale,
         String seoTitle,
         String seoDescription,
-        String passwordMessage) {
+        String passwordMessage,
+        String slogan,
+        String shortDescription) {
 
     public static OperatorTranslationResponse from(OperatorTranslationView view) {
         return new OperatorTranslationResponse(
-                view.locale(), view.seoTitle(), view.seoDescription(), view.passwordMessage());
+                view.locale(), view.seoTitle(), view.seoDescription(), view.passwordMessage(),
+                view.slogan(), view.shortDescription());
     }
 }

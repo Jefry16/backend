@@ -4,6 +4,8 @@ import com.vointika.touroperator.application.dto.input.UpsertOperatorTranslation
 import com.vointika.touroperator.domain.entity.TourOperatorTranslation;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
+import com.vointika.touroperator.domain.valueobject.BrandShortDescription;
+import com.vointika.touroperator.domain.valueobject.BrandSlogan;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -69,10 +71,15 @@ public class UpsertOperatorTranslationUseCase {
         OperatorSeoDescription seoDescription = blankNull(input.seoDescription()) == null
                 ? null : new OperatorSeoDescription(input.seoDescription());
         String passwordMessage = blankNull(input.passwordMessage());
+        BrandSlogan slogan = blankNull(input.slogan()) == null
+                ? null : new BrandSlogan(input.slogan());
+        BrandShortDescription shortDescription = blankNull(input.shortDescription()) == null
+                ? null : new BrandShortDescription(input.shortDescription());
 
         transactionRunner.run(() -> {
             translationRepository.upsert(new TourOperatorTranslation(
-                    tourOperatorId, locale, seoTitle, seoDescription, passwordMessage));
+                    tourOperatorId, locale, seoTitle, seoDescription, passwordMessage,
+                    slogan, shortDescription));
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "TOUR_OPERATOR", tourOperatorId, "tour_operator.translation_updated",
