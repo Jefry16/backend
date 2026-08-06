@@ -93,7 +93,7 @@ class OperatorTranslationUseCasesTest {
     @Test
     void upsertStoresTheOverlayAndAudits() {
         upsert().execute(OP, "es",
-                new UpsertOperatorTranslationInput("Título", "Descripción", "Copia"), USER);
+                new UpsertOperatorTranslationInput("Título", "Descripción", "Copia", "Lema", "Descripción corta"), USER);
 
         verify(membershipCheck).ensureAdmin(USER, OP);
         ArgumentCaptor<TourOperatorTranslation> saved =
@@ -102,6 +102,8 @@ class OperatorTranslationUseCasesTest {
         assertThat(saved.getValue().locale().value()).isEqualTo("es");
         assertThat(saved.getValue().seoTitle().value()).isEqualTo("Título");
         assertThat(saved.getValue().passwordMessage()).isEqualTo("Copia");
+        assertThat(saved.getValue().slogan().value()).isEqualTo("Lema");
+        assertThat(saved.getValue().shortDescription().value()).isEqualTo("Descripción corta");
 
         ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(audit.capture());
@@ -113,7 +115,7 @@ class OperatorTranslationUseCasesTest {
     void upsertTreatsABlankFieldAsUntranslated() {
         // Null, not "" — the storefront reads null as "fall back to canonical",
         // and an empty string would be a title of zero characters.
-        upsert().execute(OP, "es", new UpsertOperatorTranslationInput("  ", "", null), USER);
+        upsert().execute(OP, "es", new UpsertOperatorTranslationInput("  ", "", null, "   ", ""), USER);
 
         ArgumentCaptor<TourOperatorTranslation> saved =
                 ArgumentCaptor.forClass(TourOperatorTranslation.class);
@@ -121,12 +123,14 @@ class OperatorTranslationUseCasesTest {
         assertThat(saved.getValue().seoTitle()).isNull();
         assertThat(saved.getValue().seoDescription()).isNull();
         assertThat(saved.getValue().passwordMessage()).isNull();
+        assertThat(saved.getValue().slogan()).isNull();
+        assertThat(saved.getValue().shortDescription()).isNull();
     }
 
     @Test
     void upsertRejectsALocaleTheOperatorDoesNotSupport() {
         assertThatThrownBy(() -> upsert().execute(OP, "fr",
-                new UpsertOperatorTranslationInput("t", null, null), USER))
+                new UpsertOperatorTranslationInput("t", null, null, null, null), USER))
                 .isInstanceOf(InvalidFieldException.class);
         verify(translationRepository, never()).upsert(any());
     }
@@ -135,7 +139,7 @@ class OperatorTranslationUseCasesTest {
     void upsertRequiresAdmin() {
         doThrow(new ForbiddenException("admin")).when(membershipCheck).ensureAdmin(USER, OP);
         assertThatThrownBy(() -> upsert().execute(OP, "es",
-                new UpsertOperatorTranslationInput("t", null, null), USER))
+                new UpsertOperatorTranslationInput("t", null, null, null, null), USER))
                 .isInstanceOf(ForbiddenException.class);
         verify(translationRepository, never()).upsert(any());
     }
@@ -144,7 +148,7 @@ class OperatorTranslationUseCasesTest {
     void upsertOfAMissingOperatorIs404() {
         when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> upsert().execute(OP, "es",
-                new UpsertOperatorTranslationInput("t", null, null), USER))
+                new UpsertOperatorTranslationInput("t", null, null, null, null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -169,7 +173,7 @@ class OperatorTranslationUseCasesTest {
     void listReturnsOneRowPerTranslatedLocale() {
         when(translationRepository.findAllByTourOperatorId(OP)).thenReturn(List.of(
                 new TourOperatorTranslation(OP, LocaleCode.of("es"),
-                        new OperatorSeoTitle("Título"), null, null)));
+                        new OperatorSeoTitle("Título"), null, null, null, null)));
 
         List<OperatorTranslationView> views = new ListOperatorTranslationsUseCase(
                 operatorRepository, translationRepository, membershipCheck).execute(OP, USER);

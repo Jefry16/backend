@@ -56,7 +56,8 @@ class OperatorTranslationControllerDocumentationTest {
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
     private static final String BODY =
             "{\"seoTitle\":\"Acme Tours — buceo\",\"seoDescription\":\"Buceo en grupos pequeños.\","
-                    + "\"passwordMessage\":\"Volvemos pronto.\"}";
+                    + "\"passwordMessage\":\"Volvemos pronto.\",\"slogan\":\"Bucea con nosotros\","
+                    + "\"shortDescription\":\"Salidas diarias en grupos pequeños.\"}";
 
     private MockMvc mockMvc;
 
@@ -87,7 +88,8 @@ class OperatorTranslationControllerDocumentationTest {
 
     private static OperatorTranslationView view() {
         return new OperatorTranslationView("es", "Acme Tours — buceo",
-                "Buceo en grupos pequeños.", "Volvemos pronto.");
+                "Buceo en grupos pequeños.", "Volvemos pronto.",
+                "Bucea con nosotros", "Salidas diarias en grupos pequeños.");
     }
 
     @Test
@@ -108,7 +110,12 @@ class OperatorTranslationControllerDocumentationTest {
                                 fieldWithPath("[].seoDescription")
                                         .description("Translated meta description, or null").optional(),
                                 fieldWithPath("[].passwordMessage")
-                                        .description("Translated gate-page copy, or null").optional())));
+                                        .description("Translated gate-page copy, or null").optional(),
+                                fieldWithPath("[].slogan")
+                                        .description("Translated brand slogan, or null").optional(),
+                                fieldWithPath("[].shortDescription")
+                                        .description("Translated brand short description, or null")
+                                        .optional())));
     }
 
     @Test
@@ -131,7 +138,12 @@ class OperatorTranslationControllerDocumentationTest {
                                 fieldWithPath("seoDescription")
                                         .description("Translated meta description, or null").optional(),
                                 fieldWithPath("passwordMessage")
-                                        .description("Translated gate-page copy, or null").optional())));
+                                        .description("Translated gate-page copy, or null").optional(),
+                                fieldWithPath("slogan")
+                                        .description("Translated brand slogan, or null").optional(),
+                                fieldWithPath("shortDescription")
+                                        .description("Translated brand short description, or null")
+                                        .optional())));
     }
 
     @Test
@@ -156,7 +168,12 @@ class OperatorTranslationControllerDocumentationTest {
                                         .description("≤320 chars; blank or absent = untranslated").optional(),
                                 fieldWithPath("passwordMessage")
                                         .description("Gate-page copy for this locale; blank or absent = "
-                                                + "untranslated").optional())));
+                                                + "untranslated").optional(),
+                                fieldWithPath("slogan")
+                                        .description("≤80 chars; blank or absent = untranslated").optional(),
+                                fieldWithPath("shortDescription")
+                                        .description("≤150 chars; blank or absent = untranslated")
+                                        .optional())));
     }
 
     @Test

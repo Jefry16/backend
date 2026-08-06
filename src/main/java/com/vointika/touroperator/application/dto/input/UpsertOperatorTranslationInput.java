@@ -8,5 +8,7 @@ package com.vointika.touroperator.application.dto.input;
 public record UpsertOperatorTranslationInput(
         String seoTitle,
         String seoDescription,
-        String passwordMessage) {
+        String passwordMessage,
+        String slogan,
+        String shortDescription) {
 }

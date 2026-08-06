@@ -1,6 +1,8 @@
 package com.vointika.touroperator.infrastructure.persistence.mapper;
 
 import com.vointika.touroperator.domain.entity.TourOperatorTranslation;
+import com.vointika.touroperator.domain.valueobject.BrandShortDescription;
+import com.vointika.touroperator.domain.valueobject.BrandSlogan;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorTranslationJpaEntity;
@@ -15,11 +17,8 @@ public class TourOperatorTranslationMapper {
                 t.seoTitle() == null ? null : t.seoTitle().value(),
                 t.seoDescription() == null ? null : t.seoDescription().value(),
                 t.passwordMessage(),
-                // slogan/shortDescription: the domain has neither, and the entity
-                // maps both insertable/updatable = false, so these are ignored on
-                // write.
-                null,
-                null);
+                t.slogan() == null ? null : t.slogan().value(),
+                t.shortDescription() == null ? null : t.shortDescription().value());
     }
 
     public static TourOperatorTranslation toDomain(TourOperatorTranslationJpaEntity jpa) {
@@ -28,7 +27,10 @@ public class TourOperatorTranslationMapper {
                 new LocaleCode(jpa.getLocale()),
                 jpa.getSeoTitle() == null ? null : new OperatorSeoTitle(jpa.getSeoTitle()),
                 jpa.getSeoDescription() == null ? null : new OperatorSeoDescription(jpa.getSeoDescription()),
-                jpa.getPasswordMessage());
+                jpa.getPasswordMessage(),
+                jpa.getSlogan() == null ? null : new BrandSlogan(jpa.getSlogan()),
+                jpa.getShortDescription() == null
+                        ? null : new BrandShortDescription(jpa.getShortDescription()));
     }
 
     private TourOperatorTranslationMapper() {}

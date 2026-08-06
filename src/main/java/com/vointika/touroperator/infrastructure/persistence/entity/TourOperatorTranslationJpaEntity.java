@@ -37,20 +37,19 @@ public class TourOperatorTranslationJpaEntity {
     private String passwordMessage;
 
     /**
-     * The brand's translatable text (V10), <b>mapped read-only on purpose</b> —
-     * the shape {@code TourOperatorJpaEntity}'s phone and email have, for the
-     * same reason.
+     * The brand's translatable text (V10). <b>Writable since the domain started
+     * carrying it</b> — these were mapped {@code insertable/updatable = false}
+     * while {@code TourOperatorTranslation} had no field for them, because a
+     * writable column with no domain value means every SEO edit rebuilds the row
+     * with a null and blanks the brand.
      *
-     * <p>The domain {@code TourOperatorTranslation} carries neither, so
-     * {@code TourOperatorTranslationMapper.toJpa} rebuilds this entity with
-     * nulls in their place. Left writable, that means the existing
-     * {@code PUT .../translations/{locale}} — an SEO edit that never mentions the
-     * brand — wipes both columns. {@code BrandColumnsStayReadOnlyTest} pins the
-     * biconditional: read-only exactly while the domain cannot carry the value.
+     * <p>{@code BrandColumnsStayReadOnlyTest} pins that as a biconditional in
+     * both directions, so putting either flag back without also removing the
+     * domain accessor fails the build — as does the reverse.
      */
-    @Column(length = 80, insertable = false, updatable = false)
+    @Column(length = 80)
     private String slogan;
 
-    @Column(length = 150, insertable = false, updatable = false)
+    @Column(length = 150)
     private String shortDescription;
 }
