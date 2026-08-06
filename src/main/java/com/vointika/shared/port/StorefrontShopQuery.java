@@ -14,11 +14,18 @@ import java.util.UUID;
  * the reason that context is fenced from {@code touroperator} at all — a
  * storefront may never import the admin surface's types.
  *
- * <p><b>Two methods, because a request needs the row in two stages.</b> The
- * password gate and the locale rule both run <em>before</em> a locale exists —
- * they need the operator's own configuration to decide which locale the page is
- * in — while the content needs a locale to overlay its translations against. One
- * method cannot serve both without taking a locale nobody has chosen yet.
+ * <p><b>Three methods, and the first two are two because a request needs the row
+ * in two stages.</b> The password gate and the locale rule both run
+ * <em>before</em> a locale exists — they need the operator's own configuration
+ * to decide which locale the page is in — while the content needs a locale to
+ * overlay its translations against. One method cannot serve both without taking
+ * a locale nobody has chosen yet.
+ *
+ * <p>{@link #findPolicy} is the third for a different reason: <b>two callers
+ * want different depths of the same rows</b>. Every page's footer needs the
+ * links and only the links, while one route needs a body — and carrying four
+ * HTML documents on every render to produce four {@code <a>} tags is the wrong
+ * trade.
  *
  * <p>Every overlay here is <b>nullable-wins-canonical</b>: a translation row has
  * every content column nullable, so a null column falls back to the operator's
@@ -38,6 +45,21 @@ public interface StorefrontShopQuery {
      * the normal case, not an error.
      */
     Optional<StorefrontShopView> findContent(UUID tourOperatorId, String locale);
+
+    /**
+     * One legal document, with its body, in the locale the caller resolved.
+     *
+     * <p>Empty covers both misses the storefront has to answer 404 for, and
+     * deliberately does not distinguish them: <b>a {@code type} no policy type is
+     * named after</b> — the value comes from a path segment, so
+     * {@code /policies/refunds} arrives here — and a type the operator has not
+     * written. There is no draft state; the row's absence is the unpublished one.
+     *
+     * @param type a {@code PolicyType} name, a primitive because the enum belongs
+     *             to the context that owns the row (PATTERNS §6). An unknown name
+     *             is empty, never an exception.
+     */
+    Optional<StorefrontPolicyView> findPolicy(UUID tourOperatorId, String type, String locale);
 
     /**
      * @param storefrontPassword the shared gate value, plaintext by design — it is
@@ -91,6 +113,10 @@ public interface StorefrontShopQuery {
      *                       {@code touroperator}'s adapter rather than a second
      *                       port. Both halves are {@code null} only if the
      *                       reference row has gone, which the FK forbids.
+     * @param policies       the operator's legal documents <b>without their
+     *                       bodies</b> — every page's footer links them and only
+     *                       the policy route reads one. Ordered by type, and
+     *                       empty for an operator who has written none.
      */
     record StorefrontShopView(
             String name,
@@ -105,8 +131,32 @@ public interface StorefrontShopQuery {
             String seoTitle,
             String seoDescription,
             String passwordMessage,
-            StorefrontBrandView brand
+            StorefrontBrandView brand,
+            List<StorefrontPolicySummaryView> policies
     ) {}
+
+    /**
+     * A policy as the footer needs it. Both text fields overlay per locale, so a
+     * title translated into Spanish arrives Spanish here and an untranslated one
+     * arrives canonical.
+     *
+     * @param type a {@code PolicyType} name — the enum stays in the context that
+     *             owns it, and the caller turns the name into an address
+     */
+    record StorefrontPolicySummaryView(String type, String title) {}
+
+    /**
+     * A policy as its own page needs it.
+     *
+     * @param body <b>raw HTML the operator wrote</b>, stored verbatim and handed
+     *             over unescaped. The storefront renders it with Mustache's
+     *             unescaped tag on purpose — escaping it would put
+     *             {@code &lt;p&gt;} on the page — and the trust boundary that
+     *             makes that correct is that this is <em>our</em> template
+     *             rendering <em>their</em> content, which is not the same
+     *             question as running a template they wrote.
+     */
+    record StorefrontPolicyView(String type, String title, String body) {}
 
     /**
      * The operator's brand — Shopify's {@code shop.brand}, which is where the

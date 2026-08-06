@@ -11,6 +11,7 @@ import com.vointika.storefront.application.dto.output.ImageData;
 import com.vointika.storefront.application.dto.output.LocalizationData;
 import com.vointika.storefront.application.dto.output.LocalizationData.LanguageData;
 import com.vointika.storefront.application.dto.output.PageData;
+import com.vointika.storefront.application.dto.output.PolicyData;
 import com.vointika.storefront.application.dto.output.ShopData;
 import com.vointika.storefront.application.dto.output.ShopData.CurrencyData;
 import com.vointika.storefront.application.dto.output.ShopData.TimezoneData;
@@ -227,6 +228,27 @@ class StorefrontHomeControllerTest {
     }
 
     /**
+     * <b>The footer lists the policies that exist and nothing else.</b> A policy
+     * has no draft state — the row's absence <em>is</em> the unpublished one — so
+     * the list the port answers is exactly what to link, and the two the seeded
+     * operator has not written must leave no markup behind at all.
+     */
+    @Test
+    void theFooterLinksOnlyThePoliciesThatExist() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(getHomePageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es", "Acme Tours", null, null, null)));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<a href=\"/policies/cancellation\">Cancellation policy</a>"),
+                        containsString("<a href=\"/policies/legal-notice\">Legal notice</a>"),
+                        not(containsString("/policies/privacy")),
+                        not(containsString("/policies/terms")))));
+    }
+
+    /**
      * Under a locale prefix the logo goes home <em>in that locale</em> and the
      * switcher's own links do not move: each language always points at its own
      * address, and the primary's is the bare one.
@@ -247,7 +269,10 @@ class StorefrontHomeControllerTest {
                         containsString("<a href=\"/en\"><img"),
                         containsString("<a href=\"/\" lang=\"es\">es</a>"),
                         containsString("<span lang=\"en\">en</span>"),
-                        containsString("<a href=\"/fr\" lang=\"fr\">fr</a>"))));
+                        containsString("<a href=\"/fr\" lang=\"fr\">fr</a>"),
+                        // The footer's policy links carry the prefix too, and they get it
+                        // from Routes rather than from a second copy of the rule.
+                        containsString("<a href=\"/en/policies/cancellation\">"))));
     }
 
     /**
@@ -340,6 +365,12 @@ class StorefrontHomeControllerTest {
                                 + "        <p>Calle Mayor 1, 28013 Madrid</p>\n"
                                 + "        <p><a href=\"tel:+34 910 000 000\">+34 910 000 000</a></p>\n"
                                 + "        <p><a href=\"mailto:hola@acme.test\">hola@acme.test</a></p>\n"
+                                // The policy list is the fourth guard on this seam and the
+                                // first that repeats: it opens at the end of the email line
+                                // and closes hugging its own, so N policies are N lines and
+                                // none is a blank one.
+                                + "        <p><a href=\"/policies/cancellation\">Cancellation policy</a></p>\n"
+                                + "        <p><a href=\"/policies/legal-notice\">Legal notice</a></p>\n"
                                 + "    </footer>\n</body>\n</html>"))));
     }
 
@@ -497,7 +528,7 @@ class StorefrontHomeControllerTest {
                         "\"><script>alert(1)</script>", "x\" onmouseover=\"alert(1)",
                         "A shop description",
                         "Opening soon — ask us for the password.",
-                        noBrand(),
+                        noBrand(), List.of(),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData("<script>alert(1)</script>", null, null),
@@ -583,7 +614,7 @@ class StorefrontHomeControllerTest {
                         "+34 910 000 000", "hola@acme.test",
                         "A shop description",
                         "Opening soon — ask us for the password.",
-                        brand(logoKey),
+                        brand(logoKey), policies(),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, description, ogImageKey),
@@ -594,7 +625,7 @@ class StorefrontHomeControllerTest {
     private static StorefrontPageData pageWithoutBrand() {
         return new StorefrontPageData(
                 new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null,
-                        null, null, noBrand(),
+                        null, null, noBrand(), List.of(),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData("Acme Tours", null, null),
@@ -607,7 +638,7 @@ class StorefrontHomeControllerTest {
                 new ShopData(SHOP_ID, "Acme Tours", "Calle Mayor 1, 28013 Madrid", null, null,
                         "A shop description",
                         "Opening soon — ask us for the password.",
-                        brand(null),
+                        brand(null), List.of(),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                 new PageData(title, null, null),
@@ -633,6 +664,17 @@ class StorefrontHomeControllerTest {
                 logoKey == null ? null : new ImageData(logoKey, "The Acme burgee", 400, 200),
                 null, null, null,
                 List.of(new SocialLinkData("INSTAGRAM", "https://instagram.com/acmetours")));
+    }
+
+    /**
+     * <b>Two of the four</b>, which is the case that matters: a policy has no
+     * draft state, so the rows that exist are the links, and an operator who has
+     * written two must get two.
+     */
+    private static List<PolicyData> policies() {
+        return List.of(
+                new PolicyData("CANCELLATION", "Cancellation policy", "cancellation"),
+                new PolicyData("LEGAL_NOTICE", "Legal notice", "legal-notice"));
     }
 
     /** An operator with no brand row at all — everything null, both lists empty. */

@@ -8,17 +8,23 @@ import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.touroperator.domain.enums.BrandColorRole;
+import com.vointika.touroperator.domain.enums.PolicyType;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandColorJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyTranslationJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorTranslationJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandColorJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandSocialLinkJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorJpaRepository;
+import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorPolicyJpaRepository;
+import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorPolicyTranslationJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorTranslationJpaRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -38,9 +45,10 @@ import java.util.stream.Collectors;
  * so the asset stays null and the page renders without that image rather than
  * erroring.
  *
- * <p>Both overlays are nullable-wins-canonical, per the port. The gate's message
- * overlays from the <b>primary</b> locale, because the gate answers before any
- * locale has been resolved.
+ * <p>Every overlay here is nullable-wins-canonical, per the port — the
+ * operator's own translation row, and now the policies' as well. The gate's
+ * message overlays from the <b>primary</b> locale, because the gate answers
+ * before any locale has been resolved.
  *
  * <p>The currency is a direct read of {@code reference}, not a second port:
  * {@code reference} is a shared kernel every context may import, and this
@@ -65,6 +73,8 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     private final TourOperatorBrandJpaRepository brandRepository;
     private final TourOperatorBrandColorJpaRepository brandColorRepository;
     private final TourOperatorBrandSocialLinkJpaRepository brandSocialLinkRepository;
+    private final TourOperatorPolicyJpaRepository policyRepository;
+    private final TourOperatorPolicyTranslationJpaRepository policyTranslationRepository;
     private final MediaAssetBatchQuery mediaAssetBatchQuery;
     private final CurrencyRepository currencyRepository;
     private final TimezoneRepository timezoneRepository;
@@ -74,6 +84,8 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                                    TourOperatorBrandJpaRepository brandRepository,
                                    TourOperatorBrandColorJpaRepository brandColorRepository,
                                    TourOperatorBrandSocialLinkJpaRepository brandSocialLinkRepository,
+                                   TourOperatorPolicyJpaRepository policyRepository,
+                                   TourOperatorPolicyTranslationJpaRepository policyTranslationRepository,
                                    MediaAssetBatchQuery mediaAssetBatchQuery,
                                    CurrencyRepository currencyRepository,
                                    TimezoneRepository timezoneRepository) {
@@ -82,6 +94,8 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
         this.brandRepository = brandRepository;
         this.brandColorRepository = brandColorRepository;
         this.brandSocialLinkRepository = brandSocialLinkRepository;
+        this.policyRepository = policyRepository;
+        this.policyTranslationRepository = policyTranslationRepository;
         this.mediaAssetBatchQuery = mediaAssetBatchQuery;
         this.currencyRepository = currencyRepository;
         this.timezoneRepository = timezoneRepository;
@@ -96,6 +110,32 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     public Optional<StorefrontShopView> findContent(UUID tourOperatorId, String locale) {
         return operatorRepository.findById(tourOperatorId)
                 .map(operator -> toContentView(operator, locale));
+    }
+
+    /**
+     * An unrecognised name is empty rather than an exception: it arrives from a
+     * URL segment, and {@code PolicyType.valueOf} would turn
+     * {@code /policies/refunds} into a 500 in the API's JSON error shape, on an
+     * HTML page.
+     */
+    @Override
+    public Optional<StorefrontPolicyView> findPolicy(UUID tourOperatorId, String type, String locale) {
+        return PolicyType.from(type)
+                .flatMap(policyType -> policyRepository.findByTourOperatorIdAndType(tourOperatorId, policyType))
+                .map(policy -> toPolicyView(policy, tourOperatorId, locale));
+    }
+
+    private StorefrontPolicyView toPolicyView(TourOperatorPolicyJpaEntity policy,
+                                              UUID tourOperatorId,
+                                              String locale) {
+        Optional<TourOperatorPolicyTranslationJpaEntity> translation = policyTranslationRepository
+                .findByTourOperatorIdAndTypeAndLocale(tourOperatorId, policy.getType(), locale);
+        return new StorefrontPolicyView(
+                policy.getType().name(),
+                overlay(translation.map(TourOperatorPolicyTranslationJpaEntity::getTitle).orElse(null),
+                        policy.getTitle()),
+                overlay(translation.map(TourOperatorPolicyTranslationJpaEntity::getBody).orElse(null),
+                        policy.getBody()));
     }
 
     private StorefrontGateView toGateView(TourOperatorJpaEntity operator) {
@@ -135,7 +175,38 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                         operator.getSeoDescription()),
                 overlay(translation.map(TourOperatorTranslationJpaEntity::getPasswordMessage).orElse(null),
                         operator.getPasswordMessage()),
-                brand.map(row -> toBrandView(row, translation.orElse(null), assets)).orElse(NO_BRAND));
+                brand.map(row -> toBrandView(row, translation.orElse(null), assets)).orElse(NO_BRAND),
+                policySummaries(operator.getId(), locale));
+    }
+
+    /**
+     * The footer's links: the policies this operator has written, each title
+     * overlaid for the locale. Two queries rather than four — one for the rows
+     * and one for the locale's whole overlay set — because this runs on every
+     * page and there are at most four of each.
+     *
+     * <p>The order is the query's, and re-sorting here would be a second copy of
+     * the rule.
+     */
+    private List<StorefrontPolicySummaryView> policySummaries(UUID tourOperatorId, String locale) {
+        List<TourOperatorPolicyJpaEntity> policies =
+                policyRepository.findByTourOperatorIdOrderByTypeAsc(tourOperatorId);
+        if (policies.isEmpty()) {
+            return List.of();
+        }
+        Map<PolicyType, TourOperatorPolicyTranslationJpaEntity> translations =
+                policyTranslationRepository.findByTourOperatorIdAndLocale(tourOperatorId, locale).stream()
+                        .collect(Collectors.toMap(TourOperatorPolicyTranslationJpaEntity::getType,
+                                Function.identity(), (first, second) -> first, () -> new EnumMap<>(PolicyType.class)));
+        return policies.stream()
+                .map(policy -> new StorefrontPolicySummaryView(
+                        policy.getType().name(),
+                        overlay(title(translations.get(policy.getType())), policy.getTitle())))
+                .toList();
+    }
+
+    private static String title(TourOperatorPolicyTranslationJpaEntity translation) {
+        return translation == null ? null : translation.getTitle();
     }
 
     private StorefrontBrandView toBrandView(TourOperatorBrandJpaEntity brand,

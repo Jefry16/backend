@@ -35,10 +35,14 @@
     <footer>
 {{!Each optional line opens its section at the end of the line before it, so an
     operator who publishes neither emits nothing here rather than two blank
-    lines. Same hugging rule as the content block above.}}
+    lines. Same hugging rule as the content block above.
+    The policies are a list rather than four named lookups: a policy has no
+    draft state, so the rows that exist ARE the ones to link, and iterating
+    means an operator who has written two gets two links and no empty markup.}}
         <p>{{shop.address}}</p>{{#shop.phone}}
         <p><a href="tel:{{shop.phone}}">{{shop.phone}}</a></p>{{/shop.phone}}{{#shop.email}}
-        <p><a href="mailto:{{shop.email}}">{{shop.email}}</a></p>{{/shop.email}}
+        <p><a href="mailto:{{shop.email}}">{{shop.email}}</a></p>{{/shop.email}}{{#shop.policies}}
+        <p><a href="{{url}}">{{title}}</a></p>{{/shop.policies}}
     </footer>
 </body>
 </html>

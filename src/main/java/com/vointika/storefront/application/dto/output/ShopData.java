@@ -1,5 +1,6 @@
 package com.vointika.storefront.application.dto.output;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,6 +29,9 @@ import java.util.UUID;
  *              They are here rather than waiting because the column now exists:
  *              the rule that kept them out was "expose what the row has", and it
  *              has them.
+ * @param policies the operator's legal documents, ordered and <b>only the ones
+ *              they have written</b> — a policy has no draft state, so an absent
+ *              row is the unpublished one and the list is what a footer renders.
  */
 public record ShopData(
         UUID id,
@@ -38,6 +42,7 @@ public record ShopData(
         String description,
         String passwordMessage,
         BrandData brand,
+        List<PolicyData> policies,
         CurrencyData currency,
         TimezoneData timezone
 ) {

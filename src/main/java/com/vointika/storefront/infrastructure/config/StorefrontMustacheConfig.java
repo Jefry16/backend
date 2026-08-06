@@ -50,7 +50,8 @@ public class StorefrontMustacheConfig {
      * <em>View</em>, not the {@code Template}), which is why this slice writes
      * the rendered string itself instead of returning a view name.
      *
-     * <p>This one and {@link #storefrontExperienceListTemplate} both inherit from
+     * <p>This one, {@link #storefrontExperienceListTemplate} and
+     * {@link #storefrontPolicyTemplate} all inherit from
      * {@code storefront/layout}, which needs no bean of its own: a parent
      * template is resolved through the same loader on <em>first render</em> and
      * then pinned into the compiled {@code Template} for good. So the layout is
@@ -66,6 +67,11 @@ public class StorefrontMustacheConfig {
     @Bean
     public Template storefrontExperienceListTemplate(Mustache.Compiler compiler) {
         return compiler.loadTemplate("storefront/experiences");
+    }
+
+    @Bean
+    public Template storefrontPolicyTemplate(Mustache.Compiler compiler) {
+        return compiler.loadTemplate("storefront/policy");
     }
 
     @Bean

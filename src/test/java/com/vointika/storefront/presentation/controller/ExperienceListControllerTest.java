@@ -259,7 +259,7 @@ class ExperienceListControllerTest {
                                 "+34 910 000 000", "hola@acme.test",
                                 "A shop description",
                         "Opening soon — ask us for the password.",
-                        brand("logo.png"),
+                        brand("logo.png"), List.of(),
                         new CurrencyData("EUR", "€"),
                         new TimezoneData("Europe/Madrid", "Madrid")),
                         new PageData("Acme Tours", null, null),

@@ -8,6 +8,7 @@ import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.GetExperienceListPageUseCase;
 import com.vointika.storefront.application.usecase.GetHomePageUseCase;
 import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
+import com.vointika.storefront.application.usecase.GetPolicyPageUseCase;
 import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,11 @@ public class StorefrontUseCaseConfig {
             StorefrontShopQuery storefrontShopQuery,
             StorefrontExperienceQuery storefrontExperienceQuery) {
         return new GetExperienceListPageUseCase(storefrontShopQuery, storefrontExperienceQuery);
+    }
+
+    @Bean
+    public GetPolicyPageUseCase getPolicyPageUseCase(StorefrontShopQuery storefrontShopQuery) {
+        return new GetPolicyPageUseCase(storefrontShopQuery);
     }
 
     @Bean

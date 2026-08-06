@@ -17,7 +17,8 @@
 --
 -- Seeds: a verified admin user, the demo tour operator (handle `acme`, primary
 -- locale `es` plus `en` and `fr`, canonical + `es` SEO, a brand with a palette
--- and social links), OWNER membership, two audiences (+es overlay), two pickup
+-- and social links, two of the four legal policies with an `es` overlay on one),
+-- OWNER membership, two audiences (+es overlay), two pickup
 -- locations, three PUBLISHED experiences (+es overlay on one), two AVAILABLE
 -- slots per experience dated relative to today with per-audience pricing
 -- (one tier carries booked seats so the capacity floor is exercisable),
@@ -216,6 +217,55 @@ VALUES
     (:'operator_id', 'YOUTUBE',   'https://youtube.com/@acmetours')
 ON CONFLICT (tour_operator_id, platform) DO UPDATE SET
     url = EXCLUDED.url;
+
+-- 2d. Policies. Two of the four, deliberately: the footer must list only the
+-- ones that exist, and an operator who has written none of the other two is the
+-- ordinary case, not a broken one. Only CANCELLATION carries an `es` overlay, so
+-- one page proves the overlay and the other proves the canonical fallback.
+--
+-- The bodies are real HTML — headings, a list, a link — because that is the
+-- whole point of the rendering decision: the storefront renders these unescaped,
+-- and a plain-text fixture could not tell a working page from an escaped one.
+INSERT INTO touroperator.tour_operator_policies
+    (tour_operator_id, type, title, body, created_at, updated_at)
+VALUES
+    (:'operator_id', 'CANCELLATION', 'Cancellation policy',
+     '<h2>Free cancellation</h2>' ||
+     '<p>Cancel up to 48 hours before departure for a full refund.</p>' ||
+     '<ul><li>48 hours or more: full refund.</li>' ||
+     '<li>24 to 48 hours: 50% refund.</li>' ||
+     '<li>Less than 24 hours: no refund.</li></ul>' ||
+     '<p>Weather cancellations are always refunded in full. Write to ' ||
+     '<a href="mailto:hola@acme.test">hola@acme.test</a> and we will sort it out.</p>',
+     NOW(), NOW()),
+    (:'operator_id', 'PRIVACY', 'Privacy policy',
+     '<h2>What we collect</h2>' ||
+     '<p>Your name, email and phone number, so that we can run your booking.</p>' ||
+     '<h2>What we do with it</h2>' ||
+     '<ul><li>Confirm and change your departure.</li>' ||
+     '<li>Reach you if the weather turns.</li></ul>' ||
+     '<p>We never sell it. See the <a href="/policies/cancellation">cancellation policy</a> ' ||
+     'for how refunds work.</p>',
+     NOW(), NOW())
+ON CONFLICT (tour_operator_id, type) DO UPDATE SET
+    title      = EXCLUDED.title,
+    body       = EXCLUDED.body,
+    updated_at = NOW();
+
+INSERT INTO touroperator.tour_operator_policy_translations
+    (tour_operator_id, type, locale, title, body)
+VALUES
+    (:'operator_id', 'CANCELLATION', 'es', 'Política de cancelación',
+     '<h2>Cancelación gratuita</h2>' ||
+     '<p>Cancela hasta 48 horas antes de la salida y te devolvemos el importe íntegro.</p>' ||
+     '<ul><li>48 horas o más: reembolso completo.</li>' ||
+     '<li>Entre 24 y 48 horas: 50%.</li>' ||
+     '<li>Menos de 24 horas: sin reembolso.</li></ul>' ||
+     '<p>Si cancelamos por mal tiempo, el reembolso es siempre completo. Escríbenos a ' ||
+     '<a href="mailto:hola@acme.test">hola@acme.test</a>.</p>')
+ON CONFLICT (tour_operator_id, type, locale) DO UPDATE SET
+    title = EXCLUDED.title,
+    body  = EXCLUDED.body;
 
 -- 3. OWNER membership (name/email denormalized per the roster model).
 INSERT INTO touroperator.tour_operator_members

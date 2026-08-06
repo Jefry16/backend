@@ -51,6 +51,10 @@ public class StorefrontPublicRoutes implements PublicRouteRegistrar {
                 new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.EXPERIENCES),
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_EXPERIENCES),
                 new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_EXPERIENCES),
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.POLICY),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.POLICY),
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_POLICY),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_POLICY),
                 new PublicRoute(HttpMethod.GET, "/password"),
                 new PublicRoute(HttpMethod.HEAD, "/password"),
                 new PublicRoute(HttpMethod.POST, "/password")

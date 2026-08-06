@@ -8,18 +8,25 @@ import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandColorView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontBrandSocialLinkView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontPolicySummaryView;
+import com.vointika.shared.port.StorefrontShopQuery.StorefrontPolicyView;
 import com.vointika.shared.port.StorefrontShopQuery.StorefrontShopView;
 import com.vointika.touroperator.domain.enums.BrandColorRole;
 import com.vointika.touroperator.domain.enums.BrandSocialPlatform;
+import com.vointika.touroperator.domain.enums.PolicyType;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandColorJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandSocialLinkJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyTranslationJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorTranslationJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandColorJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorBrandSocialLinkJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorJpaRepository;
+import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorPolicyJpaRepository;
+import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorPolicyTranslationJpaRepository;
 import com.vointika.touroperator.infrastructure.persistence.repository.TourOperatorTranslationJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
@@ -64,6 +72,8 @@ class StorefrontShopQueryImplTest {
     private TourOperatorBrandJpaRepository brandRepository;
     private TourOperatorBrandColorJpaRepository brandColorRepository;
     private TourOperatorBrandSocialLinkJpaRepository brandSocialLinkRepository;
+    private TourOperatorPolicyJpaRepository policyRepository;
+    private TourOperatorPolicyTranslationJpaRepository policyTranslationRepository;
     private MediaAssetBatchQuery mediaAssetBatchQuery;
     private StorefrontShopQueryImpl query;
 
@@ -74,18 +84,25 @@ class StorefrontShopQueryImplTest {
         brandRepository = mock(TourOperatorBrandJpaRepository.class);
         brandColorRepository = mock(TourOperatorBrandColorJpaRepository.class);
         brandSocialLinkRepository = mock(TourOperatorBrandSocialLinkJpaRepository.class);
+        policyRepository = mock(TourOperatorPolicyJpaRepository.class);
+        policyTranslationRepository = mock(TourOperatorPolicyTranslationJpaRepository.class);
         mediaAssetBatchQuery = mock(MediaAssetBatchQuery.class);
         CurrencyRepository currencyRepository = mock(CurrencyRepository.class);
         TimezoneRepository timezoneRepository = mock(TimezoneRepository.class);
         query = new StorefrontShopQueryImpl(operatorRepository, translationRepository, brandRepository,
-                brandColorRepository, brandSocialLinkRepository, mediaAssetBatchQuery,
-                currencyRepository, timezoneRepository);
+                brandColorRepository, brandSocialLinkRepository, policyRepository,
+                policyTranslationRepository, mediaAssetBatchQuery, currencyRepository, timezoneRepository);
 
         when(operatorRepository.findById(OPERATOR)).thenReturn(Optional.of(operator()));
         when(translationRepository.findByTourOperatorIdAndLocale(any(), any())).thenReturn(Optional.empty());
         when(brandRepository.findById(OPERATOR)).thenReturn(Optional.empty());
         when(brandColorRepository.findByTourOperatorIdOrderByPositionAsc(OPERATOR)).thenReturn(List.of());
         when(brandSocialLinkRepository.findByTourOperatorIdOrderByPlatformAsc(OPERATOR)).thenReturn(List.of());
+        when(policyRepository.findByTourOperatorIdOrderByTypeAsc(OPERATOR)).thenReturn(List.of());
+        when(policyTranslationRepository.findByTourOperatorIdAndLocale(any(), any())).thenReturn(List.of());
+        when(policyRepository.findByTourOperatorIdAndType(any(), any())).thenReturn(Optional.empty());
+        when(policyTranslationRepository.findByTourOperatorIdAndTypeAndLocale(any(), any(), any()))
+                .thenReturn(Optional.empty());
         when(currencyRepository.findById(CURRENCY))
                 .thenReturn(Optional.of(new Currency(CURRENCY, "EUR", "Euro", "€")));
         when(timezoneRepository.findById(TIMEZONE))
@@ -238,6 +255,116 @@ class StorefrontShopQueryImplTest {
         when(mediaAssetBatchQuery.findAssetsByIds(OPERATOR, Set.of(LOGO))).thenReturn(Map.of());
 
         assertThat(query.findContent(OPERATOR, "es").orElseThrow().brand().logo()).isNull();
+    }
+
+    /**
+     * The footer's list: the rows that exist, each title overlaid for the locale.
+     * The order is the query's — a footer whose links move between requests reads
+     * as a bug — and the adapter does not sort again.
+     */
+    @Test
+    void thePolicySummariesOverlayTheirTitlesAndKeepTheQuerysOrder() {
+        policies(policy(PolicyType.CANCELLATION, "Cancellation policy", "<p>48 hours.</p>"),
+                policy(PolicyType.PRIVACY, "Privacy policy", "<p>What we collect.</p>"));
+        when(policyTranslationRepository.findByTourOperatorIdAndLocale(OPERATOR, "es")).thenReturn(List.of(
+                policyTranslation(PolicyType.CANCELLATION, "es", "Política de cancelación", null)));
+
+        StorefrontShopView shop = query.findContent(OPERATOR, "es").orElseThrow();
+
+        assertThat(shop.policies())
+                .extracting(StorefrontPolicySummaryView::type, StorefrontPolicySummaryView::title)
+                .containsExactly(
+                        tuple("CANCELLATION", "Política de cancelación"),
+                        tuple("PRIVACY", "Privacy policy"));
+    }
+
+    /**
+     * An operator who has written none is an empty list, not a failure — and the
+     * overlay is not even asked for, because there is nothing to overlay.
+     */
+    @Test
+    void anOperatorWithNoPoliciesGetsAnEmptyListRatherThanFailing() {
+        StorefrontShopView shop = query.findContent(OPERATOR, "es").orElseThrow();
+
+        assertThat(shop.policies()).isEmpty();
+        verify(policyTranslationRepository, never()).findByTourOperatorIdAndLocale(any(), any());
+    }
+
+    @Test
+    void aPolicysTitleAndBodyBothOverlay() {
+        policy(PolicyType.TERMS, "Terms of service", "<p>English terms.</p>", "es",
+                "Términos del servicio", "<p>Términos en español.</p>");
+
+        StorefrontPolicyView policy = query.findPolicy(OPERATOR, "TERMS", "es").orElseThrow();
+
+        assertThat(policy.type()).isEqualTo("TERMS");
+        assertThat(policy.title()).isEqualTo("Términos del servicio");
+        assertThat(policy.body()).isEqualTo("<p>Términos en español.</p>");
+    }
+
+    /** A row overlays, it does not replace: a translated title over a canonical body. */
+    @Test
+    void aColumnThePolicyTranslationLeftNullFallsBackToTheCanonicalValue() {
+        policy(PolicyType.TERMS, "Terms of service", "<p>English terms.</p>", "es",
+                "Términos del servicio", null);
+
+        StorefrontPolicyView policy = query.findPolicy(OPERATOR, "TERMS", "es").orElseThrow();
+
+        assertThat(policy.title()).isEqualTo("Términos del servicio");
+        assertThat(policy.body()).isEqualTo("<p>English terms.</p>");
+    }
+
+    @Test
+    void aLocaleWithNoPolicyTranslationGetsTheCanonicalDocument() {
+        policies(policy(PolicyType.TERMS, "Terms of service", "<p>English terms.</p>"));
+        when(policyRepository.findByTourOperatorIdAndType(OPERATOR, PolicyType.TERMS))
+                .thenReturn(Optional.of(policy(PolicyType.TERMS, "Terms of service", "<p>English terms.</p>")));
+
+        StorefrontPolicyView policy = query.findPolicy(OPERATOR, "TERMS", "fr").orElseThrow();
+
+        assertThat(policy.title()).isEqualTo("Terms of service");
+        assertThat(policy.body()).isEqualTo("<p>English terms.</p>");
+    }
+
+    /**
+     * <b>The name comes off a URL segment, so an unknown one must not reach
+     * {@code valueOf}.</b> {@code /policies/refunds} would otherwise be an
+     * {@code IllegalArgumentException} — a 500 in the API's JSON error shape, on
+     * a public HTML page — instead of a 404. The type is not even asked of the
+     * database.
+     */
+    @Test
+    void aTypeNoPolicyTypeIsNamedAfterIsEmptyRatherThanAnException() {
+        assertThat(query.findPolicy(OPERATOR, "REFUNDS", "es")).isEmpty();
+
+        verify(policyRepository, never()).findByTourOperatorIdAndType(any(), any());
+    }
+
+    /** A type the operator has not written is the same answer: there is no draft state to report. */
+    @Test
+    void aTypeTheOperatorHasNotWrittenIsEmpty() {
+        assertThat(query.findPolicy(OPERATOR, "LEGAL_NOTICE", "es")).isEmpty();
+    }
+
+    private void policies(TourOperatorPolicyJpaEntity... policies) {
+        when(policyRepository.findByTourOperatorIdOrderByTypeAsc(OPERATOR)).thenReturn(List.of(policies));
+    }
+
+    private void policy(PolicyType type, String title, String body,
+                        String locale, String translatedTitle, String translatedBody) {
+        when(policyRepository.findByTourOperatorIdAndType(OPERATOR, type))
+                .thenReturn(Optional.of(policy(type, title, body)));
+        when(policyTranslationRepository.findByTourOperatorIdAndTypeAndLocale(OPERATOR, type, locale))
+                .thenReturn(Optional.of(policyTranslation(type, locale, translatedTitle, translatedBody)));
+    }
+
+    private static TourOperatorPolicyJpaEntity policy(PolicyType type, String title, String body) {
+        return new TourOperatorPolicyJpaEntity(OPERATOR, type, title, body, Instant.EPOCH, Instant.EPOCH);
+    }
+
+    private static TourOperatorPolicyTranslationJpaEntity policyTranslation(
+            PolicyType type, String locale, String title, String body) {
+        return new TourOperatorPolicyTranslationJpaEntity(OPERATOR, type, locale, title, body);
     }
 
     private static String paletteQueryName() {
