@@ -57,6 +57,15 @@ import com.vointika.touroperator.application.usecase.DeleteOperatorTranslationUs
 import com.vointika.touroperator.application.usecase.ListOperatorTranslationsUseCase;
 import com.vointika.touroperator.application.usecase.GetOperatorTranslationUseCase;
 import com.vointika.touroperator.application.usecase.UpsertOperatorTranslationUseCase;
+import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
+import com.vointika.touroperator.application.usecase.GetPolicyUseCase;
+import com.vointika.touroperator.application.usecase.UpsertPolicyUseCase;
+import com.vointika.touroperator.application.usecase.DeletePolicyUseCase;
+import com.vointika.touroperator.application.usecase.ListPolicyTranslationsUseCase;
+import com.vointika.touroperator.application.usecase.UpsertPolicyTranslationUseCase;
+import com.vointika.touroperator.application.usecase.DeletePolicyTranslationUseCase;
+import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
+import com.vointika.touroperator.domain.repository.TourOperatorPolicyTranslationRepository;
 
 @Configuration("tourOperatorUseCaseConfig")
 public class TourOperatorUseCaseConfig {
@@ -392,5 +401,72 @@ public class TourOperatorUseCaseConfig {
             AuditTrailPort auditTrailPort) {
         return new UpdateOperatorSeoUseCase(tourOperatorRepository, mediaAssetBatchQuery,
                 membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    // ---- store policies ----
+
+    @Bean
+    public ListPoliciesUseCase listPoliciesUseCase(
+            TourOperatorPolicyRepository policyRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListPoliciesUseCase(policyRepository, membershipCheck);
+    }
+
+    @Bean
+    public GetPolicyUseCase getPolicyUseCase(
+            TourOperatorPolicyRepository policyRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetPolicyUseCase(policyRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpsertPolicyUseCase upsertPolicyUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorPolicyRepository policyRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertPolicyUseCase(tourOperatorRepository, policyRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public DeletePolicyUseCase deletePolicyUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorPolicyRepository policyRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeletePolicyUseCase(tourOperatorRepository, policyRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public ListPolicyTranslationsUseCase listPolicyTranslationsUseCase(
+            TourOperatorPolicyTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListPolicyTranslationsUseCase(translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpsertPolicyTranslationUseCase upsertPolicyTranslationUseCase(
+            TourOperatorPolicyRepository policyRepository,
+            TourOperatorPolicyTranslationRepository translationRepository,
+            OperatorLocalesQuery operatorLocalesQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertPolicyTranslationUseCase(policyRepository, translationRepository,
+                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public DeletePolicyTranslationUseCase deletePolicyTranslationUseCase(
+            TourOperatorPolicyTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeletePolicyTranslationUseCase(translationRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 }

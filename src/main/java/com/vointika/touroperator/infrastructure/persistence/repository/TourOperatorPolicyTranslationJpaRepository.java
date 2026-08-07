@@ -4,6 +4,7 @@ import com.vointika.touroperator.domain.enums.PolicyType;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyTranslationId;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyTranslationJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +18,11 @@ public interface TourOperatorPolicyTranslationJpaRepository
 
     Optional<TourOperatorPolicyTranslationJpaEntity> findByTourOperatorIdAndTypeAndLocale(
             UUID tourOperatorId, PolicyType type, String locale);
+
+    /** One policy's overlays, ordered so the admin list is stable between requests. */
+    List<TourOperatorPolicyTranslationJpaEntity> findByTourOperatorIdAndTypeOrderByLocaleAsc(
+            UUID tourOperatorId, PolicyType type);
+
+    @Modifying
+    long deleteByTourOperatorIdAndTypeAndLocale(UUID tourOperatorId, PolicyType type, String locale);
 }

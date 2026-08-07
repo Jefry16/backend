@@ -21,8 +21,10 @@ import java.util.UUID;
  * structurally rather than through a nullable discriminator and a partial unique
  * index.
  *
- * <p>Read-only throughout: there is no policy write path yet, and
- * {@code PolicyColumnsStayReadOnlyTest} is what says so at the moment one lands.
+ * <p>Writable since the admin write path landed. {@code created_at} and the two
+ * key columns stay {@code updatable = false}: rewriting a policy keeps the date
+ * it was first written, and retyping one would move it to another URL, which is
+ * a delete and a create rather than an update.
  *
  * <p>{@code type} maps as the enum rather than a string, so the two-lists
  * coupling with the CHECK constraint is a mapping and not a convention — and an
@@ -49,15 +51,15 @@ public class TourOperatorPolicyJpaEntity {
     @Column(nullable = false, updatable = false, length = 20)
     private PolicyType type;
 
-    @Column(nullable = false, insertable = false, updatable = false, length = 200)
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(nullable = false, insertable = false, updatable = false, columnDefinition = "text")
+    @Column(nullable = false, columnDefinition = "text")
     private String body;
 
-    @Column(nullable = false, insertable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false, insertable = false, updatable = false)
+    @Column(nullable = false)
     private Instant updatedAt;
 }
