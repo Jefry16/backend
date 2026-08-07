@@ -22,11 +22,13 @@ import java.util.UUID;
  * Per-locale overlays on one policy. Reads member; writes ADMIN+.
  *
  * <p>Mirrors {@code ExperienceTranslationController} and
- * {@code PageTranslationController} — the nested resource here is the policy,
- * keyed by its type rather than by an id.
+ * {@code PageTranslationController} exactly: the overlay hangs off the owning
+ * resource's id. The row is still stored under the policy's <em>type</em>, which
+ * is what the storefront reads and what the composite foreign key cascades on —
+ * the id addresses, the type stores.
  */
 @RestController
-@RequestMapping("/api/tour-operators/{tourOperatorId}/policies/{type}/translations")
+@RequestMapping("/api/tour-operators/{tourOperatorId}/policies/{policyId}/translations")
 public class PolicyTranslationController {
 
     private final ListPolicyTranslationsUseCase listUseCase;
@@ -44,30 +46,30 @@ public class PolicyTranslationController {
     @GetMapping
     public ResponseEntity<List<PolicyTranslationResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @PathVariable String type,
+            @PathVariable UUID policyId,
             @AuthenticationPrincipal String userIdStr) {
-        return ResponseEntity.ok(listUseCase.execute(tourOperatorId, type, UUID.fromString(userIdStr))
+        return ResponseEntity.ok(listUseCase.execute(tourOperatorId, policyId, UUID.fromString(userIdStr))
                 .stream().map(PolicyTranslationResponse::from).toList());
     }
 
     @PutMapping("/{locale}")
     public ResponseEntity<Void> upsert(
             @PathVariable UUID tourOperatorId,
-            @PathVariable String type,
+            @PathVariable UUID policyId,
             @PathVariable String locale,
             @RequestBody UpsertPolicyTranslationInput body,
             @AuthenticationPrincipal String userIdStr) {
-        upsertUseCase.execute(tourOperatorId, type, locale, body, UUID.fromString(userIdStr));
+        upsertUseCase.execute(tourOperatorId, policyId, locale, body, UUID.fromString(userIdStr));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{locale}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
-            @PathVariable String type,
+            @PathVariable UUID policyId,
             @PathVariable String locale,
             @AuthenticationPrincipal String userIdStr) {
-        deleteUseCase.execute(tourOperatorId, type, locale, UUID.fromString(userIdStr));
+        deleteUseCase.execute(tourOperatorId, policyId, locale, UUID.fromString(userIdStr));
         return ResponseEntity.noContent().build();
     }
 }

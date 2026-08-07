@@ -27,16 +27,20 @@ public class TourOperatorPolicyRepositoryImpl implements TourOperatorPolicyRepos
     }
 
     @Override
-    public Policy upsert(Policy policy) {
-        // save() merges on the assigned composite id -> create-or-replace the row.
+    public Policy save(Policy policy) {
         return TourOperatorPolicyMapper.toDomain(
                 jpaRepository.save(TourOperatorPolicyMapper.toJpa(policy)));
     }
 
     @Override
-    public Optional<Policy> findByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type) {
-        return jpaRepository.findByTourOperatorIdAndType(tourOperatorId, type)
+    public Optional<Policy> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId) {
+        return jpaRepository.findByIdAndTourOperatorId(id, tourOperatorId)
                 .map(TourOperatorPolicyMapper::toDomain);
+    }
+
+    @Override
+    public boolean existsByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type) {
+        return jpaRepository.existsByTourOperatorIdAndType(tourOperatorId, type);
     }
 
     @Override
@@ -46,7 +50,11 @@ public class TourOperatorPolicyRepositoryImpl implements TourOperatorPolicyRepos
     }
 
     @Override
-    public boolean deleteByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type) {
-        return jpaRepository.deleteByTourOperatorIdAndType(tourOperatorId, type) > 0;
+    public boolean deleteById(UUID id) {
+        if (!jpaRepository.existsById(id)) {
+            return false;
+        }
+        jpaRepository.deleteById(id);
+        return true;
     }
 }

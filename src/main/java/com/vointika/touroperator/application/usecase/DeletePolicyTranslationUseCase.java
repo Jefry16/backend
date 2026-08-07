@@ -1,6 +1,7 @@
 package com.vointika.touroperator.application.usecase;
 
 import com.vointika.touroperator.domain.enums.PolicyType;
+import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorPolicyTranslationRepository;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -20,26 +21,30 @@ import java.util.UUID;
  */
 public class DeletePolicyTranslationUseCase {
 
+    private final TourOperatorPolicyRepository policyRepository;
     private final TourOperatorPolicyTranslationRepository translationRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
-    public DeletePolicyTranslationUseCase(TourOperatorPolicyTranslationRepository translationRepository,
+    public DeletePolicyTranslationUseCase(TourOperatorPolicyRepository policyRepository,
+                                          TourOperatorPolicyTranslationRepository translationRepository,
                                           TourOperatorMembershipCheck membershipCheck,
                                           TransactionRunner transactionRunner,
                                           AuditTrailPort auditTrailPort) {
+        this.policyRepository = policyRepository;
         this.translationRepository = translationRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
     }
 
-    public void execute(UUID tourOperatorId, String rawType, String rawLocale, UUID callerUserId) {
+    public void execute(UUID tourOperatorId, UUID policyId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        PolicyType type = PolicyType.from(rawType)
-                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
         String locale = new LocaleCode(rawLocale).value();
+        PolicyType type = policyRepository.findByIdAndTourOperatorId(policyId, tourOperatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"))
+                .type();
 
         if (translationRepository.find(tourOperatorId, type, locale).isEmpty()) {
             return;

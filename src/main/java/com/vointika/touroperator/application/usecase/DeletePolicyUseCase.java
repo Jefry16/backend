@@ -1,9 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.touroperator.domain.enums.PolicyType;
 import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
-import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -24,42 +21,35 @@ import java.util.UUID;
  */
 public class DeletePolicyUseCase {
 
-    private final TourOperatorRepository tourOperatorRepository;
     private final TourOperatorPolicyRepository policyRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
-    public DeletePolicyUseCase(TourOperatorRepository tourOperatorRepository,
-                               TourOperatorPolicyRepository policyRepository,
+    public DeletePolicyUseCase(TourOperatorPolicyRepository policyRepository,
                                TourOperatorMembershipCheck membershipCheck,
                                TransactionRunner transactionRunner,
                                AuditTrailPort auditTrailPort) {
-        this.tourOperatorRepository = tourOperatorRepository;
         this.policyRepository = policyRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
     }
 
-    public void execute(UUID tourOperatorId, String rawType, UUID callerUserId) {
+    public void execute(UUID tourOperatorId, UUID policyId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        PolicyType type = PolicyType.from(rawType)
-                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
-
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
-        // Probe first: an idempotent delete that removes nothing records nothing.
-        if (policyRepository.findByTourOperatorIdAndType(tourOperatorId, type).isEmpty()) {
+        // Tenant-scoped probe: an id from another operator finds nothing, so this
+        // is an idempotent no-op rather than a cross-tenant delete.
+        var existing = policyRepository.findByIdAndTourOperatorId(policyId, tourOperatorId);
+        if (existing.isEmpty()) {
             return;
         }
         transactionRunner.run(() -> {
-            policyRepository.deleteByTourOperatorIdAndType(tourOperatorId, type);
+            policyRepository.deleteById(policyId);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "TOUR_OPERATOR", tourOperatorId, "tour_operator.policy_deleted",
-                    Map.of("type", type.name())));
+                    Map.of("type", existing.get().type().name())));
         });
     }
 }

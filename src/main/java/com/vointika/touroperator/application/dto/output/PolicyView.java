@@ -3,9 +3,11 @@ package com.vointika.touroperator.application.dto.output;
 import com.vointika.touroperator.domain.entity.Policy;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /** One policy, flattened to primitives for the wire. */
 public record PolicyView(
+        UUID id,
         String type,
         String title,
         String body,
@@ -14,6 +16,7 @@ public record PolicyView(
 
     public static PolicyView from(Policy policy) {
         return new PolicyView(
+                policy.id(),
                 policy.type().name(),
                 policy.title().value(),
                 policy.body().value(),

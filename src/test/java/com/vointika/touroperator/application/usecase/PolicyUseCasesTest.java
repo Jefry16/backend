@@ -2,6 +2,7 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -16,7 +17,8 @@ import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.SortDirection;
 import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.valueobject.LocaleCode;
-import com.vointika.touroperator.application.dto.input.UpsertPolicyInput;
+import com.vointika.touroperator.application.dto.input.CreatePolicyInput;
+import com.vointika.touroperator.application.dto.input.UpdatePolicyInput;
 import com.vointika.touroperator.application.dto.input.UpsertPolicyTranslationInput;
 import com.vointika.touroperator.domain.entity.Policy;
 import com.vointika.touroperator.domain.entity.PolicyTranslation;
@@ -97,14 +99,19 @@ class PolicyUseCasesTest {
                 Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-01T00:00:00Z"));
     }
 
-    private UpsertPolicyUseCase upsert() {
-        return new UpsertPolicyUseCase(operatorRepository, policyRepository,
+    private CreatePolicyUseCase create() {
+        return new CreatePolicyUseCase(operatorRepository, policyRepository,
                 membershipCheck, transactionRunner, auditTrailPort, idGenerator);
     }
 
+    private UpdatePolicyUseCase update() {
+        return new UpdatePolicyUseCase(policyRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
     private DeletePolicyUseCase delete() {
-        return new DeletePolicyUseCase(operatorRepository, policyRepository,
-                membershipCheck, transactionRunner, auditTrailPort);
+        return new DeletePolicyUseCase(policyRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     private UpsertPolicyTranslationUseCase upsertTranslation() {
@@ -112,38 +119,60 @@ class PolicyUseCasesTest {
                 operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- upsert ----
+    // ---- create ----
 
     @Test
-    void upsertWritesANewPolicyAndAudits() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
-                .thenReturn(Optional.empty());
+    void createWritesThePolicyAndAudits() {
+        when(policyRepository.existsByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+                .thenReturn(false);
 
-        upsert().execute(OP, "CANCELLATION",
-                new UpsertPolicyInput("Cancellation policy", "<p>Free up to 48h before.</p>"), USER);
+        UUID id = create().execute(OP,
+                new CreatePolicyInput("CANCELLATION", "Cancellation policy",
+                        "<p>Free up to 48h before.</p>"), USER);
 
+        assertThat(id).isEqualTo(POLICY_ID);
         verify(membershipCheck).ensureAdmin(USER, OP);
         ArgumentCaptor<Policy> saved = ArgumentCaptor.forClass(Policy.class);
-        verify(policyRepository).upsert(saved.capture());
+        verify(policyRepository).save(saved.capture());
+        assertThat(saved.getValue().id()).isEqualTo(POLICY_ID);
         assertThat(saved.getValue().type()).isEqualTo(PolicyType.CANCELLATION);
-        assertThat(saved.getValue().title().value()).isEqualTo("Cancellation policy");
-        assertThat(saved.getValue().body().value()).isEqualTo("<p>Free up to 48h before.</p>");
 
         ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(audit.capture());
-        assertThat(audit.getValue().action()).isEqualTo("tour_operator.policy_updated");
+        assertThat(audit.getValue().action()).isEqualTo("tour_operator.policy_created");
         assertThat(audit.getValue().details()).containsEntry("type", "CANCELLATION");
+    }
+
+    @Test
+    void creatingASecondPolicyOfTheSameTypeIs409() {
+        // One per type is a UNIQUE constraint; this is the pre-check answering in
+        // the use case's own terms before the database has to.
+        when(policyRepository.existsByTourOperatorIdAndType(OP, PolicyType.PRIVACY))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> create().execute(OP,
+                new CreatePolicyInput("PRIVACY", "Privacy", "<p>b</p>"), USER))
+                .isInstanceOf(ResourceAlreadyExistsException.class);
+        verify(policyRepository, never()).save(any());
+    }
+
+    @Test
+    void anUnknownTypeInTheBodyIs422NotA404() {
+        // A body field, unlike a path segment naming no resource.
+        assertThatThrownBy(() -> create().execute(OP,
+                new CreatePolicyInput("REFUNDS", "t", "<p>b</p>"), USER))
+                .isInstanceOf(InvalidFieldException.class);
     }
 
     @Test
     void theAuditEntryNeverCarriesTheBody() {
         // The trail is not a revision store, and a policy body is up to 256 KiB of
         // HTML. Same rule the contact context follows when it audits by summary.
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.PRIVACY))
-                .thenReturn(Optional.empty());
+        when(policyRepository.existsByTourOperatorIdAndType(OP, PolicyType.PRIVACY))
+                .thenReturn(false);
 
-        upsert().execute(OP, "PRIVACY",
-                new UpsertPolicyInput("Privacy", "<p>SECRET-MARKER</p>"), USER);
+        create().execute(OP,
+                new CreatePolicyInput("PRIVACY", "Privacy", "<p>SECRET-MARKER</p>"), USER);
 
         ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(audit.capture());
@@ -151,76 +180,76 @@ class PolicyUseCasesTest {
     }
 
     @Test
-    void rewritingKeepsTheOriginalCreatedAt() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+    void createRequiresAdmin() {
+        doThrow(new ForbiddenException("admin")).when(membershipCheck).ensureAdmin(USER, OP);
+        assertThatThrownBy(() -> create().execute(OP,
+                new CreatePolicyInput("TERMS", "Terms", "<p>b</p>"), USER))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    // ---- update ----
+
+    @Test
+    void updateRewritesTheTextAndKeepsCreatedAt() {
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.of(existing()));
 
-        upsert().execute(OP, "CANCELLATION",
-                new UpsertPolicyInput("Cancellation policy", "<p>New</p>"), USER);
+        update().execute(OP, POLICY_ID, new UpdatePolicyInput("Cancellation policy",
+                "<p>New</p>"), USER);
 
         ArgumentCaptor<Policy> saved = ArgumentCaptor.forClass(Policy.class);
-        verify(policyRepository).upsert(saved.capture());
+        verify(policyRepository).save(saved.capture());
+        assertThat(saved.getValue().id()).isEqualTo(POLICY_ID);
         assertThat(saved.getValue().createdAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         assertThat(saved.getValue().updatedAt()).isAfter(Instant.parse("2026-01-01T00:00:00Z"));
         assertThat(saved.getValue().body().value()).isEqualTo("<p>New</p>");
     }
 
     @Test
-    void upsertRejectsAnUnknownType() {
-        // 404 rather than valueOf's IllegalArgumentException, which is a 500.
-        assertThatThrownBy(() -> upsert().execute(OP, "REFUNDS",
-                new UpsertPolicyInput("t", "<p>b</p>"), USER))
+    void updatingAPolicyOfAnotherOperatorIs404() {
+        // The lookup is tenant-scoped, so a valid id from another operator finds
+        // nothing — byte-identical to an id that does not exist.
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> update().execute(OP, POLICY_ID,
+                new UpdatePolicyInput("t", "<p>b</p>"), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
-        verify(policyRepository, never()).upsert(any());
+        verify(policyRepository, never()).save(any());
     }
 
     @Test
-    void upsertRejectsABlankBody() {
-        assertThatThrownBy(() -> upsert().execute(OP, "TERMS",
-                new UpsertPolicyInput("Terms", "   "), USER))
+    void updateRejectsABlankBody() {
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
+                .thenReturn(Optional.of(existing()));
+        assertThatThrownBy(() -> update().execute(OP, POLICY_ID,
+                new UpdatePolicyInput("Terms", "   "), USER))
                 .isInstanceOf(InvalidFieldException.class);
-    }
-
-    @Test
-    void upsertRequiresAdmin() {
-        doThrow(new ForbiddenException("admin")).when(membershipCheck).ensureAdmin(USER, OP);
-        assertThatThrownBy(() -> upsert().execute(OP, "TERMS",
-                new UpsertPolicyInput("Terms", "<p>b</p>"), USER))
-                .isInstanceOf(ForbiddenException.class);
-    }
-
-    @Test
-    void upsertOfAMissingOperatorIs404() {
-        when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> upsert().execute(OP, "TERMS",
-                new UpsertPolicyInput("Terms", "<p>b</p>"), USER))
-                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // ---- get / list ----
 
     @Test
     void getReturnsThePolicy() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.of(existing()));
 
         var view = new GetPolicyUseCase(policyRepository, membershipCheck)
-                .execute(OP, "CANCELLATION", USER);
+                .execute(OP, POLICY_ID, USER);
 
         verify(membershipCheck).ensureMember(USER, OP);
+        assertThat(view.id()).isEqualTo(POLICY_ID);
         assertThat(view.type()).isEqualTo("CANCELLATION");
         assertThat(view.body()).isEqualTo("<p>Old</p>");
     }
 
     @Test
-    void getAnUnwrittenPolicyIs404NotAnEmptyDocument() {
-        // Unlike a translation overlay, absence is meaningful here: it is what the
-        // storefront serves as a 404, so the admin API says the same thing.
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.LEGAL_NOTICE))
+    void gettingAPolicyOfAnotherOperatorIs404() {
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> new GetPolicyUseCase(policyRepository, membershipCheck)
-                .execute(OP, "LEGAL_NOTICE", USER))
+                .execute(OP, POLICY_ID, USER))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -251,26 +280,29 @@ class PolicyUseCasesTest {
 
     @Test
     void deleteRemovesThePolicyAndAudits() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.of(existing()));
 
-        delete().execute(OP, "CANCELLATION", USER);
+        delete().execute(OP, POLICY_ID, USER);
 
         verify(membershipCheck).ensureAdmin(USER, OP);
-        verify(policyRepository).deleteByTourOperatorIdAndType(OP, PolicyType.CANCELLATION);
+        verify(policyRepository).deleteById(POLICY_ID);
         ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(audit.capture());
         assertThat(audit.getValue().action()).isEqualTo("tour_operator.policy_deleted");
+        assertThat(audit.getValue().details()).containsEntry("type", "CANCELLATION");
     }
 
     @Test
-    void deletingAnUnwrittenPolicyIsIdempotentAndRecordsNothing() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.TERMS))
+    void deletingAnUnknownOrForeignPolicyIsIdempotentAndRecordsNothing() {
+        // Tenant-scoped probe, so this covers both "no such id" and "another
+        // operator's id" — neither can delete anything.
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.empty());
 
-        delete().execute(OP, "TERMS", USER);
+        delete().execute(OP, POLICY_ID, USER);
 
-        verify(policyRepository, never()).deleteByTourOperatorIdAndType(any(), any());
+        verify(policyRepository, never()).deleteById(any());
         verify(auditTrailPort, never()).append(any());
     }
 
@@ -278,10 +310,10 @@ class PolicyUseCasesTest {
 
     @Test
     void translationUpsertStoresTheOverlayAndAudits() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.of(existing()));
 
-        upsertTranslation().execute(OP, "CANCELLATION", "es",
+        upsertTranslation().execute(OP, POLICY_ID, "es",
                 new UpsertPolicyTranslationInput("Política de cancelación", "<p>Gratis</p>"), USER);
 
         ArgumentCaptor<PolicyTranslation> saved = ArgumentCaptor.forClass(PolicyTranslation.class);
@@ -299,10 +331,10 @@ class PolicyUseCasesTest {
     void aBlankTranslatedFieldIsStoredAsUntranslated() {
         // Null, not "": the storefront reads null as "fall back to canonical", and
         // an empty string would render a policy with no heading.
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.of(existing()));
 
-        upsertTranslation().execute(OP, "CANCELLATION", "es",
+        upsertTranslation().execute(OP, POLICY_ID, "es",
                 new UpsertPolicyTranslationInput("Política", "  "), USER);
 
         ArgumentCaptor<PolicyTranslation> saved = ArgumentCaptor.forClass(PolicyTranslation.class);
@@ -312,13 +344,13 @@ class PolicyUseCasesTest {
     }
 
     @Test
-    void translatingAnUnwrittenPolicyIs404() {
+    void translatingAnUnknownOrForeignPolicyIs404() {
         // Otherwise the row is unreachable: the storefront looks the page up by its
         // canonical policy, so an overlay with no owner could never render.
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.TERMS))
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> upsertTranslation().execute(OP, "TERMS", "es",
+        assertThatThrownBy(() -> upsertTranslation().execute(OP, POLICY_ID, "es",
                 new UpsertPolicyTranslationInput("T", null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(translationRepository, never()).upsert(any());
@@ -326,10 +358,10 @@ class PolicyUseCasesTest {
 
     @Test
     void translationRejectsALocaleTheOperatorDoesNotSupport() {
-        when(policyRepository.findByTourOperatorIdAndType(OP, PolicyType.CANCELLATION))
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
                 .thenReturn(Optional.of(existing()));
 
-        assertThatThrownBy(() -> upsertTranslation().execute(OP, "CANCELLATION", "fr",
+        assertThatThrownBy(() -> upsertTranslation().execute(OP, POLICY_ID, "fr",
                 new UpsertPolicyTranslationInput("T", null), USER))
                 .isInstanceOf(InvalidFieldException.class);
     }
@@ -339,8 +371,12 @@ class PolicyUseCasesTest {
         when(translationRepository.find(OP, PolicyType.CANCELLATION, "es"))
                 .thenReturn(Optional.empty());
 
-        new DeletePolicyTranslationUseCase(translationRepository, membershipCheck,
-                transactionRunner, auditTrailPort).execute(OP, "CANCELLATION", "es", USER);
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
+                .thenReturn(Optional.of(existing()));
+
+        new DeletePolicyTranslationUseCase(policyRepository, translationRepository,
+                membershipCheck, transactionRunner, auditTrailPort)
+                .execute(OP, POLICY_ID, "es", USER);
 
         verify(translationRepository, never()).delete(any(), any(), any());
         verify(auditTrailPort, never()).append(any());

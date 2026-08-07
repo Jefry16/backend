@@ -2,6 +2,7 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.touroperator.application.dto.output.PolicyTranslationView;
 import com.vointika.touroperator.domain.enums.PolicyType;
+import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorPolicyTranslationRepository;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -17,19 +18,23 @@ import java.util.UUID;
  */
 public class ListPolicyTranslationsUseCase {
 
+    private final TourOperatorPolicyRepository policyRepository;
     private final TourOperatorPolicyTranslationRepository translationRepository;
     private final TourOperatorMembershipCheck membershipCheck;
 
-    public ListPolicyTranslationsUseCase(TourOperatorPolicyTranslationRepository translationRepository,
+    public ListPolicyTranslationsUseCase(TourOperatorPolicyRepository policyRepository,
+                                         TourOperatorPolicyTranslationRepository translationRepository,
                                          TourOperatorMembershipCheck membershipCheck) {
+        this.policyRepository = policyRepository;
         this.translationRepository = translationRepository;
         this.membershipCheck = membershipCheck;
     }
 
-    public List<PolicyTranslationView> execute(UUID tourOperatorId, String rawType, UUID callerUserId) {
+    public List<PolicyTranslationView> execute(UUID tourOperatorId, UUID policyId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        PolicyType type = PolicyType.from(rawType)
-                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
+        PolicyType type = policyRepository.findByIdAndTourOperatorId(policyId, tourOperatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"))
+                .type();
         return translationRepository.findAllByTourOperatorIdAndType(tourOperatorId, type).stream()
                 .map(PolicyTranslationView::from)
                 .toList();

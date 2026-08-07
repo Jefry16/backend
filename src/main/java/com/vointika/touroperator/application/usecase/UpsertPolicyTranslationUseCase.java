@@ -23,10 +23,11 @@ import java.util.UUID;
 /**
  * Creates or replaces one policy's overlay for one locale. ADMIN+.
  *
- * <p>Guards: caller not ADMIN+ → 403; unknown type or unwritten policy → 404
- * (there is nothing to overlay); a locale outside the operator's supported set →
- * 422 ({@link OperatorLocalesQuery}). A blank field is treated as untranslated
- * (null → falls back to the canonical policy).
+ * <p>Guards: caller not ADMIN+ → 403; a policy id that is unknown <em>or belongs
+ * to another operator</em> → 404, since the lookup is tenant-scoped; a locale
+ * outside the operator's supported set → 422 ({@link OperatorLocalesQuery}). A
+ * blank field is treated as untranslated (null → falls back to the canonical
+ * policy).
  */
 public class UpsertPolicyTranslationUseCase {
 
@@ -51,19 +52,17 @@ public class UpsertPolicyTranslationUseCase {
         this.auditTrailPort = auditTrailPort;
     }
 
-    public void execute(UUID tourOperatorId, String rawType, String rawLocale,
+    public void execute(UUID tourOperatorId, UUID policyId, String rawLocale,
                         UpsertPolicyTranslationInput input, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        PolicyType type = PolicyType.from(rawType)
-                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
         LocaleCode locale = new LocaleCode(rawLocale);
 
-        // The policy is the owner: translating one that was never written would
-        // leave a row the storefront can never reach, since the canonical row is
-        // what the page is looked up by.
-        if (policyRepository.findByTourOperatorIdAndType(tourOperatorId, type).isEmpty()) {
-            throw new ResourceNotFoundException("Policy not found");
-        }
+        // The policy is the owner and the URL addresses it by id; its *type* is
+        // what the overlay is stored under, since that is the pair the storefront
+        // reads and the composite foreign key cascades on.
+        PolicyType type = policyRepository.findByIdAndTourOperatorId(policyId, tourOperatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"))
+                .type();
         if (!operatorLocalesQuery.findSupportedLocales(tourOperatorId).contains(locale.value())) {
             throw new InvalidFieldException(
                     "Locale '" + locale.value() + "' is not supported by this operator");

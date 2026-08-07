@@ -54,6 +54,7 @@ class PolicyTranslationControllerDocumentationTest {
 
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+    private static final String POLICY_ID = "019f8000-0000-7000-8000-000000000001";
     private static final String BODY =
             "{\"title\":\"Política de cancelación\","
                     + "\"body\":\"<p>Gratis hasta 48h antes.</p>\"}";
@@ -90,8 +91,8 @@ class PolicyTranslationControllerDocumentationTest {
         when(listUseCase.execute(any(), any(), any())).thenReturn(List.of(
                 new PolicyTranslationView("es", "Política de cancelación", "<p>Gratis</p>")));
 
-        mockMvc.perform(get("/api/tour-operators/{id}/policies/{type}/translations",
-                        OPERATOR_ID, "CANCELLATION")
+        mockMvc.perform(get("/api/tour-operators/{id}/policies/{policyId}/translations",
+                        OPERATOR_ID, POLICY_ID)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].locale").value("es"))
@@ -99,7 +100,7 @@ class PolicyTranslationControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("type").description("The policy type")),
+                                parameterWithName("policyId").description("The policy id")),
                         responseFields(
                                 fieldWithPath("[].locale").description("The translated locale"),
                                 fieldWithPath("[].title")
@@ -114,8 +115,8 @@ class PolicyTranslationControllerDocumentationTest {
     void upsert() throws Exception {
         authenticated();
 
-        mockMvc.perform(put("/api/tour-operators/{id}/policies/{type}/translations/{locale}",
-                        OPERATOR_ID, "CANCELLATION", "es")
+        mockMvc.perform(put("/api/tour-operators/{id}/policies/{policyId}/translations/{locale}",
+                        OPERATOR_ID, POLICY_ID, "es")
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNoContent())
@@ -123,8 +124,8 @@ class PolicyTranslationControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("type").description(
-                                        "The policy type; one that has not been written is a 404"),
+                                parameterWithName("policyId").description(
+                                        "The policy id; unknown or another operator's is a 404"),
                                 parameterWithName("locale").description(
                                         "Must be one of the operator's supported locales, else 422")),
                         requestFields(
@@ -140,15 +141,15 @@ class PolicyTranslationControllerDocumentationTest {
     void deleteOne() throws Exception {
         authenticated();
 
-        mockMvc.perform(delete("/api/tour-operators/{id}/policies/{type}/translations/{locale}",
-                        OPERATOR_ID, "CANCELLATION", "es")
+        mockMvc.perform(delete("/api/tour-operators/{id}/policies/{policyId}/translations/{locale}",
+                        OPERATOR_ID, POLICY_ID, "es")
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operators/policy-translations/delete",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("type").description("The policy type"),
+                                parameterWithName("policyId").description("The policy id"),
                                 parameterWithName("locale").description(
                                         "Deleting an absent overlay is an idempotent success"))));
     }
@@ -159,8 +160,8 @@ class PolicyTranslationControllerDocumentationTest {
         doThrow(new ResourceNotFoundException("Policy not found"))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
 
-        mockMvc.perform(put("/api/tour-operators/{id}/policies/{type}/translations/{locale}",
-                        OPERATOR_ID, "TERMS", "es")
+        mockMvc.perform(put("/api/tour-operators/{id}/policies/{policyId}/translations/{locale}",
+                        OPERATOR_ID, POLICY_ID, "es")
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNotFound());
@@ -172,8 +173,8 @@ class PolicyTranslationControllerDocumentationTest {
         doThrow(new InvalidFieldException("Locale 'fr' is not supported by this operator"))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
 
-        mockMvc.perform(put("/api/tour-operators/{id}/policies/{type}/translations/{locale}",
-                        OPERATOR_ID, "CANCELLATION", "fr")
+        mockMvc.perform(put("/api/tour-operators/{id}/policies/{policyId}/translations/{locale}",
+                        OPERATOR_ID, POLICY_ID, "fr")
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isUnprocessableEntity());

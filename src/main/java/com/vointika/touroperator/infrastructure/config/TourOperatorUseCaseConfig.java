@@ -59,7 +59,8 @@ import com.vointika.touroperator.application.usecase.GetOperatorTranslationUseCa
 import com.vointika.touroperator.application.usecase.UpsertOperatorTranslationUseCase;
 import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
 import com.vointika.touroperator.application.usecase.GetPolicyUseCase;
-import com.vointika.touroperator.application.usecase.UpsertPolicyUseCase;
+import com.vointika.touroperator.application.usecase.CreatePolicyUseCase;
+import com.vointika.touroperator.application.usecase.UpdatePolicyUseCase;
 import com.vointika.touroperator.application.usecase.DeletePolicyUseCase;
 import com.vointika.touroperator.application.usecase.ListPolicyTranslationsUseCase;
 import com.vointika.touroperator.application.usecase.UpsertPolicyTranslationUseCase;
@@ -420,33 +421,44 @@ public class TourOperatorUseCaseConfig {
     }
 
     @Bean
-    public UpsertPolicyUseCase upsertPolicyUseCase(
+    public CreatePolicyUseCase createPolicyUseCase(
             TourOperatorRepository tourOperatorRepository,
             TourOperatorPolicyRepository policyRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort,
             IdGenerator idGenerator) {
-        return new UpsertPolicyUseCase(tourOperatorRepository, policyRepository,
+        return new CreatePolicyUseCase(tourOperatorRepository, policyRepository,
                 membershipCheck, transactionRunner, auditTrailPort, idGenerator);
     }
 
     @Bean
-    public DeletePolicyUseCase deletePolicyUseCase(
-            TourOperatorRepository tourOperatorRepository,
+    public UpdatePolicyUseCase updatePolicyUseCase(
             TourOperatorPolicyRepository policyRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new DeletePolicyUseCase(tourOperatorRepository, policyRepository,
-                membershipCheck, transactionRunner, auditTrailPort);
+        return new UpdatePolicyUseCase(policyRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public DeletePolicyUseCase deletePolicyUseCase(
+            TourOperatorPolicyRepository policyRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeletePolicyUseCase(policyRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
     public ListPolicyTranslationsUseCase listPolicyTranslationsUseCase(
+            TourOperatorPolicyRepository policyRepository,
             TourOperatorPolicyTranslationRepository translationRepository,
             TourOperatorMembershipCheck membershipCheck) {
-        return new ListPolicyTranslationsUseCase(translationRepository, membershipCheck);
+        return new ListPolicyTranslationsUseCase(policyRepository, translationRepository,
+                membershipCheck);
     }
 
     @Bean
@@ -463,11 +475,12 @@ public class TourOperatorUseCaseConfig {
 
     @Bean
     public DeletePolicyTranslationUseCase deletePolicyTranslationUseCase(
+            TourOperatorPolicyRepository policyRepository,
             TourOperatorPolicyTranslationRepository translationRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new DeletePolicyTranslationUseCase(translationRepository, membershipCheck,
-                transactionRunner, auditTrailPort);
+        return new DeletePolicyTranslationUseCase(policyRepository, translationRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 }
