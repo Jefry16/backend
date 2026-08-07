@@ -1,5 +1,7 @@
 package com.vointika.touroperator.infrastructure.persistence.entity;
 
+import com.vointika.touroperator.domain.entity.Policy;
+import com.vointika.touroperator.domain.entity.PolicyTranslation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import org.junit.jupiter.api.Test;
@@ -11,59 +13,80 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The policies are a read path, and this pins the reason rather than the
- * setting. It is {@code BrandColumnsStayReadOnlyTest}'s invariant applied to
- * V12's tables: <b>a column is mapped read-only exactly while nothing can write
- * it.</b>
+ * Policy columns are writable <b>exactly while</b> the domain can carry the
+ * value — the biconditional {@code BrandColumnsStayReadOnlyTest} uses, now that
+ * policies have a write path.
  *
- * <p>Nothing can, today — there is no domain {@code Policy}, no repository that
- * saves one and no admin endpoint. That makes both directions silent:
+ * <p>This test used to assert the opposite: every column read-only, because
+ * nothing wrote a policy. That was the right guard while the storefront rendered
+ * documents no endpoint could author, and its own failure message said the write
+ * -path slice would take the flags off. This is that slice, so the assertion
+ * inverts rather than the test being deleted — the hazard it guards has not gone
+ * away, it has only changed direction:
  *
  * <ul>
- *   <li><b>Writable while nothing carries the value</b> — every write here would
- *       go through a mapper rebuilding the entity from something that does not
- *       hold these columns, so an unrelated save writes the null it had to
- *       invent. That is exactly how a translation upsert would blank a
- *       policy.</li>
- *   <li><b>Read-only once a writer exists</b> — the write path lands, every test
- *       that stops at the use case passes, and the UPDATE silently omits the
- *       column.</li>
+ *   <li><b>A column writable with no domain field</b> is nulled by every save
+ *       that does not mention it, because the mapper rebuilds the row from a
+ *       domain object that cannot hold the value.</li>
+ *   <li><b>A column read-only while the domain does carry it</b> accepts the
+ *       write at the use case, passes every test that stops there, and silently
+ *       drops the column from the UPDATE.</li>
  * </ul>
  *
- * <p>So the slice that adds the write path changes both halves together, and
- * this test is what says so at the moment it changes one.
+ * <p>Key columns are excluded: a primary key is written by definition, and
+ * {@code createdAt} is deliberately {@code updatable = false} so that rewriting
+ * a policy keeps the date it was first written.
  */
 class PolicyColumnsStayReadOnlyTest {
 
     @Test
-    void everyPolicyColumnIsReadOnlyWhileNothingWritesOne() {
-        for (Class<?> entity : List.of(TourOperatorPolicyJpaEntity.class,
-                TourOperatorPolicyTranslationJpaEntity.class)) {
-            for (Field field : persistentColumns(entity)) {
-                Column column = field.getAnnotation(Column.class);
-                assertThat(column.insertable() || column.updatable())
-                        .withFailMessage(
-                                "%s.%s is writable, but nothing writes a policy: there is no repository "
-                                        + "that saves one and no domain object behind this table. A "
-                                        + "writable column here is a column an unrelated save can null. "
-                                        + "The slice that adds the write path takes these flags off in "
-                                        + "the same change.",
-                                entity.getSimpleName(), field.getName())
-                        .isFalse();
-            }
+    void policyColumnsAreWritableExactlyWhileTheDomainCarriesThem() {
+        assertMapping(TourOperatorPolicyJpaEntity.class, Policy.class);
+        assertMapping(TourOperatorPolicyTranslationJpaEntity.class, PolicyTranslation.class);
+    }
+
+    private static void assertMapping(Class<?> entity, Class<?> domain) {
+        for (Field field : persistentColumns(entity)) {
+            Column column = field.getAnnotation(Column.class);
+            boolean domainCarriesIt = domainHasAccessor(domain, field.getName());
+            boolean writable = column.insertable() || column.updatable();
+
+            assertThat(writable)
+                    .withFailMessage(
+                            "%s.%s is %s, but the domain %s %s an accessor for it. Change both "
+                                    + "halves together: writable with no domain field means every save "
+                                    + "nulls the column; read-only with one means the write is silently "
+                                    + "dropped.",
+                            entity.getSimpleName(), field.getName(),
+                            writable ? "writable" : "read-only",
+                            domain.getSimpleName(),
+                            domainCarriesIt ? "has" : "does not have")
+                    .isEqualTo(domainCarriesIt);
         }
     }
 
-    /** Mapped, non-key fields — the primary key is written by definition and says nothing here. */
+    /**
+     * Mapped, non-key fields, minus {@code createdAt} — the key is written by
+     * definition, and createdAt's immutability is a decision of its own rather
+     * than a statement about the domain.
+     */
     private static List<Field> persistentColumns(Class<?> entity) {
         List<Field> fields = Arrays.stream(entity.getDeclaredFields())
                 .filter(f -> f.isAnnotationPresent(Column.class))
                 .filter(f -> !f.isAnnotationPresent(Id.class))
+                .filter(f -> !f.getName().equals("createdAt"))
                 .toList();
         assertThat(fields)
                 .withFailMessage("%s has no non-key @Column fields, so this test cannot see the mapping "
                         + "it exists to track. Fix the test, do not delete it.", entity.getSimpleName())
                 .isNotEmpty();
         return fields;
+    }
+
+    private static boolean domainHasAccessor(Class<?> domain, String property) {
+        String getter = "get" + Character.toUpperCase(property.charAt(0)) + property.substring(1);
+        return Arrays.stream(domain.getMethods())
+                .anyMatch(m -> m.getParameterCount() == 0
+                        && (m.getName().equals(getter) || m.getName().equals(property)));
     }
 }

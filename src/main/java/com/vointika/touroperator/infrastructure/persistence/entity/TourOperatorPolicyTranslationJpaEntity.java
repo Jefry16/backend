@@ -22,7 +22,10 @@ import java.util.UUID;
  *
  * <p>The third table in this codebase doing exactly that (PATTERNS §2a).
  *
- * <p>Read-only throughout, like the policy itself.
+ * <p>Writable since the admin write path landed, like the policy itself. Both
+ * content columns stay <b>nullable</b>: a row overlays the canonical document
+ * rather than replacing it, so an untranslated field must be storable as absent
+ * and not as an empty string.
  */
 @Entity
 @Table(schema = "touroperator", name = "tour_operator_policy_translations")
@@ -45,9 +48,9 @@ public class TourOperatorPolicyTranslationJpaEntity {
     @Column(nullable = false, updatable = false, length = 8)
     private String locale;
 
-    @Column(insertable = false, updatable = false, length = 200)
+    @Column(length = 200)
     private String title;
 
-    @Column(insertable = false, updatable = false, columnDefinition = "text")
+    @Column(columnDefinition = "text")
     private String body;
 }

@@ -1,0 +1,132 @@
+package com.vointika.touroperator.presentation.controller;
+
+import com.vointika.touroperator.application.dto.input.CreatePolicyInput;
+import com.vointika.touroperator.application.dto.input.UpdatePolicyInput;
+import com.vointika.touroperator.application.usecase.DeletePolicyUseCase;
+import com.vointika.touroperator.application.usecase.GetPolicyUseCase;
+import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
+import com.vointika.touroperator.application.usecase.CreatePolicyUseCase;
+import com.vointika.touroperator.application.usecase.UpdatePolicyUseCase;
+import com.vointika.touroperator.presentation.response.PolicyResponse;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.web.list.CursorPageResponse;
+import com.vointika.shared.web.list.ListQueryParser;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.net.URI;
+import java.util.UUID;
+
+/**
+ * The operator's four store policies. Reads member; writes ADMIN+ (membership
+ * enforced by the {@code /api/tour-operators/**} interceptor).
+ *
+ * <p><b>Addressed by id</b>, like every other resource in this API: {@code POST}
+ * creates, {@code GET}/{@code PUT}/{@code DELETE} take the policy's id. The
+ * {@code type} is chosen once, in the create body, and is immutable afterwards —
+ * it is the document's address <em>on the storefront</em>, so moving it is a
+ * delete and a create. One per type is a UNIQUE constraint, so a repeat is a
+ * <b>409</b>.
+ *
+ * <p>Every id lookup is <b>tenant-scoped</b>: the membership interceptor proves
+ * the caller belongs to the operator in the path, not that the id does, so the
+ * query binds the two. A policy id from another operator is a 404.
+ *
+ * <p>The enum name ({@code LEGAL_NOTICE}) is what the body carries, matching how
+ * this context writes {@code linkType} and {@code role}; the storefront's
+ * hyphenated slug is a public-URL concern {@code PolicySlug} owns.
+ */
+@RestController
+@RequestMapping("/api/tour-operators/{tourOperatorId}/policies")
+public class PolicyController {
+
+    private final ListPoliciesUseCase listUseCase;
+    private final ListQueryParser listQueryParser;
+    private final GetPolicyUseCase getUseCase;
+    private final CreatePolicyUseCase createUseCase;
+    private final UpdatePolicyUseCase updateUseCase;
+    private final DeletePolicyUseCase deleteUseCase;
+
+    public PolicyController(ListPoliciesUseCase listUseCase,
+                            GetPolicyUseCase getUseCase,
+                            CreatePolicyUseCase createUseCase,
+                            UpdatePolicyUseCase updateUseCase,
+                            DeletePolicyUseCase deleteUseCase,
+                            ListQueryParser listQueryParser) {
+        this.listUseCase = listUseCase;
+        this.listQueryParser = listQueryParser;
+        this.getUseCase = getUseCase;
+        this.createUseCase = createUseCase;
+        this.updateUseCase = updateUseCase;
+        this.deleteUseCase = deleteUseCase;
+    }
+
+    /**
+     * Every policy the operator has written, through the shared cursor framework
+     * — {@code ?filter[type][in]=TERMS&sort=-updatedAt}. Four rows will never
+     * paginate, but this is tenant data and speaks the same grammar as every
+     * other tenant list (PATTERNS §4b).
+     */
+    @GetMapping
+    public ResponseEntity<CursorPageResponse<PolicyResponse>> list(
+            @PathVariable UUID tourOperatorId,
+            HttpServletRequest request,
+            @AuthenticationPrincipal String userIdStr) {
+        ListQuery query = listQueryParser.parse(
+                request, ListPoliciesUseCase.SCHEMA, tourOperatorId);
+        return ResponseEntity.ok(CursorPageResponse.of(
+                listUseCase.execute(query, UUID.fromString(userIdStr)), PolicyResponse::from));
+    }
+
+    /** Writes a policy the operator has not written yet. ADMIN+. 409 on a repeat type. */
+    @PostMapping
+    public ResponseEntity<Void> create(
+            @PathVariable UUID tourOperatorId,
+            @RequestBody CreatePolicyInput body,
+            @AuthenticationPrincipal String userIdStr) {
+        UUID id = createUseCase.execute(tourOperatorId, body, UUID.fromString(userIdStr));
+        return ResponseEntity
+                .created(URI.create("/api/tour-operators/" + tourOperatorId + "/policies/" + id))
+                .build();
+    }
+
+    /** One policy. An id from another operator is a 404, not a document. */
+    @GetMapping("/{policyId}")
+    public ResponseEntity<PolicyResponse> get(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID policyId,
+            @AuthenticationPrincipal String userIdStr) {
+        return ResponseEntity.ok(PolicyResponse.from(
+                getUseCase.execute(tourOperatorId, policyId, UUID.fromString(userIdStr))));
+    }
+
+    /** Replaces the policy's text. The type is not settable — it is the address. */
+    @PutMapping("/{policyId}")
+    public ResponseEntity<Void> update(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID policyId,
+            @RequestBody UpdatePolicyInput body,
+            @AuthenticationPrincipal String userIdStr) {
+        updateUseCase.execute(tourOperatorId, policyId, body, UUID.fromString(userIdStr));
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Unpublishes the policy by removing it. ADMIN+. Idempotent. */
+    @DeleteMapping("/{policyId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID policyId,
+            @AuthenticationPrincipal String userIdStr) {
+        deleteUseCase.execute(tourOperatorId, policyId, UUID.fromString(userIdStr));
+        return ResponseEntity.noContent().build();
+    }
+}
