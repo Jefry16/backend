@@ -8,7 +8,13 @@ import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.Handle;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.FilterSpec;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.list.SortDirection;
+import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.touroperator.application.dto.input.UpsertPolicyInput;
 import com.vointika.touroperator.application.dto.input.UpsertPolicyTranslationInput;
@@ -48,6 +54,7 @@ class PolicyUseCasesTest {
 
     private static final UUID OP = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
     private static final UUID USER = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+    private static final UUID POLICY_ID = UUID.fromString("019f8000-0000-7000-8000-000000000001");
 
     private TourOperatorRepository operatorRepository;
     private TourOperatorPolicyRepository policyRepository;
@@ -56,6 +63,7 @@ class PolicyUseCasesTest {
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private AuditTrailPort auditTrailPort;
+    private IdGenerator idGenerator;
 
     @BeforeEach
     void setUp() {
@@ -66,6 +74,8 @@ class PolicyUseCasesTest {
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         auditTrailPort = mock(AuditTrailPort.class);
+        idGenerator = mock(IdGenerator.class);
+        when(idGenerator.newId()).thenReturn(POLICY_ID);
         doAnswer(i -> {
             ((Runnable) i.getArgument(0)).run();
             return null;
@@ -82,14 +92,14 @@ class PolicyUseCasesTest {
     }
 
     private Policy existing() {
-        return new Policy(OP, PolicyType.CANCELLATION,
+        return new Policy(POLICY_ID, OP, PolicyType.CANCELLATION,
                 new PolicyTitle("Cancellation policy"), new PolicyBody("<p>Old</p>"),
                 Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-01T00:00:00Z"));
     }
 
     private UpsertPolicyUseCase upsert() {
         return new UpsertPolicyUseCase(operatorRepository, policyRepository,
-                membershipCheck, transactionRunner, auditTrailPort);
+                membershipCheck, transactionRunner, auditTrailPort, idGenerator);
     }
 
     private DeletePolicyUseCase delete() {
@@ -215,14 +225,26 @@ class PolicyUseCasesTest {
     }
 
     @Test
-    void listReturnsOnlyWrittenPolicies() {
-        when(policyRepository.findAllByTourOperatorId(OP)).thenReturn(List.of(existing()));
+    void listReturnsOnlyWrittenPoliciesThroughTheCursorFramework() {
+        ListQuery query = new ListQuery(OP, FilterSpec.empty(),
+                new SortSpec("type", SortDirection.ASC), null);
+        when(policyRepository.list(query))
+                .thenReturn(new CursorPage<>(List.of(existing()), null));
 
-        var views = new ListPoliciesUseCase(policyRepository, membershipCheck).execute(OP, USER);
+        CursorPage<?> page = new ListPoliciesUseCase(policyRepository, membershipCheck)
+                .execute(query, USER);
 
         verify(membershipCheck).ensureMember(USER, OP);
-        assertThat(views).singleElement()
-                .satisfies(v -> assertThat(v.type()).isEqualTo("CANCELLATION"));
+        assertThat(page.data()).hasSize(1);
+        assertThat(page.nextCursor()).isNull();
+    }
+
+    @Test
+    void theListSchemaIsTenantScopedSoOneOperatorCannotSeeAnother() {
+        // The tenant predicate is the framework's, not the use case's — so this is
+        // the only place it can be asserted.
+        assertThat(ListPoliciesUseCase.SCHEMA.tenantScoped()).isTrue();
+        assertThat(ListPoliciesUseCase.SCHEMA.defaultSort().field()).isEqualTo("type");
     }
 
     // ---- delete ----

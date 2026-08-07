@@ -18,10 +18,14 @@ import java.util.UUID;
  * and no SEO override (its title is the title tag). Everything {@code Page}
  * needed a column and an endpoint for, this gets from its primary key.
  *
- * <p>Identity is {@code (tourOperatorId, type)} and neither is mutable: retyping
- * a policy would move it to another URL, which is a delete and a create.
+ * <p>The <b>identity</b> is still {@code (tourOperatorId, type)} — that pair is
+ * UNIQUE and neither part is mutable, because retyping a policy would move it to
+ * another URL, which is a delete and a create. The {@code id} is a surrogate the
+ * list framework needs, not a second way to address a policy: no endpoint takes
+ * one, since the type is the address.
  */
 public record Policy(
+        UUID id,
         UUID tourOperatorId,
         PolicyType type,
         PolicyTitle title,
@@ -30,6 +34,7 @@ public record Policy(
         Instant updatedAt) {
 
     public Policy {
+        Objects.requireNonNull(id, "id");
         Objects.requireNonNull(tourOperatorId, "tourOperatorId");
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(title, "title");
@@ -37,13 +42,13 @@ public record Policy(
     }
 
     /** A policy written for the first time. */
-    public static Policy write(UUID tourOperatorId, PolicyType type,
+    public static Policy write(UUID id, UUID tourOperatorId, PolicyType type,
                                PolicyTitle title, PolicyBody body, Instant now) {
-        return new Policy(tourOperatorId, type, title, body, now, now);
+        return new Policy(id, tourOperatorId, type, title, body, now, now);
     }
 
-    /** The same policy with new text — {@code createdAt} survives a rewrite. */
+    /** The same policy with new text — its id and {@code createdAt} survive a rewrite. */
     public Policy rewrite(PolicyTitle newTitle, PolicyBody newBody, Instant now) {
-        return new Policy(tourOperatorId, type, newTitle, newBody, createdAt, now);
+        return new Policy(id, tourOperatorId, type, newTitle, newBody, createdAt, now);
     }
 }

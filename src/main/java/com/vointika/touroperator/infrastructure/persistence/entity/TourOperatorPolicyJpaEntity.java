@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,10 +15,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * One of the operator's legal documents. The primary key is
- * {@code (tour_operator_id, type)}, which is what says <b>one per type</b>
- * structurally rather than through a nullable discriminator and a partial unique
- * index.
+ * One of the operator's legal documents. The primary key is a surrogate
+ * {@code id} and <b>one per type</b> is said by the
+ * {@code (tour_operator_id, type)} UNIQUE constraint — the {@code menus} shape.
+ *
+ * <p>V12 keyed this on the composite directly, which was right while nothing
+ * listed it. The shared list framework keys its cursor on a UUID {@code id} and
+ * puts that column in the ORDER BY of every query, so an entity without one
+ * cannot be listed through it at all; V13 added the surrogate. The identity is
+ * unchanged — it moved from the primary key to a constraint.
  *
  * <p>Writable since the admin write path landed. {@code created_at} and the two
  * key columns stay {@code updatable = false}: rewriting a policy keeps the date
@@ -36,7 +40,6 @@ import java.util.UUID;
  */
 @Entity
 @Table(schema = "touroperator", name = "tour_operator_policies")
-@IdClass(TourOperatorPolicyId.class)
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -44,9 +47,11 @@ public class TourOperatorPolicyJpaEntity {
 
     @Id
     @Column(nullable = false, updatable = false)
+    private UUID id;
+
+    @Column(nullable = false, updatable = false)
     private UUID tourOperatorId;
 
-    @Id
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false, length = 20)
     private PolicyType type;

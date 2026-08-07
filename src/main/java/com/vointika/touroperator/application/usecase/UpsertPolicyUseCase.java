@@ -12,6 +12,7 @@ import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
+import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 
 import java.time.Instant;
@@ -38,17 +39,20 @@ public class UpsertPolicyUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
+    private final IdGenerator idGenerator;
 
     public UpsertPolicyUseCase(TourOperatorRepository tourOperatorRepository,
                                TourOperatorPolicyRepository policyRepository,
                                TourOperatorMembershipCheck membershipCheck,
                                TransactionRunner transactionRunner,
-                               AuditTrailPort auditTrailPort) {
+                               AuditTrailPort auditTrailPort,
+                               IdGenerator idGenerator) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.policyRepository = policyRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
+        this.idGenerator = idGenerator;
     }
 
     public void execute(UUID tourOperatorId, String rawType,
@@ -68,7 +72,7 @@ public class UpsertPolicyUseCase {
         transactionRunner.run(() -> {
             Policy policy = policyRepository.findByTourOperatorIdAndType(tourOperatorId, type)
                     .map(existing -> existing.rewrite(title, body, now))
-                    .orElseGet(() -> Policy.write(tourOperatorId, type, title, body, now));
+                    .orElseGet(() -> Policy.write(idGenerator.newId(), tourOperatorId, type, title, body, now));
             policyRepository.upsert(policy);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),

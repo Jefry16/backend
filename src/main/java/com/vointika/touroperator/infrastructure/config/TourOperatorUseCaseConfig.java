@@ -425,9 +425,10 @@ public class TourOperatorUseCaseConfig {
             TourOperatorPolicyRepository policyRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
-            AuditTrailPort auditTrailPort) {
+            AuditTrailPort auditTrailPort,
+            IdGenerator idGenerator) {
         return new UpsertPolicyUseCase(tourOperatorRepository, policyRepository,
-                membershipCheck, transactionRunner, auditTrailPort);
+                membershipCheck, transactionRunner, auditTrailPort, idGenerator);
     }
 
     @Bean

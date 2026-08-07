@@ -3,10 +3,14 @@ package com.vointika.touroperator.infrastructure.persistence.repository;
 import com.vointika.touroperator.domain.entity.Policy;
 import com.vointika.touroperator.domain.enums.PolicyType;
 import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
+import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
+import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyJpaEntity;
 import com.vointika.touroperator.infrastructure.persistence.mapper.TourOperatorPolicyMapper;
+import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.ListQuery;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,9 +18,12 @@ import java.util.UUID;
 public class TourOperatorPolicyRepositoryImpl implements TourOperatorPolicyRepository {
 
     private final TourOperatorPolicyJpaRepository jpaRepository;
+    private final CriteriaListExecutor listExecutor;
 
-    public TourOperatorPolicyRepositoryImpl(TourOperatorPolicyJpaRepository jpaRepository) {
+    public TourOperatorPolicyRepositoryImpl(TourOperatorPolicyJpaRepository jpaRepository,
+                                            CriteriaListExecutor listExecutor) {
         this.jpaRepository = jpaRepository;
+        this.listExecutor = listExecutor;
     }
 
     @Override
@@ -33,11 +40,9 @@ public class TourOperatorPolicyRepositoryImpl implements TourOperatorPolicyRepos
     }
 
     @Override
-    public List<Policy> findAllByTourOperatorId(UUID tourOperatorId) {
-        // Ordered by type, the same ordering the storefront footer reads.
-        return jpaRepository.findByTourOperatorIdOrderByTypeAsc(tourOperatorId).stream()
-                .map(TourOperatorPolicyMapper::toDomain)
-                .toList();
+    public CursorPage<Policy> list(ListQuery query) {
+        return listExecutor.list(TourOperatorPolicyJpaEntity.class,
+                ListPoliciesUseCase.SCHEMA, query, TourOperatorPolicyMapper::toDomain);
     }
 
     @Override

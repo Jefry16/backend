@@ -1,7 +1,6 @@
 package com.vointika.touroperator.infrastructure.persistence.repository;
 
 import com.vointika.touroperator.domain.enums.PolicyType;
-import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyId;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,13 +10,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface TourOperatorPolicyJpaRepository
-        extends JpaRepository<TourOperatorPolicyJpaEntity, TourOperatorPolicyId> {
+        extends JpaRepository<TourOperatorPolicyJpaEntity, UUID> {
 
     /**
-     * The footer's list. Ordered for the same reason the palette and the social
-     * links are: a set has no order of its own, and a footer whose links reorder
-     * between requests reads as a bug. The type is the only key there is —
-     * a policy has no operator-chosen position and Shopify gives it none.
+     * The <b>storefront footer's</b> list, still a plain ordered read: that path
+     * renders four links on a public page and has no cursor to carry. The admin
+     * list goes through {@code CriteriaListExecutor} instead (PATTERNS §4b).
+     *
+     * <p>Ordered for the same reason the palette and the social links are: a set
+     * has no order of its own, and a footer whose links reorder between requests
+     * reads as a bug.
      */
     List<TourOperatorPolicyJpaEntity> findByTourOperatorIdOrderByTypeAsc(UUID tourOperatorId);
 

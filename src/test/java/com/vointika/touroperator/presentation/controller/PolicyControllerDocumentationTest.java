@@ -23,7 +23,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.FilterSpec;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.list.SortDirection;
+import com.vointika.shared.list.SortSpec;
+import com.vointika.shared.web.list.ListQueryParser;
+
 import java.time.Instant;
+import java.util.UUID;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -65,6 +73,7 @@ class PolicyControllerDocumentationTest {
     @MockitoBean private GetPolicyUseCase getUseCase;
     @MockitoBean private UpsertPolicyUseCase upsertUseCase;
     @MockitoBean private DeletePolicyUseCase deleteUseCase;
+    @MockitoBean private ListQueryParser listQueryParser;
     @MockitoBean private TourOperatorMembershipCheck membershipCheck;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
 
@@ -95,22 +104,32 @@ class PolicyControllerDocumentationTest {
     @Test
     void list() throws Exception {
         authenticated();
-        when(listUseCase.execute(any(), any())).thenReturn(List.of(view()));
+        when(listQueryParser.parse(any(), any(), any())).thenReturn(
+                new ListQuery(UUID.fromString(OPERATOR_ID), FilterSpec.empty(),
+                        new SortSpec("type", SortDirection.ASC), null));
+        when(listUseCase.execute(any(), any()))
+                .thenReturn(new CursorPage<>(List.of(view()), null));
 
         mockMvc.perform(get("/api/tour-operators/{id}/policies", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].type").value("CANCELLATION"))
+                .andExpect(jsonPath("$.data[0].type").value("CANCELLATION"))
                 .andDo(document("tour-operators/policies/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
-                                fieldWithPath("[].type").description(
+                                fieldWithPath("data[].type").description(
                                         "CANCELLATION, PRIVACY, TERMS or LEGAL_NOTICE"),
-                                fieldWithPath("[].title").description("The document's heading, and its title tag"),
-                                fieldWithPath("[].body").description("Raw HTML, stored and returned verbatim"),
-                                fieldWithPath("[].createdAt").description("When the policy was first written"),
-                                fieldWithPath("[].updatedAt").description("When its text last changed"))));
+                                fieldWithPath("data[].title")
+                                        .description("The document's heading, and its title tag"),
+                                fieldWithPath("data[].body")
+                                        .description("Raw HTML, stored and returned verbatim"),
+                                fieldWithPath("data[].createdAt").description("When the policy was first written"),
+                                fieldWithPath("data[].updatedAt").description("When its text last changed"),
+                                fieldWithPath("nextCursor").description(
+                                        "Opaque keyset cursor, null on the last page. Four policies never "
+                                                + "paginate, but the grammar is every tenant list's")
+                                        .optional())));
     }
 
     @Test

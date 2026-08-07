@@ -359,7 +359,10 @@ class StorefrontShopQueryImplTest {
     }
 
     private static TourOperatorPolicyJpaEntity policy(PolicyType type, String title, String body) {
-        return new TourOperatorPolicyJpaEntity(OPERATOR, type, title, body, Instant.EPOCH, Instant.EPOCH);
+        // The surrogate id (V13) is what the list framework keys its cursor on; the
+        // storefront reads by (operator, type) and never sees it.
+        return new TourOperatorPolicyJpaEntity(
+                UUID.randomUUID(), OPERATOR, type, title, body, Instant.EPOCH, Instant.EPOCH);
     }
 
     private static TourOperatorPolicyTranslationJpaEntity policyTranslation(

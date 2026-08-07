@@ -6,6 +6,10 @@ import com.vointika.touroperator.application.usecase.GetPolicyUseCase;
 import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
 import com.vointika.touroperator.application.usecase.UpsertPolicyUseCase;
 import com.vointika.touroperator.presentation.response.PolicyResponse;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.web.list.CursorPageResponse;
+import com.vointika.shared.web.list.ListQueryParser;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,6 +41,7 @@ import java.util.UUID;
 public class PolicyController {
 
     private final ListPoliciesUseCase listUseCase;
+    private final ListQueryParser listQueryParser;
     private final GetPolicyUseCase getUseCase;
     private final UpsertPolicyUseCase upsertUseCase;
     private final DeletePolicyUseCase deleteUseCase;
@@ -45,20 +49,30 @@ public class PolicyController {
     public PolicyController(ListPoliciesUseCase listUseCase,
                             GetPolicyUseCase getUseCase,
                             UpsertPolicyUseCase upsertUseCase,
-                            DeletePolicyUseCase deleteUseCase) {
+                            DeletePolicyUseCase deleteUseCase,
+                            ListQueryParser listQueryParser) {
         this.listUseCase = listUseCase;
+        this.listQueryParser = listQueryParser;
         this.getUseCase = getUseCase;
         this.upsertUseCase = upsertUseCase;
         this.deleteUseCase = deleteUseCase;
     }
 
-    /** Every policy the operator has written. Bounded at four, so a plain array. */
+    /**
+     * Every policy the operator has written, through the shared cursor framework
+     * — {@code ?filter[type][in]=TERMS&sort=-updatedAt}. Four rows will never
+     * paginate, but this is tenant data and speaks the same grammar as every
+     * other tenant list (PATTERNS §4b).
+     */
     @GetMapping
-    public ResponseEntity<List<PolicyResponse>> list(
+    public ResponseEntity<CursorPageResponse<PolicyResponse>> list(
             @PathVariable UUID tourOperatorId,
+            HttpServletRequest request,
             @AuthenticationPrincipal String userIdStr) {
-        return ResponseEntity.ok(listUseCase.execute(tourOperatorId, UUID.fromString(userIdStr))
-                .stream().map(PolicyResponse::from).toList());
+        ListQuery query = listQueryParser.parse(
+                request, ListPoliciesUseCase.SCHEMA, tourOperatorId);
+        return ResponseEntity.ok(CursorPageResponse.of(
+                listUseCase.execute(query, UUID.fromString(userIdStr)), PolicyResponse::from));
     }
 
     /** One policy; an unwritten one is a 404, the way the storefront serves it. */
