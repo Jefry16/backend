@@ -46,9 +46,9 @@ public class TourOperatorBrandColorJpaEntity {
     @Column(nullable = false, updatable = false)
     private short position;
 
-    @Column(nullable = false, insertable = false, updatable = false, length = 7)
+    @Column(nullable = false, length = 7)
     private String background;
 
-    @Column(nullable = false, insertable = false, updatable = false, length = 7)
+    @Column(nullable = false, length = 7)
     private String foreground;
 }

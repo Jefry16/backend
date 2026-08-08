@@ -44,6 +44,6 @@ public class TourOperatorBrandSocialLinkJpaEntity {
     @Column(nullable = false, updatable = false, length = 20)
     private BrandSocialPlatform platform;
 
-    @Column(nullable = false, insertable = false, updatable = false, length = 500)
+    @Column(nullable = false, length = 500)
     private String url;
 }

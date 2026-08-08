@@ -3,6 +3,7 @@ package com.vointika.touroperator.infrastructure.persistence.repository;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandSocialLinkId;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandSocialLinkJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,4 +17,12 @@ public interface TourOperatorBrandSocialLinkJpaRepository
      * there is no operator-chosen position, and Shopify has none either.
      */
     List<TourOperatorBrandSocialLinkJpaEntity> findByTourOperatorIdOrderByPlatformAsc(UUID tourOperatorId);
+
+    /**
+     * Clears the operator's links so the write can reinsert them. The whole
+     * collection is replaced rather than diffed — see
+     * {@code TourOperatorBrandRepositoryImpl.save}.
+     */
+    @Modifying
+    void deleteByTourOperatorId(UUID tourOperatorId);
 }

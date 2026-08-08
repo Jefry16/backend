@@ -16,15 +16,14 @@ import java.util.UUID;
  * its own table rather than seven more columns on an already 22-wide
  * {@code tour_operators}.
  *
- * <p><b>Everything but the logo is mapped read-only, and the flags are the
- * whole guard.</b> There is no write path for the brand's own fields yet, so
- * {@code TourOperatorBrandRepositoryImpl} rebuilds this entity from the one
- * value it does write and has nothing to put in the rest. Left writable, that
- * means setting a logo issues an UPDATE nulling the slogan, the description and
- * the three other images. {@code insertable/updatable = false} keeps them out of
- * every INSERT and UPDATE Hibernate generates. The slice that adds the brand
- * write path flips them, together with the repository method that writes each —
- * which is exactly what {@code BrandColumnsStayReadOnlyTest} asserts.
+ * <p><b>Writable since the brand write path landed.</b> Every field was mapped
+ * read-only while the only writer was the logo endpoint: the repository rebuilt
+ * this entity from the one value it wrote and had nothing to put in the rest, so
+ * leaving them writable meant setting a logo issued an UPDATE nulling the slogan,
+ * the description and the three other images. The domain {@code Brand} carries
+ * all of them now, {@code PUT .../brand} replaces the whole object, and
+ * {@code BrandColumnsStayReadOnlyTest} still pins the biconditional in both
+ * directions — a column is writable exactly while the domain can carry it.
  *
  * <p>The four media references are bare ids with no FK, for the reason V3 gives
  * for the logo: media FKs <em>into</em> touroperator, so a reverse FK would be
@@ -41,10 +40,10 @@ public class TourOperatorBrandJpaEntity {
     @Column(nullable = false, updatable = false)
     private UUID tourOperatorId;
 
-    @Column(length = 80, insertable = false, updatable = false)
+    @Column(length = 80)
     private String slogan;
 
-    @Column(length = 150, insertable = false, updatable = false)
+    @Column(length = 150)
     private String shortDescription;
 
     /**
@@ -55,13 +54,13 @@ public class TourOperatorBrandJpaEntity {
     @Column
     private UUID logoMediaId;
 
-    @Column(insertable = false, updatable = false)
+    @Column
     private UUID squareLogoMediaId;
 
-    @Column(insertable = false, updatable = false)
+    @Column
     private UUID faviconMediaId;
 
-    @Column(insertable = false, updatable = false)
+    @Column
     private UUID coverImageMediaId;
 
     @Column(nullable = false, updatable = false)

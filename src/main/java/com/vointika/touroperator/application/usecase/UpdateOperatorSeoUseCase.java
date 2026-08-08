@@ -30,7 +30,7 @@ import java.util.UUID;
  *
  * <p>{@code ogImageMediaId} is validated against the operator's own media
  * library (422 on a foreign or unknown id), the same guard
- * {@code SetOperatorLogoUseCase} applies — a bare media id with no FK is only as
+ * {@code UpdateBrandUseCase} applies — a bare media id with no FK is only as
  * trustworthy as the check that admits it.
  */
 public class UpdateOperatorSeoUseCase {
