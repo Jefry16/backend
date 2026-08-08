@@ -54,6 +54,9 @@
 \set experience_b_id    '01900000-0000-7000-8000-000000000021'
 \set experience_c_id    '01900000-0000-7000-8000-000000000022'
 
+\set policy_cancel_id   '01900000-0000-7000-8000-000000000040'
+\set policy_privacy_id  '01900000-0000-7000-8000-000000000041'
+
 \set slot_a1_id         '01900000-0000-7000-8000-000000000030'
 \set slot_a2_id         '01900000-0000-7000-8000-000000000031'
 \set slot_b1_id         '01900000-0000-7000-8000-000000000032'
@@ -226,10 +229,13 @@ ON CONFLICT (tour_operator_id, platform) DO UPDATE SET
 -- The bodies are real HTML — headings, a list, a link — because that is the
 -- whole point of the rendering decision: the storefront renders these unescaped,
 -- and a plain-text fixture could not tell a working page from an escaped one.
+-- `id` is required since V13, which gave policies a surrogate primary key so the
+-- admin list could go through the shared cursor framework. (tour_operator_id,
+-- type) is still UNIQUE, so the ON CONFLICT below is unchanged.
 INSERT INTO touroperator.tour_operator_policies
-    (tour_operator_id, type, title, body, created_at, updated_at)
+    (id, tour_operator_id, type, title, body, created_at, updated_at)
 VALUES
-    (:'operator_id', 'CANCELLATION', 'Cancellation policy',
+    (:'policy_cancel_id', :'operator_id', 'CANCELLATION', 'Cancellation policy',
      '<h2>Free cancellation</h2>' ||
      '<p>Cancel up to 48 hours before departure for a full refund.</p>' ||
      '<ul><li>48 hours or more: full refund.</li>' ||
@@ -238,7 +244,7 @@ VALUES
      '<p>Weather cancellations are always refunded in full. Write to ' ||
      '<a href="mailto:hola@acme.test">hola@acme.test</a> and we will sort it out.</p>',
      NOW(), NOW()),
-    (:'operator_id', 'PRIVACY', 'Privacy policy',
+    (:'policy_privacy_id', :'operator_id', 'PRIVACY', 'Privacy policy',
      '<h2>What we collect</h2>' ||
      '<p>Your name, email and phone number, so that we can run your booking.</p>' ||
      '<h2>What we do with it</h2>' ||
