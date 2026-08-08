@@ -549,6 +549,22 @@ Per-context folder `db/migration/<ctx>/`, independent V-sequence, own Postgres
 schema (`FlywayPerDomainConfig`). **Never modify an applied migration** — add the
 next `V`. Curated reference/seed data lives in the migration.
 
+**A migration that adds a NOT NULL column without a default must sweep
+`docker/dev-seed/dev-seed.sql` in the same change.** The seed runs under
+`psql -v ON_ERROR_STOP=1`, so the first INSERT that no longer matches the schema
+aborts it and **every INSERT after it never runs** — and the symptom is not a
+seed error. V13 gave policies a surrogate id; the seed still inserted them
+without one, which killed the file before the operator's OWNER membership and
+all three experiences. On a recreated database the admin then signs in and *has
+no operators at all*, which reads as the application losing data.
+
+That is the third time this has bitten (`is_best_seller`, the storefront
+`status`, now the policy id), so the rule is worth stating as a step rather than
+a caution: **after any migration that drops, renames, or adds a required column
+to a seeded table, grep the seed for that table before opening the PR.** Only
+`VointikaApplicationTests.contextLoads` runs migrations at all, and it does not
+run the seed — nothing in the build will tell you.
+
 ## 11. Recurring gotchas (check before you trip)
 
 - Boot 4 autoconfiguration is per-starter: depend on the **Boot starter**
