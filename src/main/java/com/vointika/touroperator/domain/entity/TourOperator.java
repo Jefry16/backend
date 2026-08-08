@@ -7,9 +7,13 @@ import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
+import com.vointika.touroperator.domain.valueobject.TourOperatorPhone;
+import com.vointika.touroperator.domain.valueobject.TourOperatorEmail;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,6 +47,8 @@ public class TourOperator {
     private OperatorSeoTitle seoTitle;
     private OperatorSeoDescription seoDescription;
     private UUID ogImageMediaId;
+    private TourOperatorPhone phone;
+    private TourOperatorEmail email;
     private final UUID createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -89,7 +95,7 @@ public class TourOperator {
                         LocaleCode primaryLocale,
                         Set<LocaleCode> supportedLocales) {
         this(id, name, handle, timezoneId, currencyId, address, createdBy, createdAt, updatedAt,
-                primaryLocale, supportedLocales, false, null, null, null, null, null);
+                primaryLocale, supportedLocales, false, null, null, null, null, null, null, null);
     }
 
     // Constructor for reconstituting from persistence
@@ -109,7 +115,9 @@ public class TourOperator {
                         String passwordMessage,
                         OperatorSeoTitle seoTitle,
                         OperatorSeoDescription seoDescription,
-                        UUID ogImageMediaId) {
+                        UUID ogImageMediaId,
+                        TourOperatorPhone phone,
+                        TourOperatorEmail email) {
         this.id = id;
         this.name = name;
         this.handle = handle;
@@ -124,6 +132,8 @@ public class TourOperator {
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
         this.ogImageMediaId = ogImageMediaId;
+        this.phone = phone;
+        this.email = email;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -195,6 +205,50 @@ public class TourOperator {
         this.updatedAt = Instant.now();
     }
 
+    /**
+     * Replaces the operator's own details. Every argument is the <b>new value or
+     * null to clear</b> — the use case has already decided which fields the
+     * PATCH touched, because a record cannot tell an absent JSON field from an
+     * explicit null.
+     *
+     * <p>{@code handle} is not here and never will be: it is the storefront
+     * subdomain, so changing it moves the shop's address.
+     *
+     * <p><b>Changing {@code timezoneId} reinterprets every stored departure.</b>
+     * Slots hold operator-LOCAL wall-clock times ({@code LocalDateTime}, no
+     * zone), so a 10:00 sailing stays "10:00" and silently becomes a different
+     * instant — and the past-date guard on slot creation starts judging against
+     * a different today. Nothing here rewrites those rows. This is allowed by
+     * decision, not by oversight, and the audit entry records the change so the
+     * reinterpretation is at least traceable.
+     */
+    public void updateDetails(TourOperatorName newName,
+                              TourOperatorAddress newAddress,
+                              TourOperatorPhone newPhone,
+                              TourOperatorEmail newEmail,
+                              UUID newTimezoneId,
+                              UUID newCurrencyId) {
+        this.name = newName;
+        this.address = newAddress;
+        this.phone = newPhone;
+        this.email = newEmail;
+        this.timezoneId = newTimezoneId;
+        this.currencyId = newCurrencyId;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Audit-worthy, non-sensitive fields — never the storefront password. */
+    public Map<String, Object> auditSnapshot() {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("name", name == null ? null : name.value());
+        snapshot.put("address", address == null ? null : address.value());
+        snapshot.put("phone", phone == null ? null : phone.value());
+        snapshot.put("email", email == null ? null : email.value());
+        snapshot.put("timezoneId", timezoneId == null ? null : timezoneId.toString());
+        snapshot.put("currencyId", currencyId == null ? null : currencyId.toString());
+        return snapshot;
+    }
+
     public UUID getId() { return id; }
     public TourOperatorName getName() { return name; }
     public Handle getHandle() { return handle; }
@@ -209,6 +263,8 @@ public class TourOperator {
     public OperatorSeoTitle getSeoTitle() { return seoTitle; }
     public OperatorSeoDescription getSeoDescription() { return seoDescription; }
     public UUID getOgImageMediaId() { return ogImageMediaId; }
+    public TourOperatorPhone getPhone() { return phone; }
+    public TourOperatorEmail getEmail() { return email; }
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
