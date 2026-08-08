@@ -313,21 +313,6 @@ Self = leave; other = ADMIN+. The last owner cannot be removed.
 
 operation::tour-operators/members/remove[]
 
-[[resources-operator-logo-set]]
-==== Set the Operator Logo
-
-ADMIN+ only. Points the operator's logo at a media id from its own library
-(upload via the Media API first). A media id not owned by this operator → 422.
-The resolved logo URL surfaces on the operator in the profile's operator list.
-
-operation::tour-operators/logo/set[]
-
-[[resources-operator-logo-clear]]
-==== Clear the Operator Logo
-
-ADMIN+ only. Removes the logo. Idempotent.
-
-operation::tour-operators/logo/clear[]
 
 [[resources-operator-locales-get]]
 ==== Get the Operator's Languages
@@ -344,6 +329,216 @@ platform language (`GET /api/languages`) or → 422; the primary must be one of 
 supported locales or → 422.
 
 operation::tour-operators/locales/update[]
+
+[[resources-operator-get]]
+==== Get the Operator
+
+Any member. The operator's own details.
+
+operation::tour-operators/get[]
+
+[[resources-operator-update]]
+==== Update the Operator
+
+ADMIN+ only. An absent field is unchanged; a blank string clears an optional one
+(phone, email). `handle` is not editable — it is the storefront subdomain.
+
+Changing `timezoneId` leaves every stored departure at the wall-clock hour it was
+authored: a 10:00 sailing stays a 10:00 sailing. That is deliberate — it is what
+correcting a mis-set timezone requires.
+
+operation::tour-operators/update[]
+
+[[resources-operator-member-get]]
+==== Get a Team Member
+
+Any member.
+
+operation::tour-operators/members/get[]
+
+[[resources-operator-seo-get]]
+==== Get Shop SEO
+
+Any member. The shop-level SEO defaults every page type falls back to.
+
+operation::tour-operators/seo/get[]
+
+[[resources-operator-seo-update]]
+==== Update Shop SEO
+
+ADMIN+ only. `ogImageMediaId` must be a media id from this operator's library.
+
+operation::tour-operators/seo/update[]
+
+[[resources-operator-brand-get]]
+==== Get the Brand
+
+Any member. Slogan, short description, four images and the ordered colour
+palette. An operator who has filled in nothing gets an empty brand, not a 404.
+
+operation::tour-operators/brand/get[]
+
+[[resources-operator-brand-update]]
+==== Update the Brand
+
+ADMIN+ only. A full replace, including both collections: an absent field clears
+it and absent collections empty them. Array order becomes the palette order a
+theme indexes. Media ids must belong to this operator; social links accept http
+and https only.
+
+operation::tour-operators/brand/update[]
+
+[[resources-operator-password-get]]
+==== Get Storefront Password Protection
+
+Any member — including the password itself, which is a shared gate the operator
+hands out, not a credential.
+
+operation::storefront-password/get[]
+
+[[resources-operator-password-update]]
+==== Update Storefront Password Protection
+
+ADMIN+ only. Enabling with no password stored and none supplied → 422. A null or
+blank password keeps the stored one; a blank message clears it.
+
+operation::storefront-password/update[]
+
+[[resources-operator-translations-list]]
+==== List Operator Translations
+
+Any member. One row per translated locale.
+
+operation::tour-operators/translations/list[]
+
+[[resources-operator-translations-get]]
+==== Get an Operator Translation
+
+Any member. An untranslated locale returns an empty overlay, not a 404.
+
+operation::tour-operators/translations/get[]
+
+[[resources-operator-translations-upsert]]
+==== Upsert an Operator Translation
+
+ADMIN+ only. Overlays SEO title/description, the gate-page message, and the
+brand's slogan and short description. A blank field means untranslated, so the
+canonical value is used. Unsupported locale → 422.
+
+operation::tour-operators/translations/upsert[]
+
+[[resources-operator-translations-delete]]
+==== Delete an Operator Translation
+
+ADMIN+ only. Idempotent.
+
+operation::tour-operators/translations/delete[]
+
+[[resources-policies-list]]
+==== List Store Policies
+
+Any member. Cursor-paginated; filter `type`/`title`/`createdAt`/`updatedAt`,
+sort `type` (default), `createdAt`, `updatedAt`, `id`.
+
+operation::tour-operators/policies/list[]
+
+[[resources-policies-create]]
+==== Create a Store Policy
+
+ADMIN+ only. `type` is one of CANCELLATION, PRIVACY, TERMS, LEGAL_NOTICE, chosen
+once and immutable — it is the document's address on the storefront. A second
+policy of the same type → 409; an unknown type → 422. `body` is raw HTML, stored
+verbatim and rendered unescaped.
+
+operation::tour-operators/policies/create[]
+
+[[resources-policies-get]]
+==== Get a Store Policy
+
+Any member. A policy id belonging to another operator → 404.
+
+operation::tour-operators/policies/get[]
+
+[[resources-policies-update]]
+==== Update a Store Policy
+
+ADMIN+ only. Replaces the title and body. The type is not settable.
+
+operation::tour-operators/policies/update[]
+
+[[resources-policies-delete]]
+==== Delete a Store Policy
+
+ADMIN+ only. This is how a policy is unpublished: its storefront URL 404s again
+and its translations cascade away. Idempotent.
+
+operation::tour-operators/policies/delete[]
+
+[[resources-policy-translations-list]]
+==== List Policy Translations
+
+Any member. Every locale one policy has been translated into.
+
+operation::tour-operators/policy-translations/list[]
+
+[[resources-policy-translations-upsert]]
+==== Upsert a Policy Translation
+
+ADMIN+ only. Overlays title and body; a blank field falls back to the canonical
+document. Unsupported locale → 422; an unwritten policy → 404.
+
+operation::tour-operators/policy-translations/upsert[]
+
+[[resources-policy-translations-delete]]
+==== Delete a Policy Translation
+
+ADMIN+ only. Idempotent.
+
+operation::tour-operators/policy-translations/delete[]
+
+[[resources-menus-list]]
+==== List Menus
+
+Any member. Cursor-paginated.
+
+operation::menus/list[]
+
+[[resources-menus-get]]
+==== Get a Menu
+
+Any member. Returns the full item tree.
+
+operation::menus/get[]
+
+[[resources-menus-create]]
+==== Create a Menu
+
+ADMIN+ only. The handle is immutable once set; a duplicate → 409.
+
+operation::menus/create[]
+
+[[resources-menus-rename]]
+==== Rename a Menu
+
+ADMIN+ only. Title only — the handle is what a theme references.
+
+operation::menus/rename[]
+
+[[resources-menus-replace-items]]
+==== Replace a Menu's Items
+
+ADMIN+ only. Writes the whole tree at once: every item is validated before any is
+written, ids are fresh on each save, and one audit event is recorded. Depth is
+capped at 3. EXPERIENCE and PAGE targets must belong to this operator → 422.
+
+operation::menus/replace-items[]
+
+[[resources-menus-delete]]
+==== Delete a Menu
+
+ADMIN+ only.
+
+operation::menus/delete[]
 
 === Media
 
@@ -380,6 +575,14 @@ operation::media/get[]
 ADMIN+ only. Removes the record and its stored object. 204.
 
 operation::media/delete[]
+
+[[resources-media-describe]]
+==== Describe Media
+
+ADMIN+ only. Sets or clears an image's alt text; blank clears it. Width and
+height are measured from the file at upload and are not settable here.
+
+operation::media/describe[]
 
 === Experiences
 
@@ -474,3 +677,484 @@ operation::experiences/translations/upsert[]
 ADMIN+ only. Removes a locale's overlay. Idempotent. 204.
 
 operation::experiences/translations/delete[]
+
+=== Slots
+
+A slot is a bookable departure. Times are the operator's local wall clock.
+
+[[resources-slots-list]]
+==== List Slots
+
+Any member. Soonest first.
+
+operation::slots/list[]
+
+[[resources-slots-get]]
+==== Get a Slot
+
+Any member.
+
+operation::slots/get[]
+
+[[resources-slots-create-single]]
+==== Create a Slot
+
+ADMIN+ only. Start and end are operator-local; the span must be positive and at
+most 24 hours, and the date must not be in the past. Per-audience price and
+capacity are frozen at creation.
+
+operation::slots/create-single[]
+
+[[resources-slots-create-recurring]]
+==== Create Recurring Slots
+
+ADMIN+ only. Generates one slot per matching day in the window.
+
+operation::slots/create-recurring[]
+
+[[resources-slots-update]]
+==== Update a Slot
+
+ADMIN+ only. Status and per-audience capacity. Timing is immutable — cancel and
+recreate instead.
+
+operation::slots/update[]
+
+[[resources-slots-cancel]]
+==== Cancel a Slot
+
+ADMIN+ only.
+
+operation::slots/cancel[]
+
+=== Audiences
+
+Pax pricing tiers (Adult, Child, …), reused across slots.
+
+[[resources-audiences-list]]
+==== List Audiences
+
+Any member.
+
+operation::audiences/list[]
+
+[[resources-audiences-get]]
+==== Get an Audience
+
+Any member.
+
+operation::audiences/get[]
+
+[[resources-audiences-create]]
+==== Create an Audience
+
+ADMIN+ only. The name is unique per operator, case-insensitively → 409.
+
+operation::audiences/create[]
+
+[[resources-audiences-update]]
+==== Update an Audience
+
+ADMIN+ only. Partial. A name or pax change propagates onto existing slot
+snapshots.
+
+operation::audiences/update[]
+
+[[resources-audience-translations-list]]
+==== List Audience Translations
+
+Any member.
+
+operation::audience-translations/list[]
+
+[[resources-audience-translations-get]]
+==== Get an Audience Translation
+
+Any member.
+
+operation::audience-translations/get[]
+
+[[resources-audience-translations-upsert]]
+==== Upsert an Audience Translation
+
+ADMIN+ only. Unsupported locale → 422.
+
+operation::audience-translations/upsert[]
+
+[[resources-audience-translations-delete]]
+==== Delete an Audience Translation
+
+ADMIN+ only. Idempotent.
+
+operation::audience-translations/delete[]
+
+=== Pickup Locations
+
+The operator's pickup catalogue. Not yet linked to slots.
+
+[[resources-pickup-list]]
+==== List Pickup Locations
+
+Any member.
+
+operation::pickup-locations/list[]
+
+[[resources-pickup-get]]
+==== Get a Pickup Location
+
+Any member.
+
+operation::pickup-locations/get[]
+
+[[resources-pickup-create]]
+==== Create a Pickup Location
+
+ADMIN+ only. The name is unique per operator, case-insensitively → 409.
+
+operation::pickup-locations/create[]
+
+[[resources-pickup-update]]
+==== Update a Pickup Location
+
+ADMIN+ only. Partial.
+
+operation::pickup-locations/update[]
+
+[[resources-pickup-delete]]
+==== Delete a Pickup Location
+
+ADMIN+ only.
+
+operation::pickup-locations/delete[]
+
+=== Pages
+
+Merchant-authored content pages.
+
+[[resources-pages-list]]
+==== List Pages
+
+Any member. Cursor-paginated.
+
+operation::pages/list[]
+
+[[resources-pages-get]]
+==== Get a Page
+
+Any member.
+
+operation::pages/get[]
+
+[[resources-pages-create]]
+==== Create a Page
+
+ADMIN+ only. The handle is operator-chosen and is the permanent URL, so a
+collision is a 409 and never auto-suffixed. The body is raw HTML, ≤256 KiB.
+
+operation::pages/create[]
+
+[[resources-pages-update]]
+==== Update a Page
+
+ADMIN+ only.
+
+operation::pages/update[]
+
+[[resources-pages-rename]]
+==== Rename a Page's Handle
+
+ADMIN+ only, and its own endpoint — changing a permanent URL is a deliberate act.
+The old URL is not redirected.
+
+operation::pages/rename[]
+
+[[resources-pages-publish]]
+==== Publish or Unpublish a Page
+
+ADMIN+ only. An invalid state flip → 409.
+
+operation::pages/publish[]
+
+[[resources-pages-delete]]
+==== Delete a Page
+
+ADMIN+ only.
+
+operation::pages/delete[]
+
+[[resources-page-translations-list]]
+==== List Page Translations
+
+Any member.
+
+operation::page-translations/list[]
+
+[[resources-page-translations-get]]
+==== Get a Page Translation
+
+Any member.
+
+operation::page-translations/get[]
+
+[[resources-page-translations-upsert]]
+==== Upsert a Page Translation
+
+ADMIN+ only. An explicit localized handle already in use → 409; omitted, one is
+derived from the title.
+
+operation::page-translations/upsert[]
+
+[[resources-page-translations-delete]]
+==== Delete a Page Translation
+
+ADMIN+ only. Idempotent.
+
+operation::page-translations/delete[]
+
+=== Custom Data
+
+The operator's own schema: metafield definitions and typed values, plus
+metaobjects.
+
+[[resources-metafield-definitions-list]]
+==== List Metafield Definitions
+
+Any member.
+
+operation::metafield-definitions/list[]
+
+[[resources-metafield-definitions-get]]
+==== Get a Metafield Definition
+
+Any member.
+
+operation::metafield-definitions/get[]
+
+[[resources-metafield-definitions-create]]
+==== Create a Metafield Definition
+
+ADMIN+ only. Owner type, namespace, key and type are immutable once created.
+
+operation::metafield-definitions/create[]
+
+[[resources-metafield-definitions-update]]
+==== Update a Metafield Definition
+
+ADMIN+ only. Name and description only.
+
+operation::metafield-definitions/update[]
+
+[[resources-metafield-definitions-delete]]
+==== Delete a Metafield Definition
+
+ADMIN+ only. Cascades to every value. A type still pinned by a reference
+definition → 409.
+
+operation::metafield-definitions/delete[]
+
+[[resources-experience-metafields-list]]
+==== List an Experience's Metafield Values
+
+Any member.
+
+operation::experience-metafields/list[]
+
+[[resources-experience-metafields-upsert]]
+==== Set an Experience's Metafield Value
+
+ADMIN+ only. Validated against the definition's type → 422.
+
+operation::experience-metafields/upsert[]
+
+[[resources-experience-metafields-delete]]
+==== Clear an Experience's Metafield Value
+
+ADMIN+ only.
+
+operation::experience-metafields/delete[]
+
+[[resources-page-metafields-list]]
+==== List a Page's Metafield Values
+
+Any member.
+
+operation::page-metafields/list[]
+
+[[resources-page-metafields-upsert]]
+==== Set a Page's Metafield Value
+
+ADMIN+ only.
+
+operation::page-metafields/upsert[]
+
+[[resources-page-metafields-delete]]
+==== Clear a Page's Metafield Value
+
+ADMIN+ only.
+
+operation::page-metafields/delete[]
+
+[[resources-metaobject-definitions-list]]
+==== List Metaobject Definitions
+
+Any member.
+
+operation::metaobject-definitions/list[]
+
+[[resources-metaobject-definitions-get]]
+==== Get a Metaobject Definition
+
+Any member.
+
+operation::metaobject-definitions/get[]
+
+[[resources-metaobject-definitions-create]]
+==== Create a Metaobject Definition
+
+ADMIN+ only. The type slug is immutable; at least one field is required.
+
+operation::metaobject-definitions/create[]
+
+[[resources-metaobject-definitions-update]]
+==== Update a Metaobject Definition
+
+ADMIN+ only.
+
+operation::metaobject-definitions/update[]
+
+[[resources-metaobject-definitions-add-field]]
+==== Add a Field
+
+ADMIN+ only. Appended after the last position.
+
+operation::metaobject-definitions/add-field[]
+
+[[resources-metaobject-definitions-rename-field]]
+==== Rename a Field
+
+ADMIN+ only. The key and type stay immutable.
+
+operation::metaobject-definitions/rename-field[]
+
+[[resources-metaobject-definitions-remove-field]]
+==== Remove a Field
+
+ADMIN+ only. The last remaining field cannot be removed.
+
+operation::metaobject-definitions/remove-field[]
+
+[[resources-metaobject-definitions-delete]]
+==== Delete a Metaobject Definition
+
+ADMIN+ only. A type pinned by a reference metafield → 409.
+
+operation::metaobject-definitions/delete[]
+
+[[resources-metaobjects-list]]
+==== List Metaobject Entries
+
+Any member.
+
+operation::metaobjects/list[]
+
+[[resources-metaobjects-get]]
+==== Get a Metaobject Entry
+
+Any member.
+
+operation::metaobjects/get[]
+
+[[resources-metaobjects-create]]
+==== Create a Metaobject Entry
+
+ADMIN+ only. The handle is unique per definition.
+
+operation::metaobjects/create[]
+
+[[resources-metaobjects-update]]
+==== Update a Metaobject Entry
+
+ADMIN+ only. Values are diffed per field key.
+
+operation::metaobjects/update[]
+
+[[resources-metaobjects-publish]]
+==== Publish a Metaobject Entry
+
+ADMIN+ only.
+
+operation::metaobjects/publish[]
+
+[[resources-metaobjects-unpublish]]
+==== Unpublish a Metaobject Entry
+
+ADMIN+ only.
+
+operation::metaobjects/unpublish[]
+
+[[resources-metaobjects-delete]]
+==== Delete a Metaobject Entry
+
+ADMIN+ only. Any reference value pointing at it is cleared in the same
+transaction.
+
+operation::metaobjects/delete[]
+
+=== Contact Messages
+
+The shopper contact inbox. The storefront intake that fills it does not exist
+yet, so today the only rows are seeded ones.
+
+[[resources-contact-list]]
+==== List Contact Messages
+
+Any member. Cursor-paginated, newest first.
+
+operation::contact-messages/list[]
+
+[[resources-contact-get]]
+==== Get a Contact Message
+
+Any member.
+
+operation::contact-messages/get[]
+
+[[resources-contact-read]]
+==== Mark as Read
+
+Any member. Idempotent, and deliberately unaudited — it is workflow bookkeeping.
+
+operation::contact-messages/read[]
+
+[[resources-contact-unread]]
+==== Mark as Unread
+
+Any member. Idempotent.
+
+operation::contact-messages/unread[]
+
+[[resources-contact-delete]]
+==== Delete a Contact Message
+
+ADMIN+ only. Audited with the summary only — the shopper's email never enters the
+trail.
+
+operation::contact-messages/delete[]
+
+=== Audit Log
+
+Every operator-facing mutation, append-only.
+
+[[resources-audit-list]]
+==== List Audit Entries
+
+Any member. Cursor-paginated.
+
+operation::audit-log/list[]
+
+[[resources-audit-get]]
+==== Get an Audit Entry
+
+Any member.
+
+operation::audit-log/get[]
