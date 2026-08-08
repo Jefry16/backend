@@ -104,9 +104,11 @@ coming from Shopify types.
 `{ url, alt, width, height, aspectRatio }`. `aspectRatio` is **derived**
 (`width / height` when both are present, null otherwise) and never stored: a
 third column can disagree with the two it comes from. `alt`, `width` and
-`height` are null on every row today, and that is the shape being the contract
-ahead of the data, not a defect — the media columns exist and their write paths
-are their own slices. An absent media reference is a **null `Image`**, not an
+`height` are **populated** since the media slice: width and height are measured
+from the bytes at upload, alt is written by `PATCH .../media/{id}`. So
+`aspectRatio` derives for real, and the layout-shift reason those columns exist
+is finally paid for. Rows uploaded before that slice keep nulls — nothing
+backfills — so a template still has to guard. An absent media reference is a **null `Image`**, not an
 `Image` with a null URL, because the template guards on the object.
 
 **There is no `shop.logoUrl`.** The logo is `shop.brand.logo`, where Shopify
@@ -311,7 +313,7 @@ guards exist to prevent. The window is small and both `page` and `experience` ca
 Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
 making the invariant true.
 
-## 4e. The translation-overlay table (now at its third copy)
+## 4e. The translation-overlay table (now at its fourth copy)
 
 A translatable aggregate gets a sibling table keyed on
 `(<owner keys…>, locale)` whose every content column is **nullable**, and the
@@ -321,14 +323,33 @@ replace. Translating a title and not a body is a Spanish title over an English
 body, which is the realistic partial-translation case and the one fallback bugs
 hide in.
 
-Three tables now do this — `experience_translations`, `page_translations` and
-`tour_operator_translations`, plus `tour_operator_policy_translations` inside
-that last context — and each carries its own hand-written overlay helper. **It
-is a candidate to generalise rather than triplicate a fourth time**; what has
-stopped it so far is that the owners differ in key shape (single id, composite
-`(operator, type)`) and in who does the overlaying (a mapper, a query adapter).
-Decide it when the fourth arrives, with three real shapes to generalise over
-instead of two.
+**Four tables now do this**, each with its own hand-written overlay helper:
+`experience_translations`, `page_translations`, `tour_operator_translations` and
+`tour_operator_policy_translations`. This section used to say "decide it when the
+fourth arrives" — **it has arrived**, and got a full write path of its own with
+the policy admin slice, so the deferral has run out.
+
+**The decision, now that there are four real shapes to look at: do not
+generalise yet.** They differ in all three of the axes a shared abstraction would
+have to absorb:
+
+| | owner key | who overlays | clearing |
+|---|---|---|---|
+| `experience_translations` | single id | mapper | blank → null |
+| `page_translations` | single id | mapper | blank → null |
+| `tour_operator_translations` | single id (the operator) | mapper | blank → null |
+| `tour_operator_policy_translations` | **composite** `(operator, type)` | **query adapter** | blank → null |
+
+Only the last column is common, and it is one line per field. A generic overlay
+would need the key shape as a type parameter and the overlay site as a strategy
+— more machinery than the four helpers it replaces, which is the trade LAW §2.4
+refuses. What *is* worth keeping identical is the **rule**, not the code:
+nullable columns, nullable-wins-canonical, blank clears, and a row that overlays
+rather than replaces.
+
+Revisit if a fifth arrives **with the same key shape as an existing one** — that
+is duplication worth removing, where four different shapes is just four tables
+doing a similar thing.
 
 ## 5. Read-time URL resolution (never store URLs)
 
@@ -531,6 +552,33 @@ token leaves in an httpOnly cookie. That pair stays.
   public route), collaborators `@MockitoBean`, assertions + RestDocs
   `document(...)`. Authenticated endpoints send `Authorization: Bearer …` and
   stub `AccessTokenValidatorPort.isValid/extractUserId`.
+- **The read-only column guard** — a table whose columns are mapped
+  `insertable/updatable = false` gets a test asserting a column is writable
+  **exactly while the domain can carry it**, as a biconditional. Three tables
+  have one: `BrandColumnsStayReadOnlyTest`, `PolicyColumnsStayReadOnlyTest`,
+  `ContactColumnsStayReadOnlyTest`.
+
+  It exists because the hazard runs **both ways** and neither direction fails
+  loudly:
+  - *writable with no domain field* — the mapper has nothing to put in the
+    column, so every unrelated save writes a null over it. This is not
+    hypothetical: before the brand write path, setting a logo issued an UPDATE
+    that would have nulled the slogan.
+  - *read-only with a domain field* — the write lands in the use case, every
+    test that stops at the repository mock passes, and Hibernate silently omits
+    the column from the UPDATE.
+
+  **Write it as a biconditional, not a one-way assertion.** Two of these began
+  as "everything is read-only, because nothing writes it" and had to **invert**
+  when the write path landed — and the biconditional form inverts by itself, so
+  the slice that adds the writer flips the test by adding the domain accessor
+  rather than by editing the test. A one-way `isFalse()` has to be rewritten,
+  and a test you rewrite alongside the change it guards has guarded nothing.
+
+  Exclude the keys and `createdAt`: a primary key is written by definition, and
+  `createdAt`'s immutability is its own decision rather than a statement about
+  the domain. Mutation-check it in the direction the slice moves.
+
 - **ArchUnit** — **do not add a per-context isolation rule.** This line used to say
   to add one; it was stale. `contexts_do_not_depend_on_each_other` derives the
   slices from the package structure, so a context is fenced the day its package
