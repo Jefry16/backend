@@ -17,7 +17,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.io.ByteArrayInputStream;
+import com.vointika.media.application.port.ImageDimensionsPort;
+
 import java.io.InputStream;
+import java.util.Optional;
+import java.util.function.Supplier;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,6 +61,7 @@ class UploadMediaUseCaseTest {
 
     private MediaRepository mediaRepository;
     private MediaStoragePort mediaStoragePort;
+    private ImageDimensionsPort imageDimensionsPort;
     private TourOperatorMembershipCheck membershipCheck;
     private UserAccountQuery userAccountQuery;
     private UploadMediaUseCase useCase;
@@ -64,14 +70,21 @@ class UploadMediaUseCaseTest {
     private final UUID callerId = UUID.randomUUID();
     private final UUID newId = UUID.fromString("019f8000-0000-7000-8000-000000000abc");
 
-    private InputStream body() {
-        return new ByteArrayInputStream("bytes".getBytes(StandardCharsets.UTF_8));
+    /**
+     * A Supplier, because the use case reads the bytes twice — once to measure the
+     * image, once to store it. Each call hands back a fresh stream, which is what
+     * the container's spooled multipart does in production.
+     */
+    private Supplier<InputStream> body() {
+        return () -> new ByteArrayInputStream("bytes".getBytes(StandardCharsets.UTF_8));
     }
 
     @BeforeEach
     void setUp() {
         mediaRepository = mock(MediaRepository.class);
         mediaStoragePort = mock(MediaStoragePort.class);
+        imageDimensionsPort = mock(ImageDimensionsPort.class);
+        when(imageDimensionsPort.measure(any(), any())).thenReturn(Optional.empty());
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         userAccountQuery = mock(UserAccountQuery.class);
         when(userAccountQuery.findContact(callerId))
@@ -79,7 +92,7 @@ class UploadMediaUseCaseTest {
         IdGenerator idGenerator = mock(IdGenerator.class);
         when(idGenerator.newId()).thenReturn(newId);
         useCase = new UploadMediaUseCase(
-                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator, transactionRunner, auditTrailPort);
+                mediaRepository, mediaStoragePort, imageDimensionsPort, membershipCheck, userAccountQuery, idGenerator, transactionRunner, auditTrailPort);
     }
 
     @Test
@@ -143,5 +156,52 @@ class UploadMediaUseCaseTest {
         ArgumentCaptor<Media> saved = ArgumentCaptor.forClass(Media.class);
         verify(mediaRepository).save(saved.capture());
         assertEquals("file.pdf", saved.getValue().getOriginalName());
+    }
+
+    @Test
+    void measuredDimensionsAreStoredOnTheRow() {
+        when(imageDimensionsPort.measure(any(), eq("image/png")))
+                .thenReturn(Optional.of(new ImageDimensionsPort.Dimensions(400, 200)));
+
+        useCase.execute(operatorId, callerId, "image/png", 1234, "photo.png", body());
+
+        ArgumentCaptor<Media> saved = ArgumentCaptor.forClass(Media.class);
+        verify(mediaRepository).save(saved.capture());
+        assertThat(saved.getValue().getWidth()).isEqualTo(400);
+        assertThat(saved.getValue().getHeight()).isEqualTo(200);
+    }
+
+    @Test
+    void anUnmeasurableFileStillUploads() {
+        // A PDF, or an image whose header is damaged. The columns stay null and
+        // the upload succeeds — the port never fails a upload.
+        when(imageDimensionsPort.measure(any(), any())).thenReturn(Optional.empty());
+
+        useCase.execute(operatorId, callerId, "application/pdf", 1234, "terms.pdf", body());
+
+        ArgumentCaptor<Media> saved = ArgumentCaptor.forClass(Media.class);
+        verify(mediaRepository).save(saved.capture());
+        assertThat(saved.getValue().getWidth()).isNull();
+        assertThat(saved.getValue().getHeight()).isNull();
+    }
+
+    @Test
+    void theBytesAreReadTwiceAndMeasuredBeforeTheyAreStored() {
+        // Measuring after the object is stored would leave a stored file whose row
+        // never got written if the measurement blew up. Order is the guard.
+        useCase.execute(operatorId, callerId, "image/png", 1234, "photo.png", body());
+
+        InOrder order = inOrder(imageDimensionsPort, mediaStoragePort);
+        order.verify(imageDimensionsPort).measure(any(), eq("image/png"));
+        order.verify(mediaStoragePort).putObject(anyString(), anyString(), anyLong(), any());
+    }
+
+    @Test
+    void anUploadCarriesNoAltBecauseOnlyTheUploaderKnowsIt() {
+        useCase.execute(operatorId, callerId, "image/png", 1234, "photo.png", body());
+
+        ArgumentCaptor<Media> saved = ArgumentCaptor.forClass(Media.class);
+        verify(mediaRepository).save(saved.capture());
+        assertThat(saved.getValue().getAlt()).isNull();
     }
 }

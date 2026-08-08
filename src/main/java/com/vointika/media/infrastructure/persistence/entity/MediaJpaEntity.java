@@ -51,13 +51,13 @@ public class MediaJpaEntity {
      * application layer's allowlist has no exemptions (the trap #91 hit with
      * {@code javax.crypto}). A theme derives the aspect ratio from the pair.
      */
-    @Column(length = 500, insertable = false, updatable = false)
+    @Column(length = 500)
     private String alt;
 
-    @Column(insertable = false, updatable = false)
+    @Column
     private Integer width;
 
-    @Column(insertable = false, updatable = false)
+    @Column
     private Integer height;
 
     @Column(nullable = false, updatable = false)

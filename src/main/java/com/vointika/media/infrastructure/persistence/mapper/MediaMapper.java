@@ -1,6 +1,7 @@
 package com.vointika.media.infrastructure.persistence.mapper;
 
 import com.vointika.media.domain.entity.Media;
+import com.vointika.media.domain.valueobject.MediaAlt;
 import com.vointika.media.infrastructure.persistence.entity.MediaJpaEntity;
 
 public class MediaMapper {
@@ -13,12 +14,9 @@ public class MediaMapper {
                 media.getContentType(),
                 media.getSizeBytes(),
                 media.getOriginalName(),
-                // alt/width/height: the domain carries none of them, and the entity
-                // maps all three insertable/updatable = false, so these are ignored
-                // on write rather than persisted as nulls.
-                null,
-                null,
-                null,
+                media.getAlt() == null ? null : media.getAlt().value(),
+                media.getWidth(),
+                media.getHeight(),
                 media.getCreatedBy(),
                 media.getCreatedByName(),
                 media.getCreatedAt());
@@ -34,7 +32,10 @@ public class MediaMapper {
                 jpa.getOriginalName(),
                 jpa.getCreatedBy(),
                 jpa.getCreatedByName(),
-                jpa.getCreatedAt());
+                jpa.getCreatedAt(),
+                jpa.getAlt() == null ? null : new MediaAlt(jpa.getAlt()),
+                jpa.getWidth(),
+                jpa.getHeight());
     }
 
     private MediaMapper() {}

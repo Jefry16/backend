@@ -4,6 +4,7 @@ import com.vointika.media.application.dto.output.MediaView;
 import com.vointika.media.application.usecase.DeleteMediaUseCase;
 import com.vointika.media.application.usecase.GetMediaUseCase;
 import com.vointika.media.application.usecase.ListMediaUseCase;
+import com.vointika.media.application.usecase.DescribeMediaUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.list.CursorPage;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -42,8 +44,10 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.multipart;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.partWithName;
@@ -69,6 +73,7 @@ class MediaControllerDocumentationTest {
     private MockMvc mockMvc;
 
     @MockitoBean private UploadMediaUseCase uploadMediaUseCase;
+    @MockitoBean private DescribeMediaUseCase describeMediaUseCase;
     @MockitoBean private ListMediaUseCase listMediaUseCase;
     @MockitoBean private GetMediaUseCase getMediaUseCase;
     @MockitoBean private DeleteMediaUseCase deleteMediaUseCase;
@@ -98,7 +103,8 @@ class MediaControllerDocumentationTest {
 
     private MediaView view() {
         return new MediaView(UUID.fromString(MEDIA_ID), "tour-operators/x/img.png", "image/png",
-                12345, "img.png", Instant.parse("2026-07-21T10:00:00Z"),
+                12345, "img.png", "A catamaran at sunset", 400, 200,
+                Instant.parse("2026-07-21T10:00:00Z"),
                 UUID.fromString(UPLOADER_ID), "Olive Owner");
     }
 
@@ -144,6 +150,13 @@ class MediaControllerDocumentationTest {
                                 fieldWithPath("data[].contentType").description("MIME type"),
                                 fieldWithPath("data[].sizeBytes").description("File size in bytes"),
                                 fieldWithPath("data[].originalName").description("Original upload filename"),
+                                fieldWithPath("data[].alt")
+                                        .description("Alt text, or null until an admin writes one").optional(),
+                                fieldWithPath("data[].width")
+                                        .description("Pixel width, measured at upload; null for a non-image")
+                                        .optional(),
+                                fieldWithPath("data[].height")
+                                        .description("Pixel height; null for a non-image").optional(),
                                 fieldWithPath("data[].createdAt").description("When it was uploaded"),
                                 fieldWithPath("data[].uploadedBy.id").description("The uploading user's id"),
                                 fieldWithPath("data[].uploadedBy.context").description("The entity's collection: \"users\""),
@@ -173,6 +186,13 @@ class MediaControllerDocumentationTest {
                                 fieldWithPath("contentType").description("MIME type"),
                                 fieldWithPath("sizeBytes").description("File size in bytes"),
                                 fieldWithPath("originalName").description("Original upload filename"),
+                                fieldWithPath("alt")
+                                        .description("Alt text, or null until an admin writes one").optional(),
+                                fieldWithPath("width")
+                                        .description("Pixel width, measured at upload; null for a non-image")
+                                        .optional(),
+                                fieldWithPath("height")
+                                        .description("Pixel height; null for a non-image").optional(),
                                 fieldWithPath("createdAt").description("When it was uploaded"),
                                 fieldWithPath("uploadedBy.id").description("The uploading user's id"),
                                 fieldWithPath("uploadedBy.context").description("The entity's collection: \"users\""),
@@ -225,5 +245,27 @@ class MediaControllerDocumentationTest {
         mockMvc.perform(get("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void describe() throws Exception {
+        authenticated();
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/media/{mediaId}", OPERATOR_ID, MEDIA_ID)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"alt\":\"A catamaran at sunset\"}"))
+                .andExpect(status().isNoContent())
+                .andDo(document("media/describe",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("mediaId").description(
+                                        "The media id; one from another operator is a 404")),
+                        requestFields(
+                                fieldWithPath("alt")
+                                        .description("\u2264500 chars. Blank or absent clears it. Width and "
+                                                + "height are measured at upload and are not settable here")
+                                        .optional())));
     }
 }

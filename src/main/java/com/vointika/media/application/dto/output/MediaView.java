@@ -17,6 +17,9 @@ public record MediaView(
         String contentType,
         long sizeBytes,
         String originalName,
+        String alt,
+        Integer width,
+        Integer height,
         Instant createdAt,
         UUID createdBy,
         String createdByName) {
@@ -28,6 +31,9 @@ public record MediaView(
                 media.getContentType(),
                 media.getSizeBytes(),
                 media.getOriginalName(),
+                media.getAlt() == null ? null : media.getAlt().value(),
+                media.getWidth(),
+                media.getHeight(),
                 media.getCreatedAt(),
                 media.getCreatedBy(),
                 media.getCreatedByName());

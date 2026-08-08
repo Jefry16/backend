@@ -4,6 +4,8 @@ import com.vointika.media.application.port.MediaStoragePort;
 import com.vointika.media.application.usecase.DeleteMediaUseCase;
 import com.vointika.media.application.usecase.GetMediaUseCase;
 import com.vointika.media.application.usecase.ListMediaUseCase;
+import com.vointika.media.application.port.ImageDimensionsPort;
+import com.vointika.media.application.usecase.DescribeMediaUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.media.domain.repository.MediaRepository;
 import com.vointika.shared.port.AuditTrailPort;
@@ -23,13 +25,14 @@ public class MediaUseCaseConfig {
     public UploadMediaUseCase uploadMediaUseCase(
             MediaRepository mediaRepository,
             MediaStoragePort mediaStoragePort,
+            ImageDimensionsPort imageDimensionsPort,
             TourOperatorMembershipCheck membershipCheck,
             UserAccountQuery userAccountQuery,
             IdGenerator idGenerator,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UploadMediaUseCase(
-                mediaRepository, mediaStoragePort, membershipCheck, userAccountQuery, idGenerator,
+                mediaRepository, mediaStoragePort, imageDimensionsPort, membershipCheck, userAccountQuery, idGenerator,
                 transactionRunner, auditTrailPort);
     }
 
@@ -55,6 +58,16 @@ public class MediaUseCaseConfig {
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new DeleteMediaUseCase(mediaRepository, mediaStoragePort, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public DescribeMediaUseCase describeMediaUseCase(
+            MediaRepository mediaRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DescribeMediaUseCase(mediaRepository, membershipCheck,
                 transactionRunner, auditTrailPort);
     }
 }

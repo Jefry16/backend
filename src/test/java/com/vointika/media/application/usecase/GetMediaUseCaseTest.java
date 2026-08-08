@@ -39,7 +39,7 @@ class GetMediaUseCaseTest {
     private Media media() {
         return new Media(mediaId, operatorId, "tour-operators/x/y.png",
                 "image/png", 100, "y.png", uploaderId, "Uma Uploader",
-                Instant.parse("2026-07-21T00:00:00Z"));
+                Instant.parse("2026-07-21T00:00:00Z"), null, null, null);
     }
 
     @Test
