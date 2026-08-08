@@ -3,6 +3,7 @@ package com.vointika.touroperator.infrastructure.persistence.repository;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandColorId;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandColorJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,4 +21,12 @@ public interface TourOperatorBrandColorJpaRepository
      * own {@code PartTree} instead.
      */
     List<TourOperatorBrandColorJpaEntity> findByTourOperatorIdOrderByPositionAsc(UUID tourOperatorId);
+
+    /**
+     * Clears the operator's colours so the write can reinsert them. The whole
+     * collection is replaced rather than diffed — see
+     * {@code TourOperatorBrandRepositoryImpl.save}.
+     */
+    @Modifying
+    void deleteByTourOperatorId(UUID tourOperatorId);
 }

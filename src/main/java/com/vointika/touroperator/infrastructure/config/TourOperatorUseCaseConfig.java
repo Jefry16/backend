@@ -19,7 +19,6 @@ import com.vointika.shared.service.HandleGenerator;
 import com.vointika.touroperator.application.policy.TourOperatorMembershipPolicy;
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
-import com.vointika.touroperator.application.usecase.ClearOperatorLogoUseCase;
 import com.vointika.touroperator.application.usecase.CreateMenuUseCase;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.DeleteMenuUseCase;
@@ -38,7 +37,6 @@ import com.vointika.touroperator.application.usecase.RenameMenuUseCase;
 import com.vointika.touroperator.application.usecase.ReplaceMenuItemsUseCase;
 import com.vointika.touroperator.application.usecase.ResendInvitationUseCase;
 import com.vointika.touroperator.application.usecase.RevokeInvitationUseCase;
-import com.vointika.touroperator.application.usecase.SetOperatorLogoUseCase;
 import com.vointika.touroperator.application.usecase.UpdateOperatorLocalesUseCase;
 import com.vointika.touroperator.application.usecase.UpdateStorefrontPasswordUseCase;
 import com.vointika.touroperator.domain.repository.MenuItemRepository;
@@ -59,6 +57,8 @@ import com.vointika.touroperator.application.usecase.GetOperatorTranslationUseCa
 import com.vointika.touroperator.application.usecase.UpsertOperatorTranslationUseCase;
 import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
 import com.vointika.touroperator.application.usecase.GetPolicyUseCase;
+import com.vointika.touroperator.application.usecase.GetBrandUseCase;
+import com.vointika.touroperator.application.usecase.UpdateBrandUseCase;
 import com.vointika.touroperator.application.usecase.CreatePolicyUseCase;
 import com.vointika.touroperator.application.usecase.UpdatePolicyUseCase;
 import com.vointika.touroperator.application.usecase.DeletePolicyUseCase;
@@ -170,28 +170,7 @@ public class TourOperatorUseCaseConfig {
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    @Bean
-    public SetOperatorLogoUseCase setOperatorLogoUseCase(
-            TourOperatorRepository tourOperatorRepository,
-            TourOperatorBrandRepository tourOperatorBrandRepository,
-            MediaAssetBatchQuery mediaAssetBatchQuery,
-            TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner,
-            AuditTrailPort auditTrailPort) {
-        return new SetOperatorLogoUseCase(tourOperatorRepository, tourOperatorBrandRepository,
-                mediaAssetBatchQuery, membershipCheck, transactionRunner, auditTrailPort);
-    }
 
-    @Bean
-    public ClearOperatorLogoUseCase clearOperatorLogoUseCase(
-            TourOperatorRepository tourOperatorRepository,
-            TourOperatorBrandRepository tourOperatorBrandRepository,
-            TourOperatorMembershipCheck membershipCheck,
-            TransactionRunner transactionRunner,
-            AuditTrailPort auditTrailPort) {
-        return new ClearOperatorLogoUseCase(tourOperatorRepository, tourOperatorBrandRepository,
-                membershipCheck, transactionRunner, auditTrailPort);
-    }
 
     @Bean
     public ListInvitationsUseCase listInvitationsUseCase(
@@ -482,5 +461,26 @@ public class TourOperatorUseCaseConfig {
             AuditTrailPort auditTrailPort) {
         return new DeletePolicyTranslationUseCase(policyRepository, translationRepository,
                 membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    // ---- brand ----
+
+    @Bean
+    public GetBrandUseCase getBrandUseCase(
+            TourOperatorBrandRepository brandRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetBrandUseCase(brandRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpdateBrandUseCase updateBrandUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorBrandRepository brandRepository,
+            MediaAssetBatchQuery mediaAssetBatchQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateBrandUseCase(tourOperatorRepository, brandRepository,
+                mediaAssetBatchQuery, membershipCheck, transactionRunner, auditTrailPort);
     }
 }

@@ -1,42 +1,64 @@
 package com.vointika.touroperator.infrastructure.persistence.repository;
 
+import com.vointika.touroperator.domain.entity.Brand;
 import com.vointika.touroperator.domain.repository.TourOperatorBrandRepository;
-import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorBrandJpaEntity;
+import com.vointika.touroperator.infrastructure.persistence.mapper.TourOperatorBrandMapper;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public class TourOperatorBrandRepositoryImpl implements TourOperatorBrandRepository {
 
-    private final TourOperatorBrandJpaRepository jpaRepository;
+    private final TourOperatorBrandJpaRepository brandRepository;
+    private final TourOperatorBrandColorJpaRepository colorRepository;
+    private final TourOperatorBrandSocialLinkJpaRepository socialLinkRepository;
 
-    public TourOperatorBrandRepositoryImpl(TourOperatorBrandJpaRepository jpaRepository) {
-        this.jpaRepository = jpaRepository;
+    public TourOperatorBrandRepositoryImpl(
+            TourOperatorBrandJpaRepository brandRepository,
+            TourOperatorBrandColorJpaRepository colorRepository,
+            TourOperatorBrandSocialLinkJpaRepository socialLinkRepository) {
+        this.brandRepository = brandRepository;
+        this.colorRepository = colorRepository;
+        this.socialLinkRepository = socialLinkRepository;
     }
 
     @Override
-    public Optional<UUID> findLogoMediaId(UUID tourOperatorId) {
-        return jpaRepository.findById(tourOperatorId)
-                .map(TourOperatorBrandJpaEntity::getLogoMediaId);
+    public Optional<Brand> findByTourOperatorId(UUID tourOperatorId) {
+        return brandRepository.findById(tourOperatorId)
+                .map(jpa -> TourOperatorBrandMapper.toDomain(
+                        jpa,
+                        colorRepository.findByTourOperatorIdOrderByPositionAsc(tourOperatorId),
+                        socialLinkRepository.findByTourOperatorIdOrderByPlatformAsc(tourOperatorId)));
     }
 
     /**
-     * The nulls below never reach Postgres: every column but the logo maps
-     * {@code insertable/updatable = false}, so they are absent from the INSERT
-     * and the UPDATE alike. Rebuilding the whole entity is what
-     * {@code TourOperatorMapper} already does for phone and email, and it is
-     * safe for exactly the same reason.
+     * <b>Delete-then-insert, not a diff.</b> Both collections are keyed on values
+     * the payload can reorder — a colour's key is {@code (operator, role,
+     * position)} — so a diff would have to match rows that moved, and a palette
+     * whose entries swap places is exactly the realistic edit. Replacing the set
+     * makes the stored order the payload's order by construction.
+     *
+     * <p>Runs inside the use case's transaction, so a failed insert rolls the
+     * delete back with it and the operator never sees a half-cleared palette.
      */
     @Override
-    public void setLogoMediaId(UUID tourOperatorId, UUID mediaId) {
-        Instant now = Instant.now();
-        Instant createdAt = jpaRepository.findById(tourOperatorId)
-                .map(TourOperatorBrandJpaEntity::getCreatedAt)
-                .orElse(now);
-        jpaRepository.save(new TourOperatorBrandJpaEntity(
-                tourOperatorId, null, null, mediaId, null, null, null, createdAt, now));
+    public Brand save(Brand brand) {
+        UUID operatorId = brand.tourOperatorId();
+        brandRepository.save(TourOperatorBrandMapper.toJpa(brand));
+
+        colorRepository.deleteByTourOperatorId(operatorId);
+        socialLinkRepository.deleteByTourOperatorId(operatorId);
+        // Flush the deletes before the inserts: without it Hibernate may order the
+        // INSERTs first and collide with the rows still present on the same keys.
+        colorRepository.flush();
+        socialLinkRepository.flush();
+
+        colorRepository.saveAll(brand.colors().stream()
+                .map(c -> TourOperatorBrandMapper.toJpa(operatorId, c)).toList());
+        socialLinkRepository.saveAll(brand.socialLinks().stream()
+                .map(l -> TourOperatorBrandMapper.toJpa(operatorId, l)).toList());
+        return brand;
     }
 }
