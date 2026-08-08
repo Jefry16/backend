@@ -15,7 +15,10 @@ import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
 import com.vointika.shared.valueobject.AuditActor;
 
+import com.vointika.media.application.port.ImageDimensionsPort;
+
 import java.io.InputStream;
+import java.util.function.Supplier;
 import java.util.Map;
 import java.util.UUID;
 
@@ -37,6 +40,7 @@ public class UploadMediaUseCase {
 
     private final MediaRepository mediaRepository;
     private final MediaStoragePort mediaStoragePort;
+    private final ImageDimensionsPort imageDimensionsPort;
     private final TourOperatorMembershipCheck membershipCheck;
     private final UserAccountQuery userAccountQuery;
     private final IdGenerator idGenerator;
@@ -45,6 +49,7 @@ public class UploadMediaUseCase {
 
     public UploadMediaUseCase(MediaRepository mediaRepository,
                               MediaStoragePort mediaStoragePort,
+                              ImageDimensionsPort imageDimensionsPort,
                               TourOperatorMembershipCheck membershipCheck,
                               UserAccountQuery userAccountQuery,
                               IdGenerator idGenerator,
@@ -52,6 +57,7 @@ public class UploadMediaUseCase {
                               AuditTrailPort auditTrailPort) {
         this.mediaRepository = mediaRepository;
         this.mediaStoragePort = mediaStoragePort;
+        this.imageDimensionsPort = imageDimensionsPort;
         this.membershipCheck = membershipCheck;
         this.userAccountQuery = userAccountQuery;
         this.idGenerator = idGenerator;
@@ -60,7 +66,8 @@ public class UploadMediaUseCase {
     }
 
     public UUID execute(UUID tourOperatorId, UUID callerUserId,
-                        String rawContentType, long sizeBytes, String originalName, InputStream body) {
+                        String rawContentType, long sizeBytes, String originalName,
+                        Supplier<InputStream> body) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         ContentType contentType = new ContentType(rawContentType);
         if (sizeBytes <= 0) {
@@ -79,15 +86,26 @@ public class UploadMediaUseCase {
         UUID id = idGenerator.newId();
         String key = "tour-operators/" + tourOperatorId + "/" + id + "-" + sanitize(originalName, contentType);
 
+        // Measured before storing, from its own stream. The container spools the
+        // whole multipart before any handler runs (see application.yml), so asking
+        // for the bytes twice re-reads the spool rather than buffering here — which
+        // is why this takes a Supplier and not an InputStream.
+        //
+        // Empty is ordinary: a PDF has no dimensions, and a damaged header answers
+        // the same way. It never fails the upload.
+        var dimensions = imageDimensionsPort.measure(body.get(), contentType.value());
+
         // Store BEFORE persisting: a failed save strands an object, never a row
         // without its object. Storage can't roll back with the DB tx anyway.
-        mediaStoragePort.putObject(key, contentType.value(), sizeBytes, body);
+        mediaStoragePort.putObject(key, contentType.value(), sizeBytes, body.get());
 
         String fileName = normalizeName(originalName, contentType);
         transactionRunner.run(() -> {
             mediaRepository.save(Media.upload(
                     id, tourOperatorId, key, contentType.value(), sizeBytes,
-                    fileName, callerUserId, uploaderName));
+                    fileName, callerUserId, uploaderName,
+                    dimensions.map(d -> d.width()).orElse(null),
+                    dimensions.map(d -> d.height()).orElse(null)));
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "MEDIA", id, "media.uploaded",

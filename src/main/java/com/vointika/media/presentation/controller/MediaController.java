@@ -19,7 +19,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import com.vointika.media.application.dto.input.DescribeMediaInput;
+import com.vointika.media.application.usecase.DescribeMediaUseCase;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,6 +43,7 @@ import java.util.UUID;
 public class MediaController {
 
     private final UploadMediaUseCase uploadMediaUseCase;
+    private final DescribeMediaUseCase describeMediaUseCase;
     private final ListMediaUseCase listMediaUseCase;
     private final GetMediaUseCase getMediaUseCase;
     private final DeleteMediaUseCase deleteMediaUseCase;
@@ -46,12 +51,14 @@ public class MediaController {
     private final MediaUrlResolver mediaUrlResolver;
 
     public MediaController(UploadMediaUseCase uploadMediaUseCase,
+                          DescribeMediaUseCase describeMediaUseCase,
                           ListMediaUseCase listMediaUseCase,
                           GetMediaUseCase getMediaUseCase,
                           DeleteMediaUseCase deleteMediaUseCase,
                           ListQueryParser listQueryParser,
                           MediaUrlResolver mediaUrlResolver) {
         this.uploadMediaUseCase = uploadMediaUseCase;
+        this.describeMediaUseCase = describeMediaUseCase;
         this.listMediaUseCase = listMediaUseCase;
         this.getMediaUseCase = getMediaUseCase;
         this.deleteMediaUseCase = deleteMediaUseCase;
@@ -65,18 +72,39 @@ public class MediaController {
             @PathVariable UUID tourOperatorId,
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal String userIdStr) {
-        UUID mediaId;
-        try {
-            mediaId = uploadMediaUseCase.execute(
-                    tourOperatorId, UUID.fromString(userIdStr),
-                    file.getContentType(), file.getSize(), file.getOriginalFilename(),
-                    file.getInputStream());
-        } catch (IOException e) {
-            throw new InvalidFieldException("Unable to read uploaded file");
-        }
+        // A Supplier, not a stream: the use case reads the bytes twice — once to
+        // measure the image, once to store it. The container has already spooled
+        // the whole part, so a second getInputStream() re-reads the spool.
+        UUID mediaId = uploadMediaUseCase.execute(
+                tourOperatorId, UUID.fromString(userIdStr),
+                file.getContentType(), file.getSize(), file.getOriginalFilename(),
+                () -> {
+                    try {
+                        return file.getInputStream();
+                    } catch (IOException e) {
+                        throw new InvalidFieldException("Unable to read uploaded file");
+                    }
+                });
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/media/" + mediaId))
                 .build();
+    }
+
+    /**
+     * Sets or clears an image's alt text. ADMIN+.
+     *
+     * <p>Alt is the one part of a media row written after the upload: width and
+     * height are measured from the bytes, but only the uploader knows what the
+     * image shows. Blank clears it.
+     */
+    @PatchMapping("/{mediaId}")
+    public ResponseEntity<Void> describe(
+            @PathVariable UUID tourOperatorId,
+            @PathVariable UUID mediaId,
+            @RequestBody DescribeMediaInput body,
+            @AuthenticationPrincipal String userIdStr) {
+        describeMediaUseCase.execute(tourOperatorId, mediaId, body, UUID.fromString(userIdStr));
+        return ResponseEntity.noContent().build();
     }
 
     /** The operator's media library — cursor-paginated. Any member; filter {@code contentType}, sort {@code createdAt}/{@code id}. */

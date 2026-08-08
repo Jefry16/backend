@@ -20,6 +20,9 @@ public record MediaResponse(
         String contentType,
         long sizeBytes,
         String originalName,
+        String alt,
+        Integer width,
+        Integer height,
         Instant createdAt,
         UploadedBy uploadedBy) {
 
@@ -37,6 +40,9 @@ public record MediaResponse(
                 view.contentType(),
                 view.sizeBytes(),
                 view.originalName(),
+                view.alt(),
+                view.width(),
+                view.height(),
                 view.createdAt(),
                 new UploadedBy(view.createdBy(), view.createdByName()));
     }
