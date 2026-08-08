@@ -47,10 +47,10 @@ public class TourOperatorJpaEntity {
      * cannot be clobbered by a write that never meant to touch it. The slice that
      * adds the write path flips these two flags, deliberately.
      */
-    @Column(length = 30, insertable = false, updatable = false)
+    @Column(length = 30)
     private String phone;
 
-    @Column(length = 320, insertable = false, updatable = false)
+    @Column(length = 320)
     private String email;
 
     @Column(nullable = false, updatable = false)

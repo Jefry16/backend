@@ -57,6 +57,10 @@ import com.vointika.touroperator.application.usecase.GetOperatorTranslationUseCa
 import com.vointika.touroperator.application.usecase.UpsertOperatorTranslationUseCase;
 import com.vointika.touroperator.application.usecase.ListPoliciesUseCase;
 import com.vointika.touroperator.application.usecase.GetPolicyUseCase;
+import com.vointika.touroperator.application.usecase.GetTourOperatorUseCase;
+import com.vointika.touroperator.application.usecase.UpdateTourOperatorUseCase;
+import com.vointika.reference.domain.repository.TimezoneRepository;
+import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.touroperator.application.usecase.GetBrandUseCase;
 import com.vointika.touroperator.application.usecase.UpdateBrandUseCase;
 import com.vointika.touroperator.application.usecase.CreatePolicyUseCase;
@@ -482,5 +486,26 @@ public class TourOperatorUseCaseConfig {
             AuditTrailPort auditTrailPort) {
         return new UpdateBrandUseCase(tourOperatorRepository, brandRepository,
                 mediaAssetBatchQuery, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    // ---- the operator's own details ----
+
+    @Bean
+    public GetTourOperatorUseCase getTourOperatorUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetTourOperatorUseCase(tourOperatorRepository, membershipCheck);
+    }
+
+    @Bean
+    public UpdateTourOperatorUseCase updateTourOperatorUseCase(
+            TourOperatorRepository tourOperatorRepository,
+            TimezoneRepository timezoneRepository,
+            CurrencyRepository currencyRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateTourOperatorUseCase(tourOperatorRepository, timezoneRepository,
+                currencyRepository, membershipCheck, transactionRunner, auditTrailPort);
     }
 }

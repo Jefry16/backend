@@ -3,6 +3,10 @@ package com.vointika.touroperator.presentation.controller;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
+import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.touroperator.application.dto.output.TourOperatorView;
+import com.vointika.touroperator.application.usecase.GetTourOperatorUseCase;
+import com.vointika.touroperator.application.usecase.UpdateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +30,8 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
 import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
@@ -34,6 +40,10 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TourOperatorController.class)
@@ -45,6 +55,15 @@ class TourOperatorControllerDocumentationTest {
 
     @MockitoBean
     private CreateTourOperatorUseCase createTourOperatorUseCase;
+
+    @MockitoBean
+    private GetTourOperatorUseCase getUseCase;
+
+    @MockitoBean
+    private UpdateTourOperatorUseCase updateUseCase;
+
+    @MockitoBean
+    private TourOperatorMembershipCheck membershipCheck;
 
     @MockitoBean
     private AccessTokenValidatorPort accessTokenValidator;
@@ -105,5 +124,69 @@ class TourOperatorControllerDocumentationTest {
                                     "currencyId": "cccc0001-0000-0000-0000-000000000001"
                                 }"""))
                 .andExpect(status().isUnauthorized());
+    }
+
+    private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
+
+    private void authenticate() {
+        when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
+        when(accessTokenValidator.extractUserId("test-access-token"))
+                .thenReturn("550e8400-e29b-41d4-a716-446655440000");
+    }
+
+    @Test
+    void getDetails() throws Exception {
+        authenticate();
+        when(getUseCase.execute(any(), any())).thenReturn(new TourOperatorView(
+                java.util.UUID.fromString(OPERATOR_ID), "Acme Tours", "acme", "Calle Mayor 1",
+                "+34 600 000 000", "hola@acme.test",
+                java.util.UUID.randomUUID(), java.util.UUID.randomUUID(),
+                java.time.Instant.parse("2026-01-01T00:00:00Z"),
+                java.time.Instant.parse("2026-08-08T00:00:00Z")));
+
+        mockMvc.perform(get("/api/tour-operators/{id}", OPERATOR_ID)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").value("+34 600 000 000"))
+                .andExpect(jsonPath("$.context").value("tour-operators"))
+                .andDo(document("tour-operators/get",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(
+                                fieldWithPath("id").description("The tour operator id"),
+                                fieldWithPath("context").description("Always \"tour-operators\""),
+                                fieldWithPath("name").description("The business name"),
+                                fieldWithPath("handle").description(
+                                        "The storefront subdomain — immutable, not editable"),
+                                fieldWithPath("address").description("The business address"),
+                                fieldWithPath("phone")
+                                        .description("Public contact phone, or null").optional(),
+                                fieldWithPath("email")
+                                        .description("Public contact email, or null").optional(),
+                                fieldWithPath("timezoneId").description("Reference timezone id"),
+                                fieldWithPath("currencyId").description("Reference currency id"),
+                                fieldWithPath("createdAt").description("When the operator was created"),
+                                fieldWithPath("updatedAt").description("When its details last changed"))));
+    }
+
+    @Test
+    void patchDetails() throws Exception {
+        authenticate();
+
+        mockMvc.perform(patch("/api/tour-operators/{id}", OPERATOR_ID)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"+34 611 111 111\",\"email\":\"hola@acme.test\"}"))
+                .andExpect(status().isNoContent())
+                .andDo(document("tour-operators/update",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestFields(
+                                fieldWithPath("phone")
+                                        .description("Absent = unchanged; blank = clear. \u226430 chars, "
+                                                + "no format imposed").optional(),
+                                fieldWithPath("email")
+                                        .description("Absent = unchanged; blank = clear. \u2264320 chars")
+                                        .optional())));
     }
 }

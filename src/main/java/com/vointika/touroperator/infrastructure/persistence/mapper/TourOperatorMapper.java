@@ -7,6 +7,8 @@ import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
+import com.vointika.touroperator.domain.valueobject.TourOperatorPhone;
+import com.vointika.touroperator.domain.valueobject.TourOperatorEmail;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorJpaEntity;
 
 import java.util.LinkedHashSet;
@@ -26,10 +28,8 @@ public class TourOperatorMapper {
                 operator.getTimezoneId(),
                 operator.getCurrencyId(),
                 operator.getAddress().value(),
-                // phone/email: the domain has neither, and the entity maps both
-                // insertable/updatable = false, so these are ignored on write.
-                null,
-                null,
+                operator.getPhone() == null ? null : operator.getPhone().value(),
+                operator.getEmail() == null ? null : operator.getEmail().value(),
                 operator.getCreatedBy(),
                 operator.getCreatedAt(),
                 operator.getUpdatedAt(),
@@ -65,7 +65,9 @@ public class TourOperatorMapper {
                 jpa.getPasswordMessage(),
                 jpa.getSeoTitle() == null ? null : new OperatorSeoTitle(jpa.getSeoTitle()),
                 jpa.getSeoDescription() == null ? null : new OperatorSeoDescription(jpa.getSeoDescription()),
-                jpa.getOgImageMediaId()
+                jpa.getOgImageMediaId(),
+                jpa.getPhone() == null ? null : new TourOperatorPhone(jpa.getPhone()),
+                jpa.getEmail() == null ? null : new TourOperatorEmail(jpa.getEmail())
         );
     }
 }
