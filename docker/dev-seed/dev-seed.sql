@@ -603,7 +603,12 @@ VALUES
      :'media_kayak1_id', 120, 6, TRUE, 0.00,
      'Kayak the blue cave — no experience needed',
      'A guided two-hour paddle to sea caves reachable only from the water. Doubles available.',
-     NOW() - INTERVAL '250 days'),
+     -- Same created_at as the sunset sail, to the microsecond, and both are
+     -- featured. The storefront listing orders featured DESC, created_at, id —
+     -- so these two are separated by the id tie-break and nothing else. Give
+     -- them different dates and the fixture stops exercising it, and a listing
+     -- that reorders between requests would render correctly here anyway.
+     NOW() - INTERVAL '380 days'),
     (:'experience_d_id', :'operator_id', :'user_sofia_id', 'blue-cave-diving',
      'Blue Cave Diving', 'A guided two-tank dive on the cave wall.',
      'For certified divers. Two tanks, a wall dive and a swim-through, with a surface interval on the boat.',
