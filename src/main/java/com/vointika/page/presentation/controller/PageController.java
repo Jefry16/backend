@@ -120,8 +120,7 @@ public class PageController {
             @AuthenticationPrincipal String callerUserId) {
         updatePageUseCase.execute(new UpdatePageInput(
                 UUID.fromString(callerUserId), tourOperatorId, pageId,
-                body.title(), body.body(), body.seoTitle(), body.seoDescription(),
-                body.templateSuffix()));
+                body.title(), body.body(), body.seoTitle(), body.seoDescription()));
         return ResponseEntity.noContent().build();
     }
 

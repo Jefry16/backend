@@ -47,9 +47,6 @@ public class PageJpaEntity {
     @Column(nullable = false, length = 16)
     private PageStatus status;
 
-    @Column(length = 170)
-    private String templateSuffix;
-
     @Column(nullable = false, updatable = false)
     private UUID createdBy;
 

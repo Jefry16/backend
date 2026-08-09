@@ -108,7 +108,7 @@ class PageUseCasesTest {
         when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
 
         update().execute(new UpdatePageInput(USER, OP, PAGE,
-                "New title", "<p>Hello</p>", "SEO", null, null));
+                "New title", "<p>Hello</p>", "SEO", null));
 
         verify(repository).save(any());
         verify(auditTrailPort).append(any());
@@ -119,7 +119,7 @@ class PageUseCasesTest {
         when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
 
         update().execute(new UpdatePageInput(USER, OP, PAGE,
-                "About us", "<p>Hello</p>", null, null, null));
+                "About us", "<p>Hello</p>", null, null));
 
         verify(repository).save(any());
         verify(auditTrailPort, never()).append(any());
@@ -129,7 +129,7 @@ class PageUseCasesTest {
     void updateMissingPageIs404() {
         when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> update().execute(new UpdatePageInput(USER, OP, PAGE,
-                "T", "<p>B</p>", null, null, null)))
+                "T", "<p>B</p>", null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

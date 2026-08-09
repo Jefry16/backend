@@ -9,6 +9,5 @@ public record UpdatePageInput(
         String title,
         String body,
         String seoTitle,
-        String seoDescription,
-        String templateSuffix) {
+        String seoDescription) {
 }

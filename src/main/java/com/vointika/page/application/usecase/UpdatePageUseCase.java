@@ -57,12 +57,8 @@ public class UpdatePageUseCase {
                 ? null : new PageSeoTitle(input.seoTitle());
         PageSeoDescription seoDescription = input.seoDescription() == null || input.seoDescription().isBlank()
                 ? null : new PageSeoDescription(input.seoDescription());
-        String templateSuffix = (input.templateSuffix() == null || input.templateSuffix().isBlank())
-                ? null
-                : new Handle(input.templateSuffix()).value();
-
         Map<String, Object> before = page.auditSnapshot();
-        page.update(title, body, seoTitle, seoDescription, templateSuffix);
+        page.update(title, body, seoTitle, seoDescription);
         // A no-op replace (nothing actually changed) saves but records nothing.
         List<FieldChange> changes = AuditChanges.diff(before, page.auditSnapshot());
         transactionRunner.run(() -> {

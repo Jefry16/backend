@@ -41,19 +41,17 @@ class PageTest {
     void auditSnapshotExposesExactlyTheAuditedFields() {
         Map<String, Object> snapshot = page().auditSnapshot();
         assertThat(snapshot.keySet()).containsExactly(
-                "title", "handle", "body", "seoTitle", "seoDescription", "status", "templateSuffix");
+                "title", "handle", "body", "seoTitle", "seoDescription", "status");
         assertThat(snapshot.get("handle")).isEqualTo("about-us");
         assertThat(snapshot.get("status")).isEqualTo("DRAFT");
-        assertThat(snapshot.get("templateSuffix")).isNull();
     }
 
     @Test
     void updateReplacesContentAndClearsNullSeoFields() {
         Page p = page();
-        p.update(new PageTitle("About"), new PageBody("<p>New</p>"), null, null, "landing");
+        p.update(new PageTitle("About"), new PageBody("<p>New</p>"), null, null);
         assertThat(p.getSeoTitle()).isEmpty();
         assertThat(p.getSeoDescription()).isEmpty();
-        assertThat(p.getTemplateSuffix()).isEqualTo("landing");
         assertThat(p.getHandle().value()).isEqualTo("about-us"); // update never touches the handle
     }
 }
