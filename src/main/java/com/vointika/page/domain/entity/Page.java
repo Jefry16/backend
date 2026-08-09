@@ -37,7 +37,6 @@ public class Page {
     private PageSeoTitle seoTitle;
     private PageSeoDescription seoDescription;
     private PageStatus status;
-    private String templateSuffix;
     private final UUID createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -59,7 +58,6 @@ public class Page {
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
         this.status = PageStatus.DRAFT;
-        this.templateSuffix = null;
         this.createdBy = createdBy;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
@@ -74,7 +72,6 @@ public class Page {
                 PageSeoTitle seoTitle,
                 PageSeoDescription seoDescription,
                 PageStatus status,
-                String templateSuffix,
                 UUID createdBy,
                 Instant createdAt,
                 Instant updatedAt) {
@@ -86,7 +83,6 @@ public class Page {
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
         this.status = status;
-        this.templateSuffix = templateSuffix;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -96,19 +92,17 @@ public class Page {
      * Whole replace of the editable content. Handle and status are
      * intentionally not touched here — the handle changes only through
      * {@link #rename(Handle)} and status moves through
-     * {@link #publish()}/{@link #unpublish()}. {@code null} SEO fields /
-     * template suffix clear them.
+     * {@link #publish()}/{@link #unpublish()}. {@code null} SEO fields clear
+     * them.
      */
     public void update(PageTitle newTitle,
                        PageBody newBody,
                        PageSeoTitle newSeoTitle,
-                       PageSeoDescription newSeoDescription,
-                       String newTemplateSuffix) {
+                       PageSeoDescription newSeoDescription) {
         this.title = newTitle;
         this.body = newBody;
         this.seoTitle = newSeoTitle;
         this.seoDescription = newSeoDescription;
-        this.templateSuffix = newTemplateSuffix;
         this.updatedAt = Instant.now();
     }
 
@@ -154,7 +148,6 @@ public class Page {
         snapshot.put("seoTitle", getSeoTitle().map(PageSeoTitle::value).orElse(null));
         snapshot.put("seoDescription", getSeoDescription().map(PageSeoDescription::value).orElse(null));
         snapshot.put("status", status.name());
-        snapshot.put("templateSuffix", templateSuffix);
         return snapshot;
     }
 
@@ -167,7 +160,6 @@ public class Page {
     public Optional<PageSeoDescription> getSeoDescription() { return Optional.ofNullable(seoDescription); }
     public PageStatus getStatus() { return status; }
     /** Nullable — {@code null} means the base {@code page} template (mirrors experiences). */
-    public String getTemplateSuffix() { return templateSuffix; }
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

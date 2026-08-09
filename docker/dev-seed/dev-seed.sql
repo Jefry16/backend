@@ -734,38 +734,37 @@ JOIN fill f ON f.slot_id = s.id
 ON CONFLICT (slot_id, audience_id) DO NOTHING;
 
 -- 12. CMS pages: three published, two draft, +es overlay (with localized
--- handle) on About. "Our boats" carries a template_suffix so the alternate-
--- template path has a row; every other page leaves it NULL.
+-- handle) on About.
 INSERT INTO page.pages
     (id, tour_operator_id, title, handle, body, seo_title, seo_description,
-     status, template_suffix, created_by, created_at, updated_at)
+     status, created_by, created_at, updated_at)
 VALUES
     (:'page_about_id', :'operator_id', 'About us', 'about-us',
      '<h1>Who we are</h1>' || E'\n' ||
      '<p>Family-run boat tours on the coast since 1998. Small groups, local skippers, no rush.</p>',
      'About our boat tours', 'Family-run boat tours on the coast since 1998.',
-     'PUBLISHED', NULL, :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '60 days'),
+     'PUBLISHED', :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '60 days'),
     (:'page_contact_id', :'operator_id', 'Contact', 'contact',
      '<h1>Get in touch</h1>' || E'\n' ||
      '<p>Email <a href="mailto:hello@acme.test">hello@acme.test</a> or find us at the Old Port kiosk from 9:00.</p>',
      NULL, NULL,
-     'PUBLISHED', NULL, :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '370 days'),
+     'PUBLISHED', :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '370 days'),
     (:'page_faq_id', :'operator_id', 'FAQ', 'faq',
      '<h1>Frequently asked questions</h1>' || E'\n' ||
      '<h2>What if it rains?</h2><p>We reschedule or refund — your pick.</p>',
      NULL, NULL,
-     'DRAFT', NULL, :'user_id', NOW() - INTERVAL '340 days', NOW() - INTERVAL '340 days'),
+     'DRAFT', :'user_id', NOW() - INTERVAL '340 days', NOW() - INTERVAL '340 days'),
     (:'page_boats_id', :'operator_id', 'Our boats', 'our-boats',
      '<h1>The fleet</h1>' || E'\n' ||
      '<p>Two sailing boats and a RIB, all under twelve passengers.</p>' || E'\n' ||
      '<ul><li><strong>Sea Swallow</strong> — 11 m sloop, twelve guests.</li>' ||
      '<li><strong>Blue Marlin</strong> — 9 m RIB, eight guests.</li></ul>',
      'Our boats', 'Two sailing boats and a RIB, all under twelve passengers.',
-     'PUBLISHED', 'wide', :'user_maria_id', NOW() - INTERVAL '150 days', NOW() - INTERVAL '20 days'),
+     'PUBLISHED', :'user_maria_id', NOW() - INTERVAL '150 days', NOW() - INTERVAL '20 days'),
     (:'page_press_id', :'operator_id', 'Press', 'press',
      '<h1>Press</h1>' || E'\n' || '<p>Kit and photos on request.</p>',
      NULL, NULL,
-     'DRAFT', NULL, :'user_sofia_id', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days')
+     'DRAFT', :'user_sofia_id', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO page.page_translations
@@ -1062,7 +1061,8 @@ FROM (VALUES
     ('e3', 'USER', :'user_diego_id'::uuid, 'Diego Santos', 'PICKUP_LOCATION', :'pickup_station_id'::uuid,
      'pickup_location.created', '{"name":"Atocha station"}', NULL, 24),
     ('e4', 'USER', :'user_maria_id'::uuid, 'María Robles', 'PAGE', :'page_boats_id'::uuid,
-     'page.updated', NULL, '[{"field":"templateSuffix","from":null,"to":"wide"}]', 21),
+     'page.updated', NULL,
+     '[{"field":"seoTitle","from":null,"to":"Our boats"}]', 21),
     ('e5', 'USER', :'user_maria_id'::uuid, 'María Robles', 'MENU', :'menu_main_id'::uuid,
      'menu.items_replaced', '{"itemCount":6}', NULL, 20),
     ('e6', 'USER', :'user_id'::uuid, 'Dev Admin', 'INVITATION', :'inv_revoked_id'::uuid,

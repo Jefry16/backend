@@ -111,7 +111,7 @@ class PageControllerDocumentationTest {
                 new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"),
                 new PageSeoTitle("About"), new PageSeoDescription("Who we are"),
-                PageStatus.DRAFT, null,
+                PageStatus.DRAFT,
                 UUID.fromString(USER),
                 Instant.parse("2026-07-27T10:00:00Z"), Instant.parse("2026-07-27T10:00:00Z"));
     }
@@ -164,7 +164,6 @@ class PageControllerDocumentationTest {
                                 fieldWithPath("seoTitle").description("SEO <title> override (≤70); null = derive from the title").optional(),
                                 fieldWithPath("seoDescription").description("SEO meta description override (≤320); null = none").optional(),
                                 fieldWithPath("status").description("DRAFT or PUBLISHED"),
-                                fieldWithPath("templateSuffix").description("Alternate page template (templates/page.{suffix}.json when themes land); null = base template").optional(),
                                 fieldWithPath("createdAt").description("When created"),
                                 fieldWithPath("updatedAt").description("Last content change"))));
     }
@@ -208,7 +207,7 @@ class PageControllerDocumentationTest {
         mockMvc.perform(patch("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE).with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"About\",\"body\":\"<p>New</p>\",\"templateSuffix\":\"landing\"}"))
+                        .content("{\"title\":\"About\",\"body\":\"<p>New</p>\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/update",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -216,8 +215,7 @@ class PageControllerDocumentationTest {
                                 fieldWithPath("title").description("Display title (whole replace)"),
                                 fieldWithPath("body").description("Raw HTML content (whole replace)"),
                                 fieldWithPath("seoTitle").type("String").description("SEO title; null/blank clears").optional(),
-                                fieldWithPath("seoDescription").type("String").description("SEO description; null/blank clears").optional(),
-                                fieldWithPath("templateSuffix").description("Alternate template suffix; null/blank clears").optional())));
+                                fieldWithPath("seoDescription").type("String").description("SEO description; null/blank clears").optional())));
     }
 
     @Test

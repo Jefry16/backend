@@ -1,0 +1,12 @@
+-- Drops the alternate-template assignment.
+--
+-- V1 added it for Shopify parity: `templates/page.{suffix}.json` would render a
+-- page instead of the base template. Nothing ever read it. There is no
+-- storefront route for CMS pages and no theme system, so an operator could set
+-- the field and change nothing anywhere — a setting that lies about having an
+-- effect is worse than an absent one.
+--
+-- Data loss is real but empty of meaning: no reader ever existed, so no rendered
+-- page depended on a value here. If themes bring alternate templates back, they
+-- bring their own column with a consumer attached.
+ALTER TABLE pages DROP COLUMN template_suffix;

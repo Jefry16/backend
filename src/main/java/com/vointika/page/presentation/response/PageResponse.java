@@ -17,7 +17,6 @@ public record PageResponse(
         String seoTitle,
         String seoDescription,
         String status,
-        String templateSuffix,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -31,7 +30,6 @@ public record PageResponse(
                 p.getSeoTitle().map(PageSeoTitle::value).orElse(null),
                 p.getSeoDescription().map(PageSeoDescription::value).orElse(null),
                 p.getStatus().name(),
-                p.getTemplateSuffix(),
                 p.getCreatedAt(),
                 p.getUpdatedAt());
     }
