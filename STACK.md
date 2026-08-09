@@ -91,7 +91,7 @@ bites, so the next session reads it instead of re-discovering it.
   which returns null), but nothing reaches it, because `clazz.getMethod` already
   returns inherited public interface methods. Both halves pinned in
   `StorefrontMustacheConfigTest`; the interface one was settled by running it, after
-  two readings of the same source disagreed. (MAP open decision 6 §4 describes the *default*
+  two readings of the same source disagreed. (MAP's render-path decision, mechanics §4, describes the *default*
   collector's three-form search; that half stops being true the moment coercion is off.)
 - **A view model reached reflectively must be `public`, enclosing types included.** With
   coercion off, `Method.invoke` on a public accessor of a package-private class is an
