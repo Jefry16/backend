@@ -51,8 +51,16 @@ services:
     volumes:
       - miniodata:/data
 
-  # One-shot: create the avatars bucket and make it publicly readable (resolved
-  # avatar URLs are fetched anonymously). Idempotent; re-runs on every up.
+  # One-shot: create the avatars bucket, make it publicly readable (resolved
+  # avatar URLs are fetched anonymously), and upload the dev-seed placeholder
+  # objects. Idempotent; re-runs on every up.
+  #
+  # The objects must land BEFORE the media rows that name them, which is why
+  # this is here and not in dev-seed.sql: a media row whose object is missing
+  # renders as a broken image everywhere it is referenced. Each file is named
+  # for the exact key suffix the upload use case would have produced —
+  # `{mediaId}-{sanitized-name}.png` under `tour-operators/{operatorId}/` — so
+  # the seeded storage_key and the object agree by construction.
   minio-init:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
@@ -60,6 +68,8 @@ services:
     environment:
       APP_S3_ACCESS_KEY: ${APP_S3_ACCESS_KEY:-minioadmin}
       APP_S3_SECRET_KEY: ${APP_S3_SECRET_KEY:-minioadmin}
+    volumes:
+      - ./docker/dev-seed/media:/seed-media:ro
     entrypoint: >
       /bin/sh -c "
       until /usr/bin/mc alias set local http://minio:9000 \"$$APP_S3_ACCESS_KEY\" \"$$APP_S3_SECRET_KEY\" 2>/dev/null; do
@@ -67,7 +77,9 @@ services:
       done &&
       /usr/bin/mc mb --ignore-existing local/avatars &&
       /usr/bin/mc anonymous set download local/avatars &&
-      echo 'minio-init: avatars bucket ready.'
+      /usr/bin/mc cp --quiet --recursive /seed-media/
+      local/avatars/tour-operators/01900000-0000-7000-8000-000000000002/ &&
+      echo 'minio-init: avatars bucket ready, dev-seed media uploaded.'
       "
     restart: "no"
 

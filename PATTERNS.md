@@ -613,6 +613,32 @@ to a seeded table, grep the seed for that table before opening the PR.** Only
 `VointikaApplicationTests.contextLoads` runs migrations at all, and it does not
 run the seed — nothing in the build will tell you.
 
+**You can still check it in one command, without Docker.** Run the seed against
+the dev database inside a transaction that `TRUNCATE`s the seeded schemas first
+and `ROLLBACK`s at the end: that is a true from-empty run — it catches the
+ordering and NOT NULL faults a populated database hides, because an existing
+parent row makes a mis-ordered child insert succeed — and the live data is
+untouched. Running it three times in the same transaction is the idempotency
+check (`ON CONFLICT DO NOTHING` converging means identical row counts). This is
+what the build cannot do for you; it costs a few seconds.
+
+**A seeded row that names a storage object must ship the object.** Media rows
+whose MinIO object is missing render as broken images on every screen that
+references them, which is why the seed carried none for so long. The pairing:
+`docker/dev-seed/media/` holds one file per row named for the exact key suffix
+the upload use case produces (`{mediaId}-{sanitized-name}.png`), and the
+`minio-init` compose service uploads the directory under
+`tour-operators/{operatorId}/` before anything reads it. Add a media row, add
+its file — nothing checks the pair at build time.
+
+**What the seed is for is coverage, not plausibility.** A table with zero rows
+renders exactly like a broken query, so a thin fixture makes whole admin screens
+unreviewable. The rule: every table the admin UI reads gets rows, and every
+*state* a screen can show gets at least one — published and draft, read and
+unread, sold out and cancelled, past and future, translated and not. Uneven on
+purpose: if every owner has every optional field set, nothing shows you what
+"unset" looks like.
+
 ## 11. Recurring gotchas (check before you trip)
 
 - Boot 4 autoconfiguration is per-starter: depend on the **Boot starter**
