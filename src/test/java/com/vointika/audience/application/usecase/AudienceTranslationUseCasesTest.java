@@ -10,6 +10,7 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -95,15 +96,40 @@ class AudienceTranslationUseCasesTest {
     }
 
     @Test
-    void upsertBlankNameClearsExistingOverlayToAbsent() {
+    void upsertBlankNameDeletesTheOverlayInsteadOfStoringAnEmptyOne() {
+        // Name is the only translatable column, so a row without it falls back
+        // for everything — indistinguishable from no row, except that it shows
+        // up in the translations list as a locale someone has worked on.
         when(translationRepository.findByAudienceIdAndLocale(AUD, "es"))
                 .thenReturn(Optional.of(overlay("Adultos")));
 
         upsert().execute(OP, AUD, "es", "  ", USER);
 
-        ArgumentCaptor<AudienceTranslation> captor = ArgumentCaptor.forClass(AudienceTranslation.class);
-        verify(translationRepository).upsert(captor.capture());
-        assertThat(captor.getValue().name()).isNull();
+        verify(translationRepository).deleteByAudienceIdAndLocale(AUD, "es");
+        verify(translationRepository, never()).upsert(any());
+
+        ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
+        verify(auditTrailPort).append(audit.capture());
+        assertThat(audit.getValue().action()).isEqualTo("audience.translation_deleted");
+        assertThat(audit.getValue().details()).containsEntry("locale", "es");
+    }
+
+    @Test
+    void upsertBlankNameWhenThereWasNoOverlayWritesNothingAndAuditsNothing() {
+        // The same-value probe catches nothing-to-nothing before any write.
+        upsert().execute(OP, AUD, "es", "   ", USER);
+
+        verify(translationRepository, never()).upsert(any());
+        verify(translationRepository, never()).deleteByAudienceIdAndLocale(any(), any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
+    void anEmptyTranslationKnowsItIsEmpty() {
+        // empty() and isEmpty() are two halves of one idea; if a translatable
+        // field is added to the record and not to isEmpty(), this fails.
+        assertThat(AudienceTranslation.empty(AUD, OP, new LocaleCode("es")).isEmpty()).isTrue();
+        assertThat(overlay("Adultos").isEmpty()).isFalse();
     }
 
     @Test

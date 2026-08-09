@@ -49,4 +49,22 @@ public record ExperienceTranslation(
         return new ExperienceTranslation(experienceId, tourOperatorId, locale,
                 null, null, null, null, null, null, null, null, null);
     }
+
+    /**
+     * Nothing is translated, so this overlay changes nothing — the read falls
+     * back to the canonical experience for every field. Storing such a row is
+     * indistinguishable from having no row at all, except that it shows up in
+     * the translations list as if a locale had been worked on. The upsert
+     * deletes instead of writing one; this is the predicate it asks.
+     *
+     * <p>The three lists are null rather than empty here: the upsert maps an
+     * absent or empty array to null, so an empty list never reaches this record.
+     *
+     * <p>Add a translatable component to this record and it belongs here too.
+     */
+    public boolean isEmpty() {
+        return name == null && description == null && longDescription == null
+                && highlights == null && included == null && notIncluded == null
+                && handle == null && seoTitle == null && seoDescription == null;
+    }
 }

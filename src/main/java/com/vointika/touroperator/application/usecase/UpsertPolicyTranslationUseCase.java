@@ -28,6 +28,12 @@ import java.util.UUID;
  * outside the operator's supported set → 422 ({@link OperatorLocalesQuery}). A
  * blank field is treated as untranslated (null → falls back to the canonical
  * policy).
+ *
+ * <p><b>Blanking every field deletes the row rather than storing one.</b> An
+ * overlay with nothing in it falls back for every field, so it is
+ * indistinguishable from no overlay — except in the translations list, where it
+ * appears as a locale someone has worked on. Saving an already-blank form is a
+ * no-op: nothing written, nothing audited.
  */
 public class UpsertPolicyTranslationUseCase {
 
@@ -72,13 +78,37 @@ public class UpsertPolicyTranslationUseCase {
                 ? null : new PolicyTitle(input.title());
         PolicyBody body = blankNull(input.body()) == null
                 ? null : new PolicyBody(input.body());
+        PolicyTranslation translation =
+                new PolicyTranslation(tourOperatorId, type, locale, title, body);
+
+        if (translation.isEmpty()) {
+            clear(tourOperatorId, type, locale, callerUserId);
+            return;
+        }
 
         transactionRunner.run(() -> {
-            translationRepository.upsert(
-                    new PolicyTranslation(tourOperatorId, type, locale, title, body));
+            translationRepository.upsert(translation);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "TOUR_OPERATOR", tourOperatorId, "tour_operator.policy_translation_updated",
+                    Map.of("type", type.name(), "locale", locale.value())));
+        });
+    }
+
+    /**
+     * Blanking every field is how the editor says "this locale is not translated",
+     * and the honest representation of that is no row. Audited as a delete
+     * because that is what happened; a no-op when there was nothing to remove, so
+     * saving an already-blank form writes nothing and logs nothing.
+     */
+    private void clear(UUID tourOperatorId, PolicyType type, LocaleCode locale, UUID callerUserId) {
+        transactionRunner.run(() -> {
+            if (!translationRepository.delete(tourOperatorId, type, locale.value())) {
+                return;
+            }
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "TOUR_OPERATOR", tourOperatorId, "tour_operator.policy_translation_deleted",
                     Map.of("type", type.name(), "locale", locale.value())));
         });
     }

@@ -114,17 +114,60 @@ class OperatorTranslationUseCasesTest {
     @Test
     void upsertTreatsABlankFieldAsUntranslated() {
         // Null, not "" — the storefront reads null as "fall back to canonical",
-        // and an empty string would be a title of zero characters.
-        upsert().execute(OP, "es", new UpsertOperatorTranslationInput("  ", "", null, "   ", ""), USER);
+        // and an empty string would be a title of zero characters. One field is
+        // kept so the row still has content; blanking ALL of them is a delete,
+        // which is the test below.
+        upsert().execute(OP, "es",
+                new UpsertOperatorTranslationInput("Título", "", null, "   ", ""), USER);
 
         ArgumentCaptor<TourOperatorTranslation> saved =
                 ArgumentCaptor.forClass(TourOperatorTranslation.class);
         verify(translationRepository).upsert(saved.capture());
-        assertThat(saved.getValue().seoTitle()).isNull();
+        assertThat(saved.getValue().seoTitle().value()).isEqualTo("Título");
         assertThat(saved.getValue().seoDescription()).isNull();
         assertThat(saved.getValue().passwordMessage()).isNull();
         assertThat(saved.getValue().slogan()).isNull();
         assertThat(saved.getValue().shortDescription()).isNull();
+    }
+
+    @Test
+    void blankingEveryFieldDeletesTheRowInsteadOfStoringAnEmptyOne() {
+        // An overlay with nothing in it falls back for every field, so it is
+        // indistinguishable from no overlay — except that it shows up in the
+        // translations list as a locale someone has worked on.
+        when(translationRepository.deleteByTourOperatorIdAndLocale(OP, "es")).thenReturn(true);
+
+        upsert().execute(OP, "es",
+                new UpsertOperatorTranslationInput("  ", "", null, "   ", ""), USER);
+
+        verify(translationRepository).deleteByTourOperatorIdAndLocale(OP, "es");
+        verify(translationRepository, never()).upsert(any());
+
+        ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
+        verify(auditTrailPort).append(audit.capture());
+        assertThat(audit.getValue().action()).isEqualTo("tour_operator.translation_deleted");
+        assertThat(audit.getValue().details()).containsEntry("locale", "es");
+    }
+
+    @Test
+    void savingAnAlreadyBlankFormWritesNothingAndAuditsNothing() {
+        // Nothing to remove: the delete reports no row, so there is no event.
+        when(translationRepository.deleteByTourOperatorIdAndLocale(OP, "es")).thenReturn(false);
+
+        upsert().execute(OP, "es",
+                new UpsertOperatorTranslationInput(null, null, null, null, null), USER);
+
+        verify(translationRepository, never()).upsert(any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
+    void anEmptyTranslationKnowsItIsEmpty() {
+        // empty() and isEmpty() are two halves of one idea; if a translatable
+        // field is added to the record and not to isEmpty(), this fails.
+        assertThat(TourOperatorTranslation.empty(OP, LocaleCode.of("es")).isEmpty()).isTrue();
+        assertThat(new TourOperatorTranslation(OP, LocaleCode.of("es"),
+                new OperatorSeoTitle("t"), null, null, null, null).isEmpty()).isFalse();
     }
 
     @Test

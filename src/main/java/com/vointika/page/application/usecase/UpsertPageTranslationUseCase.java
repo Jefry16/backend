@@ -33,6 +33,12 @@ import java.util.UUID;
  * uniqueness-checked per (operator, locale) excluding this page (409, no
  * auto-suffix); absent but with a translated title, one is derived with
  * numeric-suffix probing; else null (the canonical handle serves the locale).
+ *
+ * <p><b>Blanking every field deletes the row rather than storing one.</b> An
+ * overlay with nothing in it falls back for every field, so it is
+ * indistinguishable from no overlay — except in the translations list, where it
+ * appears as a locale someone has worked on. Saving an already-blank form is a
+ * no-op: nothing written, nothing audited.
  */
 public class UpsertPageTranslationUseCase {
 
@@ -83,6 +89,11 @@ public class UpsertPageTranslationUseCase {
                 blank(input.seoDescription()) ? null : new PageSeoDescription(input.seoDescription()),
                 handle);
 
+        if (translation.isEmpty()) {
+            clear(input, locale);
+            return;
+        }
+
         try {
             transactionRunner.run(() -> {
                 translationRepository.upsert(translation);
@@ -98,6 +109,25 @@ public class UpsertPageTranslationUseCase {
             throw new ResourceAlreadyExistsException(
                     "The localized handle is already in use for this language");
         }
+    }
+
+    /**
+     * Blanking every field is how the editor says "this locale is not translated",
+     * and the honest representation of that is no row. Audited as a delete
+     * because that is what happened; a no-op when there was nothing to remove, so
+     * saving an already-blank form writes nothing and logs nothing.
+     */
+    private void clear(UpsertPageTranslationInput input, LocaleCode locale) {
+        if (translationRepository.find(input.pageId(), locale).isEmpty()) {
+            return;
+        }
+        transactionRunner.run(() -> {
+            translationRepository.delete(input.pageId(), locale);
+            auditTrailPort.append(new NewAuditEntry(
+                    input.tourOperatorId(), AuditActor.user(input.callerUserId()),
+                    "PAGE", input.pageId(), "page.translation_deleted",
+                    Map.of("locale", locale.value())));
+        });
     }
 
     private Handle resolveHandle(UpsertPageTranslationInput input, LocaleCode locale) {

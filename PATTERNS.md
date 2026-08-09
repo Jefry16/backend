@@ -313,43 +313,76 @@ guards exist to prevent. The window is small and both `page` and `experience` ca
 Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
 making the invariant true.
 
-## 4e. The translation-overlay table (now at its fourth copy)
+## 4e. The translation-overlay table (six of them, in two shapes)
 
 A translatable aggregate gets a sibling table keyed on
-`(<owner keys…>, locale)` whose every content column is **nullable**, and the
-read overlays it **nullable-wins-canonical**: a null column falls back to the
-owner's own value, never to an empty string. A row overlays; it does not
-replace. Translating a title and not a body is a Spanish title over an English
-body, which is the realistic partial-translation case and the one fallback bugs
-hide in.
+`(<owner keys…>, locale)`, and the read overlays it
+**nullable-wins-canonical**: a null column falls back to the owner's own value,
+never to an empty string. A row overlays; it does not replace. Translating a
+title and not a body is a Spanish title over an English body, which is the
+realistic partial-translation case and the one fallback bugs hide in.
 
-**Four tables now do this**, each with its own hand-written overlay helper:
-`experience_translations`, `page_translations`, `tour_operator_translations` and
-`tour_operator_policy_translations`. This section used to say "decide it when the
-fourth arrives" — **it has arrived**, and got a full write path of its own with
-the policy admin slice, so the deferral has run out.
+**Six tables do this**, not the four this section used to claim:
 
-**The decision, now that there are four real shapes to look at: do not
-generalise yet.** They differ in all three of the axes a shared abstraction would
-have to absorb:
+| | owner key | content columns | overlaid by | clearing |
+|---|---|---|---|---|
+| `experience_translations` | single id | 9, nullable | `StorefrontExperienceQueryImpl` | blank → null |
+| `tour_operator_translations` | single id (the operator) | 5, nullable | `StorefrontShopQueryImpl` | blank → null |
+| `tour_operator_policy_translations` | **composite** `(operator, type)` | 2, nullable | `StorefrontShopQueryImpl` | blank → null |
+| `page_translations` | single id | 5, nullable | **nothing yet** | blank → null |
+| `audience_translations` | single id | 1, nullable | **nothing yet** | blank → **delete** |
+| `menu_item_translations` | single id | 1, **NOT NULL** | **nothing yet** | **blank → 422** |
 
-| | owner key | who overlays | clearing |
-|---|---|---|---|
-| `experience_translations` | single id | mapper | blank → null |
-| `page_translations` | single id | mapper | blank → null |
-| `tour_operator_translations` | single id (the operator) | mapper | blank → null |
-| `tour_operator_policy_translations` | **composite** `(operator, type)` | **query adapter** | blank → null |
+**Half of them are never resolved to a locale**, because nothing renders them
+translated yet — there is no CMS page route, audiences are not on the storefront
+and menus are not rendered. They have full admin CRUD and no reader. That is not
+a gap to fix; it is what "the write half shipped first" looks like. The admin
+deliberately returns *every* locale rather than a resolved one — `GetMenuUseCase`
+hands back a locale→title map — which is what an editor needs.
 
-Only the last column is common, and it is one line per field. A generic overlay
-would need the key shape as a type parameter and the overlay site as a strategy
-— more machinery than the four helpers it replaces, which is the trade LAW §2.4
-refuses. What *is* worth keeping identical is the **rule**, not the code:
-nullable columns, nullable-wins-canonical, blank clears, and a row that overlays
-rather than replaces.
+Same one level down: only **3 of experience's 9** translatable columns are read
+(`handle`, `name`, `description`), because the listing card is the only consumer.
+The rest are stored and never rendered in any locale.
 
-Revisit if a fifth arrives **with the same key shape as an existing one** — that
-is duplication worth removing, where four different shapes is just four tables
-doing a similar thing.
+**Two shapes, and the split is the number of content columns.** The nullable rule
+exists so a partial translation can be expressed. With one column there is no
+partial state — a row without its only value is not a partial translation, it is
+an empty row. So:
+
+- **Multi-column** — every content column nullable, blank clears the field.
+- **Single-column** — the row either exists or it does not. `menu_item_translations`
+  makes its column `NOT NULL` and answers **422** to a blank; that is *more*
+  correct for its shape, not a violation to tidy away.
+
+**An overlay with nothing left in it is deleted, not stored.** It falls back for
+every field, so it is indistinguishable from having no row — except in the
+translations list, where it shows as a locale someone worked on. Every upsert
+asks the record's own `isEmpty()` and deletes instead of writing, auditing
+`*.translation_deleted` because that is what happened; saving an already-blank
+form writes nothing and logs nothing. `isEmpty()` is the mirror of the `empty()`
+factory each record already had for the editor's blank form, and each record's
+test pins `empty(...).isEmpty()` so a new translatable field that misses
+`isEmpty()` fails.
+
+**`menu_item_translations` is the one deliberate outlier, and it is not lazily
+written.** Its items are not editable individually — the whole tree is POSTed and
+rebuilt with fresh ids — so translations ride inline in that payload, have no
+endpoints of their own, and are cleared by being left out. It is also the only
+one without a `tour_operator_id`; items are always reached through their menu, so
+adding one would be a migration for a join nobody needs.
+
+**Still not generalising, but the old reason no longer holds.** This section used
+to argue they differ on three axes. They do not: every table that actually
+overlays does it in a storefront query adapter, with the same two-line helper
+(`translated != null ? translated : canonical`), and clearing is uniform. Only
+the key shape still differs — policies are the lone composite, and they key on
+`type` rather than the surrogate `id` V13 gave them. What is left to share is two
+lines at three call sites, and sharing it across contexts means pushing it into
+`shared` — real coupling to remove six lines (LAW §2.4). Keep the **rule**
+identical, not the code.
+
+Revisit when something renders pages, audiences or menus translated: that triples
+the overlay sites at a stroke, and *then* the duplication is worth a second look.
 
 ## 5. Read-time URL resolution (never store URLs)
 
