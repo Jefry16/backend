@@ -804,6 +804,17 @@ ON CONFLICT DO NOTHING;
 -- The three children reference their parent inside the same statement, which
 -- is only legal because menu_items.parent_id is DEFERRABLE INITIALLY DEFERRED
 -- — the constraint is checked at commit, by which time the parent row exists.
+--
+-- **These fixed ids do not survive the admin API, and the seed cannot tell.**
+-- Menu items are not edited individually: PUT .../menus/{id}/items rewrites the
+-- whole tree with FRESH ids. So one save from the admin (or one curl) replaces
+-- these rows with randomly-keyed ones, the ids below no longer exist, and the
+-- next `docker compose up` re-inserts all of them — the menu silently doubles.
+-- Every other table here is safe from this because nothing else rewrites its
+-- primary keys on update.
+--
+-- If you have edited a menu and want a clean re-seed, delete that menu's items
+-- first (`DELETE FROM touroperator.menu_items ...`) or `docker compose down -v`.
 INSERT INTO touroperator.menu_items
     (id, menu_id, parent_id, title, link_type, resource_id, url, position, created_at, updated_at)
 SELECT v.id, m.id, v.parent_id, v.title, v.link_type, v.resource_id, v.url, v.position,
