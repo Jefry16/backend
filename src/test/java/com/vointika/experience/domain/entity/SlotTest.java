@@ -56,24 +56,4 @@ class SlotTest {
         assertThat(cancelled.status()).isEqualTo(SlotStatus.CANCELLED);
         assertThatThrownBy(cancelled::cancel).isInstanceOf(ConflictException.class);
     }
-
-    @Test
-    void changeStatusTogglesAvailableSoldOut() {
-        Slot s = slot(LocalDateTime.of(2026, 8, 1, 10, 0), LocalDateTime.of(2026, 8, 1, 11, 0));
-        assertThat(s.changeStatus(SlotStatus.SOLD_OUT).status()).isEqualTo(SlotStatus.SOLD_OUT);
-    }
-
-    @Test
-    void changeStatusRejectsCancelledTarget() {
-        Slot s = slot(LocalDateTime.of(2026, 8, 1, 10, 0), LocalDateTime.of(2026, 8, 1, 11, 0));
-        assertThatThrownBy(() -> s.changeStatus(SlotStatus.CANCELLED))
-                .isInstanceOf(InvalidFieldException.class);
-    }
-
-    @Test
-    void changeStatusOnCancelledSlot409() {
-        Slot cancelled = slot(LocalDateTime.of(2026, 8, 1, 10, 0), LocalDateTime.of(2026, 8, 1, 11, 0)).cancel();
-        assertThatThrownBy(() -> cancelled.changeStatus(SlotStatus.AVAILABLE))
-                .isInstanceOf(ConflictException.class);
-    }
 }

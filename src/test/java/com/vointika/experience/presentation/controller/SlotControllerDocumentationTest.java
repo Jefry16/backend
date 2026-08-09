@@ -72,7 +72,7 @@ class SlotControllerDocumentationTest {
              "validFrom":"2026-08-01","validTo":"2026-09-01",
              "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}""";
     private static final String UPDATE_BODY = """
-            {"status":"SOLD_OUT","capacities":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","capacity":8}]}""";
+            {"capacities":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","capacity":8}]}""";
 
     private MockMvc mockMvc;
 
