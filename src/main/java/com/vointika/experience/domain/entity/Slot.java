@@ -81,25 +81,14 @@ public class Slot {
      * A cancelled departure is terminal: nothing on it may be edited — not its
      * status, and not the capacity on its frozen pricing rows. Asked once by the
      * edit use case rather than re-checked per field, because a guard that lives
-     * on one transition only defends that transition: the capacity-only PATCH
-     * never called {@link #changeStatus} and so edited cancelled slots freely.
+     * on one transition only defends that transition: an earlier status-change
+     * path carried this check while the capacity-only PATCH did not, and so
+     * edited cancelled slots freely.
      */
     public void ensureEditable() {
         if (status == SlotStatus.CANCELLED) {
             throw new ConflictException("A cancelled slot cannot be edited");
         }
-    }
-
-    /**
-     * Sets AVAILABLE or SOLD_OUT (functional — returns a copy). Rejects CANCELLED
-     * (use {@link #cancel()}) and a change on an already-cancelled slot.
-     */
-    public Slot changeStatus(SlotStatus newStatus) {
-        if (newStatus == SlotStatus.CANCELLED) {
-            throw new InvalidFieldException("Cancel a slot via the cancel action");
-        }
-        ensureEditable();
-        return copyWithStatus(newStatus);
     }
 
     /** Cancels the departure (terminal). Already CANCELLED → 409. */

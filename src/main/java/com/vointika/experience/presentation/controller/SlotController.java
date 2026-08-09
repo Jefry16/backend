@@ -126,7 +126,7 @@ public class SlotController {
         return ResponseEntity.ok(SlotResponse.from(refreshed));
     }
 
-    /** Sets status (AVAILABLE/SOLD_OUT) and/or per-audience capacity. ADMIN+. 200 with the refreshed slot. */
+    /** Sets per-audience capacity. ADMIN+. 200 with the refreshed slot. */
     @PatchMapping("/api/tour-operators/{tourOperatorId}/slots/{slotId}")
     public ResponseEntity<SlotResponse> update(
             @PathVariable UUID tourOperatorId,
@@ -134,7 +134,7 @@ public class SlotController {
             @RequestBody(required = false) UpdateSlotInput body,
             @AuthenticationPrincipal String callerUserId) {
         // An omitted body is a legal no-op PATCH, so it binds as an empty edit.
-        UpdateSlotInput input = body == null ? new UpdateSlotInput(null, null) : body;
+        UpdateSlotInput input = body == null ? new UpdateSlotInput(null) : body;
         SlotView refreshed = updateSlotUseCase.execute(
                 tourOperatorId, slotId, UUID.fromString(callerUserId), input);
         return ResponseEntity.ok(SlotResponse.from(refreshed));

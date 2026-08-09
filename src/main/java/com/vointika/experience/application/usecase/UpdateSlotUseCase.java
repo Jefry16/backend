@@ -7,7 +7,6 @@ import com.vointika.experience.domain.entity.SlotAudiencePricing;
 import com.vointika.experience.domain.repository.SlotAudiencePricingRepository;
 import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.experience.domain.valueobject.Capacity;
-import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -24,10 +23,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Edits a slot: set status (AVAILABLE / SOLD_OUT) and/or per-audience capacity.
- * ADMIN+. 404 if not under this operator. Status → CANCELLED is rejected (use
- * cancel); editing a cancelled slot → 409. A new capacity below the tier's
- * already-booked count → 422 (all-or-nothing).
+ * Edits a slot's per-audience capacity. ADMIN+. 404 if not under this operator;
+ * editing a cancelled slot → 409. A new capacity below the tier's already-booked
+ * count → 422 (all-or-nothing).
+ *
+ * <p>Status is not editable here. SOLD_OUT is derived from bookings at checkout,
+ * not an operator toggle, and CANCELLED is terminal with its own endpoint.
  */
 public class UpdateSlotUseCase {
 
@@ -60,19 +61,11 @@ public class UpdateSlotUseCase {
             List<FieldChange> changes = new ArrayList<>();
             List<String> changedAudiences = new ArrayList<>();
 
-            if (input.status() != null) {
-                String statusBefore = slot.status().name();
-                slot = slotRepository.save(slot.changeStatus(parseStatus(input.status())));
-                if (!slot.status().name().equals(statusBefore)) {
-                    changes.add(new FieldChange("status", statusBefore, slot.status().name()));
-                }
-            }
-
             if (input.capacities() != null && !input.capacities().isEmpty()) {
                 applyCapacities(slot.id(), input.capacities(), changes, changedAudiences);
             }
 
-            // A no-op PATCH (same status, same capacities) records nothing.
+            // A no-op PATCH (same capacities) records nothing.
             if (!changes.isEmpty()) {
                 Map<String, Object> details = changedAudiences.isEmpty()
                         ? null
@@ -108,14 +101,6 @@ public class UpdateSlotUseCase {
                 changedAudiences.add(row.audienceName());
             }
             pricingRepository.save(row.withCapacity(newCapacity));
-        }
-    }
-
-    private static SlotStatus parseStatus(String raw) {
-        try {
-            return SlotStatus.valueOf(raw);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidFieldException("Unknown slot status: " + raw);
         }
     }
 }
