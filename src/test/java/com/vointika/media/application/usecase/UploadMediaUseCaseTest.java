@@ -19,7 +19,10 @@ import org.mockito.InOrder;
 import java.io.ByteArrayInputStream;
 import com.vointika.media.application.port.ImageDimensionsPort;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.nio.charset.StandardCharsets;
@@ -203,5 +206,40 @@ class UploadMediaUseCaseTest {
         ArgumentCaptor<Media> saved = ArgumentCaptor.forClass(Media.class);
         verify(mediaRepository).save(saved.capture());
         assertThat(saved.getValue().getAlt()).isNull();
+    }
+
+    @Test
+    void bothStreamsAreClosed() {
+        // The use case opens two streams (one to measure, one to store) and neither
+        // consumer closes them: ImageInputStream.close() explicitly does NOT close
+        // its source, and the S3 SDK does not close a caller's stream. On a
+        // disk-spooled multipart each leak is a file descriptor, one per upload.
+        List<TrackedStream> opened = new ArrayList<>();
+        Supplier<InputStream> tracking = () -> {
+            TrackedStream s = new TrackedStream("bytes".getBytes(StandardCharsets.UTF_8));
+            opened.add(s);
+            return s;
+        };
+
+        useCase.execute(operatorId, callerId, "image/png", 1234, "photo.png", tracking);
+
+        assertThat(opened).hasSize(2);
+        assertThat(opened).allSatisfy(s -> assertThat(s.closed)
+                .withFailMessage("a stream the use case opened was never closed")
+                .isTrue());
+    }
+
+    private static final class TrackedStream extends ByteArrayInputStream {
+        private boolean closed;
+
+        private TrackedStream(byte[] bytes) {
+            super(bytes);
+        }
+
+        @Override
+        public void close() throws IOException {
+            closed = true;
+            super.close();
+        }
     }
 }

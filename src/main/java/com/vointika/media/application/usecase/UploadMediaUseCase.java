@@ -17,7 +17,9 @@ import com.vointika.shared.valueobject.AuditActor;
 
 import com.vointika.media.application.port.ImageDimensionsPort;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.Map;
 import java.util.UUID;
@@ -91,13 +93,27 @@ public class UploadMediaUseCase {
         // for the bytes twice re-reads the spool rather than buffering here — which
         // is why this takes a Supplier and not an InputStream.
         //
+        // Both streams are closed here because this is what opened them. Neither
+        // consumer does it: ImageInputStream.close() explicitly does NOT close its
+        // source (verified by running it), and the S3 SDK does not close a caller's
+        // stream either. On a disk-spooled multipart each one is a file descriptor.
+        //
         // Empty is ordinary: a PDF has no dimensions, and a damaged header answers
         // the same way. It never fails the upload.
-        var dimensions = imageDimensionsPort.measure(body.get(), contentType.value());
+        Optional<ImageDimensionsPort.Dimensions> dimensions;
+        try (InputStream toMeasure = body.get()) {
+            dimensions = imageDimensionsPort.measure(toMeasure, contentType.value());
+        } catch (IOException e) {
+            throw new InvalidFieldException("Unable to read uploaded file");
+        }
 
         // Store BEFORE persisting: a failed save strands an object, never a row
         // without its object. Storage can't roll back with the DB tx anyway.
-        mediaStoragePort.putObject(key, contentType.value(), sizeBytes, body.get());
+        try (InputStream toStore = body.get()) {
+            mediaStoragePort.putObject(key, contentType.value(), sizeBytes, toStore);
+        } catch (IOException e) {
+            throw new InvalidFieldException("Unable to read uploaded file");
+        }
 
         String fileName = normalizeName(originalName, contentType);
         transactionRunner.run(() -> {

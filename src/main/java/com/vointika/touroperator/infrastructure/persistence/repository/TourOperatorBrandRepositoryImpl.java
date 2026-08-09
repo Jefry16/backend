@@ -42,6 +42,13 @@ public class TourOperatorBrandRepositoryImpl implements TourOperatorBrandReposit
      *
      * <p>Runs inside the use case's transaction, so a failed insert rolls the
      * delete back with it and the operator never sees a half-cleared palette.
+     *
+     * <p><b>No explicit flush between the delete and the insert.</b> An earlier
+     * version had one, with a comment claiming Hibernate would otherwise order
+     * the INSERTs first and collide on the same keys. That was asserted, not
+     * observed — and it is wrong: removing it and replaying every transition
+     * against real Postgres (same positions with new colours, 2→1, 1→2 plus a
+     * secondary) changed nothing. Do not add it back without a failing case.
      */
     @Override
     public Brand save(Brand brand) {
@@ -50,11 +57,6 @@ public class TourOperatorBrandRepositoryImpl implements TourOperatorBrandReposit
 
         colorRepository.deleteByTourOperatorId(operatorId);
         socialLinkRepository.deleteByTourOperatorId(operatorId);
-        // Flush the deletes before the inserts: without it Hibernate may order the
-        // INSERTs first and collide with the rows still present on the same keys.
-        colorRepository.flush();
-        socialLinkRepository.flush();
-
         colorRepository.saveAll(brand.colors().stream()
                 .map(c -> TourOperatorBrandMapper.toJpa(operatorId, c)).toList());
         socialLinkRepository.saveAll(brand.socialLinks().stream()
