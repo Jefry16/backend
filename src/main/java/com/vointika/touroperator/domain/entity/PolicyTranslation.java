@@ -36,4 +36,17 @@ public record PolicyTranslation(
     public static PolicyTranslation empty(UUID tourOperatorId, PolicyType type, LocaleCode locale) {
         return new PolicyTranslation(tourOperatorId, type, locale, null, null);
     }
+
+    /**
+     * Nothing is translated, so this overlay changes nothing — the read falls
+     * back to the canonical policy for every field. Storing such a row is
+     * indistinguishable from having no row at all, except that it shows up in
+     * the translations list as if a locale had been worked on. The upsert
+     * deletes instead of writing one; this is the predicate it asks.
+     *
+     * <p>Add a translatable component to this record and it belongs here too.
+     */
+    public boolean isEmpty() {
+        return title == null && body == null;
+    }
 }

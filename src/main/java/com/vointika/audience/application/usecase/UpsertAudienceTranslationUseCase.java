@@ -22,7 +22,13 @@ import java.util.UUID;
  * Creates or replaces the translation overlay for one (audience, locale). ADMIN+.
  * Guards: caller not ADMIN+ → 403; audience not under this operator → 404;
  * bad-shape or unsupported locale → 422 (must be in the operator's supported
- * set). A blank name is stored as absent → falls back to canonical.
+ * set).
+ *
+ * <p><b>A blank name deletes the row rather than storing an absent one.</b> Name
+ * is the only translatable column, so a row without it falls back for
+ * everything — indistinguishable from no row, except in the translations list,
+ * where it appears as a locale someone has worked on. Blanking an already-absent
+ * name is a no-op: nothing written, nothing audited.
  */
 public class UpsertAudienceTranslationUseCase {
 
@@ -69,9 +75,24 @@ public class UpsertAudienceTranslationUseCase {
             return;
         }
 
+        AudienceTranslation translation =
+                new AudienceTranslation(audienceId, tourOperatorId, locale, translated);
+
+        // Reached only when a row existed with a name — the same-value check above
+        // already returned for the nothing-to-nothing case.
+        if (translation.isEmpty()) {
+            transactionRunner.run(() -> {
+                translationRepository.deleteByAudienceIdAndLocale(audienceId, locale.value());
+                auditTrailPort.append(new NewAuditEntry(
+                        tourOperatorId, AuditActor.user(callerUserId),
+                        "AUDIENCE", audienceId, "audience.translation_deleted",
+                        Map.of("locale", locale.value())));
+            });
+            return;
+        }
+
         transactionRunner.run(() -> {
-            translationRepository.upsert(
-                    new AudienceTranslation(audienceId, tourOperatorId, locale, translated));
+            translationRepository.upsert(translation);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "AUDIENCE", audienceId, "audience.translation_updated",

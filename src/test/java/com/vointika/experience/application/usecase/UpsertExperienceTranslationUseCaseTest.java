@@ -1,5 +1,8 @@
 package com.vointika.experience.application.usecase;
 
+import com.vointika.experience.domain.valueobject.Description;
+import com.vointika.shared.valueobject.LocaleCode;
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.experience.application.dto.input.UpsertExperienceTranslationInput;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.entity.ExperienceTranslation;
@@ -23,6 +26,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -114,6 +119,47 @@ class UpsertExperienceTranslationUseCaseTest {
         assertNull(saved.getValue().handle());
         assertNull(saved.getValue().name());
         assertEquals("only desc", saved.getValue().description().value());
+    }
+
+    @Test
+    void blankingEveryFieldDeletesTheOverlayInsteadOfStoringAnEmptyOne() {
+        // An overlay with nothing in it falls back for every field, so it is
+        // indistinguishable from no overlay — except that it shows up in the
+        // translations list as a locale someone has worked on. No name and no
+        // explicit handle also means no derived handle, so the row really is empty.
+        when(translationRepository.deleteByExperienceIdAndLocale(experienceId, "es")).thenReturn(true);
+
+        useCase.execute(operatorId, experienceId, "es",
+                new UpsertExperienceTranslationInput("  ", "", "   ", List.of(), List.of(), List.of(),
+                        null, "", null), callerId);
+
+        verify(translationRepository).deleteByExperienceIdAndLocale(experienceId, "es");
+        verify(translationRepository, never()).upsert(any());
+
+        ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
+        verify(auditTrailPort).append(audit.capture());
+        assertEquals("experience.translation_deleted", audit.getValue().action());
+    }
+
+    @Test
+    void savingAnAlreadyBlankExperienceTranslationWritesNothingAndAuditsNothing() {
+        when(translationRepository.deleteByExperienceIdAndLocale(experienceId, "es")).thenReturn(false);
+
+        useCase.execute(operatorId, experienceId, "es",
+                new UpsertExperienceTranslationInput(null, null, null, null, null, null, null, null, null),
+                callerId);
+
+        verify(translationRepository, never()).upsert(any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
+    void anEmptyTranslationKnowsItIsEmpty() {
+        // empty() and isEmpty() are two halves of one idea; if a translatable
+        // field is added to the record and not to isEmpty(), this fails.
+        assertTrue(ExperienceTranslation.empty(experienceId, operatorId, LocaleCode.of("es")).isEmpty());
+        assertFalse(new ExperienceTranslation(experienceId, operatorId, LocaleCode.of("es"),
+                null, new Description("Buceo"), null, null, null, null, null, null, null).isEmpty());
     }
 
     @Test

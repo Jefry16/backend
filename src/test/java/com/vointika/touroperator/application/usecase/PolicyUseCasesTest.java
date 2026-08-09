@@ -344,6 +344,51 @@ class PolicyUseCasesTest {
     }
 
     @Test
+    void blankingBothFieldsDeletesTheOverlayInsteadOfStoringAnEmptyOne() {
+        // An overlay with nothing in it falls back for every field, so it is
+        // indistinguishable from no overlay — except that it shows up in the
+        // translations list as a locale someone has worked on.
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
+                .thenReturn(Optional.of(existing()));
+        when(translationRepository.delete(OP, PolicyType.CANCELLATION, "es")).thenReturn(true);
+
+        upsertTranslation().execute(OP, POLICY_ID, "es",
+                new UpsertPolicyTranslationInput("  ", ""), USER);
+
+        verify(translationRepository).delete(OP, PolicyType.CANCELLATION, "es");
+        verify(translationRepository, never()).upsert(any());
+
+        ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
+        verify(auditTrailPort).append(audit.capture());
+        assertThat(audit.getValue().action())
+                .isEqualTo("tour_operator.policy_translation_deleted");
+        assertThat(audit.getValue().details()).containsEntry("locale", "es");
+    }
+
+    @Test
+    void savingAnAlreadyBlankPolicyTranslationWritesNothingAndAuditsNothing() {
+        when(policyRepository.findByIdAndTourOperatorId(POLICY_ID, OP))
+                .thenReturn(Optional.of(existing()));
+        when(translationRepository.delete(OP, PolicyType.CANCELLATION, "es")).thenReturn(false);
+
+        upsertTranslation().execute(OP, POLICY_ID, "es",
+                new UpsertPolicyTranslationInput(null, null), USER);
+
+        verify(translationRepository, never()).upsert(any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
+    void anEmptyPolicyTranslationKnowsItIsEmpty() {
+        // empty() and isEmpty() are two halves of one idea; if a translatable
+        // field is added to the record and not to isEmpty(), this fails.
+        assertThat(PolicyTranslation.empty(OP, PolicyType.CANCELLATION, new LocaleCode("es"))
+                .isEmpty()).isTrue();
+        assertThat(new PolicyTranslation(OP, PolicyType.CANCELLATION, new LocaleCode("es"),
+                new PolicyTitle("Política"), null).isEmpty()).isFalse();
+    }
+
+    @Test
     void translatingAnUnknownOrForeignPolicyIs404() {
         // Otherwise the row is unreachable: the storefront looks the page up by its
         // canonical policy, so an overlay with no owner could never render.

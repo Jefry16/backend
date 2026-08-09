@@ -38,4 +38,18 @@ public record PageTranslation(
     public static PageTranslation empty(UUID pageId, UUID tourOperatorId, LocaleCode locale) {
         return new PageTranslation(pageId, tourOperatorId, locale, null, null, null, null, null);
     }
+
+    /**
+     * Nothing is translated, so this overlay changes nothing — the read falls
+     * back to the canonical page for every field. Storing such a row is
+     * indistinguishable from having no row at all, except that it shows up in
+     * the translations list as if a locale had been worked on. The upsert
+     * deletes instead of writing one; this is the predicate it asks.
+     *
+     * <p>Add a translatable component to this record and it belongs here too.
+     */
+    public boolean isEmpty() {
+        return title == null && body == null && seoTitle == null
+                && seoDescription == null && handle == null;
+    }
 }

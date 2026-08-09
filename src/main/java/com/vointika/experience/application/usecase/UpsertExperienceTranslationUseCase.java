@@ -45,7 +45,13 @@ import java.util.function.Function;
  * unique localized handle (auto-suffix); else null. Both probe <em>both</em>
  * namespaces: the storefront resolves a handle against localized handles first and
  * canonical ones second, so a handle taken from either shadows the other (PATTERNS
- * §4d). No audit (no audit context yet).
+ * §4d).
+ *
+ * <p><b>Blanking every field deletes the row rather than storing one.</b> An
+ * overlay with nothing in it falls back for every field, so it is
+ * indistinguishable from no overlay — except in the translations list, where it
+ * appears as a locale someone has worked on. Saving an already-blank form is a
+ * no-op: nothing written, nothing audited.
  */
 public class UpsertExperienceTranslationUseCase {
 
@@ -92,16 +98,44 @@ public class UpsertExperienceTranslationUseCase {
         List<InclusionItem> included = mapList(input.included(), InclusionItem::new);
         List<InclusionItem> notIncluded = mapList(input.notIncluded(), InclusionItem::new);
         Handle handle = resolveHandle(tourOperatorId, experienceId, locale, input.handle(), name);
+        ExperienceTranslation translation = new ExperienceTranslation(
+                experienceId, tourOperatorId, locale,
+                name, description, longDescription, highlights, included, notIncluded, handle,
+                blankNull(input.seoTitle()) == null ? null : new SeoTitle(input.seoTitle()),
+                blankNull(input.seoDescription()) == null ? null : new SeoDescription(input.seoDescription()));
+
+        if (translation.isEmpty()) {
+            clear(tourOperatorId, experienceId, locale, callerUserId);
+            return;
+        }
 
         transactionRunner.run(() -> {
-            translationRepository.upsert(new ExperienceTranslation(
-                    experienceId, tourOperatorId, locale,
-                    name, description, longDescription, highlights, included, notIncluded, handle,
-                    blankNull(input.seoTitle()) == null ? null : new SeoTitle(input.seoTitle()),
-                    blankNull(input.seoDescription()) == null ? null : new SeoDescription(input.seoDescription())));
+            translationRepository.upsert(translation);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "EXPERIENCE", experienceId, "experience.translation_updated",
+                    Map.of("locale", locale.value())));
+        });
+    }
+
+    /**
+     * Blanking every field is how the editor says "this locale is not translated",
+     * and the honest representation of that is no row. Audited as a delete
+     * because that is what happened; a no-op when there was nothing to remove, so
+     * saving an already-blank form writes nothing and logs nothing.
+     *
+     * <p>Reachable only with no name and no explicit handle, since
+     * {@link #resolveHandle} derives a handle from the name — so there is no
+     * blank-but-still-has-a-handle case to worry about here.
+     */
+    private void clear(UUID tourOperatorId, UUID experienceId, LocaleCode locale, UUID callerUserId) {
+        transactionRunner.run(() -> {
+            if (!translationRepository.deleteByExperienceIdAndLocale(experienceId, locale.value())) {
+                return;
+            }
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "EXPERIENCE", experienceId, "experience.translation_deleted",
                     Map.of("locale", locale.value())));
         });
     }

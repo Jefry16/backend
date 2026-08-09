@@ -29,6 +29,12 @@ import java.util.UUID;
  * <p>Guards: caller not ADMIN+ → 403; operator missing → 404; a locale outside
  * the operator's supported set → 422 ({@link OperatorLocalesQuery}). A blank
  * field is treated as untranslated (null → falls back to canonical).
+ *
+ * <p><b>Blanking every field deletes the row rather than storing one.</b> An
+ * overlay with nothing in it falls back for every field, so it is
+ * indistinguishable from no overlay — except in the translations list, where it
+ * appears as a locale someone has worked on. Saving an already-blank form is a
+ * no-op: nothing written, nothing audited.
  */
 public class UpsertOperatorTranslationUseCase {
 
@@ -76,13 +82,38 @@ public class UpsertOperatorTranslationUseCase {
         BrandShortDescription shortDescription = blankNull(input.shortDescription()) == null
                 ? null : new BrandShortDescription(input.shortDescription());
 
+        TourOperatorTranslation translation = new TourOperatorTranslation(
+                tourOperatorId, locale, seoTitle, seoDescription, passwordMessage,
+                slogan, shortDescription);
+
+        if (translation.isEmpty()) {
+            clear(tourOperatorId, locale, callerUserId);
+            return;
+        }
+
         transactionRunner.run(() -> {
-            translationRepository.upsert(new TourOperatorTranslation(
-                    tourOperatorId, locale, seoTitle, seoDescription, passwordMessage,
-                    slogan, shortDescription));
+            translationRepository.upsert(translation);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "TOUR_OPERATOR", tourOperatorId, "tour_operator.translation_updated",
+                    Map.of("locale", locale.value())));
+        });
+    }
+
+    /**
+     * Blanking every field is how the editor says "this locale is not translated",
+     * and the honest representation of that is no row. Audited as a delete
+     * because that is what happened; a no-op when there was nothing to remove, so
+     * saving an already-blank form writes nothing and logs nothing.
+     */
+    private void clear(UUID tourOperatorId, LocaleCode locale, UUID callerUserId) {
+        transactionRunner.run(() -> {
+            if (!translationRepository.deleteByTourOperatorIdAndLocale(tourOperatorId, locale.value())) {
+                return;
+            }
+            auditTrailPort.append(new NewAuditEntry(
+                    tourOperatorId, AuditActor.user(callerUserId),
+                    "TOUR_OPERATOR", tourOperatorId, "tour_operator.translation_deleted",
                     Map.of("locale", locale.value())));
         });
     }

@@ -1,5 +1,6 @@
 package com.vointika.page.application.usecase;
 
+import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.page.application.dto.input.UpsertPageTranslationInput;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.entity.PageTranslation;
@@ -117,12 +118,55 @@ class PageTranslationUseCasesTest {
 
     @Test
     void upsertWithoutTitleOrHandleStoresNoLocalizedHandle() {
+        // The body is still set, so the row has content — blanking EVERYTHING is
+        // a delete, which is the test below.
         upsert().execute(input(null, null));
 
         ArgumentCaptor<PageTranslation> captor = ArgumentCaptor.forClass(PageTranslation.class);
         verify(translationRepository).upsert(captor.capture());
         assertThat(captor.getValue().handle()).isNull();
         verify(handleGenerator, never()).generateUnique(anyString(), any());
+    }
+
+    @Test
+    void blankingEveryFieldDeletesTheOverlayInsteadOfStoringAnEmptyOne() {
+        // An overlay with nothing in it falls back for every field, so it is
+        // indistinguishable from no overlay — except that it shows up in the
+        // translations list as a locale someone has worked on.
+        when(translationRepository.find(PAGE, new LocaleCode("es")))
+                .thenReturn(Optional.of(PageTranslation.empty(PAGE, OP, new LocaleCode("es"))));
+
+        upsert().execute(new UpsertPageTranslationInput(USER, OP, PAGE, "es",
+                "  ", "", null, "   ", ""));
+
+        verify(translationRepository).delete(PAGE, new LocaleCode("es"));
+        verify(translationRepository, never()).upsert(any());
+
+        ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
+        verify(auditTrailPort).append(audit.capture());
+        assertThat(audit.getValue().action()).isEqualTo("page.translation_deleted");
+        assertThat(audit.getValue().details()).containsEntry("locale", "es");
+    }
+
+    @Test
+    void savingAnAlreadyBlankPageTranslationWritesNothingAndAuditsNothing() {
+        when(translationRepository.find(PAGE, new LocaleCode("es"))).thenReturn(Optional.empty());
+
+        upsert().execute(new UpsertPageTranslationInput(USER, OP, PAGE, "es",
+                null, null, null, null, null));
+
+        verify(translationRepository, never()).upsert(any());
+        verify(translationRepository, never()).delete(any(), any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    @Test
+    void anEmptyTranslationKnowsItIsEmpty() {
+        // empty() and isEmpty() are two halves of one idea; if a translatable
+        // field is added to the record and not to isEmpty(), this fails.
+        assertThat(PageTranslation.empty(PAGE, OP, new LocaleCode("es")).isEmpty()).isTrue();
+        assertThat(new PageTranslation(PAGE, OP, new LocaleCode("es"),
+                new PageTitle("Sobre nosotros"), null, null, null, null).isEmpty()).isFalse();
     }
 
     @Test
