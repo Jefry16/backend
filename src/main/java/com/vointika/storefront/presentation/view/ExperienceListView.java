@@ -36,7 +36,8 @@ public record ExperienceListView(
             String name,
             String description,
             String thumbnailUrl,
-            int durationMinutes
+            int durationMinutes,
+            String startingPrice
     ) {}
 
     /**
@@ -56,12 +57,31 @@ public record ExperienceListView(
                 page.cards().stream().map(card -> toCardView(card, routes, mediaUrlResolver)).toList());
     }
 
+    /**
+     * The bare amount, or {@code ""} when the operator has not priced this
+     * experience — the compiler runs {@code emptyStringIsFalse}, so an empty
+     * string makes {@code {{#startingPrice}}} skip the badge rather than render
+     * "From 0". Zero cannot be a real starting price (free tiers are excluded
+     * from the figure), so it is unambiguous as "unpriced".
+     *
+     * <p>No currency symbol here on purpose: {@code shop.currency} carries it, and
+     * a theme that wants {@code 35,00 €} rather than {@code €35.00} has to be able
+     * to place it itself.
+     */
+    private static String price(java.math.BigDecimal startingPrice) {
+        if (startingPrice == null || startingPrice.signum() == 0) {
+            return "";
+        }
+        return startingPrice.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+    }
+
     private static CardView toCardView(ExperienceCard card, Routes routes, MediaUrlResolver mediaUrlResolver) {
         return new CardView(
                 routes.experiences() + "/" + card.handle(),
                 card.name(),
                 card.description(),
                 mediaUrlResolver.toUrl(card.thumbnailKey()),
-                card.durationMinutes());
+                card.durationMinutes(),
+                price(card.startingPrice()));
     }
 }

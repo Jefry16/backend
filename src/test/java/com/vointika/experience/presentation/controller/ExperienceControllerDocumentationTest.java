@@ -1,5 +1,6 @@
 package com.vointika.experience.presentation.controller;
 
+import java.math.BigDecimal;
 import com.vointika.experience.application.dto.output.ExperienceView;
 import com.vointika.experience.application.usecase.CreateExperienceUseCase;
 import com.vointika.experience.application.usecase.GetExperienceUseCase;
@@ -104,7 +105,7 @@ class ExperienceControllerDocumentationTest {
                 "https://media.staging.vointika.com/thumb.jpg",
                 List.of(UUID.fromString("bbbbbbbb-0000-4000-8000-000000000002")),
                 List.of("https://media.staging.vointika.com/1.jpg"),
-                120, 24, false, Instant.parse("2026-07-21T10:00:00Z"));
+                120, 24, false, new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
     }
 
     private static final String CREATE_BODY = """
@@ -183,6 +184,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].durationMinutes").description("Duration in minutes"),
                                 fieldWithPath("data[].bookingCutoffHours").description("Advance-notice hours"),
                                 fieldWithPath("data[].published").description("Whether the experience is published (shopper-visible)"),
+                                fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price; 0 = not priced yet (the storefront hides the badge). Not derived from slot prices."),
                                 fieldWithPath("data[].createdBy").description("Creator user id"),
                                 fieldWithPath("data[].createdAt").description("When created"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page"))));

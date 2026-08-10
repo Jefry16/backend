@@ -1,5 +1,6 @@
 package com.vointika.experience.infrastructure.query;
 
+import java.math.BigDecimal;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEntity;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
@@ -178,7 +179,7 @@ class StorefrontExperienceQueryImplTest {
         return new ExperienceJpaEntity(
                 id, OPERATOR, OPERATOR, handle, name, description, "long description",
                 featured, List.of(), List.of(), List.of(), List.of(), List.of(),
-                thumbnailMediaId, durationMinutes, 12, true, null, null, Instant.EPOCH);
+                thumbnailMediaId, durationMinutes, 12, true, null, null, new BigDecimal("49.50"), Instant.EPOCH);
     }
 
     private static ExperienceTranslationJpaEntity translation(UUID experienceId, String locale, String name,

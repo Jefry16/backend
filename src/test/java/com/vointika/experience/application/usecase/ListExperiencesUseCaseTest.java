@@ -1,5 +1,7 @@
 package com.vointika.experience.application.usecase;
 
+import java.math.BigDecimal;
+import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.application.dto.output.ExperienceView;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
@@ -62,7 +64,7 @@ class ListExperiencesUseCaseTest {
         return Experience.create(UUID.randomUUID(), operatorId, UUID.randomUUID(), new Handle("s" + UUID.randomUUID()),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
                 false, List.of(), List.of(), List.of(), List.of(),
-                List.of(media), media, new DurationMinutes(60), new BookingCutoffHours(0), null, null);
+                List.of(media), media, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(BigDecimal.ZERO));
     }
 
     @Test

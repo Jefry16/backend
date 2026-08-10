@@ -8,6 +8,7 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
@@ -70,6 +71,17 @@ public final class ExperienceInputMapper {
 
     public static SeoDescription seoDescription(ExperienceInput in) {
         return blank(in.seoDescription()) ? null : new SeoDescription(in.seoDescription());
+    }
+
+    /**
+     * Absent means "not priced yet", which is 0 — the column is NOT NULL and the
+     * storefront reads 0 as "hide the badge", so there is no nullable state to
+     * represent and no companion flag. An explicit 0 means the same thing as
+     * omitting it, deliberately: clearing the price and never setting one are the
+     * same fact to a shopper.
+     */
+    public static Price startingPrice(ExperienceInput in) {
+        return new Price(in.startingPrice() == null ? java.math.BigDecimal.ZERO : in.startingPrice());
     }
 
     private static boolean blank(String s) {

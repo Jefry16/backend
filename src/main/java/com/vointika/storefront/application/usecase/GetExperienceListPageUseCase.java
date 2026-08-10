@@ -66,6 +66,7 @@ public class GetExperienceListPageUseCase {
                 card.name(),
                 card.description(),
                 card.thumbnailKey(),
-                card.durationMinutes());
+                card.durationMinutes(),
+                card.startingPrice());
     }
 }

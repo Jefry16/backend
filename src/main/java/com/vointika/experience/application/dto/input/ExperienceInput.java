@@ -22,5 +22,6 @@ public record ExperienceInput(
         Integer durationMinutes,
         Integer bookingCutoffHours,
         String seoTitle,
-        String seoDescription) {
+        String seoDescription,
+        java.math.BigDecimal startingPrice) {
 }

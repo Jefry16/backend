@@ -1,5 +1,6 @@
 package com.vointika.experience.application.usecase;
 
+import java.math.BigDecimal;
 import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
@@ -64,7 +65,7 @@ class CreateExperienceUseCaseTest {
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null);
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, null);
     }
 
     @Test
@@ -79,6 +80,33 @@ class CreateExperienceUseCaseTest {
         org.junit.jupiter.api.Assertions.assertFalse(saved.getValue().isPublished());
         assertEquals("dive-trip", saved.getValue().getHandle().value());
         assertEquals(callerId, saved.getValue().getCreatedBy());
+    }
+
+    /**
+     * The column is NOT NULL and the storefront reads 0 as "hide the badge", so
+     * an omitted price has exactly one meaning and needs no nullable state.
+     */
+    @Test
+    void anOmittedStartingPriceIsZeroRatherThanNull() {
+        useCase.execute(operatorId, callerId, input("Dive Trip"));
+
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        assertEquals(0, saved.getValue().getStartingPrice().value().compareTo(BigDecimal.ZERO));
+    }
+
+    @Test
+    void aStartingPriceIsStoredAsGiven() {
+        ExperienceInput priced = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
+                new BigDecimal("35.5"));
+
+        useCase.execute(operatorId, callerId, priced);
+
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        // Price normalises to 2dp, like audience_slot.price
+        assertEquals("35.50", saved.getValue().getStartingPrice().value().toPlainString());
     }
 
     // The generated handle is derived, not operator-chosen, so a clash with a

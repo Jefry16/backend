@@ -567,8 +567,16 @@ ON CONFLICT DO NOTHING;
 -- 10. Experiences. Four published and one draft, so the list has both states and
 -- the storefront has something to hide. Galleries and thumbnails point at the
 -- seeded media; the draft has none, which is what a half-written experience
--- looks like. starting_price is set explicitly rather than left at its 0
--- default — a price of 0 reads as free, not as unset.
+-- looks like.
+--
+-- starting_price is **the operator's advertised "from" price, not a derived
+-- figure** — it is typed in the admin and nothing keeps it in step with the
+-- per-audience prices frozen on each departure. Three of the four published
+-- experiences carry one; the kayak trip is left at 0 on purpose, because 0 means
+-- "not priced yet" and the storefront hides the badge rather than rendering
+-- "From 0". Its cheapest paid tier is 30.00, so it is also the row that shows an
+-- operator claim and the real slot prices disagreeing — which is the state the
+-- admin's hint exists to make visible.
 INSERT INTO experience.experiences
     (id, tour_operator_id, created_by, handle, name, description, long_description,
      featured, tags, included, not_included, highlights,
