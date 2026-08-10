@@ -664,6 +664,18 @@ the upload use case produces (`{mediaId}-{sanitized-name}.png`), and the
 `tour-operators/{operatorId}/` before anything reads it. Add a media row, add
 its file — nothing checks the pair at build time.
 
+**The seed can write what the API cannot, and now a test says so.** It inserts
+straight into Postgres, so nothing stops it storing a value the domain would have
+refused — and the build never runs it. That has bitten three times: two audit
+rows naming actions no use case emits, and seven metafield keys using underscores
+against a handle-shaped `MetafieldKey`. The last one surfaced as a **422 on one
+endpoint and a 200 on its neighbour**, because list projections skip the value
+object and detail reads construct it. `DevSeedWritesOnlyValuesTheDomainAcceptsTest`
+now builds the seed's domain-shaped values with the real value objects and checks
+its audit actions against the emitting code. **Add a seeded value that a value
+object validates, and add it there** — and keep the minimum-count assertions, or
+a pattern that stops matching turns the test into a no-op.
+
 **What the seed is for is coverage, not plausibility.** A table with zero rows
 renders exactly like a broken query, so a thin fixture makes whole admin screens
 unreviewable. The rule: every table the admin UI reads gets rows, and every
