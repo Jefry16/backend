@@ -46,4 +46,9 @@ public class MetafieldValueRepositoryImpl implements MetafieldValueRepository {
     public void deleteReferencesTo(UUID entryId) {
         jpa.deleteReferencesTo(entryId.toString());
     }
+
+    @Override
+    public void deleteByOwnerId(UUID ownerId) {
+        jpa.deleteByOwnerId(ownerId);
+    }
 }

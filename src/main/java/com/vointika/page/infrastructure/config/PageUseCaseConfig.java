@@ -15,6 +15,7 @@ import com.vointika.page.application.usecase.UpsertPageTranslationUseCase;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.MetafieldValueCleanup;
 import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -95,8 +96,10 @@ public class PageUseCaseConfig {
             PageRepository pageRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
-            AuditTrailPort auditTrailPort) {
-        return new DeletePageUseCase(pageRepository, membershipCheck, transactionRunner, auditTrailPort);
+            AuditTrailPort auditTrailPort,
+            MetafieldValueCleanup metafieldValueCleanup) {
+        return new DeletePageUseCase(pageRepository, membershipCheck, transactionRunner, auditTrailPort,
+                metafieldValueCleanup);
     }
 
     @Bean

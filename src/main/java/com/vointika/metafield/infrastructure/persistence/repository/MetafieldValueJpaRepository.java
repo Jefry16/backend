@@ -52,4 +52,15 @@ public interface MetafieldValueJpaRepository extends JpaRepository<MetafieldValu
                     AND d.type = com.vointika.metafield.domain.valueobject.MetafieldType.METAOBJECT_REFERENCE)
             """)
     void deleteReferencesTo(@Param("entryId") String entryId);
+
+    /**
+     * Deletes every value a deleted owner held (runs in the owner's delete tx).
+     * A bulk delete rather than Spring Data's derived {@code deleteByOwnerId},
+     * which loads each row to remove it one at a time; {@code
+     * idx_metafield_values_owner_id} makes this one indexed statement. Same
+     * flush/clear pair as above and for the same reason.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM MetafieldValueJpaEntity v WHERE v.ownerId = :ownerId")
+    void deleteByOwnerId(@Param("ownerId") UUID ownerId);
 }

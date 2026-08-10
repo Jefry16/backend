@@ -22,4 +22,7 @@ public interface MetafieldValueRepository {
 
     /** Clears every metaobject_reference value pointing at a deleted entry. */
     void deleteReferencesTo(UUID entryId);
+
+    /** Clears every value a deleted owner (experience, page) held. */
+    void deleteByOwnerId(UUID ownerId);
 }
