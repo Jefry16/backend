@@ -72,7 +72,7 @@ class PublishUnpublishExperienceUseCaseTest {
     private Experience draft() {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
-                false, List.of(), List.of(), List.of(),
+                false, List.of(), List.of(),
                 List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
     }
 

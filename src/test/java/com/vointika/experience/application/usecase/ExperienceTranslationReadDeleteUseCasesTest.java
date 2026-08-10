@@ -87,7 +87,7 @@ class ExperienceTranslationReadDeleteUseCasesTest {
     @Test
     void getReturnsStoredOverlay() {
         ExperienceTranslation es = new ExperienceTranslation(experienceId, operatorId, LocaleCode.of("es"),
-                new ExperienceName("Buceo"), null, null, null, null, null, null, null, null);
+                new ExperienceName("Buceo"), null, null, null, null, null, null, null);
         when(translationRepository.findByExperienceIdAndLocale(experienceId, "es")).thenReturn(Optional.of(es));
 
         assertEquals("Buceo", getUseCase.execute(operatorId, experienceId, "es", callerId).name());

@@ -44,10 +44,6 @@ public class ExperienceTranslationJpaEntity {
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(columnDefinition = "text[]")
-    private List<String> highlights;
-
-    @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(columnDefinition = "text[]")
     private List<String> included;
 
     @JdbcTypeCode(SqlTypes.ARRAY)

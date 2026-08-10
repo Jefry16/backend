@@ -88,7 +88,7 @@ class ExperienceTranslationControllerDocumentationTest {
 
     private ExperienceTranslationView esView() {
         return new ExperienceTranslationView("es", "Buceo al atardecer", "Buceo en el arrecife",
-                "Descripción larga…", List.of("Grupos pequeños"), List.of("Equipo"), List.of(),
+                "Descripción larga…", List.of("Equipo"), List.of(),
                 "buceo-al-atardecer");
     }
 
@@ -97,7 +97,6 @@ class ExperienceTranslationControllerDocumentationTest {
               "name": "Buceo al atardecer",
               "description": "Buceo en el arrecife",
               "longDescription": "Descripción larga…",
-              "highlights": ["Grupos pequeños"],
               "included": ["Equipo"],
               "notIncluded": [],
               "handle": "buceo-al-atardecer"
@@ -153,7 +152,6 @@ class ExperienceTranslationControllerDocumentationTest {
                                 fieldWithPath("name").description("Translated name (null = fall back to canonical)").optional(),
                                 fieldWithPath("description").description("Translated short description").optional(),
                                 fieldWithPath("longDescription").description("Translated long description").optional(),
-                                fieldWithPath("highlights").description("Translated highlights").optional(),
                                 fieldWithPath("included").description("Translated included list").optional(),
                                 fieldWithPath("notIncluded").description("Translated not-included list").optional(),
                                 fieldWithPath("handle").description("Optional localized handle; must not be taken by another experience — as a localized handle in this locale, or as its canonical handle (409 on dup). If omitted, derived from name").optional())));

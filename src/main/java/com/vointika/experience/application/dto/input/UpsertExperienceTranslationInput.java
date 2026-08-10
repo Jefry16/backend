@@ -11,7 +11,6 @@ public record UpsertExperienceTranslationInput(
         String name,
         String description,
         String longDescription,
-        List<String> highlights,
         List<String> included,
         List<String> notIncluded,
         String handle,

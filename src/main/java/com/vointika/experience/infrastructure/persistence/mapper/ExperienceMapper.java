@@ -5,7 +5,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
@@ -28,7 +27,6 @@ public class ExperienceMapper {
                 e.isFeatured(),
                 e.getIncluded().stream().map(InclusionItem::value).toList(),
                 e.getNotIncluded().stream().map(InclusionItem::value).toList(),
-                e.getHighlights().stream().map(Highlight::value).toList(),
                 e.getMediaIds(),
                 e.getThumbnailMediaId(),
                 e.getDurationMinutes().value(),
@@ -53,7 +51,6 @@ public class ExperienceMapper {
                 jpa.isFeatured(),
                 jpa.getIncluded().stream().map(InclusionItem::new).toList(),
                 jpa.getNotIncluded().stream().map(InclusionItem::new).toList(),
-                jpa.getHighlights().stream().map(Highlight::new).toList(),
                 jpa.getMediaIds(),
                 jpa.getThumbnailMediaId(),
                 new DurationMinutes(jpa.getDurationMinutes()),

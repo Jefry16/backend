@@ -5,7 +5,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
@@ -38,9 +37,6 @@ public final class ExperienceInputMapper {
         return safe(in.notIncluded()).stream().map(InclusionItem::new).toList();
     }
 
-    public static List<Highlight> highlights(ExperienceInput in) {
-        return safe(in.highlights()).stream().map(Highlight::new).toList();
-    }
 
     public static List<UUID> mediaIds(ExperienceInput in) {
         return safe(in.mediaIds());

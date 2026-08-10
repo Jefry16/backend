@@ -6,7 +6,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.shared.exception.ConflictException;
@@ -29,7 +28,7 @@ class ExperienceTest {
         return Experience.create(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new Handle("dive-trip"),
                 new ExperienceName("Dive Trip"), new Description("A dive"), new LongDescription("Long"),
-                false, List.of(), List.of(), List.of(),
+                false, List.of(), List.of(),
                 mediaIds, thumbnail, new DurationMinutes(120), new BookingCutoffHours(24), null, null, new Price(new BigDecimal("35.00")));
     }
 
@@ -81,7 +80,7 @@ class ExperienceTest {
         UUID m = UUID.randomUUID();
         e.update(new ExperienceName("New"), new Description("d2"), new LongDescription("l2"),
                 true, List.of(new InclusionItem("inc")), List.of(),
-                List.of(new Highlight("h")), List.of(m), m, new DurationMinutes(90), new BookingCutoffHours(12), null, null, new Price(new BigDecimal("35.00")));
+                List.of(m), m, new DurationMinutes(90), new BookingCutoffHours(12), null, null, new Price(new BigDecimal("35.00")));
         assertEquals("New", e.getName().value());
         assertEquals(true, e.isFeatured());
         assertEquals(m, e.getThumbnailMediaId());
