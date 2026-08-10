@@ -582,7 +582,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO experience.experiences
     (id, tour_operator_id, created_by, handle, name, description, long_description,
      featured,
-     media_ids, thumbnail_media_id, duration_minutes, booking_cutoff_hours,
+     media_ids, thumbnail_media_id, booking_cutoff_hours,
      published, starting_price, seo_title, seo_description, created_at)
 VALUES
     (:'experience_a_id', :'operator_id', :'user_id', 'sunset-sailing-tour',
@@ -590,7 +590,7 @@ VALUES
      'Board at the old port and glide past the cliffs as the sun drops. Includes a drink on board and a stop for a swim when the sea allows.',
      TRUE,
      ARRAY[:'media_sunset1_id', :'media_sunset2_id', :'media_sunsetp_id']::uuid[],
-     :'media_sunset1_id', 150, 12, TRUE, 35.00,
+     :'media_sunset1_id', 12, TRUE, 35.00,
      'Sunset sailing in Madrid — small groups',
      'A two-and-a-half hour golden-hour sail with a local skipper. Drinks on board, swim stop when the sea allows.',
      NOW() - INTERVAL '380 days'),
@@ -599,7 +599,7 @@ VALUES
      'Five stops, seven tastings: market stalls, a century-old bakery, and the bar the guides go to after work.',
      FALSE,
      ARRAY[:'media_food1_id', :'media_food2_id']::uuid[],
-     :'media_food1_id', 180, 24, TRUE, 55.00,
+     :'media_food1_id', 24, TRUE, 55.00,
      NULL, NULL,
      NOW() - INTERVAL '300 days'),
     (:'experience_c_id', :'operator_id', :'user_id', 'kayak-cave-adventure',
@@ -607,7 +607,7 @@ VALUES
      'A guided paddle along the coast with a stop inside the blue cave. No experience needed; doubles available.',
      TRUE,
      ARRAY[:'media_kayak1_id', :'media_kayak2_id']::uuid[],
-     :'media_kayak1_id', 120, 6, TRUE, 25.00,
+     :'media_kayak1_id', 6, TRUE, 25.00,
      'Kayak the blue cave — no experience needed',
      'A guided two-hour paddle to sea caves reachable only from the water. Doubles available.',
      -- Same created_at as the sunset sail, to the microsecond, and both are
@@ -621,14 +621,14 @@ VALUES
      'For certified divers. Two tanks, a wall dive and a swim-through, with a surface interval on the boat.',
      FALSE,
      ARRAY[:'media_diving_id']::uuid[],
-     :'media_diving_id', 240, 48, TRUE, 110.00,
+     :'media_diving_id', 48, TRUE, 110.00,
      NULL, NULL,
      NOW() - INTERVAL '30 days'),
     (:'experience_e_id', :'operator_id', :'user_sofia_id', 'winter-whale-watching',
      'Winter Whale Watching', 'Half-day offshore trip in the migration season.',
      'Still being written — sailing dates and pricing are not final.',
      FALSE,
-     '{}'::uuid[], NULL, 300, 48, FALSE, 95.00,
+     '{}'::uuid[], NULL, 48, FALSE, 95.00,
      NULL, NULL,
      NOW() - INTERVAL '4 days')
 ON CONFLICT DO NOTHING;

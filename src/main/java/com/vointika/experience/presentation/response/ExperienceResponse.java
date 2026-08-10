@@ -26,7 +26,6 @@ public record ExperienceResponse(
         String thumbnailUrl,
         List<UUID> mediaIds,
         List<String> galleryUrls,
-        int durationMinutes,
         int bookingCutoffHours,
         boolean published,
         BigDecimal startingPrice,
@@ -38,7 +37,7 @@ public record ExperienceResponse(
                 v.id(), "experiences", v.name(), v.handle(), v.description(), v.longDescription(),
                 v.featured(),
                 v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
-                v.durationMinutes(), v.bookingCutoffHours(),
+                v.bookingCutoffHours(),
                 v.published(), v.startingPrice(), v.createdBy(), v.createdAt());
     }
 }

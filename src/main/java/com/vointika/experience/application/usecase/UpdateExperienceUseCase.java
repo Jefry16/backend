@@ -73,7 +73,6 @@ public class UpdateExperienceUseCase {
                 input.featured(),
                 mediaIds,
                 input.thumbnailMediaId(),
-                ExperienceInputMapper.durationMinutes(input),
                 ExperienceInputMapper.bookingCutoffHours(input),
                 ExperienceInputMapper.seoTitle(input),
                 ExperienceInputMapper.seoDescription(input),

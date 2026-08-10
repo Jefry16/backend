@@ -16,7 +16,6 @@ public record ExperienceRequest(
         Boolean featured,
         List<UUID> mediaIds,
         UUID thumbnailMediaId,
-        Integer durationMinutes,
         Integer bookingCutoffHours,
         String seoTitle,
         String seoDescription,

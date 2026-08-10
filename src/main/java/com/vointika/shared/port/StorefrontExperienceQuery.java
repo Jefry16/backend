@@ -51,7 +51,6 @@ public interface StorefrontExperienceQuery {
             String name,
             String description,
             String thumbnailKey,
-            int durationMinutes,
             BigDecimal startingPrice
     ) {}
 }

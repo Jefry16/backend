@@ -82,7 +82,6 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
                 overlay(overlay == null ? null : overlay.getName(), experience.getName()),
                 overlay(overlay == null ? null : overlay.getDescription(), experience.getDescription()),
                 keyOf(thumbnails, experience.getThumbnailMediaId()),
-                experience.getDurationMinutes(),
                 experience.getStartingPrice());
     }
 

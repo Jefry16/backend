@@ -3,7 +3,6 @@ package com.vointika.experience.infrastructure.persistence.mapper;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
-import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
@@ -26,7 +25,6 @@ public class ExperienceMapper {
                 e.isFeatured(),
                 e.getMediaIds(),
                 e.getThumbnailMediaId(),
-                e.getDurationMinutes().value(),
                 e.getBookingCutoffHours().value(),
                 e.isPublished(),
                 e.getSeoTitle() == null ? null : e.getSeoTitle().value(),
@@ -48,7 +46,6 @@ public class ExperienceMapper {
                 jpa.isFeatured(),
                 jpa.getMediaIds(),
                 jpa.getThumbnailMediaId(),
-                new DurationMinutes(jpa.getDurationMinutes()),
                 new BookingCutoffHours(jpa.getBookingCutoffHours()),
                 jpa.isPublished(),
                 jpa.getSeoTitle() == null ? null : new SeoTitle(jpa.getSeoTitle()),

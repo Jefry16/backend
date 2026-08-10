@@ -2,7 +2,6 @@ package com.vointika.experience.domain.entity;
 
 import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
-import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
@@ -44,7 +43,6 @@ public class Experience {
     private boolean featured;
     private List<UUID> mediaIds;
     private UUID thumbnailMediaId;
-    private DurationMinutes durationMinutes;
     private BookingCutoffHours bookingCutoffHours;
     private boolean published;
     /** Optional SEO overrides; null means "no override" and the render falls back. */
@@ -63,12 +61,12 @@ public class Experience {
     public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle,
                                     ExperienceName name, Description description, LongDescription longDescription,
                                     boolean featured, List<UUID> mediaIds, UUID thumbnailMediaId,
-                                    DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
+                                    BookingCutoffHours bookingCutoffHours,
                                     SeoTitle seoTitle, SeoDescription seoDescription,
                                     Price startingPrice) {
         Experience e = new Experience(id, tourOperatorId, createdBy, handle, Instant.now(),
                 name, description, longDescription, featured,
-                mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false,
+                mediaIds, thumbnailMediaId, bookingCutoffHours, false,
                 seoTitle, seoDescription, startingPrice);
         e.validateInvariants();
         return e;
@@ -78,7 +76,7 @@ public class Experience {
     public Experience(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle, Instant createdAt,
                       ExperienceName name, Description description, LongDescription longDescription,
                       boolean featured, List<UUID> mediaIds, UUID thumbnailMediaId,
-                      DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
+                      BookingCutoffHours bookingCutoffHours,
                       boolean published, SeoTitle seoTitle, SeoDescription seoDescription,
                       Price startingPrice) {
         this.id = id;
@@ -92,7 +90,6 @@ public class Experience {
         this.featured = featured;
         this.mediaIds = List.copyOf(mediaIds);
         this.thumbnailMediaId = thumbnailMediaId;
-        this.durationMinutes = durationMinutes;
         this.bookingCutoffHours = bookingCutoffHours;
         this.published = published;
         this.seoTitle = seoTitle;
@@ -103,7 +100,7 @@ public class Experience {
     /** Replaces the editable fields (everything but id/operator/handle/status/createdAt). */
     public void update(ExperienceName name, Description description, LongDescription longDescription,
                        boolean featured, List<UUID> mediaIds, UUID thumbnailMediaId,
-                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
+                       BookingCutoffHours bookingCutoffHours,
                        SeoTitle seoTitle, SeoDescription seoDescription,
                        Price startingPrice) {
         this.name = name;
@@ -112,7 +109,6 @@ public class Experience {
         this.featured = featured;
         this.mediaIds = List.copyOf(mediaIds);
         this.thumbnailMediaId = thumbnailMediaId;
-        this.durationMinutes = durationMinutes;
         this.bookingCutoffHours = bookingCutoffHours;
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
@@ -168,7 +164,6 @@ public class Experience {
         snapshot.put("featured", featured);
         snapshot.put("mediaIds", mediaIds.stream().map(UUID::toString).toList());
         snapshot.put("thumbnailMediaId", thumbnailMediaId == null ? null : thumbnailMediaId.toString());
-        snapshot.put("durationMinutes", durationMinutes.value());
         snapshot.put("bookingCutoffHours", bookingCutoffHours.value());
         snapshot.put("startingPrice", startingPrice.value().toPlainString());
         snapshot.put("published", published);
@@ -183,7 +178,6 @@ public class Experience {
     public boolean isFeatured() { return featured; }
     public List<UUID> getMediaIds() { return mediaIds; }
     public UUID getThumbnailMediaId() { return thumbnailMediaId; }
-    public DurationMinutes getDurationMinutes() { return durationMinutes; }
     public BookingCutoffHours getBookingCutoffHours() { return bookingCutoffHours; }
     public boolean isPublished() { return published; }
 

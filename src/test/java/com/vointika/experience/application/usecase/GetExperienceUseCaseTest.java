@@ -7,7 +7,6 @@ import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
-import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -56,7 +55,7 @@ class GetExperienceUseCaseTest {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
                 false,
-                List.of(media1, media2), media1, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
+                List.of(media1, media2), media1, new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
     }
 
     @Test

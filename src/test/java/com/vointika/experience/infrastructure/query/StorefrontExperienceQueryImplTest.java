@@ -52,7 +52,7 @@ class StorefrontExperienceQueryImplTest {
 
     @Test
     void aTranslationOverlaysTheNameDescriptionAndHandle() {
-        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, 150, true));
+        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, true));
         translated(translation(SAILING, "es", "Paseo en velero", "Crucero dorado", "paseo-en-velero"));
 
         StorefrontExperienceCard card = query.findPublished(OPERATOR, "es").getFirst();
@@ -65,7 +65,7 @@ class StorefrontExperienceQueryImplTest {
     /** A row overlays, it does not replace: a null column falls back per column, not per row. */
     @Test
     void aColumnTheTranslationLeftNullFallsBackToTheCanonicalValue() {
-        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, 150, true));
+        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, true));
         translated(translation(SAILING, "es", "Paseo en velero", null, null));
 
         StorefrontExperienceCard card = query.findPublished(OPERATOR, "es").getFirst();
@@ -81,7 +81,7 @@ class StorefrontExperienceQueryImplTest {
      */
     @Test
     void theCanonicalHandleServesALocaleWithNoTranslationAtAll() {
-        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, 150, true));
+        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, true));
 
         assertThat(query.findPublished(OPERATOR, "fr").getFirst().handle()).isEqualTo("sunset-sailing-tour");
     }
@@ -89,8 +89,8 @@ class StorefrontExperienceQueryImplTest {
     @Test
     void aThumbnailResolvesToItsStorageKeyThroughOneBatchCall() {
         published(
-                experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", THUMBNAIL, 150, true),
-                experience(KAYAK, "kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120, false));
+                experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", THUMBNAIL, true),
+                experience(KAYAK, "kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, false));
         when(mediaAssetBatchQuery.findAssetsByIds(OPERATOR, Set.of(THUMBNAIL)))
                 .thenReturn(Map.of(THUMBNAIL, new MediaAsset("tour-operators/1/sunset.jpg", null, null, null)));
 
@@ -109,7 +109,7 @@ class StorefrontExperienceQueryImplTest {
      */
     @Test
     void aThumbnailIdThatNoLongerResolvesIsSimplyNoThumbnail() {
-        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", THUMBNAIL, 150, true));
+        published(experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", THUMBNAIL, true));
         when(mediaAssetBatchQuery.findAssetsByIds(OPERATOR, Set.of(THUMBNAIL))).thenReturn(Map.of());
 
         assertThat(query.findPublished(OPERATOR, "es").getFirst().thumbnailKey()).isNull();
@@ -127,8 +127,8 @@ class StorefrontExperienceQueryImplTest {
     @Test
     void theCardsKeepTheOrderTheQueryReturnedThemIn() {
         published(
-                experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, 150, true),
-                experience(KAYAK, "kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120, false));
+                experience(SAILING, "sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise", null, true),
+                experience(KAYAK, "kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, false));
 
         assertThat(query.findPublished(OPERATOR, "es"))
                 .extracting(StorefrontExperienceCard::name)
@@ -175,11 +175,11 @@ class StorefrontExperienceQueryImplTest {
     }
 
     private static ExperienceJpaEntity experience(UUID id, String handle, String name, String description,
-                                                  UUID thumbnailMediaId, int durationMinutes, boolean featured) {
+                                                  UUID thumbnailMediaId, boolean featured) {
         return new ExperienceJpaEntity(
                 id, OPERATOR, OPERATOR, handle, name, description, "long description",
                 featured, List.of(),
-                thumbnailMediaId, durationMinutes, 12, true, null, null, new BigDecimal("49.50"), Instant.EPOCH);
+                thumbnailMediaId, 12, true, null, null, new BigDecimal("49.50"), Instant.EPOCH);
     }
 
     private static ExperienceTranslationJpaEntity translation(UUID experienceId, String locale, String name,
