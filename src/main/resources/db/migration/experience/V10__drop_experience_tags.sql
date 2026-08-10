@@ -1,0 +1,13 @@
+-- Drops the experience tag list.
+--
+-- V1 added it as filter facets. Nothing ever filtered on it: it is not in
+-- `ListExperiencesUseCase`'s schema, so it is neither filterable nor sortable
+-- through the admin list, and the storefront card never carried it. It was
+-- written and read back and used for nothing.
+--
+-- Deliberately not translated (V3's note), which is the other half of the same
+-- story — a facet nobody facets by needs no localization either.
+--
+-- If tagging returns it will be as operator-defined data with a real consumer
+-- attached, not a column that only round-trips.
+ALTER TABLE experiences DROP COLUMN tags;

@@ -18,8 +18,7 @@ import java.util.UUID;
  * A per-locale overlay on an {@link Experience}. Every content field is nullable:
  * a null field falls back to the canonical experience value at render time. The
  * {@code handle} is an optional localized URL handle (null = use the canonical
- * handle). {@code tags} are deliberately not translated (filter facets); media is
- * shared with the canonical experience.
+ * handle). Media is shared with the canonical experience.
  */
 public record ExperienceTranslation(
         UUID experienceId,

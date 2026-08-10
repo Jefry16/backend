@@ -3,7 +3,6 @@ package com.vointika.experience.application.dto.output;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
-import com.vointika.experience.domain.valueobject.Tag;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -28,7 +27,6 @@ public record ExperienceView(
         String description,
         String longDescription,
         boolean featured,
-        List<String> tags,
         List<String> included,
         List<String> notIncluded,
         List<String> highlights,
@@ -53,7 +51,6 @@ public record ExperienceView(
                 e.getId(), e.getTourOperatorId(), e.getCreatedBy(),
                 e.getName().value(), e.getHandle().value(), e.getDescription().value(),
                 e.getLongDescription().value(), e.isFeatured(),
-                e.getTags().stream().map(Tag::value).toList(),
                 e.getIncluded().stream().map(InclusionItem::value).toList(),
                 e.getNotIncluded().stream().map(InclusionItem::value).toList(),
                 e.getHighlights().stream().map(Highlight::value).toList(),

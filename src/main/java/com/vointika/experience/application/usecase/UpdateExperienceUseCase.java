@@ -71,7 +71,6 @@ public class UpdateExperienceUseCase {
                 ExperienceInputMapper.description(input),
                 ExperienceInputMapper.longDescription(input),
                 input.featured(),
-                ExperienceInputMapper.tags(input),
                 ExperienceInputMapper.included(input),
                 ExperienceInputMapper.notIncluded(input),
                 ExperienceInputMapper.highlights(input),

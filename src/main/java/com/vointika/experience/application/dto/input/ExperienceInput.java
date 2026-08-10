@@ -14,7 +14,6 @@ public record ExperienceInput(
         String description,
         String longDescription,
         boolean featured,
-        List<String> tags,
         List<String> included,
         List<String> notIncluded,
         List<String> highlights,
