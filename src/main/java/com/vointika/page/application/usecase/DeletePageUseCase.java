@@ -4,6 +4,7 @@ import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.MetafieldValueCleanup;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -23,15 +24,18 @@ public class DeletePageUseCase {
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
+    private final MetafieldValueCleanup metafieldValueCleanup;
 
     public DeletePageUseCase(PageRepository pageRepository,
                              TourOperatorMembershipCheck membershipCheck,
                              TransactionRunner transactionRunner,
-                             AuditTrailPort auditTrailPort) {
+                             AuditTrailPort auditTrailPort,
+                             MetafieldValueCleanup metafieldValueCleanup) {
         this.pageRepository = pageRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
+        this.metafieldValueCleanup = metafieldValueCleanup;
     }
 
     public void execute(UUID tourOperatorId, UUID pageId, UUID callerUserId) {
@@ -40,6 +44,7 @@ public class DeletePageUseCase {
                 .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
         transactionRunner.run(() -> {
             pageRepository.delete(pageId);
+            metafieldValueCleanup.deleteValuesOwnedBy(pageId);
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "PAGE", pageId, "page.deleted",

@@ -11,6 +11,7 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
+import com.vointika.shared.port.MetafieldValueCleanup;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -44,6 +46,7 @@ class PageUseCasesTest {
     private TransactionRunner transactionRunner;
     private IdGenerator idGenerator;
     private AuditTrailPort auditTrailPort;
+    private MetafieldValueCleanup metafieldValueCleanup;
 
     @BeforeEach
     void setUp() {
@@ -51,6 +54,7 @@ class PageUseCasesTest {
         translationRepository = mock(PageTranslationRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
+        metafieldValueCleanup = mock(MetafieldValueCleanup.class);
         idGenerator = mock(IdGenerator.class);
         auditTrailPort = mock(AuditTrailPort.class);
         when(transactionRunner.call(any())).thenAnswer(i -> ((Supplier<?>) i.getArgument(0)).get());
@@ -180,16 +184,64 @@ class PageUseCasesTest {
 
     // ---- delete ----
 
+    private DeletePageUseCase delete() {
+        return new DeletePageUseCase(repository, membershipCheck, transactionRunner, auditTrailPort,
+                metafieldValueCleanup);
+    }
+
     @Test
     void deleteRemovesAndRecordsTheIdentity() {
         when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
 
-        new DeletePageUseCase(repository, membershipCheck, transactionRunner, auditTrailPort)
-                .execute(OP, PAGE, USER);
+        delete().execute(OP, PAGE, USER);
 
         verify(membershipCheck).ensureAdmin(USER, OP);
         verify(repository).delete(PAGE);
         verify(auditTrailPort).append(any());
+    }
+
+    /**
+     * {@code metafield_values.owner_id} is a plain UUID with no FK, so the database
+     * cannot cascade, and a deleted page used to leave its values behind forever —
+     * unreadable (every read starts from an ownership-checked owner id),
+     * unlistable and undeletable.
+     */
+    @Test
+    void deleteTakesThePagesMetafieldValuesWithIt() {
+        when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
+
+        delete().execute(OP, PAGE, USER);
+
+        verify(metafieldValueCleanup).deleteValuesOwnedBy(PAGE);
+    }
+
+    /**
+     * The cleanup must sit <b>inside</b> the delete transaction, not beside it, or a
+     * rollback leaves the page alive with its values gone. Pinned by running with a
+     * transaction runner that never executes the callback: everything in the block
+     * must go unperformed, so moving one line out of it turns this red.
+     */
+    @Test
+    void nothingAboutTheDeleteHappensOutsideTheTransaction() {
+        when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(page()));
+        doNothing().when(transactionRunner).run(any());
+
+        delete().execute(OP, PAGE, USER);
+
+        verify(repository, never()).delete(any());
+        verify(metafieldValueCleanup, never()).deleteValuesOwnedBy(any());
+        verify(auditTrailPort, never()).append(any());
+    }
+
+    /** A page the caller's operator does not own is a 404 before any value is touched. */
+    @Test
+    void deleteLeavesValuesAloneWhenThePageIsNotFound() {
+        when(repository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> delete().execute(OP, PAGE, USER))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(metafieldValueCleanup, never()).deleteValuesOwnedBy(any());
     }
 
     @Test
