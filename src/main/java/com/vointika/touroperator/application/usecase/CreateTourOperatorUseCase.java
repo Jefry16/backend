@@ -26,6 +26,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.Handle;
+import com.vointika.shared.valueobject.ReservedHandles;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
@@ -135,8 +136,13 @@ public class CreateTourOperatorUseCase {
         //    with a fresh handle.
         TourOperator tourOperator = null;
         for (int attempt = 0; attempt < MAX_HANDLE_ATTEMPTS; attempt++) {
-            Handle handle = handleGenerator.generateUnique(
-                    name.value(), tourOperatorRepository::existsByHandle);
+            // A reserved label counts as taken, so the generator suffixes past it
+            // the way it does any collision: an operator called "API" becomes
+            // api-2 rather than being refused. The name is the operator's; the
+            // handle is a hostname and only has to be free (ReservedHandles).
+            Handle handle = handleGenerator.generateUnique(name.value(),
+                    candidate -> ReservedHandles.isReserved(candidate)
+                            || tourOperatorRepository.existsByHandle(candidate));
             TourOperator candidate = new TourOperator(
                     idGenerator.newId(), name, handle,
                     input.timezoneId(), input.currencyId(), address, createdBy);
