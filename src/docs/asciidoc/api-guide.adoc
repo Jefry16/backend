@@ -1119,20 +1119,6 @@ Any member.
 
 operation::contact-messages/get[]
 
-[[resources-contact-read]]
-==== Mark as Read
-
-Any member. Idempotent, and deliberately unaudited — it is workflow bookkeeping.
-
-operation::contact-messages/read[]
-
-[[resources-contact-unread]]
-==== Mark as Unread
-
-Any member. Idempotent.
-
-operation::contact-messages/unread[]
-
 [[resources-contact-delete]]
 ==== Delete a Contact Message
 

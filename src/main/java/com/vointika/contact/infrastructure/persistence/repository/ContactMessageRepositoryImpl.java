@@ -26,11 +26,6 @@ public class ContactMessageRepositoryImpl implements ContactMessageRepository {
     }
 
     @Override
-    public ContactMessage save(ContactMessage message) {
-        return ContactMessageMapper.toDomain(messageJpa.save(ContactMessageMapper.toJpa(message)));
-    }
-
-    @Override
     public Optional<ContactMessage> findByIdAndTourOperatorId(UUID messageId, UUID tourOperatorId) {
         return messageJpa.findByIdAndTourOperatorId(messageId, tourOperatorId)
                 .map(ContactMessageMapper::toDomain);

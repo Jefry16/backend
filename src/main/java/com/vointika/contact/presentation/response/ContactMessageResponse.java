@@ -13,14 +13,12 @@ public record ContactMessageResponse(
         String email,
         String summary,
         String content,
-        boolean read,
-        Instant readAt,
         Instant createdAt) {
 
     public static ContactMessageResponse from(ContactMessage message) {
         return new ContactMessageResponse(
                 message.getId(), "contact-messages", message.getName(),
                 message.getEmail(), message.getSummary(), message.getContent(),
-                message.isRead(), message.getReadAt(), message.getCreatedAt());
+                message.getCreatedAt());
     }
 }
