@@ -11,7 +11,6 @@ import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
-import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEntity;
 import com.vointika.shared.valueobject.Handle;
 
@@ -27,7 +26,6 @@ public class ExperienceMapper {
                 e.getDescription().value(),
                 e.getLongDescription().value(),
                 e.isFeatured(),
-                e.getTags().stream().map(Tag::value).toList(),
                 e.getIncluded().stream().map(InclusionItem::value).toList(),
                 e.getNotIncluded().stream().map(InclusionItem::value).toList(),
                 e.getHighlights().stream().map(Highlight::value).toList(),
@@ -53,7 +51,6 @@ public class ExperienceMapper {
                 new Description(jpa.getDescription()),
                 new LongDescription(jpa.getLongDescription()),
                 jpa.isFeatured(),
-                jpa.getTags().stream().map(Tag::new).toList(),
                 jpa.getIncluded().stream().map(InclusionItem::new).toList(),
                 jpa.getNotIncluded().stream().map(InclusionItem::new).toList(),
                 jpa.getHighlights().stream().map(Highlight::new).toList(),

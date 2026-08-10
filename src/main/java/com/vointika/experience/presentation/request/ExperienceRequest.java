@@ -14,7 +14,6 @@ public record ExperienceRequest(
         String description,
         String longDescription,
         Boolean featured,
-        List<String> tags,
         List<String> included,
         List<String> notIncluded,
         List<String> highlights,

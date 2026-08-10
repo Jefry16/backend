@@ -65,7 +65,7 @@ class CreateExperienceUseCaseTest {
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, new BigDecimal("35.00"));
+                List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, new BigDecimal("35.00"));
     }
 
     @Test
@@ -86,7 +86,7 @@ class CreateExperienceUseCaseTest {
     @Test
     void anOmittedStartingPriceIs422() {
         ExperienceInput noPrice = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, null);
+                List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, null);
 
         assertThrows(InvalidFieldException.class,
                 () -> useCase.execute(operatorId, callerId, noPrice));
@@ -96,7 +96,7 @@ class CreateExperienceUseCaseTest {
     @Test
     void aZeroStartingPriceIs422() {
         ExperienceInput free = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
+                List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
                 BigDecimal.ZERO);
 
         assertThrows(InvalidFieldException.class,
@@ -107,7 +107,7 @@ class CreateExperienceUseCaseTest {
     @Test
     void aStartingPriceIsStoredAsGiven() {
         ExperienceInput priced = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
+                List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
                 new BigDecimal("35.5"));
 
         useCase.execute(operatorId, callerId, priced);

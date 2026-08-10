@@ -643,7 +643,7 @@ operation::experiences/unpublish[]
 Per-locale overlays on an experience — translated `name`/`description`/
 `longDescription`/`highlights`/`included`/`notIncluded` plus an optional
 localized `handle`. Every content field is nullable (falls back to the canonical
-experience). `tags` are not translated; media is shared. Reads are
+experience). Media is shared with the canonical experience. Reads are
 member-visible; upsert/delete are ADMIN+. A translation's locale must be one the
 operator supports (`PATCH /locales`) or → 422.
 

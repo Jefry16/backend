@@ -9,7 +9,6 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
-import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.Handle;
@@ -30,7 +29,7 @@ class ExperienceTest {
         return Experience.create(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new Handle("dive-trip"),
                 new ExperienceName("Dive Trip"), new Description("A dive"), new LongDescription("Long"),
-                false, List.of(), List.of(), List.of(), List.of(),
+                false, List.of(), List.of(), List.of(),
                 mediaIds, thumbnail, new DurationMinutes(120), new BookingCutoffHours(24), null, null, new Price(new BigDecimal("35.00")));
     }
 
@@ -75,22 +74,13 @@ class ExperienceTest {
         assertThrows(InvalidFieldException.class, () -> create(tooMany, null));
     }
 
-    @Test
-    void tagCapEnforced() {
-        List<Tag> tags = IntStream.range(0, 21).mapToObj(i -> new Tag("t" + i)).toList();
-        assertThrows(InvalidFieldException.class, () -> Experience.create(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new Handle("x"),
-                new ExperienceName("X"), new Description("d"), new LongDescription("l"),
-                false, tags, List.of(), List.of(), List.<Highlight>of(),
-                List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00"))));
-    }
 
     @Test
     void updateReplacesEditableFieldsAndRevalidates() {
         Experience e = create(List.of(), null);
         UUID m = UUID.randomUUID();
         e.update(new ExperienceName("New"), new Description("d2"), new LongDescription("l2"),
-                true, List.of(new Tag("a")), List.of(new InclusionItem("inc")), List.of(),
+                true, List.of(new InclusionItem("inc")), List.of(),
                 List.of(new Highlight("h")), List.of(m), m, new DurationMinutes(90), new BookingCutoffHours(12), null, null, new Price(new BigDecimal("35.00")));
         assertEquals("New", e.getName().value());
         assertEquals(true, e.isFeatured());

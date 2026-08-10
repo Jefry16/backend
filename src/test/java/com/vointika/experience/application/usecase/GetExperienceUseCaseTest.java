@@ -55,7 +55,7 @@ class GetExperienceUseCaseTest {
     private Experience experience() {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
-                false, List.of(), List.of(), List.of(), List.of(),
+                false, List.of(), List.of(), List.of(),
                 List.of(media1, media2), media1, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
     }
 

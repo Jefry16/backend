@@ -11,7 +11,6 @@ import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
-import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.shared.exception.InvalidFieldException;
 
 import java.util.List;
@@ -30,9 +29,6 @@ public final class ExperienceInputMapper {
     public static Description description(ExperienceInput in) { return new Description(in.description()); }
     public static LongDescription longDescription(ExperienceInput in) { return new LongDescription(in.longDescription()); }
 
-    public static List<Tag> tags(ExperienceInput in) {
-        return safe(in.tags()).stream().map(Tag::new).toList();
-    }
 
     public static List<InclusionItem> included(ExperienceInput in) {
         return safe(in.included()).stream().map(InclusionItem::new).toList();

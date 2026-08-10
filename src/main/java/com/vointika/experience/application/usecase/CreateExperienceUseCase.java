@@ -70,7 +70,6 @@ public class CreateExperienceUseCase {
         var name = ExperienceInputMapper.name(input);
         var description = ExperienceInputMapper.description(input);
         var longDescription = ExperienceInputMapper.longDescription(input);
-        var tags = ExperienceInputMapper.tags(input);
         var included = ExperienceInputMapper.included(input);
         var notIncluded = ExperienceInputMapper.notIncluded(input);
         var highlights = ExperienceInputMapper.highlights(input);
@@ -88,7 +87,7 @@ public class CreateExperienceUseCase {
             Experience experience = Experience.create(
                     idGenerator.newId(), tourOperatorId, callerUserId, handle,
                     name, description, longDescription, input.featured(),
-                    tags, included, notIncluded, highlights,
+                    included, notIncluded, highlights,
                     mediaIds, input.thumbnailMediaId(), duration, cutoff,
                     ExperienceInputMapper.seoTitle(input), ExperienceInputMapper.seoDescription(input),
                     ExperienceInputMapper.startingPrice(input));

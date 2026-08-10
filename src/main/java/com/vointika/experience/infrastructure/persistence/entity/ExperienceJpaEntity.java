@@ -49,10 +49,6 @@ public class ExperienceJpaEntity {
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(nullable = false, columnDefinition = "text[]")
-    private List<String> tags;
-
-    @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(nullable = false, columnDefinition = "text[]")
     private List<String> included;
 
     @JdbcTypeCode(SqlTypes.ARRAY)

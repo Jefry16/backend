@@ -10,7 +10,6 @@ import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
-import com.vointika.experience.domain.valueobject.Tag;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.Handle;
@@ -33,7 +32,6 @@ import java.util.UUID;
  */
 public class Experience {
 
-    private static final int MAX_TAGS = 20;
     private static final int MAX_HIGHLIGHTS = 20;
     private static final int MAX_INCLUSION = 30;
     private static final int MAX_MEDIA = 20;
@@ -48,7 +46,6 @@ public class Experience {
     private Description description;
     private LongDescription longDescription;
     private boolean featured;
-    private List<Tag> tags;
     private List<InclusionItem> included;
     private List<InclusionItem> notIncluded;
     private List<Highlight> highlights;
@@ -72,14 +69,14 @@ public class Experience {
     /** A brand-new experience — always unpublished (a draft). */
     public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle,
                                     ExperienceName name, Description description, LongDescription longDescription,
-                                    boolean featured, List<Tag> tags, List<InclusionItem> included,
+                                    boolean featured, List<InclusionItem> included,
                                     List<InclusionItem> notIncluded, List<Highlight> highlights,
                                     List<UUID> mediaIds, UUID thumbnailMediaId,
                                     DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
                                     SeoTitle seoTitle, SeoDescription seoDescription,
                                     Price startingPrice) {
         Experience e = new Experience(id, tourOperatorId, createdBy, handle, Instant.now(),
-                name, description, longDescription, featured, tags, included, notIncluded, highlights,
+                name, description, longDescription, featured, included, notIncluded, highlights,
                 mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false,
                 seoTitle, seoDescription, startingPrice);
         e.validateInvariants();
@@ -89,7 +86,7 @@ public class Experience {
     // Reconstitution from persistence.
     public Experience(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle, Instant createdAt,
                       ExperienceName name, Description description, LongDescription longDescription,
-                      boolean featured, List<Tag> tags, List<InclusionItem> included,
+                      boolean featured, List<InclusionItem> included,
                       List<InclusionItem> notIncluded, List<Highlight> highlights,
                       List<UUID> mediaIds, UUID thumbnailMediaId,
                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
@@ -104,7 +101,6 @@ public class Experience {
         this.description = description;
         this.longDescription = longDescription;
         this.featured = featured;
-        this.tags = List.copyOf(tags);
         this.included = List.copyOf(included);
         this.notIncluded = List.copyOf(notIncluded);
         this.highlights = List.copyOf(highlights);
@@ -120,7 +116,7 @@ public class Experience {
 
     /** Replaces the editable fields (everything but id/operator/handle/status/createdAt). */
     public void update(ExperienceName name, Description description, LongDescription longDescription,
-                       boolean featured, List<Tag> tags, List<InclusionItem> included,
+                       boolean featured, List<InclusionItem> included,
                        List<InclusionItem> notIncluded, List<Highlight> highlights,
                        List<UUID> mediaIds, UUID thumbnailMediaId,
                        DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
@@ -130,7 +126,6 @@ public class Experience {
         this.description = description;
         this.longDescription = longDescription;
         this.featured = featured;
-        this.tags = List.copyOf(tags);
         this.included = List.copyOf(included);
         this.notIncluded = List.copyOf(notIncluded);
         this.highlights = List.copyOf(highlights);
@@ -161,9 +156,6 @@ public class Experience {
     }
 
     private void validateInvariants() {
-        if (tags.size() > MAX_TAGS) {
-            throw new InvalidFieldException("At most " + MAX_TAGS + " tags are allowed");
-        }
         if (highlights.size() > MAX_HIGHLIGHTS) {
             throw new InvalidFieldException("At most " + MAX_HIGHLIGHTS + " highlights are allowed");
         }
@@ -199,7 +191,6 @@ public class Experience {
         snapshot.put("description", description.value());
         snapshot.put("longDescription", longDescription.value());
         snapshot.put("featured", featured);
-        snapshot.put("tags", tags.stream().map(Tag::value).toList());
         snapshot.put("included", included.stream().map(InclusionItem::value).toList());
         snapshot.put("notIncluded", notIncluded.stream().map(InclusionItem::value).toList());
         snapshot.put("highlights", highlights.stream().map(Highlight::value).toList());
@@ -218,7 +209,6 @@ public class Experience {
     public Description getDescription() { return description; }
     public LongDescription getLongDescription() { return longDescription; }
     public boolean isFeatured() { return featured; }
-    public List<Tag> getTags() { return tags; }
     public List<InclusionItem> getIncluded() { return included; }
     public List<InclusionItem> getNotIncluded() { return notIncluded; }
     public List<Highlight> getHighlights() { return highlights; }
