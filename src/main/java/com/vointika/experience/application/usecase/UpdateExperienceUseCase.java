@@ -80,7 +80,8 @@ public class UpdateExperienceUseCase {
                 ExperienceInputMapper.durationMinutes(input),
                 ExperienceInputMapper.bookingCutoffHours(input),
                 ExperienceInputMapper.seoTitle(input),
-                ExperienceInputMapper.seoDescription(input));
+                ExperienceInputMapper.seoDescription(input),
+                ExperienceInputMapper.startingPrice(input));
 
         boolean snapshotChanged = !experience.getName().value().equals(nameBefore)
                 || !experience.getDescription().value().equals(descriptionBefore);

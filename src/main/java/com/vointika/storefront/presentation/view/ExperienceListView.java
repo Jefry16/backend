@@ -1,5 +1,7 @@
 package com.vointika.storefront.presentation.view;
 
+import java.math.RoundingMode;
+import java.math.BigDecimal;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput;
 import com.vointika.storefront.application.dto.output.ExperienceListPageOutput.ExperienceCard;
@@ -36,7 +38,8 @@ public record ExperienceListView(
             String name,
             String description,
             String thumbnailUrl,
-            int durationMinutes
+            int durationMinutes,
+            String startingPrice
     ) {}
 
     /**
@@ -56,12 +59,25 @@ public record ExperienceListView(
                 page.cards().stream().map(card -> toCardView(card, routes, mediaUrlResolver)).toList());
     }
 
+    /**
+     * The bare amount. Always present — an experience cannot exist without a
+     * price greater than zero — so there is no empty case for the template to
+     * guard.
+     *
+     * <p>No currency symbol: {@code shop.currency} carries it, so a theme wanting
+     * {@code 35,00 €} rather than {@code €35.00} can place it itself.
+     */
+    private static String price(BigDecimal startingPrice) {
+        return startingPrice.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
     private static CardView toCardView(ExperienceCard card, Routes routes, MediaUrlResolver mediaUrlResolver) {
         return new CardView(
                 routes.experiences() + "/" + card.handle(),
                 card.name(),
                 card.description(),
                 mediaUrlResolver.toUrl(card.thumbnailKey()),
-                card.durationMinutes());
+                card.durationMinutes(),
+                price(card.startingPrice()));
     }
 }

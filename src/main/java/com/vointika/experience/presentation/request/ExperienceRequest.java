@@ -1,5 +1,6 @@
 package com.vointika.experience.presentation.request;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,5 +23,6 @@ public record ExperienceRequest(
         Integer durationMinutes,
         Integer bookingCutoffHours,
         String seoTitle,
-        String seoDescription) {
+        String seoDescription,
+        BigDecimal startingPrice) {
 }

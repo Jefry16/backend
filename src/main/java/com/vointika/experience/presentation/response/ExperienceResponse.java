@@ -2,6 +2,7 @@ package com.vointika.experience.presentation.response;
 
 import com.vointika.experience.application.dto.output.ExperienceView;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +33,7 @@ public record ExperienceResponse(
         int durationMinutes,
         int bookingCutoffHours,
         boolean published,
+        BigDecimal startingPrice,
         UUID createdBy,
         Instant createdAt) {
 
@@ -41,6 +43,6 @@ public record ExperienceResponse(
                 v.featured(), v.tags(), v.included(), v.notIncluded(), v.highlights(),
                 v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
                 v.durationMinutes(), v.bookingCutoffHours(),
-                v.published(), v.createdBy(), v.createdAt());
+                v.published(), v.startingPrice(), v.createdBy(), v.createdAt());
     }
 }

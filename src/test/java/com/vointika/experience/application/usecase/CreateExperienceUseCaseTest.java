@@ -1,5 +1,6 @@
 package com.vointika.experience.application.usecase;
 
+import java.math.BigDecimal;
 import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
@@ -64,7 +65,7 @@ class CreateExperienceUseCaseTest {
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null);
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, new BigDecimal("35.00"));
     }
 
     @Test
@@ -79,6 +80,42 @@ class CreateExperienceUseCaseTest {
         org.junit.jupiter.api.Assertions.assertFalse(saved.getValue().isPublished());
         assertEquals("dive-trip", saved.getValue().getHandle().value());
         assertEquals(callerId, saved.getValue().getCreatedBy());
+    }
+
+    /** Required on every experience, drafts included — there is no unpriced state. */
+    @Test
+    void anOmittedStartingPriceIs422() {
+        ExperienceInput noPrice = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, null);
+
+        assertThrows(InvalidFieldException.class,
+                () -> useCase.execute(operatorId, callerId, noPrice));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void aZeroStartingPriceIs422() {
+        ExperienceInput free = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
+                BigDecimal.ZERO);
+
+        assertThrows(InvalidFieldException.class,
+                () -> useCase.execute(operatorId, callerId, free));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void aStartingPriceIsStoredAsGiven() {
+        ExperienceInput priced = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
+                new BigDecimal("35.5"));
+
+        useCase.execute(operatorId, callerId, priced);
+
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        // Price normalises to 2dp, like audience_slot.price
+        assertEquals("35.50", saved.getValue().getStartingPrice().value().toPlainString());
     }
 
     // The generated handle is derived, not operator-chosen, so a clash with a

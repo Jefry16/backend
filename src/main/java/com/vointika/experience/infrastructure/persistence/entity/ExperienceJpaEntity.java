@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -83,6 +84,9 @@ public class ExperienceJpaEntity {
 
     @Column(length = 320)
     private String seoDescription;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal startingPrice;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

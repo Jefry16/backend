@@ -131,6 +131,6 @@ public class ExperienceController {
                 Boolean.TRUE.equals(b.featured()),
                 b.tags(), b.included(), b.notIncluded(), b.highlights(),
                 b.mediaIds(), b.thumbnailMediaId(), b.durationMinutes(), b.bookingCutoffHours(),
-                b.seoTitle(), b.seoDescription());
+                b.seoTitle(), b.seoDescription(), b.startingPrice());
     }
 }

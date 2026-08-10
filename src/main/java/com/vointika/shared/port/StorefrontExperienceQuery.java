@@ -1,5 +1,6 @@
 package com.vointika.shared.port;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,6 +51,7 @@ public interface StorefrontExperienceQuery {
             String name,
             String description,
             String thumbnailKey,
-            int durationMinutes
+            int durationMinutes,
+            BigDecimal startingPrice
     ) {}
 }

@@ -1,5 +1,6 @@
 package com.vointika.storefront.application.dto.output;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -26,6 +27,7 @@ public record ExperienceListPageOutput(StorefrontPageData envelope, List<Experie
             String name,
             String description,
             String thumbnailKey,
-            int durationMinutes
+            int durationMinutes,
+            BigDecimal startingPrice
     ) {}
 }

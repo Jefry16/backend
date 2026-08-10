@@ -1,5 +1,6 @@
 package com.vointika.storefront.application.usecase;
 
+import java.math.BigDecimal;
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceQuery.StorefrontExperienceCard;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
@@ -55,7 +56,7 @@ class GetExperienceListPageUseCaseTest {
                 "EUR", "€", "Europe/Madrid", "Madrid", "Acme Tours — excursiones", "Salidas en velero",
                 "Ask us for the password", brand(), List.of()));
         cards("es", new StorefrontExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado",
-                "tour-operators/1/sunset.jpg", 150));
+                "tour-operators/1/sunset.jpg", 150, new BigDecimal("35.00")));
 
         ExperienceListPageOutput page = useCase.execute("acme", null).orElseThrow();
 
@@ -67,7 +68,8 @@ class GetExperienceListPageUseCaseTest {
         assertThat(page.envelope().page().description()).isEqualTo("Salidas en velero");
         assertThat(page.envelope().page().ogImageKey()).isEqualTo("og.png");
         assertThat(page.cards()).containsExactly(new ExperienceCard(
-                "paseo-en-velero", "Paseo en velero", "Crucero dorado", "tour-operators/1/sunset.jpg", 150));
+                "paseo-en-velero", "Paseo en velero", "Crucero dorado", "tour-operators/1/sunset.jpg", 150,
+                new BigDecimal("35.00")));
     }
 
     /** The locale the gate resolved is the locale the cards are asked for — one decision, used twice. */
@@ -75,7 +77,7 @@ class GetExperienceListPageUseCaseTest {
     void aSupportedSecondaryAsksForThatLocalesCards() {
         content("en", shop(null));
         cards("en", new StorefrontExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour",
-                "Golden-hour cruise", null, 150));
+                "Golden-hour cruise", null, 150, BigDecimal.ZERO));
 
         ExperienceListPageOutput page = useCase.execute("acme", "en").orElseThrow();
 

@@ -1,5 +1,6 @@
 package com.vointika.storefront.presentation.controller;
 
+import java.math.BigDecimal;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -83,8 +85,8 @@ class ExperienceListControllerTest {
         when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
                 "es",
                 new ExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise",
-                        "tour-operators/1/sunset.jpg", 150),
-                new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120))));
+                        "tour-operators/1/sunset.jpg", 150, new BigDecimal("35.00")),
+                new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120, BigDecimal.ZERO))));
         when(mediaUrlResolver.toUrl("tour-operators/1/sunset.jpg"))
                 .thenReturn("http://localhost:9000/media/tour-operators/1/sunset.jpg");
 
@@ -101,6 +103,32 @@ class ExperienceListControllerTest {
                         containsString("<p>Golden-hour cruise</p>"),
                         containsString("<p>150 min</p>"),
                         containsString("<a href=\"/experiences/kayak-cave-adventure\">"))));
+    }
+
+    /**
+     * Every experience carries a price greater than zero, so every card shows a
+     * badge — there is no unpriced state for the template to guard.
+     *
+     * <p>The symbol comes from {@code shop.currency}, which until this slice had
+     * no reader anywhere.
+     */
+    @Test
+    void everyCardShowsAFromBadgeInTheShopsCurrency() throws Exception {
+        when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
+                "es",
+                new ExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise",
+                        null, 150, new BigDecimal("35.00")),
+                new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves",
+                        null, 120, new BigDecimal("25.5")))));
+
+        String html = mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html).contains("<p>From \u20ac35.00</p>");
+        // 2dp, like audience_slot.price
+        assertThat(html).contains("<p>From \u20ac25.50</p>");
+        assertThat(html.split("From ", -1)).hasSize(3);
     }
 
     /**
@@ -132,7 +160,7 @@ class ExperienceListControllerTest {
     @Test
     void theLocalizedRouteRendersTheLocalesNamesAndPrefixedLinks() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", "es")).thenReturn(Optional.of(page(
-                "es", new ExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado", null, 150))));
+                "es", new ExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado", null, 150, new BigDecimal("35.00")))));
         when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
 
         mockMvc.perform(get("/es/experiences").header("Host", "acme.localhost"))
@@ -242,7 +270,8 @@ class ExperienceListControllerTest {
     @Test
     void escapesOperatorAuthoredText() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
-                "es", new ExperienceCard("x", "<script>alert(1)</script>", "<img onerror=x>", null, 60))));
+                "es", new ExperienceCard("x", "<script>alert(1)</script>", "<img onerror=x>", null, 60,
+                        BigDecimal.ZERO))));
 
         mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())

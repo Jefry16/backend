@@ -8,6 +8,7 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
@@ -37,6 +38,7 @@ public class ExperienceMapper {
                 e.isPublished(),
                 e.getSeoTitle() == null ? null : e.getSeoTitle().value(),
                 e.getSeoDescription() == null ? null : e.getSeoDescription().value(),
+                e.getStartingPrice().value(),
                 e.getCreatedAt());
     }
 
@@ -61,7 +63,8 @@ public class ExperienceMapper {
                 new BookingCutoffHours(jpa.getBookingCutoffHours()),
                 jpa.isPublished(),
                 jpa.getSeoTitle() == null ? null : new SeoTitle(jpa.getSeoTitle()),
-                jpa.getSeoDescription() == null ? null : new SeoDescription(jpa.getSeoDescription()));
+                jpa.getSeoDescription() == null ? null : new SeoDescription(jpa.getSeoDescription()),
+                new Price(jpa.getStartingPrice()));
     }
 
     private ExperienceMapper() {}

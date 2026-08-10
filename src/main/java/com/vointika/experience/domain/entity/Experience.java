@@ -7,6 +7,7 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
@@ -60,6 +61,14 @@ public class Experience {
     private SeoTitle seoTitle;
     private SeoDescription seoDescription;
 
+    /**
+     * The advertised "from" price — **the operator's claim, not a MIN over the
+     * slots**, so nothing keeps it in step with them. Required and greater than
+     * zero on every experience, drafts included, so the card always has a figure
+     * and there is no "unpriced" state to render around.
+     */
+    private Price startingPrice;
+
     /** A brand-new experience — always unpublished (a draft). */
     public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle,
                                     ExperienceName name, Description description, LongDescription longDescription,
@@ -67,11 +76,12 @@ public class Experience {
                                     List<InclusionItem> notIncluded, List<Highlight> highlights,
                                     List<UUID> mediaIds, UUID thumbnailMediaId,
                                     DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
-                                    SeoTitle seoTitle, SeoDescription seoDescription) {
+                                    SeoTitle seoTitle, SeoDescription seoDescription,
+                                    Price startingPrice) {
         Experience e = new Experience(id, tourOperatorId, createdBy, handle, Instant.now(),
                 name, description, longDescription, featured, tags, included, notIncluded, highlights,
                 mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false,
-                seoTitle, seoDescription);
+                seoTitle, seoDescription, startingPrice);
         e.validateInvariants();
         return e;
     }
@@ -83,7 +93,8 @@ public class Experience {
                       List<InclusionItem> notIncluded, List<Highlight> highlights,
                       List<UUID> mediaIds, UUID thumbnailMediaId,
                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
-                      boolean published, SeoTitle seoTitle, SeoDescription seoDescription) {
+                      boolean published, SeoTitle seoTitle, SeoDescription seoDescription,
+                      Price startingPrice) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.createdBy = createdBy;
@@ -104,6 +115,7 @@ public class Experience {
         this.published = published;
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
+        this.startingPrice = startingPrice;
     }
 
     /** Replaces the editable fields (everything but id/operator/handle/status/createdAt). */
@@ -112,7 +124,8 @@ public class Experience {
                        List<InclusionItem> notIncluded, List<Highlight> highlights,
                        List<UUID> mediaIds, UUID thumbnailMediaId,
                        DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
-                       SeoTitle seoTitle, SeoDescription seoDescription) {
+                       SeoTitle seoTitle, SeoDescription seoDescription,
+                       Price startingPrice) {
         this.name = name;
         this.description = description;
         this.longDescription = longDescription;
@@ -127,6 +140,7 @@ public class Experience {
         this.bookingCutoffHours = bookingCutoffHours;
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
+        this.startingPrice = startingPrice;
         validateInvariants();
     }
 
@@ -162,6 +176,11 @@ public class Experience {
         if (thumbnailMediaId != null && !mediaIds.contains(thumbnailMediaId)) {
             throw new InvalidFieldException("The thumbnail must be one of the experience's media items");
         }
+        // Not on Price itself: audience_slot uses the same type and a free tier
+        // priced at 0 is legitimate there.
+        if (startingPrice == null || startingPrice.value().signum() <= 0) {
+            throw new InvalidFieldException("Starting price must be greater than 0");
+        }
     }
 
     public UUID getId() { return id; }
@@ -188,6 +207,7 @@ public class Experience {
         snapshot.put("thumbnailMediaId", thumbnailMediaId == null ? null : thumbnailMediaId.toString());
         snapshot.put("durationMinutes", durationMinutes.value());
         snapshot.put("bookingCutoffHours", bookingCutoffHours.value());
+        snapshot.put("startingPrice", startingPrice.value().toPlainString());
         snapshot.put("published", published);
         return snapshot;
     }
@@ -210,4 +230,5 @@ public class Experience {
 
     public SeoTitle getSeoTitle() { return seoTitle; }
     public SeoDescription getSeoDescription() { return seoDescription; }
+    public Price getStartingPrice() { return startingPrice; }
 }

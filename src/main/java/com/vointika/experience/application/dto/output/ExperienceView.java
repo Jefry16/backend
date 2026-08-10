@@ -5,6 +5,7 @@ import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.Tag;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public record ExperienceView(
         int durationMinutes,
         int bookingCutoffHours,
         boolean published,
+        BigDecimal startingPrice,
         Instant createdAt) {
 
     /** @param urlsById resolved media id → url (from MediaUrlBatchResolver). */
@@ -57,6 +59,6 @@ public record ExperienceView(
                 e.getHighlights().stream().map(Highlight::value).toList(),
                 e.getThumbnailMediaId(), thumbnailUrl, e.getMediaIds(), gallery,
                 e.getDurationMinutes().value(), e.getBookingCutoffHours().value(),
-                e.isPublished(), e.getCreatedAt());
+                e.isPublished(), e.getStartingPrice().value(), e.getCreatedAt());
     }
 }

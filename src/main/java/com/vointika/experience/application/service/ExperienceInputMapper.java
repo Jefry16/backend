@@ -8,6 +8,7 @@ import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
+import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.experience.domain.valueobject.Tag;
@@ -70,6 +71,13 @@ public final class ExperienceInputMapper {
 
     public static SeoDescription seoDescription(ExperienceInput in) {
         return blank(in.seoDescription()) ? null : new SeoDescription(in.seoDescription());
+    }
+
+    public static Price startingPrice(ExperienceInput in) {
+        if (in.startingPrice() == null) {
+            throw new InvalidFieldException("Starting price is required");
+        }
+        return new Price(in.startingPrice());
     }
 
     private static boolean blank(String s) {
