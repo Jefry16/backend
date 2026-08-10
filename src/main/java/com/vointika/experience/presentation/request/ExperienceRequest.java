@@ -14,8 +14,6 @@ public record ExperienceRequest(
         String description,
         String longDescription,
         Boolean featured,
-        List<String> included,
-        List<String> notIncluded,
         List<UUID> mediaIds,
         UUID thumbnailMediaId,
         Integer durationMinutes,

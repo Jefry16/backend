@@ -63,7 +63,7 @@ class ListExperiencesUseCaseTest {
     private Experience experience() {
         return Experience.create(UUID.randomUUID(), operatorId, UUID.randomUUID(), new Handle("s" + UUID.randomUUID()),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
-                false, List.of(), List.of(),
+                false,
                 List.of(media), media, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
     }
 

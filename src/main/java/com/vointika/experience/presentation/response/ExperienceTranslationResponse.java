@@ -13,13 +13,11 @@ public record ExperienceTranslationResponse(
         String name,
         String description,
         String longDescription,
-        List<String> included,
-        List<String> notIncluded,
         String handle) {
 
     public static ExperienceTranslationResponse from(ExperienceTranslationView v) {
         return new ExperienceTranslationResponse(
                 v.locale(), v.name(), v.description(), v.longDescription(),
-                v.included(), v.notIncluded(), v.handle());
+                v.handle());
     }
 }

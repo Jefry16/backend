@@ -6,7 +6,6 @@ import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
@@ -93,12 +92,10 @@ public class UpsertExperienceTranslationUseCase {
         ExperienceName name = input.name() == null || input.name().isBlank() ? null : new ExperienceName(input.name());
         Description description = blankNull(input.description()) == null ? null : new Description(input.description());
         LongDescription longDescription = blankNull(input.longDescription()) == null ? null : new LongDescription(input.longDescription());
-        List<InclusionItem> included = mapList(input.included(), InclusionItem::new);
-        List<InclusionItem> notIncluded = mapList(input.notIncluded(), InclusionItem::new);
         Handle handle = resolveHandle(tourOperatorId, experienceId, locale, input.handle(), name);
         ExperienceTranslation translation = new ExperienceTranslation(
                 experienceId, tourOperatorId, locale,
-                name, description, longDescription, included, notIncluded, handle,
+                name, description, longDescription, handle,
                 blankNull(input.seoTitle()) == null ? null : new SeoTitle(input.seoTitle()),
                 blankNull(input.seoDescription()) == null ? null : new SeoDescription(input.seoDescription()));
 

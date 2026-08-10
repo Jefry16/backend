@@ -1,7 +1,6 @@
 package com.vointika.experience.application.dto.output;
 
 import com.vointika.experience.domain.entity.Experience;
-import com.vointika.experience.domain.valueobject.InclusionItem;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,8 +25,6 @@ public record ExperienceView(
         String description,
         String longDescription,
         boolean featured,
-        List<String> included,
-        List<String> notIncluded,
         UUID thumbnailMediaId,
         String thumbnailUrl,
         List<UUID> mediaIds,
@@ -49,8 +46,6 @@ public record ExperienceView(
                 e.getId(), e.getTourOperatorId(), e.getCreatedBy(),
                 e.getName().value(), e.getHandle().value(), e.getDescription().value(),
                 e.getLongDescription().value(), e.isFeatured(),
-                e.getIncluded().stream().map(InclusionItem::value).toList(),
-                e.getNotIncluded().stream().map(InclusionItem::value).toList(),
                 e.getThumbnailMediaId(), thumbnailUrl, e.getMediaIds(), gallery,
                 e.getDurationMinutes().value(), e.getBookingCutoffHours().value(),
                 e.isPublished(), e.getStartingPrice().value(), e.getCreatedAt());
