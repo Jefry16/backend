@@ -317,6 +317,7 @@ class AuthControllerDocumentationTest {
                 "Acme Tours",
                 "https://cdn.vointika.com/operators/acme.png",
                 "America/New_York",
+                "USD",
                 true,
                 "OWNER");
         var otherOp = new com.vointika.shared.port.UserTourOperatorMembershipsQuery.TourOperatorMembershipView(
@@ -324,6 +325,7 @@ class AuthControllerDocumentationTest {
                 "Beta Adventures",
                 null,
                 "Europe/London",
+                "GBP",
                 false,
                 "STAFF");
         when(getProfileUseCase.execute(any()))
@@ -345,9 +347,12 @@ class AuthControllerDocumentationTest {
                 .andExpect(jsonPath("$.tourOperators[0].id").value("019dc500-0000-7000-8000-000000000001"))
                 .andExpect(jsonPath("$.tourOperators[0].name").value("Acme Tours"))
                 .andExpect(jsonPath("$.tourOperators[0].logoUrl").value("https://cdn.vointika.com/operators/acme.png"))
+                .andExpect(jsonPath("$.tourOperators[0].timezone").value("America/New_York"))
+                .andExpect(jsonPath("$.tourOperators[0].currency").value("USD"))
                 .andExpect(jsonPath("$.tourOperators[0].isDefault").value(true))
                 .andExpect(jsonPath("$.tourOperators[0].role").value("OWNER"))
                 .andExpect(jsonPath("$.tourOperators[1].name").value("Beta Adventures"))
+                .andExpect(jsonPath("$.tourOperators[1].currency").value("GBP"))
                 .andExpect(jsonPath("$.tourOperators[1].isDefault").value(false))
                 .andExpect(jsonPath("$.tourOperators[1].role").value("STAFF"))
                 .andDo(document("auth/profile",
@@ -365,6 +370,7 @@ class AuthControllerDocumentationTest {
                                 fieldWithPath("tourOperators[].name").description("Tour operator display name"),
                                 fieldWithPath("tourOperators[].logoUrl").description("Tour operator logo URL (omitted when null)").optional(),
                                 fieldWithPath("tourOperators[].timezone").description("Tour operator's IANA timezone (e.g. \"America/New_York\")"),
+                                fieldWithPath("tourOperators[].currency").description("Tour operator's ISO 4217 currency code (e.g. \"EUR\"). Non-null. The code rather than the symbol, so `Intl.NumberFormat` can derive both the symbol and the per-locale decimal count."),
                                 fieldWithPath("tourOperators[].isDefault").description("True for the user's default tour operator (at most one per user)"),
                                 fieldWithPath("tourOperators[].role").description("The caller's role in THIS operator: `OWNER`, `ADMIN`, or `STAFF`. Non-null (every membership has a role). Lets the admin UI gate actions per-operator without an extra fetch; the backend remains the authority (403/404).")
                         )));

@@ -1,6 +1,8 @@
 package com.vointika.touroperator.infrastructure.query;
 
+import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
+import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery.TourOperatorMembershipView;
 import com.vointika.touroperator.domain.enums.MemberRole;
@@ -31,11 +33,13 @@ class UserTourOperatorMembershipsQueryImplTest {
     private TourOperatorJpaRepository operatorRepository;
     private TourOperatorBrandJpaRepository brandRepository;
     private TimezoneRepository timezoneRepository;
+    private CurrencyRepository currencyRepository;
     private com.vointika.shared.media.MediaUrlBatchResolver mediaUrlBatchResolver;
     private UserTourOperatorMembershipsQueryImpl query;
 
     private final UUID userId = UUID.randomUUID();
     private final UUID tzId = UUID.randomUUID();
+    private final UUID currencyId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -43,15 +47,18 @@ class UserTourOperatorMembershipsQueryImplTest {
         operatorRepository = mock(TourOperatorJpaRepository.class);
         brandRepository = mock(TourOperatorBrandJpaRepository.class);
         timezoneRepository = mock(TimezoneRepository.class);
+        currencyRepository = mock(CurrencyRepository.class);
         mediaUrlBatchResolver = mock(com.vointika.shared.media.MediaUrlBatchResolver.class);
         query = new UserTourOperatorMembershipsQueryImpl(
                 memberRepository, operatorRepository, brandRepository, timezoneRepository,
-                mediaUrlBatchResolver);
+                currencyRepository, mediaUrlBatchResolver);
         // An operator with no brand row is the ordinary case for anything created
         // since V10, and it is simply no logo.
         when(brandRepository.findAllById(any())).thenReturn(List.of());
         when(timezoneRepository.findAll()).thenReturn(List.of(
                 new Timezone(tzId, "America/Santo_Domingo", "Santo Domingo", null)));
+        when(currencyRepository.findAll()).thenReturn(List.of(
+                new Currency(currencyId, "DOP", "Dominican Peso", "RD$")));
     }
 
     private TourOperatorMemberJpaEntity member(UUID operatorId, MemberRole role, boolean isDefault) {
@@ -62,7 +69,7 @@ class UserTourOperatorMembershipsQueryImplTest {
 
     private TourOperatorJpaEntity operator(UUID id, String name, String handle) {
         return new TourOperatorJpaEntity(
-                id, name, handle, tzId, UUID.randomUUID(), "some address", null, null,
+                id, name, handle, tzId, currencyId, "some address", null, null,
                 UUID.randomUUID(), Instant.now(), Instant.now(),
                 "en", false, null, null,
                 null, null, null,
@@ -102,11 +109,32 @@ class UserTourOperatorMembershipsQueryImplTest {
         assertTrue(first.isDefault());
         assertEquals("OWNER", first.role());
         assertEquals("America/Santo_Domingo", first.timezone());
+        assertEquals("DOP", first.currency());
         assertNull(first.logoUrl(), "no brand row → no logo");
 
         assertEquals("Acme Tours", views.get(1).name());
         assertFalse(views.get(1).isDefault());
         assertEquals("ADMIN", views.get(1).role());
+    }
+
+    /**
+     * The admin formats money on every experience and slot screen, and the code is
+     * what {@code Intl.NumberFormat} needs — it derives the symbol and the
+     * per-locale decimal count from it, which a symbol cannot. Resolving it here
+     * rather than in the client is what stops prices rendering unformatted and
+     * then flipping once the currency reference list lands.
+     */
+    @Test
+    void resolvesTheCurrencyToItsIsoCodeRatherThanItsIdOrSymbol() {
+        UUID acme = UUID.randomUUID();
+        when(memberRepository.findByUserId(userId))
+                .thenReturn(List.of(member(acme, MemberRole.OWNER, true)));
+        when(operatorRepository.findByIdIn(any()))
+                .thenReturn(List.of(operator(acme, "Acme Tours", "acme-tours")));
+
+        TourOperatorMembershipView view = query.findForUser(userId).get(0);
+
+        assertEquals("DOP", view.currency());
     }
 
     @Test
