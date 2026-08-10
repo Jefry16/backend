@@ -103,7 +103,7 @@ class ExperienceControllerDocumentationTest {
                 "https://media.staging.vointika.com/thumb.jpg",
                 List.of(UUID.fromString("bbbbbbbb-0000-4000-8000-000000000002")),
                 List.of("https://media.staging.vointika.com/1.jpg"),
-                120, 24, false, new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
+                24, false, new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
     }
 
     private static final String CREATE_BODY = """
@@ -114,7 +114,6 @@ class ExperienceControllerDocumentationTest {
               "featured": true,
               "mediaIds": [],
               "thumbnailMediaId": null,
-              "durationMinutes": 120,
               "bookingCutoffHours": 24
             }""";
 
@@ -137,7 +136,6 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("featured").description("Featured flag (default false)").optional(),
                                 fieldWithPath("mediaIds").description("Gallery media ids — must be in this operator's library (≤20)").optional(),
                                 fieldWithPath("thumbnailMediaId").description("Thumbnail — must be one of mediaIds").optional(),
-                                fieldWithPath("durationMinutes").description("Duration in minutes (>0)"),
                                 fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)")),
                         responseHeaders(headerWithName("Location").description("URI of the created experience"))));
     }
@@ -167,7 +165,6 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].thumbnailUrl").description("Resolved thumbnail URL, or null").optional(),
                                 fieldWithPath("data[].mediaIds").description("Gallery media ids (stored order)"),
                                 fieldWithPath("data[].galleryUrls").description("Resolved gallery URLs (media-id order)"),
-                                fieldWithPath("data[].durationMinutes").description("Duration in minutes"),
                                 fieldWithPath("data[].bookingCutoffHours").description("Advance-notice hours"),
                                 fieldWithPath("data[].published").description("Whether the experience is published (shopper-visible)"),
                                 fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),

@@ -6,7 +6,6 @@ import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
-import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.shared.port.TransactionRunner;
@@ -73,7 +72,7 @@ class PublishUnpublishExperienceUseCaseTest {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
                 false,
-                List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
+                List.of(), null, new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
     }
 
     @Test

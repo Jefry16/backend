@@ -29,7 +29,6 @@ public record ExperienceView(
         String thumbnailUrl,
         List<UUID> mediaIds,
         List<String> galleryUrls,
-        int durationMinutes,
         int bookingCutoffHours,
         boolean published,
         BigDecimal startingPrice,
@@ -47,7 +46,7 @@ public record ExperienceView(
                 e.getName().value(), e.getHandle().value(), e.getDescription().value(),
                 e.getLongDescription().value(), e.isFeatured(),
                 e.getThumbnailMediaId(), thumbnailUrl, e.getMediaIds(), gallery,
-                e.getDurationMinutes().value(), e.getBookingCutoffHours().value(),
+                e.getBookingCutoffHours().value(),
                 e.isPublished(), e.getStartingPrice().value(), e.getCreatedAt());
     }
 }

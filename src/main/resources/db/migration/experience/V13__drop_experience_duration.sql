@@ -1,0 +1,14 @@
+-- Drops the experience's advertised duration.
+--
+-- It was the *advertised* length, never the departure's: a slot stores explicit
+-- startAt/endAt and its real duration is the difference between them, which is
+-- what every read of a departure already uses. This column only ever fed the
+-- storefront card and the admin's convenience derivation of a slot end time.
+--
+-- Removing it settles a contradiction rather than leaving it recorded: an
+-- experience could be up to 14,400 minutes while a slot is rejected above 24
+-- hours, so an experience could exist that no departure could represent. With
+-- no advertised duration there are no two numbers to disagree.
+--
+-- The slot keeps its own duration. Nothing here touches slots.
+ALTER TABLE experiences DROP COLUMN duration_minutes;

@@ -38,7 +38,6 @@ public record ExperienceListView(
             String name,
             String description,
             String thumbnailUrl,
-            int durationMinutes,
             String startingPrice
     ) {}
 
@@ -77,7 +76,6 @@ public record ExperienceListView(
                 card.name(),
                 card.description(),
                 mediaUrlResolver.toUrl(card.thumbnailKey()),
-                card.durationMinutes(),
                 price(card.startingPrice()));
     }
 }

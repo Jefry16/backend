@@ -85,8 +85,8 @@ class ExperienceListControllerTest {
         when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
                 "es",
                 new ExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise",
-                        "tour-operators/1/sunset.jpg", 150, new BigDecimal("35.00")),
-                new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, 120, BigDecimal.ZERO))));
+                        "tour-operators/1/sunset.jpg", new BigDecimal("35.00")),
+                new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves", null, BigDecimal.ZERO))));
         when(mediaUrlResolver.toUrl("tour-operators/1/sunset.jpg"))
                 .thenReturn("http://localhost:9000/media/tour-operators/1/sunset.jpg");
 
@@ -101,7 +101,6 @@ class ExperienceListControllerTest {
                         containsString("<img src=\"http://localhost:9000/media/tour-operators/1/sunset.jpg\" "
                                 + "alt=\"Sunset Sailing Tour\">"),
                         containsString("<p>Golden-hour cruise</p>"),
-                        containsString("<p>150 min</p>"),
                         containsString("<a href=\"/experiences/kayak-cave-adventure\">"))));
     }
 
@@ -117,9 +116,9 @@ class ExperienceListControllerTest {
         when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
                 "es",
                 new ExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise",
-                        null, 150, new BigDecimal("35.00")),
+                        null, new BigDecimal("35.00")),
                 new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves",
-                        null, 120, new BigDecimal("25.5")))));
+                        null, new BigDecimal("25.5")))));
 
         String html = mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
@@ -160,7 +159,7 @@ class ExperienceListControllerTest {
     @Test
     void theLocalizedRouteRendersTheLocalesNamesAndPrefixedLinks() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", "es")).thenReturn(Optional.of(page(
-                "es", new ExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado", null, 150, new BigDecimal("35.00")))));
+                "es", new ExperienceCard("paseo-en-velero", "Paseo en velero", "Crucero dorado", null, new BigDecimal("35.00")))));
         when(mediaUrlResolver.toUrl("logo.png")).thenReturn("http://localhost:9000/logo.png");
 
         mockMvc.perform(get("/es/experiences").header("Host", "acme.localhost"))
@@ -270,7 +269,7 @@ class ExperienceListControllerTest {
     @Test
     void escapesOperatorAuthoredText() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
-                "es", new ExperienceCard("x", "<script>alert(1)</script>", "<img onerror=x>", null, 60,
+                "es", new ExperienceCard("x", "<script>alert(1)</script>", "<img onerror=x>", null,
                         BigDecimal.ZERO))));
 
         mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))

@@ -3,7 +3,6 @@ package com.vointika.experience.application.service;
 import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
-import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
@@ -31,13 +30,6 @@ public final class ExperienceInputMapper {
 
     public static List<UUID> mediaIds(ExperienceInput in) {
         return safe(in.mediaIds());
-    }
-
-    public static DurationMinutes durationMinutes(ExperienceInput in) {
-        if (in.durationMinutes() == null) {
-            throw new InvalidFieldException("Duration is required");
-        }
-        return new DurationMinutes(in.durationMinutes());
     }
 
     public static BookingCutoffHours bookingCutoffHours(ExperienceInput in) {

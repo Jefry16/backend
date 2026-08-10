@@ -27,7 +27,6 @@ public record ExperienceListPageOutput(StorefrontPageData envelope, List<Experie
             String name,
             String description,
             String thumbnailKey,
-            int durationMinutes,
             BigDecimal startingPrice
     ) {}
 }

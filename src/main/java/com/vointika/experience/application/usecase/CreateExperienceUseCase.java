@@ -71,7 +71,6 @@ public class CreateExperienceUseCase {
         var description = ExperienceInputMapper.description(input);
         var longDescription = ExperienceInputMapper.longDescription(input);
         var mediaIds = ExperienceInputMapper.mediaIds(input);
-        var duration = ExperienceInputMapper.durationMinutes(input);
         var cutoff = ExperienceInputMapper.bookingCutoffHours(input);
 
         mediaReferenceValidator.validate(tourOperatorId, mediaIds, input.thumbnailMediaId());
@@ -84,7 +83,7 @@ public class CreateExperienceUseCase {
             Experience experience = Experience.create(
                     idGenerator.newId(), tourOperatorId, callerUserId, handle,
                     name, description, longDescription, input.featured(),
-                    mediaIds, input.thumbnailMediaId(), duration, cutoff,
+                    mediaIds, input.thumbnailMediaId(), cutoff,
                     ExperienceInputMapper.seoTitle(input), ExperienceInputMapper.seoDescription(input),
                     ExperienceInputMapper.startingPrice(input));
             try {

@@ -55,9 +55,6 @@ public class ExperienceJpaEntity {
     private UUID thumbnailMediaId;
 
     @Column(nullable = false)
-    private int durationMinutes;
-
-    @Column(nullable = false)
     private int bookingCutoffHours;
 
     @Column(nullable = false)
