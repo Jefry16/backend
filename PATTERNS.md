@@ -245,7 +245,9 @@ that way once and it was the recorded mistake this fixes). The recipe:
 2. **Repository** — `CursorPage<Foo> list(ListQuery query)`, delegating to the
    shared `CriteriaListExecutor.list(FooJpaEntity.class, SCHEMA, query, Mapper::toDomain)`.
    The executor does keyset cursor pagination (page size 20, tie-broken on `id`),
-   the filter predicates, and the sort.
+   the filter predicates, and the sort. **The page size is the framework's, not
+   the caller's** — one constant for every list in the application, by decision,
+   and there is no parameter to override it. Never introduce a per-resource one.
 3. **Use case** — `execute(ListQuery, callerId)`: gate (e.g. `ensureMember`), call
    `repository.list`, enrich the page's rows (batched, no N+1), return the
    `CursorPage` with its `nextCursor` unchanged.
