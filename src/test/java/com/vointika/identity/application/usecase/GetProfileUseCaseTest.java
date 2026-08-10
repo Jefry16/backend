@@ -62,9 +62,9 @@ class GetProfileUseCaseTest {
         User user = new User(userId, new Email("test@example.com"), new UserName("John Doe"),
                 "hashed", UserStatus.VERIFIED, null, "en", Instant.now(), Instant.now());
         TourOperatorMembershipView ownedOp =
-                new TourOperatorMembershipView(UUID.randomUUID(), "Acme Tours", "https://cdn/acme.png", "America/New_York", true, "OWNER");
+                new TourOperatorMembershipView(UUID.randomUUID(), "Acme Tours", "https://cdn/acme.png", "America/New_York", "USD", true, "OWNER");
         TourOperatorMembershipView staffedOp =
-                new TourOperatorMembershipView(UUID.randomUUID(), "Beta Adventures", null, "Europe/London", false, "STAFF");
+                new TourOperatorMembershipView(UUID.randomUUID(), "Beta Adventures", null, "Europe/London", "GBP", false, "STAFF");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(membershipsQuery.findForUser(userId)).thenReturn(List.of(ownedOp, staffedOp));
 

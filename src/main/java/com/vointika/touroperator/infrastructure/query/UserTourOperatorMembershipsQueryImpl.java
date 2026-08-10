@@ -1,6 +1,8 @@
 package com.vointika.touroperator.infrastructure.query;
 
+import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
+import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery;
@@ -25,10 +27,12 @@ import java.util.stream.Collectors;
  * operator memberships in their identity profile (the operator switcher).
  * Retires {@code MembershipsQueryFallbackConfig}.
  *
- * <p>Three lookups + a small reference join, all in memory (a user has a handful
- * of memberships): memberships → their operators → their brand rows → timezone
- * names. {@code timezone} is the IANA name resolved from the operator's
- * {@code timezone_id} via {@code reference}.
+ * <p>Three lookups + two small reference joins, all in memory (a user has a
+ * handful of memberships): memberships → their operators → their brand rows →
+ * timezone names and currency codes. Both reference tables are curated and tiny,
+ * which is why they are read whole and joined here rather than per row.
+ * {@code timezone} is the IANA name and {@code currency} the ISO 4217 code,
+ * resolved from the operator's {@code timezone_id} / {@code currency_id}.
  *
  * <p>The logo is read off the <b>brand</b> row, where V10 moved it. An operator
  * created since the migration has no brand row yet, which is simply no logo.
@@ -40,6 +44,7 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
     private final TourOperatorJpaRepository operatorRepository;
     private final TourOperatorBrandJpaRepository brandRepository;
     private final TimezoneRepository timezoneRepository;
+    private final CurrencyRepository currencyRepository;
     private final MediaUrlBatchResolver mediaUrlBatchResolver;
 
     public UserTourOperatorMembershipsQueryImpl(
@@ -47,11 +52,13 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
             TourOperatorJpaRepository operatorRepository,
             TourOperatorBrandJpaRepository brandRepository,
             TimezoneRepository timezoneRepository,
+            CurrencyRepository currencyRepository,
             MediaUrlBatchResolver mediaUrlBatchResolver) {
         this.memberRepository = memberRepository;
         this.operatorRepository = operatorRepository;
         this.brandRepository = brandRepository;
         this.timezoneRepository = timezoneRepository;
+        this.currencyRepository = currencyRepository;
         this.mediaUrlBatchResolver = mediaUrlBatchResolver;
     }
 
@@ -75,6 +82,8 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
                         TourOperatorBrandJpaEntity::getLogoMediaId));
         Map<UUID, String> timezoneNames = timezoneRepository.findAll().stream()
                 .collect(Collectors.toMap(Timezone::getId, Timezone::getName));
+        Map<UUID, String> currencyCodes = currencyRepository.findAll().stream()
+                .collect(Collectors.toMap(Currency::getId, Currency::getCode));
 
         return memberships.stream()
                 .map(m -> {
@@ -88,6 +97,7 @@ public class UserTourOperatorMembershipsQueryImpl implements UserTourOperatorMem
                             // logo id → url through the media seam; null if unset or since-deleted
                             mediaUrlBatchResolver.resolveOne(op.getId(), logoMediaIds.get(op.getId())),
                             timezoneNames.get(op.getTimezoneId()),
+                            currencyCodes.get(op.getCurrencyId()),
                             m.isDefault(),
                             m.getRole().name());
                 })
