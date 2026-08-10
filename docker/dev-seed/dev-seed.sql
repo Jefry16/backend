@@ -581,7 +581,7 @@ ON CONFLICT DO NOTHING;
 -- cannot show it.
 INSERT INTO experience.experiences
     (id, tour_operator_id, created_by, handle, name, description, long_description,
-     featured, included, not_included, highlights,
+     featured, included, not_included,
      media_ids, thumbnail_media_id, duration_minutes, booking_cutoff_hours,
      published, starting_price, seo_title, seo_description, created_at)
 VALUES
@@ -589,7 +589,6 @@ VALUES
      'Sunset Sailing Tour', 'Golden-hour cruise along the coast with a local skipper.',
      'Board at the old port and glide past the cliffs as the sun drops. Includes a drink on board and a stop for a swim when the sea allows.',
      TRUE, '{"Skipper","Drink on board","Swim stop"}', '{"Hotel pickup","Dinner"}',
-     '{"Golden-hour light","Small groups","Swim stop when the sea allows"}',
      ARRAY[:'media_sunset1_id', :'media_sunset2_id', :'media_sunsetp_id']::uuid[],
      :'media_sunset1_id', 150, 12, TRUE, 35.00,
      'Sunset sailing in Madrid — small groups',
@@ -599,7 +598,6 @@ VALUES
      'Old Town Food Walk', 'Tastings across the historic quarter with a local guide.',
      'Five stops, seven tastings: market stalls, a century-old bakery, and the bar the guides go to after work.',
      FALSE, '{"All tastings","Local guide"}', '{"Extra drinks"}',
-     '{"Seven tastings","Hidden courtyards"}',
      ARRAY[:'media_food1_id', :'media_food2_id']::uuid[],
      :'media_food1_id', 180, 24, TRUE, 55.00,
      NULL, NULL,
@@ -608,7 +606,6 @@ VALUES
      'Kayak Cave Adventure', 'Paddle into sea caves only reachable from the water.',
      'A guided paddle along the coast with a stop inside the blue cave. No experience needed; doubles available.',
      TRUE, '{"Kayak & paddle","Dry bag","Guide"}', '{"Photos","Wetsuit"}',
-     '{"The blue cave","Beginner friendly"}',
      ARRAY[:'media_kayak1_id', :'media_kayak2_id']::uuid[],
      :'media_kayak1_id', 120, 6, TRUE, 25.00,
      'Kayak the blue cave — no experience needed',
@@ -623,7 +620,6 @@ VALUES
      'Blue Cave Diving', 'A guided two-tank dive on the cave wall.',
      'For certified divers. Two tanks, a wall dive and a swim-through, with a surface interval on the boat.',
      FALSE, '{"Two tanks","Guide","Weights"}', '{"Certification course","Wetsuit rental"}',
-     '{"Wall dive and swim-through","Certified divers only"}',
      ARRAY[:'media_diving_id']::uuid[],
      :'media_diving_id', 240, 48, TRUE, 110.00,
      NULL, NULL,
@@ -631,7 +627,7 @@ VALUES
     (:'experience_e_id', :'operator_id', :'user_sofia_id', 'winter-whale-watching',
      'Winter Whale Watching', 'Half-day offshore trip in the migration season.',
      'Still being written — sailing dates and pricing are not final.',
-     FALSE, '{}', '{}', '{}',
+     FALSE, '{}', '{}',
      '{}'::uuid[], NULL, 300, 48, FALSE, 95.00,
      NULL, NULL,
      NOW() - INTERVAL '4 days')
@@ -642,17 +638,17 @@ ON CONFLICT DO NOTHING;
 -- back to the canonical slug on the other, in the same list.
 INSERT INTO experience.experience_translations
     (experience_id, tour_operator_id, locale, name, description, long_description,
-     highlights, included, not_included, handle, seo_title, seo_description)
+     included, not_included, handle, seo_title, seo_description)
 VALUES
     (:'experience_a_id', :'operator_id', 'es', 'Paseo en velero al atardecer',
      'Crucero a la hora dorada por la costa con patrón local.',
      'Embarca en el puerto viejo y navega junto a los acantilados mientras cae el sol. Incluye una bebida a bordo y una parada para nadar cuando el mar lo permite.',
-     '{"Luz de la hora dorada","Grupos pequeños"}', '{"Patrón","Bebida a bordo"}', NULL,
+     '{"Patrón","Bebida a bordo"}', NULL,
      'paseo-velero-atardecer',
      'Paseo en velero al atardecer en Madrid', NULL),
     (:'experience_c_id', :'operator_id', 'es', 'Aventura en kayak por las cuevas',
      'Rema hasta cuevas marinas a las que solo se llega por el agua.', NULL,
-     NULL, NULL, NULL, NULL, NULL, NULL)
+     NULL, NULL, NULL, NULL, NULL)
 ON CONFLICT DO NOTHING;
 
 -- 11. Slots: sixteen, dated relative to today (operator-local wall clock, no

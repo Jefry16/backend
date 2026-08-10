@@ -4,7 +4,6 @@ import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.DurationMinutes;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.Highlight;
 import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
@@ -32,7 +31,6 @@ import java.util.UUID;
  */
 public class Experience {
 
-    private static final int MAX_HIGHLIGHTS = 20;
     private static final int MAX_INCLUSION = 30;
     private static final int MAX_MEDIA = 20;
 
@@ -48,7 +46,6 @@ public class Experience {
     private boolean featured;
     private List<InclusionItem> included;
     private List<InclusionItem> notIncluded;
-    private List<Highlight> highlights;
     private List<UUID> mediaIds;
     private UUID thumbnailMediaId;
     private DurationMinutes durationMinutes;
@@ -70,13 +67,12 @@ public class Experience {
     public static Experience create(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle,
                                     ExperienceName name, Description description, LongDescription longDescription,
                                     boolean featured, List<InclusionItem> included,
-                                    List<InclusionItem> notIncluded, List<Highlight> highlights,
-                                    List<UUID> mediaIds, UUID thumbnailMediaId,
+                                    List<InclusionItem> notIncluded,                                     List<UUID> mediaIds, UUID thumbnailMediaId,
                                     DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
                                     SeoTitle seoTitle, SeoDescription seoDescription,
                                     Price startingPrice) {
         Experience e = new Experience(id, tourOperatorId, createdBy, handle, Instant.now(),
-                name, description, longDescription, featured, included, notIncluded, highlights,
+                name, description, longDescription, featured, included, notIncluded,
                 mediaIds, thumbnailMediaId, durationMinutes, bookingCutoffHours, false,
                 seoTitle, seoDescription, startingPrice);
         e.validateInvariants();
@@ -87,8 +83,7 @@ public class Experience {
     public Experience(UUID id, UUID tourOperatorId, UUID createdBy, Handle handle, Instant createdAt,
                       ExperienceName name, Description description, LongDescription longDescription,
                       boolean featured, List<InclusionItem> included,
-                      List<InclusionItem> notIncluded, List<Highlight> highlights,
-                      List<UUID> mediaIds, UUID thumbnailMediaId,
+                      List<InclusionItem> notIncluded,                       List<UUID> mediaIds, UUID thumbnailMediaId,
                       DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
                       boolean published, SeoTitle seoTitle, SeoDescription seoDescription,
                       Price startingPrice) {
@@ -103,7 +98,6 @@ public class Experience {
         this.featured = featured;
         this.included = List.copyOf(included);
         this.notIncluded = List.copyOf(notIncluded);
-        this.highlights = List.copyOf(highlights);
         this.mediaIds = List.copyOf(mediaIds);
         this.thumbnailMediaId = thumbnailMediaId;
         this.durationMinutes = durationMinutes;
@@ -117,8 +111,7 @@ public class Experience {
     /** Replaces the editable fields (everything but id/operator/handle/status/createdAt). */
     public void update(ExperienceName name, Description description, LongDescription longDescription,
                        boolean featured, List<InclusionItem> included,
-                       List<InclusionItem> notIncluded, List<Highlight> highlights,
-                       List<UUID> mediaIds, UUID thumbnailMediaId,
+                       List<InclusionItem> notIncluded,                        List<UUID> mediaIds, UUID thumbnailMediaId,
                        DurationMinutes durationMinutes, BookingCutoffHours bookingCutoffHours,
                        SeoTitle seoTitle, SeoDescription seoDescription,
                        Price startingPrice) {
@@ -128,7 +121,6 @@ public class Experience {
         this.featured = featured;
         this.included = List.copyOf(included);
         this.notIncluded = List.copyOf(notIncluded);
-        this.highlights = List.copyOf(highlights);
         this.mediaIds = List.copyOf(mediaIds);
         this.thumbnailMediaId = thumbnailMediaId;
         this.durationMinutes = durationMinutes;
@@ -156,9 +148,6 @@ public class Experience {
     }
 
     private void validateInvariants() {
-        if (highlights.size() > MAX_HIGHLIGHTS) {
-            throw new InvalidFieldException("At most " + MAX_HIGHLIGHTS + " highlights are allowed");
-        }
         if (included.size() > MAX_INCLUSION || notIncluded.size() > MAX_INCLUSION) {
             throw new InvalidFieldException("At most " + MAX_INCLUSION + " inclusion items are allowed");
         }
@@ -193,7 +182,6 @@ public class Experience {
         snapshot.put("featured", featured);
         snapshot.put("included", included.stream().map(InclusionItem::value).toList());
         snapshot.put("notIncluded", notIncluded.stream().map(InclusionItem::value).toList());
-        snapshot.put("highlights", highlights.stream().map(Highlight::value).toList());
         snapshot.put("mediaIds", mediaIds.stream().map(UUID::toString).toList());
         snapshot.put("thumbnailMediaId", thumbnailMediaId == null ? null : thumbnailMediaId.toString());
         snapshot.put("durationMinutes", durationMinutes.value());
@@ -211,7 +199,6 @@ public class Experience {
     public boolean isFeatured() { return featured; }
     public List<InclusionItem> getIncluded() { return included; }
     public List<InclusionItem> getNotIncluded() { return notIncluded; }
-    public List<Highlight> getHighlights() { return highlights; }
     public List<UUID> getMediaIds() { return mediaIds; }
     public UUID getThumbnailMediaId() { return thumbnailMediaId; }
     public DurationMinutes getDurationMinutes() { return durationMinutes; }

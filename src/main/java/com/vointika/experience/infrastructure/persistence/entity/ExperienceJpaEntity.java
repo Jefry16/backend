@@ -56,10 +56,6 @@ public class ExperienceJpaEntity {
     private List<String> notIncluded;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(nullable = false, columnDefinition = "text[]")
-    private List<String> highlights;
-
-    @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(nullable = false, columnDefinition = "uuid[]")
     private List<UUID> mediaIds;
 

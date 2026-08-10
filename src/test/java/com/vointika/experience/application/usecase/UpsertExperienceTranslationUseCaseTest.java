@@ -85,7 +85,7 @@ class UpsertExperienceTranslationUseCaseTest {
     }
 
     private UpsertExperienceTranslationInput input(String name, String handle) {
-        return new UpsertExperienceTranslationInput(name, "Buceo", "Larga", List.of("Grupo pequeño"),
+        return new UpsertExperienceTranslationInput(name, "Buceo", "Larga",
                 List.of("Equipo"), List.of(), handle, null, null);
     }
 
@@ -113,7 +113,7 @@ class UpsertExperienceTranslationUseCaseTest {
     @Test
     void nullHandleAndNullNameLeavesHandleNull() {
         useCase.execute(operatorId, experienceId, "es",
-                new UpsertExperienceTranslationInput(null, "only desc", null, null, null, null, null, null, null), callerId);
+                new UpsertExperienceTranslationInput(null, "only desc", null, null, null, null, null, null), callerId);
         ArgumentCaptor<ExperienceTranslation> saved = ArgumentCaptor.forClass(ExperienceTranslation.class);
         verify(translationRepository).upsert(saved.capture());
         assertNull(saved.getValue().handle());
@@ -130,7 +130,7 @@ class UpsertExperienceTranslationUseCaseTest {
         when(translationRepository.deleteByExperienceIdAndLocale(experienceId, "es")).thenReturn(true);
 
         useCase.execute(operatorId, experienceId, "es",
-                new UpsertExperienceTranslationInput("  ", "", "   ", List.of(), List.of(), List.of(),
+                new UpsertExperienceTranslationInput("  ", "", "   ", List.of(), List.of(),
                         null, "", null), callerId);
 
         verify(translationRepository).deleteByExperienceIdAndLocale(experienceId, "es");
@@ -146,7 +146,7 @@ class UpsertExperienceTranslationUseCaseTest {
         when(translationRepository.deleteByExperienceIdAndLocale(experienceId, "es")).thenReturn(false);
 
         useCase.execute(operatorId, experienceId, "es",
-                new UpsertExperienceTranslationInput(null, null, null, null, null, null, null, null, null),
+                new UpsertExperienceTranslationInput(null, null, null, null, null, null, null, null),
                 callerId);
 
         verify(translationRepository, never()).upsert(any());
@@ -159,7 +159,7 @@ class UpsertExperienceTranslationUseCaseTest {
         // field is added to the record and not to isEmpty(), this fails.
         assertTrue(ExperienceTranslation.empty(experienceId, operatorId, LocaleCode.of("es")).isEmpty());
         assertFalse(new ExperienceTranslation(experienceId, operatorId, LocaleCode.of("es"),
-                null, new Description("Buceo"), null, null, null, null, null, null, null).isEmpty());
+                null, new Description("Buceo"), null, null, null, null, null, null).isEmpty());
     }
 
     @Test

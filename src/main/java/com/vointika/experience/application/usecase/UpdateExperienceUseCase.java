@@ -73,7 +73,6 @@ public class UpdateExperienceUseCase {
                 input.featured(),
                 ExperienceInputMapper.included(input),
                 ExperienceInputMapper.notIncluded(input),
-                ExperienceInputMapper.highlights(input),
                 mediaIds,
                 input.thumbnailMediaId(),
                 ExperienceInputMapper.durationMinutes(input),

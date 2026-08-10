@@ -13,7 +13,6 @@ public record ExperienceTranslationResponse(
         String name,
         String description,
         String longDescription,
-        List<String> highlights,
         List<String> included,
         List<String> notIncluded,
         String handle) {
@@ -21,6 +20,6 @@ public record ExperienceTranslationResponse(
     public static ExperienceTranslationResponse from(ExperienceTranslationView v) {
         return new ExperienceTranslationResponse(
                 v.locale(), v.name(), v.description(), v.longDescription(),
-                v.highlights(), v.included(), v.notIncluded(), v.handle());
+                v.included(), v.notIncluded(), v.handle());
     }
 }
