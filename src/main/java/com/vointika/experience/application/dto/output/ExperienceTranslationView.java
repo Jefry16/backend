@@ -1,7 +1,6 @@
 package com.vointika.experience.application.dto.output;
 
 import com.vointika.experience.domain.entity.ExperienceTranslation;
-import com.vointika.experience.domain.valueobject.InclusionItem;
 
 import java.util.List;
 
@@ -14,8 +13,6 @@ public record ExperienceTranslationView(
         String name,
         String description,
         String longDescription,
-        List<String> included,
-        List<String> notIncluded,
         String handle) {
 
     public static ExperienceTranslationView from(ExperienceTranslation t) {
@@ -24,8 +21,6 @@ public record ExperienceTranslationView(
                 t.name() == null ? null : t.name().value(),
                 t.description() == null ? null : t.description().value(),
                 t.longDescription() == null ? null : t.longDescription().value(),
-                t.included() == null ? null : t.included().stream().map(InclusionItem::value).toList(),
-                t.notIncluded() == null ? null : t.notIncluded().stream().map(InclusionItem::value).toList(),
                 t.handle() == null ? null : t.handle().value());
     }
 }

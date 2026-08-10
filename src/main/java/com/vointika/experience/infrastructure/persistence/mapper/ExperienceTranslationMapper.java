@@ -3,7 +3,6 @@ package com.vointika.experience.infrastructure.persistence.mapper;
 import com.vointika.experience.domain.entity.ExperienceTranslation;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
@@ -24,8 +23,6 @@ public class ExperienceTranslationMapper {
                 t.name() == null ? null : t.name().value(),
                 t.description() == null ? null : t.description().value(),
                 t.longDescription() == null ? null : t.longDescription().value(),
-                strings(t.included(), InclusionItem::value),
-                strings(t.notIncluded(), InclusionItem::value),
                 t.handle() == null ? null : t.handle().value(),
                 t.seoTitle() == null ? null : t.seoTitle().value(),
                 t.seoDescription() == null ? null : t.seoDescription().value());
@@ -39,8 +36,6 @@ public class ExperienceTranslationMapper {
                 jpa.getName() == null ? null : new ExperienceName(jpa.getName()),
                 jpa.getDescription() == null ? null : new Description(jpa.getDescription()),
                 jpa.getLongDescription() == null ? null : new LongDescription(jpa.getLongDescription()),
-                vos(jpa.getIncluded(), InclusionItem::new),
-                vos(jpa.getNotIncluded(), InclusionItem::new),
                 jpa.getHandle() == null ? null : new Handle(jpa.getHandle()),
                 jpa.getSeoTitle() == null ? null : new SeoTitle(jpa.getSeoTitle()),
                 jpa.getSeoDescription() == null ? null : new SeoDescription(jpa.getSeoDescription()));

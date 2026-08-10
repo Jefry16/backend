@@ -22,8 +22,6 @@ public record ExperienceResponse(
         String description,
         String longDescription,
         boolean featured,
-        List<String> included,
-        List<String> notIncluded,
         UUID thumbnailMediaId,
         String thumbnailUrl,
         List<UUID> mediaIds,
@@ -38,7 +36,7 @@ public record ExperienceResponse(
     public static ExperienceResponse from(ExperienceView v) {
         return new ExperienceResponse(
                 v.id(), "experiences", v.name(), v.handle(), v.description(), v.longDescription(),
-                v.featured(), v.included(), v.notIncluded(),
+                v.featured(),
                 v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
                 v.durationMinutes(), v.bookingCutoffHours(),
                 v.published(), v.startingPrice(), v.createdBy(), v.createdAt());

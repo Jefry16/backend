@@ -2,7 +2,6 @@ package com.vointika.experience.domain.entity;
 
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
-import com.vointika.experience.domain.valueobject.InclusionItem;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
@@ -26,8 +25,6 @@ public record ExperienceTranslation(
         ExperienceName name,
         Description description,
         LongDescription longDescription,
-        List<InclusionItem> included,
-        List<InclusionItem> notIncluded,
         Handle handle,
         SeoTitle seoTitle,
         SeoDescription seoDescription) {
@@ -36,14 +33,12 @@ public record ExperienceTranslation(
         Objects.requireNonNull(experienceId, "experienceId");
         Objects.requireNonNull(tourOperatorId, "tourOperatorId");
         Objects.requireNonNull(locale, "locale");
-        included = included == null ? null : List.copyOf(included);
-        notIncluded = notIncluded == null ? null : List.copyOf(notIncluded);
     }
 
     /** A fully-untranslated locale — every content field null (the admin editor form). */
     public static ExperienceTranslation empty(UUID experienceId, UUID tourOperatorId, LocaleCode locale) {
         return new ExperienceTranslation(experienceId, tourOperatorId, locale,
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 
     /**
@@ -60,7 +55,6 @@ public record ExperienceTranslation(
      */
     public boolean isEmpty() {
         return name == null && description == null && longDescription == null
-                && included == null && notIncluded == null
                 && handle == null && seoTitle == null && seoDescription == null;
     }
 }

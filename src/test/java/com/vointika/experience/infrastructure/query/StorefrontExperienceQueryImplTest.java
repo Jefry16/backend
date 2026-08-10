@@ -178,7 +178,7 @@ class StorefrontExperienceQueryImplTest {
                                                   UUID thumbnailMediaId, int durationMinutes, boolean featured) {
         return new ExperienceJpaEntity(
                 id, OPERATOR, OPERATOR, handle, name, description, "long description",
-                featured, List.of(), List.of(), List.of(),
+                featured, List.of(),
                 thumbnailMediaId, durationMinutes, 12, true, null, null, new BigDecimal("49.50"), Instant.EPOCH);
     }
 
@@ -186,6 +186,6 @@ class StorefrontExperienceQueryImplTest {
                                                               String description, String handle) {
         return new ExperienceTranslationJpaEntity(
                 experienceId, locale, OPERATOR, name, description, null,
-                null, null, handle, null, null);
+                handle, null, null);
     }
 }
