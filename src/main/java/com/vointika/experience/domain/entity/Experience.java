@@ -62,18 +62,9 @@ public class Experience {
     private SeoDescription seoDescription;
 
     /**
-     * The "from" price the storefront card advertises — **the operator's claim,
-     * not a derived figure**. A literal MIN over the per-audience prices frozen on
-     * each departure is a different number and often the wrong one: it would quote
-     * a free infant tier, or a one-off cheap departure, as the headline. Letting
-     * the operator say it also means a brand-new experience can carry a price
-     * before any departure is scheduled.
-     *
-     * <p>Zero means "not priced yet" and the storefront hides the badge rather
-     * than rendering "From 0" — which is why this is not nullable and needs no
-     * companion flag. The admin shows the cheapest bookable tier beside the field
-     * so a claim that has drifted from the real prices is visible, but nothing
-     * enforces agreement.
+     * The advertised "from" price — **the operator's claim, not a MIN over the
+     * slots**, so nothing keeps it in step with them. Zero means "not priced yet"
+     * and the storefront hides the badge, which is why it is not nullable.
      */
     private Price startingPrice;
 

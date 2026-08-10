@@ -85,7 +85,6 @@ public class ExperienceJpaEntity {
     @Column(length = 320)
     private String seoDescription;
 
-    /** The operator's advertised "from" price; 0 = not priced yet. See Experience. */
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal startingPrice;
 
