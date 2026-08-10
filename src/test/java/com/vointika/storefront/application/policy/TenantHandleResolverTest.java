@@ -29,6 +29,21 @@ class TenantHandleResolverTest {
         assertThat(resolver.resolve("localhost:8080")).isEmpty();
     }
 
+    /**
+     * The second lock on reserved labels. Creation refuses to mint one, so this
+     * only fires for a row that predates the rule or was written straight into
+     * the database — but that is exactly the case where {@code api.vointika.com}
+     * would otherwise serve a tenant instead of the API.
+     */
+    @Test
+    void rejectsAReservedLabelEvenThoughItIsWellFormed() {
+        assertThat(resolver.resolve("api.localhost")).isEmpty();
+        assertThat(resolver.resolve("admin.localhost:8080")).isEmpty();
+        assertThat(resolver.resolve("API.localhost")).isEmpty();
+        // and does not over-reject a name that merely starts the same way
+        assertThat(resolver.resolve("apidae.localhost")).contains("apidae");
+    }
+
     /** A crafted multi-label host must not be read as the tenant it prefixes. */
     @Test
     void rejectsAMultiLabelHost() {

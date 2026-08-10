@@ -1,5 +1,7 @@
 package com.vointika.storefront.application.policy;
 
+import com.vointika.shared.valueobject.ReservedHandles;
+
 import java.util.Locale;
 import java.util.Optional;
 
@@ -7,8 +9,10 @@ import java.util.Optional;
  * Host → tenant handle. {@code acme.localhost:8080} is {@code acme}; anything
  * else is nobody.
  *
- * <p>Two rejections are load-bearing and carried over from the archived
- * storefront. The <b>apex</b> ({@code localhost}) addresses no tenant, and a
+ * <p>Three rejections are load-bearing. A <b>reserved label</b>
+ * ({@link ReservedHandles}) is infrastructure — {@code api}, {@code admin} — and
+ * addresses no tenant however the row got there. The other two are carried over
+ * from the archived storefront. The <b>apex</b> ({@code localhost}) addresses no tenant, and a
  * <b>multi-label</b> host ({@code a.b.localhost}) must not either — otherwise a
  * crafted host could be read as a tenant it is not.
  *
@@ -45,6 +49,13 @@ public class TenantHandleResolver {
         }
         String label = name.substring(0, name.length() - suffix.length());
         if (label.isEmpty() || label.indexOf('.') >= 0) {
+            return Optional.empty();
+        }
+        // A reserved label addresses infrastructure, never a tenant. Creation
+        // already refuses to mint one, so this is the second lock rather than
+        // the first: it holds even for a row written before the rule existed, or
+        // straight into the database.
+        if (ReservedHandles.isReserved(label)) {
             return Optional.empty();
         }
         return Optional.of(label);

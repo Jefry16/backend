@@ -103,6 +103,28 @@ class CreateTourOperatorUseCaseTest {
         return new CreateTourOperatorInput(userId.toString(), "Acme Tours", "123 Beach Rd", timezoneId, currencyId);
     }
 
+    /**
+     * A storefront lives at {@code {handle}.vointika.com}, so an operator called
+     * "API" would otherwise mint the handle {@code api} and claim the API host.
+     *
+     * <p>It is not refused — the name is the operator's and only the *handle*
+     * has to be free — so a reserved label counts as taken and the generator
+     * suffixes past it exactly as it does any collision.
+     */
+    @Test
+    void anOperatorNamedAfterInfrastructureDoesNotClaimThatHost() {
+        CreateTourOperatorInput reserved = new CreateTourOperatorInput(
+                userId.toString(), "API", "123 Beach Rd", timezoneId, currencyId);
+
+        useCase.execute(reserved);
+
+        ArgumentCaptor<TourOperator> opCaptor = ArgumentCaptor.forClass(TourOperator.class);
+        verify(tourOperatorRepository).save(opCaptor.capture());
+        TourOperator saved = opCaptor.getValue();
+        assertEquals("API", saved.getName().value());
+        assertEquals("api-2", saved.getHandle().value());
+    }
+
     @Test
     void createsOperatorAndOwnerMemberInOneTransaction() {
         CreateTourOperatorOutput out = useCase.execute(input());
