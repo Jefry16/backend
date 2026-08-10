@@ -3,7 +3,6 @@ package com.vointika.contact.presentation.controller;
 import com.vointika.contact.application.usecase.DeleteContactMessageUseCase;
 import com.vointika.contact.application.usecase.GetContactMessageUseCase;
 import com.vointika.contact.application.usecase.ListContactMessagesUseCase;
-import com.vointika.contact.application.usecase.SetContactMessageReadUseCase;
 import com.vointika.contact.domain.entity.ContactMessage;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -36,7 +35,6 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -60,7 +58,6 @@ class ContactMessageControllerDocumentationTest {
 
     @MockitoBean private ListContactMessagesUseCase listUseCase;
     @MockitoBean private GetContactMessageUseCase getUseCase;
-    @MockitoBean private SetContactMessageReadUseCase setReadUseCase;
     @MockitoBean private DeleteContactMessageUseCase deleteUseCase;
     @MockitoBean private TourOperatorMembershipCheck membershipCheck;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
@@ -86,7 +83,7 @@ class ContactMessageControllerDocumentationTest {
                 "Laura Pérez", "laura@example.com",
                 "Do you have child seats on the sunset tour?",
                 "Hi! We are a family of four (kids are 4 and 7). Do you provide child-size life vests?",
-                null, Instant.parse("2026-07-28T10:00:00Z"));
+                Instant.parse("2026-07-28T10:00:00Z"));
     }
 
     @Test
@@ -107,7 +104,6 @@ class ContactMessageControllerDocumentationTest {
                                 fieldWithPath("data[].name").type("String").description("The shopper's name, or null").optional(),
                                 fieldWithPath("data[].email").description("The shopper's reply address"),
                                 fieldWithPath("data[].summary").description("One-line subject"),
-                                fieldWithPath("data[].read").description("Inbox read-state"),
                                 fieldWithPath("data[].createdAt").description("When submitted"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
     }
@@ -121,7 +117,7 @@ class ContactMessageControllerDocumentationTest {
         mockMvc.perform(get("/api/tour-operators/{id}/contact-messages/{messageId}", OP, MSG)
                         .header("Authorization", BEARER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.read").value(false))
+                .andExpect(jsonPath("$.email").value("laura@example.com"))
                 .andDo(document("contact-messages/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
@@ -131,34 +127,9 @@ class ContactMessageControllerDocumentationTest {
                                 fieldWithPath("email").description("The shopper's reply address"),
                                 fieldWithPath("summary").description("One-line subject"),
                                 fieldWithPath("content").description("The raw message body, verbatim"),
-                                fieldWithPath("read").description("Inbox read-state"),
-                                fieldWithPath("readAt").type("String").description("When first read, or null").optional(),
                                 fieldWithPath("createdAt").description("When submitted"))));
     }
 
-    @Test
-    void markRead() throws Exception {
-        authenticated();
-
-        mockMvc.perform(post("/api/tour-operators/{id}/contact-messages/{messageId}/read", OP, MSG)
-                        .with(csrf())
-                        .header("Authorization", BEARER))
-                .andExpect(status().isNoContent())
-                .andDo(document("contact-messages/read",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
-    }
-
-    @Test
-    void markUnread() throws Exception {
-        authenticated();
-
-        mockMvc.perform(post("/api/tour-operators/{id}/contact-messages/{messageId}/unread", OP, MSG)
-                        .with(csrf())
-                        .header("Authorization", BEARER))
-                .andExpect(status().isNoContent())
-                .andDo(document("contact-messages/unread",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
-    }
 
     @Test
     void deleteOne() throws Exception {

@@ -12,13 +12,12 @@ public record ContactMessageListItemResponse(
         String name,
         String email,
         String summary,
-        boolean read,
         Instant createdAt) {
 
     public static ContactMessageListItemResponse from(ContactMessage message) {
         return new ContactMessageListItemResponse(
                 message.getId(), "contact-messages", message.getName(),
-                message.getEmail(), message.getSummary(), message.isRead(),
+                message.getEmail(), message.getSummary(),
                 message.getCreatedAt());
     }
 }

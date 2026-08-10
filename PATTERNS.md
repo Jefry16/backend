@@ -679,8 +679,8 @@ a pattern that stops matching turns the test into a no-op.
 **What the seed is for is coverage, not plausibility.** A table with zero rows
 renders exactly like a broken query, so a thin fixture makes whole admin screens
 unreviewable. The rule: every table the admin UI reads gets rows, and every
-*state* a screen can show gets at least one — published and draft, read and
-unread, sold out and cancelled, past and future, translated and not. Uneven on
+*state* a screen can show gets at least one — published and draft, sold out and
+cancelled, past and future, translated and not. Uneven on
 purpose: if every owner has every optional field set, nothing shows you what
 "unset" looks like.
 

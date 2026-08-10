@@ -48,26 +48,14 @@ class ContactMessageUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(messageRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(messageRepository.findByIdAndTourOperatorId(MSG, OP))
-                .thenReturn(Optional.of(unreadMessage()));
+                .thenReturn(Optional.of(message()));
     }
 
-    private ContactMessage unreadMessage() {
+    private ContactMessage message() {
         return new ContactMessage(MSG, OP, "Laura Pérez", "laura@example.com",
                 "Do you have child seats?", "We are a family of four…",
-                null, Instant.parse("2026-07-28T10:00:00Z"));
-    }
-
-    private ContactMessage readMessage() {
-        return new ContactMessage(MSG, OP, null, "ana@example.net",
-                "Gift voucher?", "Do you sell gift vouchers?",
-                Instant.parse("2026-07-28T11:00:00Z"), Instant.parse("2026-07-28T10:00:00Z"));
-    }
-
-    private SetContactMessageReadUseCase readUseCase() {
-        return new SetContactMessageReadUseCase(messageRepository, membershipCheck,
-                transactionRunner);
+                Instant.parse("2026-07-28T10:00:00Z"));
     }
 
     @Test
@@ -77,7 +65,7 @@ class ContactMessageUseCasesTest {
         ListQuery query = mock(ListQuery.class);
         when(query.tenantId()).thenReturn(OP);
         when(messageRepository.list(query))
-                .thenReturn(new CursorPage<>(List.of(unreadMessage()), null));
+                .thenReturn(new CursorPage<>(List.of(message()), null));
 
         CursorPage<ContactMessage> page = useCase.execute(query, USER);
 
@@ -106,44 +94,6 @@ class ContactMessageUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    @Test
-    void markReadStampsReadAtAndDoesNotAudit() {
-        readUseCase().execute(OP, MSG, true, USER);
-
-        verify(membershipCheck).ensureMember(USER, OP);
-        ArgumentCaptor<ContactMessage> saved = ArgumentCaptor.forClass(ContactMessage.class);
-        verify(messageRepository).save(saved.capture());
-        assertThat(saved.getValue().isRead()).isTrue();
-        assertThat(saved.getValue().getReadAt()).isNotNull();
-        // Read-state is workflow bookkeeping — deliberately unaudited.
-        verify(auditTrailPort, never()).append(any());
-    }
-
-    @Test
-    void markReadTwiceKeepsFirstTimestamp() {
-        ContactMessage alreadyRead = readMessage();
-        Instant firstReadAt = alreadyRead.getReadAt();
-        when(messageRepository.findByIdAndTourOperatorId(MSG, OP))
-                .thenReturn(Optional.of(alreadyRead));
-
-        readUseCase().execute(OP, MSG, true, USER);
-
-        ArgumentCaptor<ContactMessage> saved = ArgumentCaptor.forClass(ContactMessage.class);
-        verify(messageRepository).save(saved.capture());
-        assertThat(saved.getValue().getReadAt()).isEqualTo(firstReadAt);
-    }
-
-    @Test
-    void markUnreadClearsReadAt() {
-        when(messageRepository.findByIdAndTourOperatorId(MSG, OP))
-                .thenReturn(Optional.of(readMessage()));
-
-        readUseCase().execute(OP, MSG, false, USER);
-
-        ArgumentCaptor<ContactMessage> saved = ArgumentCaptor.forClass(ContactMessage.class);
-        verify(messageRepository).save(saved.capture());
-        assertThat(saved.getValue().isRead()).isFalse();
-    }
 
     @Test
     void deleteIsAdminGatedAndAuditsSummaryOnly() {

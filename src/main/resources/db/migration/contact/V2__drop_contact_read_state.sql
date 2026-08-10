@@ -1,0 +1,14 @@
+-- Drops the inbox read-state.
+--
+-- `read_at` recorded WHEN a message was read and never WHO, and marking read was
+-- unaudited by design ("workflow bookkeeping, not a business mutation"). On a
+-- five-member operator that is the wrong half of the answer: the useful question
+-- in a shared inbox is who is dealing with an enquiry, and nothing here could
+-- answer it.
+--
+-- It also could not be filtered on. Unread is `read_at IS NULL` and the shared
+-- list framework has no null operator, so the primary axis of an inbox was
+-- unaskable through the API — recorded as debt, now removed rather than fixed.
+--
+-- If read-state returns it comes back with a reader, not just a timestamp.
+ALTER TABLE contact_messages DROP COLUMN read_at;

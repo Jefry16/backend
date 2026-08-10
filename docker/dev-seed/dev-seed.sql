@@ -974,62 +974,61 @@ FROM (VALUES
 ) AS v(definition_id, owner_id, value)
 ON CONFLICT DO NOTHING;
 
--- 15. Contact-inbox messages. Nine unread, three read, so the unread badge has
--- a number and the read/unread split is visible in one screen. created_at
+-- 15. Contact-inbox messages. Twelve of them, so the inbox pages. created_at
 -- ASCENDS with the fixed ids (070 oldest) so the inbox's -id default order
 -- matches recency, like real UUIDv7 intake rows will. One message has a NULL
 -- name — the form allows it, so the list has to render it.
 INSERT INTO contact.contact_messages
-    (id, tour_operator_id, name, email, summary, content, read_at, created_at)
+    (id, tour_operator_id, name, email, summary, content, created_at)
 VALUES
     (:'cm_sizes_id', :'operator_id', 'Laura Pérez', 'laura@example.com',
      'Do you have child seats on the sunset tour?',
      'Hi! We are a family of four (kids are 4 and 7). Do you provide child-size life vests and seats on the Sunset Sailing Tour? Thanks!',
-     NOW() - INTERVAL '29 days', NOW() - INTERVAL '30 days'),
+     NOW() - INTERVAL '30 days'),
     (:'cm_group_id', :'operator_id', 'Tom Baker', 'tom@example.org',
      'Group booking for 15 people',
      'Hello, I am organising a company outing in September for about 15 people. Can we book a private departure, and is there a group rate?',
-     NOW() - INTERVAL '20 days', NOW() - INTERVAL '21 days'),
+     NOW() - INTERVAL '21 days'),
     (:'cm_gift_id', :'operator_id', NULL, 'ana@example.net',
      'Gift voucher?',
      'Do you sell gift vouchers for the kayak trip? I would like to give one to my sister for her birthday.',
-     NOW() - INTERVAL '13 days', NOW() - INTERVAL '14 days'),
+     NOW() - INTERVAL '14 days'),
     (:'cm_wheelchair_id', :'operator_id', 'Bea Ortiz', 'bea@example.com',
      'Wheelchair access at the Old Port',
      'My father uses a wheelchair. Is boarding at the Old Port possible, and is there a step onto the boat?',
-     NULL, NOW() - INTERVAL '9 days'),
+     NOW() - INTERVAL '9 days'),
     (:'cm_lost_id', :'operator_id', 'Henrik Sund', 'henrik@example.se',
      'Left a jacket on board',
      'I sailed with you on Saturday evening and left a navy rain jacket under the bench. Did anyone hand it in?',
-     NULL, NOW() - INTERVAL '8 days'),
+     NOW() - INTERVAL '8 days'),
     (:'cm_weather_id', :'operator_id', 'Marta Gil', 'marta@example.com',
      'What happens if the forecast is bad?',
      'We are booked for the 18:00 sail next week and the forecast looks windy. When do you decide whether to sail?',
-     NULL, NOW() - INTERVAL '6 days'),
+     NOW() - INTERVAL '6 days'),
     (:'cm_invoice_id', :'operator_id', 'Julien Roy', 'julien@example.fr',
      'Invoice with company VAT number',
      'Bonjour, could you issue an invoice with our company VAT number for the food walk we did in June? I can send the details.',
-     NULL, NOW() - INTERVAL '5 days'),
+     NOW() - INTERVAL '5 days'),
     (:'cm_press_id', :'operator_id', 'Ada Okonkwo', 'ada@example.co.uk',
      'Press enquiry — travel feature',
      'I am writing a piece on small-group coastal operators for a UK travel title. Would you have twenty minutes for a call this month?',
-     NULL, NOW() - INTERVAL '4 days'),
+     NOW() - INTERVAL '4 days'),
     (:'cm_dietary_id', :'operator_id', 'Sam Fischer', 'sam@example.de',
      'Vegetarian options on the food walk',
      'Two of us are vegetarian. Are the seven tastings adaptable, or should we look at a different tour?',
-     NULL, NOW() - INTERVAL '3 days'),
+     NOW() - INTERVAL '3 days'),
     (:'cm_parking_id', :'operator_id', 'Nuria Blanco', 'nuria@example.es',
      'Where do we park?',
      '¿Hay aparcamiento cerca del puerto viejo? Llegamos en coche desde Toledo.',
-     NULL, NOW() - INTERVAL '2 days'),
+     NOW() - INTERVAL '2 days'),
     (:'cm_private_id', :'operator_id', 'Otto Lehtinen', 'otto@example.fi',
      'Private charter for a proposal',
      'I would like to book the whole boat for a sunset sail in three weeks. It is a proposal, so I would want it just us. Possible?',
-     NULL, NOW() - INTERVAL '1 day'),
+     NOW() - INTERVAL '1 day'),
     (:'cm_partner_id', :'operator_id', 'Hotel Sol', 'reservas@hotelsol.example',
      'Partnership — concierge referrals',
      'Buenos días. Somos un hotel a diez minutos del puerto y nos gustaría ofrecer vuestras salidas a nuestros huéspedes. ¿Con quién hablamos?',
-     NULL, NOW() - INTERVAL '3 hours')
+     NOW() - INTERVAL '3 hours')
 ON CONFLICT DO NOTHING;
 
 -- 16. Activity trail. Invented history, as the header says — but the Activity

@@ -9,8 +9,6 @@ import java.util.UUID;
 
 public interface ContactMessageRepository {
 
-    ContactMessage save(ContactMessage message);
-
     Optional<ContactMessage> findByIdAndTourOperatorId(UUID messageId, UUID tourOperatorId);
 
     CursorPage<ContactMessage> list(ListQuery query);
