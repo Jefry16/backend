@@ -63,8 +63,9 @@ public class Experience {
 
     /**
      * The advertised "from" price — **the operator's claim, not a MIN over the
-     * slots**, so nothing keeps it in step with them. Zero means "not priced yet"
-     * and the storefront hides the badge, which is why it is not nullable.
+     * slots**, so nothing keeps it in step with them. Required and greater than
+     * zero on every experience, drafts included, so the card always has a figure
+     * and there is no "unpriced" state to render around.
      */
     private Price startingPrice;
 
@@ -174,6 +175,11 @@ public class Experience {
         }
         if (thumbnailMediaId != null && !mediaIds.contains(thumbnailMediaId)) {
             throw new InvalidFieldException("The thumbnail must be one of the experience's media items");
+        }
+        // Not on Price itself: audience_slot uses the same type and a free tier
+        // priced at 0 is legitimate there.
+        if (startingPrice == null || startingPrice.value().signum() <= 0) {
+            throw new InvalidFieldException("Starting price must be greater than 0");
         }
     }
 

@@ -571,12 +571,14 @@ ON CONFLICT DO NOTHING;
 --
 -- starting_price is **the operator's advertised "from" price, not a derived
 -- figure** — it is typed in the admin and nothing keeps it in step with the
--- per-audience prices frozen on each departure. Three of the four published
--- experiences carry one; the kayak trip is left at 0 on purpose, because 0 means
--- "not priced yet" and the storefront hides the badge rather than rendering
--- "From 0". Its cheapest paid tier is 30.00, so it is also the row that shows an
--- operator claim and the real slot prices disagreeing — which is the state the
--- admin's hint exists to make visible.
+-- per-audience prices frozen on each departure. Every experience carries one,
+-- drafts included, and it must be greater than zero.
+--
+-- The sunset sail advertises 35.00 while its cheapest paid tier is 65.00, and
+-- the kayak trip advertises 25.00 against a cheapest tier of 30.00. Both
+-- disagree on purpose: a claim drifting from the real slot prices is the state
+-- the admin's hint exists to make visible, and a fixture where they all agree
+-- cannot show it.
 INSERT INTO experience.experiences
     (id, tour_operator_id, created_by, handle, name, description, long_description,
      featured, tags, included, not_included, highlights,
@@ -608,7 +610,7 @@ VALUES
      TRUE, '{water,adventure,kayak}', '{"Kayak & paddle","Dry bag","Guide"}', '{"Photos","Wetsuit"}',
      '{"The blue cave","Beginner friendly"}',
      ARRAY[:'media_kayak1_id', :'media_kayak2_id']::uuid[],
-     :'media_kayak1_id', 120, 6, TRUE, 0.00,
+     :'media_kayak1_id', 120, 6, TRUE, 25.00,
      'Kayak the blue cave — no experience needed',
      'A guided two-hour paddle to sea caves reachable only from the water. Doubles available.',
      -- Same created_at as the sunset sail, to the microsecond, and both are
@@ -630,7 +632,7 @@ VALUES
      'Winter Whale Watching', 'Half-day offshore trip in the migration season.',
      'Still being written — sailing dates and pricing are not final.',
      FALSE, '{boat,wildlife,seasonal}', '{}', '{}', '{}',
-     '{}'::uuid[], NULL, 300, 48, FALSE, 0.00,
+     '{}'::uuid[], NULL, 300, 48, FALSE, 95.00,
      NULL, NULL,
      NOW() - INTERVAL '4 days')
 ON CONFLICT DO NOTHING;

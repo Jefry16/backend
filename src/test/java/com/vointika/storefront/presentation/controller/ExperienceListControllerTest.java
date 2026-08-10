@@ -106,32 +106,29 @@ class ExperienceListControllerTest {
     }
 
     /**
-     * The price is the operator's claim, and 0 means they have not made one — so
-     * the badge is absent rather than reading "From 0". Both halves are asserted
-     * here because only the pair pins the rule: the sunset sail is priced at
-     * 35.00 and the kayak trip is not, in the same render.
+     * Every experience carries a price greater than zero, so every card shows a
+     * badge — there is no unpriced state for the template to guard.
      *
-     * <p>The symbol comes from {@code shop.currency}, which until now had no
-     * reader anywhere.
+     * <p>The symbol comes from {@code shop.currency}, which until this slice had
+     * no reader anywhere.
      */
     @Test
-    void aPricedExperienceShowsAFromBadgeAndAnUnpricedOneShowsNone() throws Exception {
+    void everyCardShowsAFromBadgeInTheShopsCurrency() throws Exception {
         when(getExperienceListPageUseCase.execute("acme", null)).thenReturn(Optional.of(page(
                 "es",
                 new ExperienceCard("sunset-sailing-tour", "Sunset Sailing Tour", "Golden-hour cruise",
                         null, 150, new BigDecimal("35.00")),
                 new ExperienceCard("kayak-cave-adventure", "Kayak Cave Adventure", "Sea caves",
-                        null, 120, BigDecimal.ZERO))));
+                        null, 120, new BigDecimal("25.5")))));
 
         String html = mockMvc.perform(get("/experiences").header("Host", "acme.localhost"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
         assertThat(html).contains("<p>From \u20ac35.00</p>");
-        assertThat(html).doesNotContain("From \u20ac0");
-        assertThat(html).doesNotContain("From \u20ac0.00");
-        // one badge for two cards
-        assertThat(html.split("From ", -1)).hasSize(2);
+        // 2dp, like audience_slot.price
+        assertThat(html).contains("<p>From \u20ac25.50</p>");
+        assertThat(html.split("From ", -1)).hasSize(3);
     }
 
     /**

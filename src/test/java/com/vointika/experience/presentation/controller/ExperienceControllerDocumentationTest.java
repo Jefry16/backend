@@ -184,7 +184,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].durationMinutes").description("Duration in minutes"),
                                 fieldWithPath("data[].bookingCutoffHours").description("Advance-notice hours"),
                                 fieldWithPath("data[].published").description("Whether the experience is published (shopper-visible)"),
-                                fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price; 0 = not priced yet (the storefront hides the badge). Not derived from slot prices."),
+                                fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),
                                 fieldWithPath("data[].createdBy").description("Creator user id"),
                                 fieldWithPath("data[].createdAt").description("When created"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page"))));

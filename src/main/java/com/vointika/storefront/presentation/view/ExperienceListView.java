@@ -60,17 +60,14 @@ public record ExperienceListView(
     }
 
     /**
-     * The bare amount, or {@code ""} when unpriced — the compiler runs
-     * {@code emptyStringIsFalse}, so an empty string makes
-     * {@code {{#startingPrice}}} skip the badge rather than render "From 0".
+     * The bare amount. Always present — an experience cannot exist without a
+     * price greater than zero — so there is no empty case for the template to
+     * guard.
      *
      * <p>No currency symbol: {@code shop.currency} carries it, so a theme wanting
      * {@code 35,00 €} rather than {@code €35.00} can place it itself.
      */
     private static String price(BigDecimal startingPrice) {
-        if (startingPrice == null || startingPrice.signum() == 0) {
-            return "";
-        }
         return startingPrice.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 

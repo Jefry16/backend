@@ -1,6 +1,5 @@
 package com.vointika.experience.application.service;
 
-import java.math.BigDecimal;
 import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.domain.valueobject.BookingCutoffHours;
 import com.vointika.experience.domain.valueobject.Description;
@@ -74,9 +73,11 @@ public final class ExperienceInputMapper {
         return blank(in.seoDescription()) ? null : new SeoDescription(in.seoDescription());
     }
 
-    /** Absent is 0 — "not priced yet". See {@link com.vointika.experience.domain.entity.Experience}. */
     public static Price startingPrice(ExperienceInput in) {
-        return new Price(in.startingPrice() == null ? BigDecimal.ZERO : in.startingPrice());
+        if (in.startingPrice() == null) {
+            throw new InvalidFieldException("Starting price is required");
+        }
+        return new Price(in.startingPrice());
     }
 
     private static boolean blank(String s) {

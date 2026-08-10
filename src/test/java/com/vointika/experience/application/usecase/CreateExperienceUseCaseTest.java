@@ -65,7 +65,7 @@ class CreateExperienceUseCaseTest {
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "A dive", "Long description", false,
-                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, null);
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, new BigDecimal("35.00"));
     }
 
     @Test
@@ -82,17 +82,26 @@ class CreateExperienceUseCaseTest {
         assertEquals(callerId, saved.getValue().getCreatedBy());
     }
 
-    /**
-     * The column is NOT NULL and the storefront reads 0 as "hide the badge", so
-     * an omitted price has exactly one meaning and needs no nullable state.
-     */
+    /** Required on every experience, drafts included — there is no unpriced state. */
     @Test
-    void anOmittedStartingPriceIsZeroRatherThanNull() {
-        useCase.execute(operatorId, callerId, input("Dive Trip"));
+    void anOmittedStartingPriceIs422() {
+        ExperienceInput noPrice = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null, null);
 
-        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
-        verify(repository).save(saved.capture());
-        assertEquals(0, saved.getValue().getStartingPrice().value().compareTo(BigDecimal.ZERO));
+        assertThrows(InvalidFieldException.class,
+                () -> useCase.execute(operatorId, callerId, noPrice));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void aZeroStartingPriceIs422() {
+        ExperienceInput free = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), List.of(), List.of(), List.of(), List.of(), null, 120, 24, null, null,
+                BigDecimal.ZERO);
+
+        assertThrows(InvalidFieldException.class,
+                () -> useCase.execute(operatorId, callerId, free));
+        verify(repository, never()).save(any());
     }
 
     @Test

@@ -31,7 +31,7 @@ class ExperienceTest {
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new Handle("dive-trip"),
                 new ExperienceName("Dive Trip"), new Description("A dive"), new LongDescription("Long"),
                 false, List.of(), List.of(), List.of(), List.of(),
-                mediaIds, thumbnail, new DurationMinutes(120), new BookingCutoffHours(24), null, null, new Price(BigDecimal.ZERO));
+                mediaIds, thumbnail, new DurationMinutes(120), new BookingCutoffHours(24), null, null, new Price(new BigDecimal("35.00")));
     }
 
     @Test
@@ -82,7 +82,7 @@ class ExperienceTest {
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new Handle("x"),
                 new ExperienceName("X"), new Description("d"), new LongDescription("l"),
                 false, tags, List.of(), List.of(), List.<Highlight>of(),
-                List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(BigDecimal.ZERO)));
+                List.of(), null, new DurationMinutes(60), new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00"))));
     }
 
     @Test
@@ -91,7 +91,7 @@ class ExperienceTest {
         UUID m = UUID.randomUUID();
         e.update(new ExperienceName("New"), new Description("d2"), new LongDescription("l2"),
                 true, List.of(new Tag("a")), List.of(new InclusionItem("inc")), List.of(),
-                List.of(new Highlight("h")), List.of(m), m, new DurationMinutes(90), new BookingCutoffHours(12), null, null, new Price(BigDecimal.ZERO));
+                List.of(new Highlight("h")), List.of(m), m, new DurationMinutes(90), new BookingCutoffHours(12), null, null, new Price(new BigDecimal("35.00")));
         assertEquals("New", e.getName().value());
         assertEquals(true, e.isFeatured());
         assertEquals(m, e.getThumbnailMediaId());
