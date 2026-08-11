@@ -42,8 +42,10 @@ import java.util.UUID;
  * query binds the two. A policy id from another operator is a 404.
  *
  * <p>The enum name ({@code LEGAL_NOTICE}) is what the body carries, matching how
- * this context writes {@code linkType} and {@code role}; the storefront's
- * hyphenated slug is a public-URL concern {@code PolicySlug} owns.
+ * this context writes {@code linkType} and {@code role}. The hyphenated slug
+ * ({@code legal-notice}) is a public-URL concern that belonged to the
+ * storefront's {@code PolicySlug}, deleted with the placeholder cutback — the
+ * split is the point, and it returns with the public pages.
  */
 @RestController
 @RequestMapping("/api/tour-operators/{tourOperatorId}/policies")

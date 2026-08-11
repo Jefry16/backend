@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The content-language allowlist and the storefront's URL shape are two lists
- * that must agree, and constraining {@link LocaleResolver#PATH_TEMPLATE} is what
+ * that must agree, and constraining {@link StorefrontRoutes#LOCALE} is what
  * made them two.
  *
  * <p>The constraint exists because the same string is registered as a
@@ -42,10 +42,10 @@ class LocalePathTemplateTest {
      * this file exists for, and it should say so rather than die parsing.
      */
     private static Pattern localeRegex() {
-        String template = LocaleResolver.PATH_TEMPLATE;
+        String template = StorefrontRoutes.LOCALE;
         int constraint = template.indexOf(':');
         assertThat(constraint)
-                .withFailMessage("LocaleResolver.PATH_TEMPLATE is '%s'. An unconstrained {locale} is also "
+                .withFailMessage("StorefrontRoutes.LOCALE is '%s'. An unconstrained {locale} is also "
                         + "the PublicRoute pattern, so it makes every single-segment path in the "
                         + "application public — /error, /favicon.ico, and any /health or /metrics added "
                         + "later — and it pulls the storefront's gate over the container's error "
@@ -63,7 +63,7 @@ class LocalePathTemplateTest {
         for (String code : codes) {
             assertThat(locale.matcher(code).matches())
                     .withFailMessage(
-                            "reference.languages seeds '%s' but LocaleResolver.PATH_TEMPLATE does not match it, "
+                            "reference.languages seeds '%s' but StorefrontRoutes.LOCALE does not match it, "
                                     + "so an operator publishing that locale would get a 404 at /%s and nothing "
                                     + "would say why. Widen the template — and remember it is also the "
                                     + "PublicRoute pattern, so widening it to a bare {locale} opens every "

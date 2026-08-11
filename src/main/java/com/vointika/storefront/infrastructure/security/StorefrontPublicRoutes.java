@@ -2,7 +2,6 @@ package com.vointika.storefront.infrastructure.security;
 
 import com.vointika.shared.web.security.PublicRoute;
 import com.vointika.shared.web.security.PublicRouteRegistrar;
-import com.vointika.storefront.application.policy.LocaleResolver;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -26,16 +25,17 @@ import java.util.List;
  * checkers, uptime monitors and CDNs send. Found by running it against the built
  * stack, after the home slice's tests and curls all used GET.
  *
- * <p>{@code POST /password} is a form submission and has no GET twin to inherit.
- * OPTIONS stays closed, deliberately: nothing preflights a server-rendered
+ * <p>OPTIONS stays closed, deliberately: nothing preflights a server-rendered
  * same-origin page, so opening it would be a decision rather than a correction.
+ * The {@code /password} entries went with the password gate when the storefront
+ * became a placeholder.
  *
  * <p><b>Every pattern here is a security pattern first and a route second.</b>
- * The locale entry uses {@link LocaleResolver#PATH_TEMPLATE}, whose variable is
+ * The locale entry uses {@link StorefrontRoutes#LOCALE}, whose variable is
  * constrained, because a bare {@code /{locale}} would {@code permitAll} every
  * single-segment path in the application — {@code /error} today, and whatever
  * {@code /health} or {@code /metrics} arrives later, with nothing failing to say
- * so. Pinned by {@code StorefrontHomeControllerTest}.
+ * so. Pinned by {@code StorefrontPlaceholderControllerTest}.
  */
 @Component
 public class StorefrontPublicRoutes implements PublicRouteRegistrar {
@@ -43,10 +43,10 @@ public class StorefrontPublicRoutes implements PublicRouteRegistrar {
     @Override
     public List<PublicRoute> publicRoutes() {
         return List.of(
-                new PublicRoute(HttpMethod.GET, "/"),
-                new PublicRoute(HttpMethod.HEAD, "/"),
-                new PublicRoute(HttpMethod.GET, LocaleResolver.PATH_TEMPLATE),
-                new PublicRoute(HttpMethod.HEAD, LocaleResolver.PATH_TEMPLATE),
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.HOME),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.HOME),
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALE),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALE),
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.EXPERIENCES),
                 new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.EXPERIENCES),
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_EXPERIENCES),
@@ -54,10 +54,7 @@ public class StorefrontPublicRoutes implements PublicRouteRegistrar {
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.POLICY),
                 new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.POLICY),
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_POLICY),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_POLICY),
-                new PublicRoute(HttpMethod.GET, "/password"),
-                new PublicRoute(HttpMethod.HEAD, "/password"),
-                new PublicRoute(HttpMethod.POST, "/password")
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_POLICY)
         );
     }
 }
