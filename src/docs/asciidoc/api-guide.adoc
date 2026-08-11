@@ -93,6 +93,29 @@ Every resource-representing response identifies itself with two meta fields:
   `"timezones"`, …). A team member is a user with a role, so a member row is
   `id` (the user's id) + `context: "users"`.
 
+[[overview-lists]]
+=== Lists
+
+Every endpoint marked "cursor-paginated" takes the same three query parameters
+and **nothing else**:
+
+[cols="1,3"]
+|===
+| `filter[field][op]` | A filter. The fields and the operators each one allows
+are listed per endpoint — e.g. `filter[status][in]=DRAFT,PUBLISHED`.
+| `sort` | A sortable field, `-` prefixed for descending: `sort=-createdAt`.
+Each endpoint lists what it sorts by, and its default.
+| `cursor` | The opaque `nextCursor` from the previous page. `nextCursor` is
+`null` on the last page.
+|===
+
+The page size is fixed and identical for every list; there is no parameter to
+change it.
+
+Anything else is `422` — including a misspelled parameter name. So is an unknown
+filter field, an operator a field does not allow, and a sort field that is not
+sortable. A list never silently ignores part of a request.
+
 [[overview-authentication]]
 === Authentication
 

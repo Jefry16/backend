@@ -18,14 +18,34 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Turns a list endpoint's query string into a {@link ListQuery} against the
+ * caller's {@link ListSchema}.
+ *
+ * <p><b>A parameter this does not recognize is a 422, not a shrug.</b> It used to
+ * be skipped silently, which meant the API answered a misunderstood request with a
+ * normal page of data and no signal at all: {@code ?limit=5} served twenty rows,
+ * {@code ?sortt=-createdAt} served the default order, and the client could not tell
+ * either from having been obeyed. The mistake then reads as a backend bug, because
+ * the framework <em>is</em> strict about everything one level down — an unknown
+ * filter field or sort field has always been a 422 — so a developer reasonably
+ * concludes their parameters were validated.
+ *
+ * <p>There is no page-size parameter to add here: one page size for every list is a
+ * decision, so a client sending one is unambiguously wrong and should hear so.
+ */
 @Component
 public class ListQueryParser {
 
     private static final Pattern FILTER_KEY = Pattern.compile("^filter\\[([^]]+)](?:\\[([^]]+)])?$");
+
+    /** Everything a list accepts that is not a {@code filter[...]} key. */
+    private static final Set<String> NON_FILTER_PARAMS = Set.of("sort", "cursor");
 
     public ListQuery parse(HttpServletRequest request, ListSchema schema, UUID tenantId) {
         Map<String, String[]> params = request.getParameterMap();
@@ -34,7 +54,13 @@ public class ListQueryParser {
         for (Map.Entry<String, String[]> entry : params.entrySet()) {
             String key = entry.getKey();
             Matcher m = FILTER_KEY.matcher(key);
-            if (!m.matches()) continue;
+            if (!m.matches()) {
+                if (!NON_FILTER_PARAMS.contains(key)) {
+                    throw new InvalidFieldException("Unknown query parameter: '" + key
+                            + "'. A list accepts sort, cursor and filter[field][op].");
+                }
+                continue;
+            }
 
             String field = m.group(1);
             String opToken = m.group(2);

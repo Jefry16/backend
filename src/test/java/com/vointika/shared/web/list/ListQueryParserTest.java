@@ -385,4 +385,49 @@ class ListQueryParserTest {
                 .isInstanceOf(InvalidFieldException.class)
                 .hasMessageContaining("not allowed");
     }
+
+    /**
+     * The mistake this catches is the one typos actually produce: the parameter
+     * <em>name</em>, not the field name inside it. Both of these used to serve a
+     * normal page — {@code limit} because no page-size parameter exists at all
+     * (one page size for every list is a decision), {@code sortt} because a
+     * misspelled key simply fell through.
+     */
+    @Test
+    void rejectsAParameterItDoesNotRecognize() {
+        for (String param : java.util.List.of("limit", "size", "page", "pageSize", "sortt", "order")) {
+            MockHttpServletRequest req = new MockHttpServletRequest();
+            req.setParameter(param, "5");
+
+            assertThatThrownBy(() -> parser.parse(req, schema, tenantId))
+                    .as("query parameter '%s'", param)
+                    .isInstanceOf(InvalidFieldException.class)
+                    .hasMessageContaining(param);
+        }
+    }
+
+    /** A filter-shaped key that is not the {@code filter[field][op]} shape is the same mistake. */
+    @Test
+    void rejectsAMalformedFilterKey() {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setParameter("filter[name][eq][extra]", "venice");
+
+        assertThatThrownBy(() -> parser.parse(req, schema, tenantId))
+                .isInstanceOf(InvalidFieldException.class);
+    }
+
+    /** The three it does accept keep working together. */
+    @Test
+    void acceptsSortCursorAndFiltersTogether() {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setParameter("sort", "-createdAt");
+        req.setParameter("cursor", "opaque-cursor");
+        req.setParameter("filter[name][eq]", "venice");
+
+        ListQuery query = parser.parse(req, schema, tenantId);
+
+        assertThat(query.sort().field()).isEqualTo("createdAt");
+        assertThat(query.cursor()).isEqualTo("opaque-cursor");
+        assertThat(query.filters().filters()).hasSize(1);
+    }
 }
