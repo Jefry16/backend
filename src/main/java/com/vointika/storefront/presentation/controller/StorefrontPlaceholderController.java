@@ -1,21 +1,17 @@
 package com.vointika.storefront.presentation.controller;
 
-import com.samskivert.mustache.Template;
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontTenantUseCase;
+import com.vointika.storefront.presentation.response.StorefrontPlaceholderResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
 /**
- * The whole storefront, for now: a real tenant gets a placeholder page and
+ * The whole storefront, for now: a real tenant gets a JSON placeholder and
  * anything else gets a 404.
  *
  * <p><b>Tenant resolution is the part that survived the cutback</b>, and it is
@@ -28,7 +24,14 @@ import java.util.Map;
  * running against a page that renders none of it. Recover it from git when the
  * real pages return.
  *
- * <p>Every route renders the same page. They are kept because the addresses are
+ * <p><b>JSON and not HTML, until themes land.</b> The two placeholder templates
+ * are gone; the engine under them is not. Answering JSON keeps the data honest
+ * while the pages are absent — a wrong field shows up as a wrong field rather
+ * than as markup nobody is reading yet — and the render-path decision (MAP open
+ * decision 6) still stands, so {@code StorefrontMustacheConfig} keeps the
+ * compiler and its settings ready for the themes.
+ *
+ * <p>Every route answers the same body. They are kept because the addresses are
  * the expensive part to get right again — see {@code StorefrontPublicRoutes} for
  * what each registry costs when one is missed — not because a placeholder needs
  * six of them.
@@ -42,23 +45,20 @@ import java.util.Map;
 @RestController
 public class StorefrontPlaceholderController {
 
-    private static final MediaType HTML_UTF8 = new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8);
-
     private final TenantHandleResolver tenantHandleResolver;
     private final CheckStorefrontTenantUseCase checkStorefrontTenant;
-    private final Template placeholderTemplate;
-    private final Template notFoundTemplate;
 
     public StorefrontPlaceholderController(TenantHandleResolver tenantHandleResolver,
-                                           CheckStorefrontTenantUseCase checkStorefrontTenant,
-                                           Template storefrontPlaceholderTemplate,
-                                           Template storefrontNotFoundTemplate) {
+                                           CheckStorefrontTenantUseCase checkStorefrontTenant) {
         this.tenantHandleResolver = tenantHandleResolver;
         this.checkStorefrontTenant = checkStorefrontTenant;
-        this.placeholderTemplate = storefrontPlaceholderTemplate;
-        this.notFoundTemplate = storefrontNotFoundTemplate;
     }
 
+    /**
+     * The 404 is thrown rather than built, so an address no storefront answers on
+     * returns the application's one error shape instead of a second one invented
+     * for two pages.
+     */
     @GetMapping(path = {
             StorefrontRoutes.HOME,
             StorefrontRoutes.LOCALE,
@@ -66,15 +66,12 @@ public class StorefrontPlaceholderController {
             StorefrontRoutes.LOCALIZED_EXPERIENCES,
             StorefrontRoutes.POLICY,
             StorefrontRoutes.LOCALIZED_POLICY
-    }, produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> placeholder(HttpServletRequest request) {
-        boolean known = tenantHandleResolver.resolve(request.getServerName())
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
+    public StorefrontPlaceholderResponse placeholder(HttpServletRequest request) {
+        String handle = tenantHandleResolver.resolve(request.getServerName())
                 .filter(checkStorefrontTenant::execute)
-                .isPresent();
+                .orElseThrow(() -> new ResourceNotFoundException("There is no storefront at this address"));
 
-        return known
-                ? ResponseEntity.ok().contentType(HTML_UTF8).body(placeholderTemplate.execute(Map.of()))
-                : ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(HTML_UTF8)
-                        .body(notFoundTemplate.execute(Map.of()));
+        return new StorefrontPlaceholderResponse(handle);
     }
 }

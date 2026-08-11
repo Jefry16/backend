@@ -2,22 +2,25 @@ package com.vointika.storefront.infrastructure.config;
 
 import com.samskivert.mustache.DefaultCollector;
 import com.samskivert.mustache.Mustache;
-import com.samskivert.mustache.Template;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The Mustache compiler the storefront renders through, and the compiled
- * templates it holds.
+ * The Mustache compiler the storefront will render through.
  *
  * <p>This replaces the one {@code MustacheAutoConfiguration} declares (both its
  * beans are {@code @ConditionalOnMissingBean}); the autoconfigured
  * {@code MustacheResourceTemplateLoader} is kept — it is exactly the
  * {@code classpath:/templates/*.mustache} loader this slice wants.
  *
- * <p>Every setting below has a caller today; none is speculative, and the point
- * of pinning them in a test is that a silent reversion is a security or
- * availability regression rather than a cosmetic one.
+ * <p><b>Nothing compiles a template today</b>: the storefront answers JSON while
+ * its pages are a placeholder, so this bean and the settings on it are here for
+ * the themes rather than for a caller. That is a deliberate exception to "no
+ * abstraction before its second caller" and it is cheap to justify — each
+ * setting below was arrived at by reverting it and watching what broke, the
+ * findings are recorded as version traps in {@code STACK.md}, and
+ * {@code StorefrontMustacheConfigTest} is what keeps them true rather than
+ * something to re-derive when a template returns.
  */
 @Configuration
 public class StorefrontMustacheConfig {
@@ -42,29 +45,5 @@ public class StorefrontMustacheConfig {
                 // So a section guarding an optional tag omits it for a blank value,
                 // not only for a null one.
                 .emptyStringIsFalse(true);
-    }
-
-    /**
-     * Compiled once at startup, not per request: Spring's {@code MustacheView}
-     * recompiles on every render (the caching view resolver above it caches the
-     * <em>View</em>, not the {@code Template}), which is why this slice writes
-     * the rendered string itself instead of returning a view name.
-     *
-     * <p>There is no layout template while the storefront is a placeholder. The
-     * inheritance mechanics still hold for when the pages return: a parent
-     * resolves through the same loader on <em>first render</em> and is then
-     * pinned into the compiled {@code Template}, so a layout compiles once per
-     * page that uses it — and the day templates come from a tenant's theme
-     * rather than the classpath, that pinning is what forces the theme version
-     * into the cache key.
-     */
-    @Bean
-    public Template storefrontPlaceholderTemplate(Mustache.Compiler compiler) {
-        return compiler.loadTemplate("storefront/placeholder");
-    }
-
-    @Bean
-    public Template storefrontNotFoundTemplate(Mustache.Compiler compiler) {
-        return compiler.loadTemplate("storefront/not-found");
     }
 }
