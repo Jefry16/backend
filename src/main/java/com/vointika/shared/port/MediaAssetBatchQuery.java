@@ -30,11 +30,12 @@ public interface MediaAssetBatchQuery {
      * What a rendered {@code <img>} needs: where the bytes are, and the three
      * things that describe them.
      *
-     * <p><b>{@code alt}, {@code width} and {@code height} are null on every row
-     * today</b> and that is expected rather than broken — the columns exist
-     * (media V1) and nothing populates them yet. Both write paths are their own
-     * work: alt cannot be derived, and measuring dimensions needs a port, since
-     * {@code javax.imageio} is not {@code java.*}.
+     * <p><b>All three are populated</b>: {@code width} and {@code height} are
+     * measured from the bytes at upload through {@code ImageDimensionsPort} —
+     * which is a port because {@code javax.imageio} is not {@code java.*} — and
+     * {@code alt} is written by {@code PATCH .../media/&#123;id&#125;}. Rows
+     * uploaded before those write paths landed keep nulls and nothing backfills
+     * them, so a consumer still guards.
      *
      * @param storageKey bucket-relative, never a URL (PATTERNS §5)
      */

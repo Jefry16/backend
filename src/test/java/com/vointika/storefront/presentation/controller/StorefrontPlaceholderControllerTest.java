@@ -32,13 +32,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>What is worth pinning while the storefront is a placeholder is exactly what
  * survived the cutback — the host still decides whether there is a storefront
  * here at all.
+ *
+ * <p><b>The home addresses are no longer here.</b> {@code /} and {@code /{locale}}
+ * moved to {@code StorefrontHomeController} when the globals landed; what is left
+ * is the routes that still have no page.
  */
 @WebMvcTest(StorefrontPlaceholderController.class)
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class})
 class StorefrontPlaceholderControllerTest {
 
     private static final String[] EVERY_ADDRESS = {
-            "/", "/es", StorefrontRoutes.EXPERIENCES, "/es/experiences",
+            StorefrontRoutes.EXPERIENCES, "/es/experiences",
             "/policies/terms", "/es/policies/cancellation"};
 
     @Autowired private MockMvc mockMvc;
@@ -65,7 +69,7 @@ class StorefrontPlaceholderControllerTest {
     void servesThePlaceholderForARealTenant() throws Exception {
         tenantIs("acme.localhost", "acme", true);
 
-        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.handle").value("acme"))
@@ -82,7 +86,7 @@ class StorefrontPlaceholderControllerTest {
     void aHandleNoOperatorOwnsIs404() throws Exception {
         tenantIs("nope.localhost", "nope", false);
 
-        mockMvc.perform(get("/").header("Host", "nope.localhost:8080"))
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "nope.localhost:8080"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("There is no storefront at this address"));
@@ -93,7 +97,7 @@ class StorefrontPlaceholderControllerTest {
     void theApexIs404() throws Exception {
         when(tenantHandleResolver.resolve("localhost")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/").header("Host", "localhost:8080"))
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "localhost:8080"))
                 .andExpect(status().isNotFound());
     }
 
