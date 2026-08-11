@@ -111,8 +111,7 @@ bites, so the next session reads it instead of re-discovering it.
   not a block is discarded** — `removeNonBlocks` throws it away, so a child template
   is only its block definitions. (2) **Whitespace between a block tag and its
   content is output**, so block tags have to hug the markup
-  (`{{$content}}    <h1>…</h1>{{/content}}`) or the page gains blank lines; the
-  storefront's layout carries a comment saying so. The parent is loaded by the
+  (`{{$content}}    <h1>…</h1>{{/content}}`) or the page gains blank lines. The parent is loaded by the
   *loader* on first render and pinned into the compiled `Template`, so a layout
   needs **no bean of its own** — one compiled graph per page template.
 - **A Mustache comment cannot contain `}}`.** `{{! … }}` ends at the first `}}`,
@@ -143,5 +142,8 @@ bites, so the next session reads it instead of re-discovering it.
 - **Spring's `MustacheView` recompiles the template on every request**
   (`renderMergedTemplateModel` → `compiler.compile(reader)`); the caching view resolver
   above it caches the *View*, not the compiled `Template`. Fine for a few app templates,
-  wrong for multi-tenant themes — the storefront compiles once at startup and writes the
-  rendered string itself rather than returning a view name.
+  wrong for multi-tenant themes — so the storefront compiled once at startup and wrote the
+  rendered string itself rather than returning a view name. **Every jmustache entry above
+  is a finding without a live renderer behind it:** the storefront answers JSON while it is
+  a placeholder, so only `StorefrontMustacheConfig` and its test survive, and these traps
+  are here for the day the themes bring templates back.
