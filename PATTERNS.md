@@ -41,14 +41,13 @@ rejected it in three places; it takes the host as a `String` and knows nothing
 about servlets, so `application/policy` is where it belongs anyway.
 
 **`application/policy` is now the settled home for that kind of rule** —
-`TenantHandleResolver` (host → tenant) and `LocaleResolver` (path locale +
-operator config → the locale to render) are both there. A policy that holds
-configuration is an instance `@Bean`ed from the config; a pure function of its
-arguments is `static` with no bean at all (`LocaleResolver`), and the choice is
-just whether there is state to inject. **A constant two layers need also goes
-here** — the storefront's unlock-cookie name lives on `UnlockTokenPort` for
-exactly that reason: the interceptor that reads it and the controller that writes
-it cannot see each other.
+`TenantHandleResolver` (host → tenant) lives there. A policy that holds
+configuration is an instance `@Bean`ed from the config (it takes the base domain,
+so it is one); a pure function of its arguments is `static` with no bean at all,
+and the choice is just whether there is state to inject. **A constant two layers need also goes
+here** — `StorefrontRoutes` holds every storefront path for exactly that reason:
+the controller that maps them and the config that registers them as public
+cannot see each other.
 
 `shared` and `reference` are shared kernels — importable by any context.
 Everything else is isolated: a context reaches another only via a shared query
@@ -72,12 +71,20 @@ port or an event (never a direct import).
   `infrastructure/consumer` (workers).
 - `presentation/{controller,request,response}`, plus `presentation/view` where a
   context server-renders: a template's context object is not a serialized JSON
-  response, and calling it one would mislead. Canonical: `storefront`'s `HomeView`.
+  response, and calling it one would mislead. There is no live example while the
+  storefront is a placeholder — §2a records the shape to rebuild.
 
 ## 2a. The render envelope (a server-rendered page's context object)
 
+> **None of this code exists right now (2026-08-11).** The storefront was cut
+> back to a placeholder: every page, view, output DTO and query seam below was
+> deleted, and only tenant resolution and the routes survive. **This section is
+> kept deliberately** — it is the contract to rebuild from, and every rule in it
+> was paid for once. The code is one `git show` away; the reasoning is not.
+> Read it as a specification, not a description.
+
 A page a template renders takes **named objects, never a flat bag of scalars**,
-and the same set on every page. `storefront` is the canonical one:
+and the same set on every page. `storefront` was the canonical one:
 
 ```
 shop          id, name, address, phone, email, url, description, passwordMessage,
@@ -151,9 +158,11 @@ or when it belongs somewhere else (theme settings, `localization`).
 
 **A contract filled in data-first needs a way to see it.** Most of `shop` is
 invisible in the page, so `?format=json` (`ThemeContextDump`, off unless
-`app.storefront.context-endpoint` says otherwise) renders the object a template
-would receive instead of the page. It is the diagnostic that makes this rule
-verifiable against a running system rather than only against a test.
+`app.storefront.context-endpoint` said otherwise) rendered the object a template
+would receive instead of the page — the diagnostic that made this rule verifiable
+against a running system rather than only against a test. **It went with the
+cutback, config key included; rebuild it with the envelope**, because a
+data-first contract with no way to see it is a contract nobody checks.
 
 **A page-specific record wraps the envelope rather than flattening it**
 (`ExperienceListPageOutput(StorefrontPageData envelope, List<ExperienceCard>
@@ -268,11 +277,12 @@ second**. That makes them one namespace on the read side, so uniqueness has to b
 checked across both on every write — otherwise one silently shadows the other and
 the shadowed page becomes unreachable in that locale, with no error at any point.
 
-> **The read half is gone entirely (2026-08-02).** The whole storefront serving
-> side was deleted — the `rendering` context and all four `Storefront*Query` seams
-> — so nothing in this codebase resolves a handle at all today. Whatever renders
-> the public site next has to build that read path, and this section describes the
-> rule it must honour.
+> **The read half is gone entirely** — twice now. The `rendering` context and its
+> four `Storefront*Query` seams went on 2026-08-02; the in-process rebuild's
+> `StorefrontShopQuery` and `StorefrontExperienceQuery` went on 2026-08-11 with
+> the placeholder cutback. Nothing in this codebase resolves a handle to content
+> today. Whatever renders the public site next has to build that read path, and
+> this section describes the rule it must honour.
 > **The write guards below were kept anyway.** They cost nothing, and dropping them
 > would let a shadowing handle be stored while nothing can observe it, surfacing as
 > an unreachable page the day a read path returns — a defect committed now and
@@ -330,9 +340,9 @@ realistic partial-translation case and the one fallback bugs hide in.
 
 | | owner key | content columns | overlaid by | clearing |
 |---|---|---|---|---|
-| `experience_translations` | single id | 9, nullable | `StorefrontExperienceQueryImpl` | blank → null |
-| `tour_operator_translations` | single id (the operator) | 5, nullable | `StorefrontShopQueryImpl` | blank → null |
-| `tour_operator_policy_translations` | **composite** `(operator, type)` | 2, nullable | `StorefrontShopQueryImpl` | blank → null |
+| `experience_translations` | single id | 9, nullable | **nothing (was `StorefrontExperienceQueryImpl`)** | blank → null |
+| `tour_operator_translations` | single id (the operator) | 5, nullable | **nothing (was `StorefrontShopQueryImpl`)** | blank → null |
+| `tour_operator_policy_translations` | **composite** `(operator, type)` | 2, nullable | **nothing (was `StorefrontShopQueryImpl`)** | blank → null |
 | `page_translations` | single id | 5, nullable | **nothing yet** | blank → null |
 | `audience_translations` | single id | 1, nullable | **nothing yet** | blank → **delete** |
 | `menu_item_translations` | single id | 1, **NOT NULL** | **nothing yet** | **blank → 422** |
@@ -375,9 +385,11 @@ endpoints of their own, and are cleared by being left out. It is also the only
 one without a `tour_operator_id`; items are always reached through their menu, so
 adding one would be a migration for a join nobody needs.
 
-**Still not generalising, but the old reason no longer holds.** This section used
-to argue they differ on three axes. They do not: every table that actually
-overlays does it in a storefront query adapter, with the same two-line helper
+**Still not generalising, and now nothing overlays at all.** The three adapters
+that did were deleted with the storefront cutback (2026-08-11), so every row in
+the table above is written and never resolved to a locale. This section used to
+argue the six differ on three axes. They do not: each one that overlaid did it in
+a storefront query adapter with the same two-line helper
 (`translated != null ? translated : canonical`), and clearing is uniform. Only
 the key shape still differs — policies are the lone composite, and they key on
 `type` rather than the surrogate `id` V13 gave them. What is left to share is two
@@ -528,9 +540,10 @@ library in a use case means a port is missing.
 
 **`javax.*` is not `java.*`, and the allowlist means it literally.** The rule permits
 `com.vointika..` and `java..`; `javax.crypto.Mac` matches neither, so HMAC in a use case
-fails the build exactly like a third-party jar would. `storefront`'s unlock cookie was
+fails the build exactly like a third-party jar would. The storefront's unlock cookie was
 written as an `application/policy` class on the assumption that "pure JDK" was enough —
 `UnlockTokenPort` + `HmacUnlockToken` in `infrastructure/security` is what it became.
+(Both went with the placeholder cutback; the lesson is why this paragraph stays.)
 Reading the rule says this; only running it proves it, which is the point.
 
 **Logging follows the same rule.** If a *side effect* fails and the caller does not
@@ -699,7 +712,8 @@ purpose: if every owner has every optional field set, nothing shows you what
 - **Case-fold with `Locale.ROOT`, never the JVM default.** `"IT".toLowerCase()`
   under a Turkish default locale is `"ıt"` (dotless), so locale codes, handles and
   handles silently stop matching depending on which machine served the request.
-  `LocaleCode` has always done this; `LocaleResolver` had to be fixed to.
+  `LocaleCode` has always done this; `LocaleResolver` and `TenantHandleResolver`
+  both had to be fixed to (the first is deleted, the second carries the comment).
 - **A test whose subject reads the clock in a *stubbed* zone must build its dates
   in that same zone.** `CreateSlotUseCase` judges "is this in the past" against
   `LocalDate.now(zone)` for the **operator's** zone — correct, a departure is a
@@ -716,16 +730,15 @@ purpose: if every owner has every optional field set, nothing shows you what
   the stub and every date the class builds (`OPERATOR_ZONE` + a `today()`
   helper), so the two cannot drift apart again. Prefer that to `Clock` injection
   until something needs to freeze time.
-- **A storefront page route has to be registered in four places, and only one of
-  them fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
+- **A storefront page route is registered in more than one place, and only the
+  route itself fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
   needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method
-  (miss either and it is a 401 in the JSON error shape); and
-  `StorefrontWebConfig` needs the pattern too, or a locked store serves the page.
-  Only the first is visible without a test. So define the pattern **once** — in
-  `application/policy`, where both layers can see it (`StorefrontRoutes`, built
-  from `LocaleResolver.PATH_TEMPLATE` rather than retyping the regex) — and pin
-  the other three: `servesHeadAsWellAsGet` and a locked-store test per route.
-  Canonical: `storefront`'s `/experiences` pair.
+  (miss either and it is a 401 in the JSON error shape). It was **four** places
+  while the password gate existed — its interceptor needed every page pattern too,
+  or a locked store served the page — and it goes back to four when the gate does.
+  So define the pattern **once**, in `application/policy` where both layers can
+  see it (`StorefrontRoutes`, with `LOCALIZED_*` built from `LOCALE` rather than
+  retyping the regex), and pin the rest: `servesHeadAsWellAsGet` per route.
 - **A `PublicRoute` pattern is a security pattern first and a route second.** The
   same string that maps a handler decides what `permitAll` covers, and an
   unconstrained path variable is far wider as the latter: `/{locale}` opens
@@ -750,9 +763,9 @@ purpose: if every owner has every optional field set, nothing shows you what
 - **A `WebMvcConfigurer` is pulled into *every* `@WebMvcTest`, not just its own
   context's.** So the collaborators an interceptor needs must be `ObjectProvider`s
   resolved per request, or every controller test in the codebase fails to construct
-  the config. Both `WebConfig` (touroperator) and `StorefrontWebConfig` do this, and
-  their path patterns are what keep the resolution from ever happening on a foreign
-  route.
+  the config. `WebConfig` (touroperator) does this, and its path patterns are what
+  keep the resolution from ever happening on a foreign route. `StorefrontWebConfig`
+  was the second example until the password gate it registered was deleted.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
   table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
   Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space

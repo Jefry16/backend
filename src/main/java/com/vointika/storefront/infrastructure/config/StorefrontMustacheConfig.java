@@ -50,37 +50,21 @@ public class StorefrontMustacheConfig {
      * <em>View</em>, not the {@code Template}), which is why this slice writes
      * the rendered string itself instead of returning a view name.
      *
-     * <p>This one, {@link #storefrontExperienceListTemplate} and
-     * {@link #storefrontPolicyTemplate} all inherit from
-     * {@code storefront/layout}, which needs no bean of its own: a parent
-     * template is resolved through the same loader on <em>first render</em> and
-     * then pinned into the compiled {@code Template} for good. So the layout is
-     * compiled once per page that uses it, not once per request — and the day
-     * templates come from a tenant's theme rather than the classpath, that
-     * pinning is what forces the theme version into the cache key.
+     * <p>There is no layout template while the storefront is a placeholder. The
+     * inheritance mechanics still hold for when the pages return: a parent
+     * resolves through the same loader on <em>first render</em> and is then
+     * pinned into the compiled {@code Template}, so a layout compiles once per
+     * page that uses it — and the day templates come from a tenant's theme
+     * rather than the classpath, that pinning is what forces the theme version
+     * into the cache key.
      */
     @Bean
-    public Template storefrontHomeTemplate(Mustache.Compiler compiler) {
-        return compiler.loadTemplate("storefront/home");
-    }
-
-    @Bean
-    public Template storefrontExperienceListTemplate(Mustache.Compiler compiler) {
-        return compiler.loadTemplate("storefront/experiences");
-    }
-
-    @Bean
-    public Template storefrontPolicyTemplate(Mustache.Compiler compiler) {
-        return compiler.loadTemplate("storefront/policy");
+    public Template storefrontPlaceholderTemplate(Mustache.Compiler compiler) {
+        return compiler.loadTemplate("storefront/placeholder");
     }
 
     @Bean
     public Template storefrontNotFoundTemplate(Mustache.Compiler compiler) {
         return compiler.loadTemplate("storefront/not-found");
-    }
-
-    @Bean
-    public Template storefrontPasswordTemplate(Mustache.Compiler compiler) {
-        return compiler.loadTemplate("storefront/password");
     }
 }

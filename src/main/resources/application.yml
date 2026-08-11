@@ -82,13 +82,6 @@ app:
     # sets the real storefront domain (e.g. myvointika.com), which is why this
     # is configuration and not a constant.
     base-domain: ${APP_STOREFRONT_BASE_DOMAIN:localhost}
-    # `?format=json` on a storefront page returns the object the template would
-    # have rendered from, instead of the page. A development tool: the shop
-    # contract is filled data-first, so most of the envelope has no renderer and
-    # is otherwise invisible. OFF by default — serving it always would make every
-    # field public whether a page shows it or not. The dev compose file turns it
-    # on; production must opt in deliberately.
-    context-endpoint: ${APP_STOREFRONT_CONTEXT_ENDPOINT:false}
   identity:
     # Admin-UI languages a user may pick as their profile preference — lowercase
     # locale codes matching the frontend's message catalogs. Growing a language =

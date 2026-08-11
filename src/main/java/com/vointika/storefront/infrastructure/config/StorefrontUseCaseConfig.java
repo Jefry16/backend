@@ -1,57 +1,31 @@
 package com.vointika.storefront.infrastructure.config;
 
-import com.vointika.shared.port.StorefrontExperienceQuery;
-import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontTenantQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
-import com.vointika.storefront.application.port.UnlockTokenPort;
-import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
-import com.vointika.storefront.application.usecase.GetExperienceListPageUseCase;
-import com.vointika.storefront.application.usecase.GetHomePageUseCase;
-import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
-import com.vointika.storefront.application.usecase.GetPolicyPageUseCase;
-import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
+import com.vointika.storefront.application.usecase.CheckStorefrontTenantUseCase;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Two beans, which is the whole context while the storefront is a placeholder.
+ * Use cases are plain POJOs hand-wired here, as everywhere.
+ */
 @Configuration("storefrontUseCaseConfig")
 @EnableConfigurationProperties(StorefrontProperties.class)
 public class StorefrontUseCaseConfig {
 
     @Bean
-    public GetHomePageUseCase getHomePageUseCase(StorefrontShopQuery storefrontShopQuery) {
-        return new GetHomePageUseCase(storefrontShopQuery);
+    public CheckStorefrontTenantUseCase checkStorefrontTenantUseCase(
+            StorefrontTenantQuery storefrontTenantQuery) {
+        return new CheckStorefrontTenantUseCase(storefrontTenantQuery);
     }
 
-    @Bean
-    public GetExperienceListPageUseCase getExperienceListPageUseCase(
-            StorefrontShopQuery storefrontShopQuery,
-            StorefrontExperienceQuery storefrontExperienceQuery) {
-        return new GetExperienceListPageUseCase(storefrontShopQuery, storefrontExperienceQuery);
-    }
-
-    @Bean
-    public GetPolicyPageUseCase getPolicyPageUseCase(StorefrontShopQuery storefrontShopQuery) {
-        return new GetPolicyPageUseCase(storefrontShopQuery);
-    }
-
-    @Bean
-    public CheckStorefrontLockUseCase checkStorefrontLockUseCase(StorefrontShopQuery storefrontShopQuery,
-                                                                 UnlockTokenPort unlockTokenPort) {
-        return new CheckStorefrontLockUseCase(storefrontShopQuery, unlockTokenPort);
-    }
-
-    @Bean
-    public UnlockStorefrontUseCase unlockStorefrontUseCase(StorefrontShopQuery storefrontShopQuery,
-                                                           UnlockTokenPort unlockTokenPort) {
-        return new UnlockStorefrontUseCase(storefrontShopQuery, unlockTokenPort);
-    }
-
-    @Bean
-    public GetPasswordPageUseCase getPasswordPageUseCase(StorefrontShopQuery storefrontShopQuery) {
-        return new GetPasswordPageUseCase(storefrontShopQuery);
-    }
-
+    /**
+     * The base domain is config, so the resolver is built here rather than being
+     * a component: it is a policy object with one constructor argument that only
+     * infrastructure knows.
+     */
     @Bean
     public TenantHandleResolver tenantHandleResolver(StorefrontProperties properties) {
         return new TenantHandleResolver(properties.baseDomain());

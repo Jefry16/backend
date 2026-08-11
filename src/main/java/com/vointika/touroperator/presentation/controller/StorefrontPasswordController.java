@@ -19,7 +19,15 @@ import java.util.UUID;
  * The operator's storefront password protection — Shopify's Preferences →
  * Store access, on the operator itself (the operator IS the storefront).
  * Reads member-visible (the password is a shared gate, not a credential);
- * changes ADMIN+. Enforcement happens SSR-side when the storefront arc lands.
+ * changes ADMIN+.
+ *
+ * <p><b>Nothing enforces this today.</b> The SSR gate shipped in #91 and was
+ * deleted when the storefront was cut back to a placeholder — a page that
+ * renders no operator data has nothing to protect. So an operator can set a
+ * password and see it stored, and the storefront will not ask for it until the
+ * real pages return. Recover the gate from git alongside them; the ordering rule
+ * it enforced (gate before locale resolution, or a locked store leaks which
+ * locales it publishes) is the part that is expensive to rediscover.
  */
 @RestController
 @RequestMapping("/api/tour-operators/{tourOperatorId}/storefront-password")
