@@ -257,6 +257,8 @@ that way once and it was the recorded mistake this fixes). The recipe:
 
 Query shape: `?filter[role][in]=OWNER,ADMIN&sort=-joinedAt&cursor=…`. The cursor is
 opaque (base64, keyset on sort-field + id); `nextCursor` is null on the last page.
+**Those three names are the whole accepted set** — anything else is a 422, so a
+list never silently ignores part of a request (#134).
 Canonical: `ListMembersUseCase` + `GET /api/tour-operators/{id}/members`.
 
 ## 4d. Two namespaces read as one must be validated as one
