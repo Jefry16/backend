@@ -65,6 +65,18 @@ public final class StorefrontRoutes {
 
     public static final String LOCALIZED_POLICY = LOCALE + POLICY;
 
+    /**
+     * The gate. <b>Not locale-prefixed, and it never will be</b> — the gate runs
+     * before locale resolution, so it has no locale to be in; localizing it by
+     * path would mean reading the path locale first, which is the leak the
+     * ordering exists to prevent.
+     *
+     * <p><b>{@link #LOCALE} also matches this literal.</b> {@code PathPattern}
+     * prefers the literal, so it works — but every top-level literal route added
+     * later inherits the same collision, and it is asserted rather than assumed.
+     */
+    public static final String PASSWORD = "/password";
+
     private StorefrontRoutes() {
     }
 }

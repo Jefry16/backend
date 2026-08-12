@@ -54,7 +54,12 @@ public class StorefrontPublicRoutes implements PublicRouteRegistrar {
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.POLICY),
                 new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.POLICY),
                 new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_POLICY),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_POLICY)
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_POLICY),
+                // The gate itself. POST is the submission; without it the form
+                // would 401 at the filter chain and never reach the controller.
+                new PublicRoute(HttpMethod.GET, StorefrontRoutes.PASSWORD),
+                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.PASSWORD),
+                new PublicRoute(HttpMethod.POST, StorefrontRoutes.PASSWORD)
         );
     }
 }

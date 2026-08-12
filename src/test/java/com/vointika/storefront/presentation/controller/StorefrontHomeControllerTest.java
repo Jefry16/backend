@@ -13,6 +13,9 @@ import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
+import com.vointika.storefront.application.port.UnlockTokenPort;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
 import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +25,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import jakarta.servlet.http.Cookie;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -61,6 +66,7 @@ class StorefrontHomeControllerTest {
     @MockitoBean private MediaAssetBatchQuery mediaAssetBatchQuery;
     @MockitoBean private MediaUrlResolver mediaUrlResolver;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
+    @MockitoBean private CheckStorefrontLockUseCase checkStorefrontLockUseCase;
 
     @BeforeEach
     void setUp() {
@@ -70,6 +76,9 @@ class StorefrontHomeControllerTest {
                 OG_IMAGE, new MediaAsset("acme/og.png", null, null, null)));
         when(mediaUrlResolver.toUrl(anyString()))
                 .thenAnswer(call -> "https://media.vointika.test/" + call.getArgument(0));
+        // Unlocked unless a test says otherwise: the gate is real in this slice
+        // (StorefrontWebConfig is a WebMvcConfigurer, so the slice registers it).
+        when(checkStorefrontLockUseCase.execute(anyString(), any())).thenReturn(LockState.UNLOCKED);
     }
 
     private static StorefrontGlobals globals(String current, String primary, List<String> supported) {
@@ -248,5 +257,55 @@ class StorefrontHomeControllerTest {
 
         mockMvc.perform(head("/").header("Host", "acme.localhost:8080")).andExpect(status().isOk());
         mockMvc.perform(head("/en").header("Host", "acme.localhost:8080")).andExpect(status().isOk());
+    }
+
+    /**
+     * <b>The ordering rule, and the reason the gate waited for the locale rule to
+     * exist.</b> Resolve the locale first and a locked store answers {@code /de}
+     * with a 404 while answering {@code /en} with a redirect — which tells an
+     * anonymous visitor, from in front of the gate, that the store is real and
+     * exactly which languages it publishes. Locked means every path answers the
+     * same.
+     *
+     * <p>{@code de} is deliberately a locale this shop does not publish: the
+     * globals use case would answer empty for it, so a 302 here proves nothing
+     * downstream of the gate ran.
+     */
+    @Test
+    void aLockedStoreRedirectsEvenForALocaleItDoesNotPublish() throws Exception {
+        when(checkStorefrontLockUseCase.execute("acme", null)).thenReturn(LockState.LOCKED);
+        when(getStorefrontGlobalsUseCase.execute("acme", "de")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/de").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "/password"));
+    }
+
+    /** And the home page itself, so the gate is not merely a locale-path behaviour. */
+    @Test
+    void aLockedStoreRedirectsTheHomePage() throws Exception {
+        when(checkStorefrontLockUseCase.execute("acme", null)).thenReturn(LockState.LOCKED);
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "/password"));
+    }
+
+    /**
+     * The interceptor reads the unlock cookie by name and hands its value to the
+     * gate. Rename it on either side and the value arrives as null, the store
+     * stays locked, and this fails on a 302 instead of a body.
+     */
+    @Test
+    void aValidUnlockCookieGetsThroughTheGate() throws Exception {
+        when(checkStorefrontLockUseCase.execute("acme", null)).thenReturn(LockState.LOCKED);
+        when(checkStorefrontLockUseCase.execute("acme", "a-valid-token")).thenReturn(LockState.UNLOCKED);
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/")
+                        .header("Host", "acme.localhost:8080")
+                        .cookie(new Cookie(UnlockTokenPort.COOKIE_NAME, "a-valid-token")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.shop.name").value("Acme Tours"));
     }
 }

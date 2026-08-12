@@ -21,13 +21,14 @@ import java.util.UUID;
  * Reads member-visible (the password is a shared gate, not a credential);
  * changes ADMIN+.
  *
- * <p><b>Nothing enforces this today.</b> The SSR gate shipped in #91 and was
- * deleted when the storefront was cut back to a placeholder — a page that
- * renders no operator data has nothing to protect. So an operator can set a
- * password and see it stored, and the storefront will not ask for it until the
- * real pages return. Recover the gate from git alongside them; the ordering rule
- * it enforced (gate before locale resolution, or a locked store leaks which
- * locales it publishes) is the part that is expensive to rediscover.
+ * <p><b>This is enforced.</b> The gate was deleted with the storefront's data in
+ * #135 and restored once the pages had something to protect again, so a value
+ * set here decides whether the storefront answers the shop or the gate.
+ *
+ * <p><b>A new operator arrives here already protected</b>: creation generates a
+ * password and enables the gate, the way a new Shopify store is password-locked
+ * until the merchant is ready. So the common use of this endpoint is reading the
+ * password back to hand out, and then disabling it at launch — not turning it on.
  */
 @RestController
 @RequestMapping("/api/tour-operators/{tourOperatorId}/storefront-password")

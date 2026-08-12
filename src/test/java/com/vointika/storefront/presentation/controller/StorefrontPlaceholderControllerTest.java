@@ -4,8 +4,11 @@ import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
 import com.vointika.storefront.application.usecase.CheckStorefrontTenantUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -16,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -50,6 +55,19 @@ class StorefrontPlaceholderControllerTest {
     @MockitoBean private TenantHandleResolver tenantHandleResolver;
     @MockitoBean private CheckStorefrontTenantUseCase checkStorefrontTenantUseCase;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
+    /**
+     * <b>Required, not incidental.</b> {@code StorefrontWebConfig} is a
+     * {@code WebMvcConfigurer}, so every {@code @WebMvcTest} slice registers the
+     * gate's interceptor — and it resolves this use case per request. Leave it
+     * out and every storefront request is a 500, the same way a slice missing
+     * {@code TourOperatorMembershipCheck} 500s the admin API.
+     */
+    @MockitoBean private CheckStorefrontLockUseCase checkStorefrontLockUseCase;
+
+    @BeforeEach
+    void storefrontIsOpen() {
+        when(checkStorefrontLockUseCase.execute(anyString(), any())).thenReturn(LockState.UNLOCKED);
+    }
 
     private void tenantIs(String host, String handle, boolean exists) {
         when(tenantHandleResolver.resolve(host)).thenReturn(Optional.of(handle));

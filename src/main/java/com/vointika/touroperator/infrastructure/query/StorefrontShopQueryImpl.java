@@ -89,6 +89,27 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                         Set.copyOf(o.getSupportedLocales())));
     }
 
+    /**
+     * The message is overlaid with the operator's <b>own primary locale</b>, not
+     * with a locale from the path — there is no path locale yet when the gate
+     * runs, by design.
+     */
+    @Override
+    public Optional<GateView> findGate(String handle) {
+        return operatorRepository.findByHandle(handle).map(operator -> {
+            String translated = translationRepository
+                    .findByTourOperatorIdAndLocale(operator.getId(), operator.getPrimaryLocale())
+                    .map(TourOperatorTranslationJpaEntity::getPasswordMessage)
+                    .orElse(null);
+            return new GateView(
+                    operator.getId(),
+                    operator.getName(),
+                    operator.isPasswordEnabled(),
+                    operator.getStorefrontPassword(),
+                    overlay(translated, operator.getPasswordMessage()));
+        });
+    }
+
     @Override
     public Optional<ShopView> findShop(UUID tourOperatorId, String locale) {
         return operatorRepository.findById(tourOperatorId)
