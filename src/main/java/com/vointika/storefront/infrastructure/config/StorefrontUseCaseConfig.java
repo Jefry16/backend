@@ -1,5 +1,6 @@
 package com.vointika.storefront.infrastructure.config;
 
+import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.port.UnlockTokenPort;
@@ -28,8 +29,9 @@ public class StorefrontUseCaseConfig {
 
     @Bean
     public GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase(
-            StorefrontShopQuery storefrontShopQuery) {
-        return new GetStorefrontGlobalsUseCase(storefrontShopQuery);
+            StorefrontShopQuery storefrontShopQuery,
+            StorefrontMetafieldQuery storefrontMetafieldQuery) {
+        return new GetStorefrontGlobalsUseCase(storefrontShopQuery, storefrontMetafieldQuery);
     }
 
     @Bean

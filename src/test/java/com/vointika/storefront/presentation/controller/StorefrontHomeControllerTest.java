@@ -4,6 +4,7 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
@@ -94,7 +95,11 @@ class StorefrontHomeControllerTest {
                         List.of(new SocialLinkView("INSTAGRAM", "https://instagram.com/acme"))),
                 List.of(new PolicyView(POLICY, "LEGAL_NOTICE", "Aviso legal")));
         return new StorefrontGlobals(shop, "Sailing day trips", "The best sailing in Mallorca",
-                OG_IMAGE, new LocalizationData(current, primary, supported));
+                OG_IMAGE,
+                List.of(new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00"),
+                        new MetafieldView("custom", "meeting-point", "single_line_text", "Muelle 3"),
+                        new MetafieldView("legal", "licence", "single_line_text", "TA-1123")),
+                new LocalizationData(current, primary, supported));
     }
 
     private void served(String pathLocale, StorefrontGlobals globals) {
@@ -307,5 +312,55 @@ class StorefrontHomeControllerTest {
                         .cookie(new Cookie(UnlockTokenPort.COOKIE_NAME, "a-valid-token")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shop.name").value("Acme Tours"));
+    }
+
+    /**
+     * Shopify's shape — {@code shop.metafields.namespace.key} — because that is
+     * the address a theme author types. Ours differs in exactly two ways, both
+     * decided rather than accidental: the {@code type} vocabulary is ours
+     * ({@code single_line_text}, not {@code single_line_text_field}), and a
+     * value is read as {@code .value} because JSON has no drop that renders
+     * itself.
+     */
+    @Test
+    void theShopCarriesItsMetafieldsNestedByNamespace() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.shop.metafields.custom['opening-hours'].value")
+                        .value("Mon-Sat 09:00-18:00"))
+                .andExpect(jsonPath("$.shop.metafields.custom['opening-hours'].type")
+                        .value("single_line_text"))
+                .andExpect(jsonPath("$.shop.metafields.custom['meeting-point'].value").value("Muelle 3"))
+                .andExpect(jsonPath("$.shop.metafields.legal.licence.value").value("TA-1123"));
+    }
+
+    /**
+     * No {@code list?}, because list types are not in our catalogue — a field
+     * that is always false is invention, and the admission rule forbids it.
+     */
+    @Test
+    void aMetafieldCarriesOnlyTypeAndValue() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.shop.metafields.legal.licence.list").doesNotExist())
+                .andExpect(jsonPath("$.shop.metafields.legal.licence.name").doesNotExist())
+                .andExpect(jsonPath("$.shop.metafields.legal.licence.updatedAt").doesNotExist());
+    }
+
+    /** An operator who has filled in nothing gets an empty object, not a null. */
+    @Test
+    void anOperatorWithNoMetafieldsGetsAnEmptyMap() throws Exception {
+        StorefrontGlobals bare = new StorefrontGlobals(
+                globals("es", "es", List.of("es")).shop(),
+                "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE,
+                List.of(), new LocalizationData("es", "es", List.of("es")));
+        served(null, bare);
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.shop.metafields").isEmpty())
+                .andExpect(jsonPath("$.shop.metafields").exists());
     }
 }

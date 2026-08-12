@@ -2,6 +2,7 @@ package com.vointika.storefront.presentation.response;
 
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
@@ -10,6 +11,7 @@ import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -72,6 +74,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                        Timezone timezone,
                        Brand brand,
                        List<Policy> policies,
+                       Map<String, Map<String, Metafield>> metafields,
                        Policy cancellationPolicy,
                        Policy privacyPolicy,
                        Policy termsOfService,
@@ -111,6 +114,25 @@ public record StorefrontGlobalsResponse(Shop shop,
      *             {@code LEGAL_NOTICE} addresses {@code /policies/legal-notice}
      */
     public record Policy(UUID id, String type, String title, String url) {}
+
+    /**
+     * Shopify's metafield object, minus what we do not have.
+     *
+     * <p>Addressed the way theirs is — {@code shop.metafields.namespace.key} —
+     * because that is what a theme author types. <b>{@code type} is our
+     * vocabulary, not theirs</b>: {@code single_line_text}, never
+     * {@code single_line_text_field}, decided when the context shipped.
+     *
+     * <p>There is no {@code list?}, because list types are deliberately not in
+     * our catalogue and a field that is always false is invention. And unlike
+     * Liquid, where a metafield renders its own value, a JSON consumer reads
+     * {@code .value} — that is what JSON costs, not a choice.
+     *
+     * <p><b>A {@code metaobject_reference} carries the id, unresolved.</b>
+     * Shopify resolves a reference to the object it points at; doing that here
+     * is a read path of its own, and it waits for a theme that needs one.
+     */
+    public record Metafield(String type, String value) {}
 
     public record Routes(String root, String experiences) {}
 
@@ -178,6 +200,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                         new Timezone(shop.timezoneName(), shop.timezoneCity()),
                         brand(shop.brand(), assets, urls),
                         policies,
+                        metafields(globals.metafields()),
                         named(policies, "CANCELLATION"),
                         named(policies, "PRIVACY"),
                         named(policies, "TERMS"),
@@ -231,6 +254,19 @@ public record StorefrontGlobalsResponse(Shop shop,
         String slug = view.type().toLowerCase(Locale.ROOT).replace('_', '-');
         return new Policy(view.id(), view.type(), view.title(),
                 prefix + StorefrontRoutes.POLICIES + "/" + slug);
+    }
+
+    /**
+     * Namespace then key, both insertion-ordered: the query already sorts, and a
+     * payload that reshuffles between requests is a diff nobody can read.
+     */
+    private static Map<String, Map<String, Metafield>> metafields(List<MetafieldView> values) {
+        Map<String, Map<String, Metafield>> byNamespace = new LinkedHashMap<>();
+        for (MetafieldView value : values) {
+            byNamespace.computeIfAbsent(value.namespace(), n -> new LinkedHashMap<>())
+                    .put(value.key(), new Metafield(value.type(), value.value()));
+        }
+        return byNamespace;
     }
 
     private static Policy named(List<Policy> policies, String type) {
