@@ -22,7 +22,7 @@ public final class PageMapper {
                 page.getBody().value(),
                 page.getSeoTitle().map(PageSeoTitle::value).orElse(null),
                 page.getSeoDescription().map(PageSeoDescription::value).orElse(null),
-                page.getStatus(),
+                page.isPublished(),
                 page.getCreatedBy(),
                 page.getCreatedAt(),
                 page.getUpdatedAt());
@@ -37,7 +37,7 @@ public final class PageMapper {
                 new PageBody(e.getBody()),
                 e.getSeoTitle() == null ? null : new PageSeoTitle(e.getSeoTitle()),
                 e.getSeoDescription() == null ? null : new PageSeoDescription(e.getSeoDescription()),
-                e.getStatus(),
+                e.isPublished(),
                 e.getCreatedBy(),
                 e.getCreatedAt(),
                 e.getUpdatedAt());
@@ -48,7 +48,7 @@ public final class PageMapper {
                 e.getId(),
                 e.getTitle(),
                 e.getHandle(),
-                e.getStatus(),
+                e.isPublished(),
                 e.getCreatedAt(),
                 e.getUpdatedAt());
     }

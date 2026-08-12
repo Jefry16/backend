@@ -41,7 +41,7 @@ public class UnpublishPageUseCase {
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "PAGE", pageId, "page.unpublished", null,
-                    List.of(new FieldChange("status", "PUBLISHED", "DRAFT"))));
+                    List.of(new FieldChange("published", true, false))));
         });
     }
 }

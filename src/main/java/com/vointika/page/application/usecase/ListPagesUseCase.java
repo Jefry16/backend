@@ -1,6 +1,5 @@
 package com.vointika.page.application.usecase;
 
-import com.vointika.page.domain.enums.PageStatus;
 import com.vointika.page.domain.projection.PageListItem;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.shared.list.CursorPage;
@@ -22,12 +21,11 @@ public class ListPagesUseCase {
             .tenantScoped()
             .text("title")
             .text("handle")
-            .set("status", PageStatus.class)
+            .bool("published")
             .instant("createdAt")
             .sortable("id")
             .sortable("title")
             .sortable("handle")
-            .sortable("status")
             .sortable("createdAt")
             .defaultSort("-id")
             .build();

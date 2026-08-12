@@ -1,6 +1,5 @@
 package com.vointika.page.domain.projection;
 
-import com.vointika.page.domain.enums.PageStatus;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -10,7 +9,7 @@ public record PageListItem(
         UUID id,
         String title,
         String handle,
-        PageStatus status,
+        boolean published,
         Instant createdAt,
         Instant updatedAt
 ) {}

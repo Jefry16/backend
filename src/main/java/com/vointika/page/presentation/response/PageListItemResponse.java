@@ -11,7 +11,7 @@ public record PageListItemResponse(
         String context,
         String title,
         String handle,
-        String status,
+        boolean published,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -21,7 +21,7 @@ public record PageListItemResponse(
                 "pages",
                 item.title(),
                 item.handle(),
-                item.status().name(),
+                item.published(),
                 item.createdAt(),
                 item.updatedAt());
     }

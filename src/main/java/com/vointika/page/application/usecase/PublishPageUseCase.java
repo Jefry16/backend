@@ -43,7 +43,7 @@ public class PublishPageUseCase {
             auditTrailPort.append(new NewAuditEntry(
                     tourOperatorId, AuditActor.user(callerUserId),
                     "PAGE", pageId, "page.published", null,
-                    List.of(new FieldChange("status", "DRAFT", "PUBLISHED"))));
+                    List.of(new FieldChange("published", false, true))));
         });
     }
 }

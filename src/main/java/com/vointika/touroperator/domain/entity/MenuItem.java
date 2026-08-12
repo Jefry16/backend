@@ -2,6 +2,7 @@ package com.vointika.touroperator.domain.entity;
 
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.touroperator.domain.enums.MenuItemLinkType;
+import com.vointika.touroperator.domain.valueobject.WebUrl;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -117,6 +118,10 @@ public class MenuItem {
                     throw new InvalidFieldException(
                             "Menu item url must be at most " + URL_MAX_LENGTH + " characters");
                 }
+                // http/https only: this lands in an href on a public page, and
+                // an arbitrary scheme accepts javascript:. Same rule the brand's
+                // social links learned; SocialUrl is the other caller.
+                WebUrl.requireHttpOrHttps(url, "Menu item url");
                 if (resourceId != null) {
                     throw new InvalidFieldException("EXTERNAL_URL link must not carry a resourceId");
                 }

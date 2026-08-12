@@ -1,6 +1,5 @@
 package com.vointika.page.domain.entity;
 
-import com.vointika.page.domain.enums.PageStatus;
 import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
@@ -36,7 +35,7 @@ public class Page {
     private PageBody body;
     private PageSeoTitle seoTitle;
     private PageSeoDescription seoDescription;
-    private PageStatus status;
+    private boolean published;
     private final UUID createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -57,7 +56,7 @@ public class Page {
         this.body = body;
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
-        this.status = PageStatus.DRAFT;
+        this.published = false;
         this.createdBy = createdBy;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
@@ -71,7 +70,7 @@ public class Page {
                 PageBody body,
                 PageSeoTitle seoTitle,
                 PageSeoDescription seoDescription,
-                PageStatus status,
+                boolean published,
                 UUID createdBy,
                 Instant createdAt,
                 Instant updatedAt) {
@@ -82,7 +81,7 @@ public class Page {
         this.body = body;
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
-        this.status = status;
+        this.published = published;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -106,21 +105,21 @@ public class Page {
         this.updatedAt = Instant.now();
     }
 
-    /** DRAFT → PUBLISHED; already published → 409 (mirrors experiences). */
+    /** Draft → published; already published → 409 (mirrors experiences). */
     public void publish() {
-        if (status != PageStatus.DRAFT) {
+        if (published) {
             throw new ConflictException("Page is already published");
         }
-        this.status = PageStatus.PUBLISHED;
+        this.published = true;
         this.updatedAt = Instant.now();
     }
 
-    /** PUBLISHED → DRAFT; already a draft → 409. */
+    /** Published → draft; already a draft → 409. */
     public void unpublish() {
-        if (status != PageStatus.PUBLISHED) {
+        if (!published) {
             throw new ConflictException("Page is not published");
         }
-        this.status = PageStatus.DRAFT;
+        this.published = false;
         this.updatedAt = Instant.now();
     }
 
@@ -147,7 +146,7 @@ public class Page {
         snapshot.put("body", body.value());
         snapshot.put("seoTitle", getSeoTitle().map(PageSeoTitle::value).orElse(null));
         snapshot.put("seoDescription", getSeoDescription().map(PageSeoDescription::value).orElse(null));
-        snapshot.put("status", status.name());
+        snapshot.put("published", String.valueOf(published));
         return snapshot;
     }
 
@@ -158,7 +157,7 @@ public class Page {
     public PageBody getBody() { return body; }
     public Optional<PageSeoTitle> getSeoTitle() { return Optional.ofNullable(seoTitle); }
     public Optional<PageSeoDescription> getSeoDescription() { return Optional.ofNullable(seoDescription); }
-    public PageStatus getStatus() { return status; }
+    public boolean isPublished() { return published; }
     /** Nullable — {@code null} means the base {@code page} template (mirrors experiences). */
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
