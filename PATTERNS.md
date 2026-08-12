@@ -100,6 +100,14 @@ port or an event (never a direct import).
 > - **There is no key-side copy of the shop.** The use case carries the shared
 >   port's `ShopView` directly; a field-for-field application DTO beside it would
 >   be the identical-pair shape MAP already carries as debt.
+> - **`shop.metafields` is Shopify's shape with our vocabulary** —
+>   `shop.metafields.<namespace>.<key>` addressing a `{type, value}` object.
+>   Their `type` codes are not ours (`single_line_text`, not
+>   `single_line_text_field`), there is no `list?` because list types are out of
+>   our catalogue, and a JSON consumer reads `.value` where Liquid renders the
+>   metafield directly. It is assembled from a **second** shared port
+>   (`StorefrontMetafieldQuery`, implemented in `metafield`), because the context
+>   that owns the shop row may not read those tables.
 >
 > Everything else below is still a **specification, not a description** — the
 > contract to rebuild from, every rule in it paid for once. The code is one

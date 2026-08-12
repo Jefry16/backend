@@ -1,4 +1,4 @@
-package com.vointika.touroperator.infrastructure.persistence;
+package com.vointika.architecture;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,13 +22,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * migrations, so a test pinning an enum against one never retypes the list it is
  * checking.
  *
- * <p>Two tests need this — {@code BrandEnumsMatchTheCheckConstraintsTest} and
- * {@code PolicyTypeMatchesTheCheckConstraintTest} — and the ordering rule below
- * is the reason it is one helper rather than two copies of it.
+ * <p>It moved here from {@code touroperator}'s test tree when {@code metafield}
+ * needed it too — three callers now, in two contexts, so it takes the migration
+ * folder rather than naming one. The ordering rule below is why this is one
+ * helper rather than a copy per context.
  */
-final class MigrationCheckConstraints {
-
-    private static final Path MIGRATIONS = Path.of("src/main/resources/db/migration/touroperator");
+public final class MigrationCheckConstraints {
 
     private static final Pattern VERSION = Pattern.compile("^V(\\d+)__");
 
@@ -51,11 +50,11 @@ final class MigrationCheckConstraints {
      * forced: an unanchored match reads {@code link_type IN (…)} from the menus
      * migration as this column's constraint.
      */
-    static Set<String> allowedValues(String column) throws IOException {
+    static Set<String> allowedValues(Path migrations, String column) throws IOException {
         Pattern check = Pattern.compile("(?<![A-Za-z0-9_])" + column + "\\s+IN\\s*\\(([^)]*)\\)",
                 Pattern.CASE_INSENSITIVE);
         List<Path> files;
-        try (Stream<Path> paths = Files.list(MIGRATIONS)) {
+        try (Stream<Path> paths = Files.list(migrations)) {
             files = paths.filter(p -> p.toString().endsWith(".sql"))
                     .sorted(Comparator.comparingInt(MigrationCheckConstraints::version))
                     .toList();
@@ -85,13 +84,14 @@ final class MigrationCheckConstraints {
      * insert with SQLSTATE 23514, which nothing translates (only 23505 is), and a
      * value only the CHECK has fails the <em>read</em>, on a public page.
      */
-    static void assertEnumMatches(String column, Class<? extends Enum<?>> type, String table)
-            throws IOException {
-        Set<String> allowed = allowedValues(column);
+    public static void assertEnumMatches(String context, String column,
+                                        Class<? extends Enum<?>> type, String table) throws IOException {
+        Path migrations = Path.of("src/main/resources/db/migration", context);
+        Set<String> allowed = allowedValues(migrations, column);
 
         assertThat(allowed)
                 .withFailMessage("No %s CHECK found in %s — this test cannot see the constraint it "
-                        + "exists to track. Fix the parser, do not delete the test.", column, MIGRATIONS)
+                        + "exists to track. Fix the parser, do not delete the test.", column, migrations)
                 .isNotEmpty();
 
         Set<String> declared = Arrays.stream(type.getEnumConstants())

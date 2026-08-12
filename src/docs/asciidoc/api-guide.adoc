@@ -1017,6 +1017,31 @@ ADMIN+ only.
 
 operation::page-metafields/delete[]
 
+[[resources-tour-operator-metafields-list]]
+==== List the Operator's Metafield Values
+
+Shopify's `shop.metafields`: custom data on the operator itself, for anything the
+platform does not model — opening hours, a meeting point, the languages the
+guides speak. There is no owner id in the path, because the owner is the tenant.
+
+Any member.
+
+operation::tour-operator-metafields/list[]
+
+[[resources-tour-operator-metafields-upsert]]
+==== Set the Operator's Metafield Value
+
+ADMIN+ only.
+
+operation::tour-operator-metafields/upsert[]
+
+[[resources-tour-operator-metafields-delete]]
+==== Clear the Operator's Metafield Value
+
+ADMIN+ only.
+
+operation::tour-operator-metafields/delete[]
+
 [[resources-metaobject-definitions-list]]
 ==== List Metaobject Definitions
 

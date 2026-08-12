@@ -1,5 +1,6 @@
 package com.vointika.storefront.application.usecase;
 
+import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
@@ -28,9 +29,12 @@ import java.util.Set;
 public class GetStorefrontGlobalsUseCase {
 
     private final StorefrontShopQuery shopQuery;
+    private final StorefrontMetafieldQuery metafieldQuery;
 
-    public GetStorefrontGlobalsUseCase(StorefrontShopQuery shopQuery) {
+    public GetStorefrontGlobalsUseCase(StorefrontShopQuery shopQuery,
+                                       StorefrontMetafieldQuery metafieldQuery) {
         this.shopQuery = shopQuery;
+        this.metafieldQuery = metafieldQuery;
     }
 
     /**
@@ -40,10 +44,12 @@ public class GetStorefrontGlobalsUseCase {
         return shopQuery.findLocales(handle).flatMap(locales ->
                 LocaleRule.resolve(pathLocale, locales.primaryLocale(), locales.supportedLocales())
                         .flatMap(locale -> shopQuery.findShop(locales.tourOperatorId(), locale)
-                                .map(shop -> globals(shop, locale, locales))));
+                                .map(shop -> globals(shop, locale, locales,
+                                        metafieldQuery.findForOperator(locales.tourOperatorId())))));
     }
 
-    private static StorefrontGlobals globals(ShopView shop, String locale, ShopLocalesView locales) {
+    private static StorefrontGlobals globals(ShopView shop, String locale, ShopLocalesView locales,
+                                             List<StorefrontMetafieldQuery.MetafieldView> metafields) {
         return new StorefrontGlobals(
                 shop,
                 // The home page has no object of its own, so the shop IS the whole
@@ -52,6 +58,7 @@ public class GetStorefrontGlobalsUseCase {
                 shop.seoTitle() != null ? shop.seoTitle() : shop.name(),
                 shop.seoDescription(),
                 shop.ogImageMediaId(),
+                metafields,
                 new LocalizationData(locale, locales.primaryLocale(),
                         primaryFirst(locales.primaryLocale(), locales.supportedLocales())));
     }

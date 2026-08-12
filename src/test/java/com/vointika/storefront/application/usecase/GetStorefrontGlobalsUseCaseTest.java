@@ -1,5 +1,7 @@
 package com.vointika.storefront.application.usecase;
 
+import com.vointika.shared.port.StorefrontMetafieldQuery;
+import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
@@ -26,12 +28,15 @@ class GetStorefrontGlobalsUseCaseTest {
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
 
     private StorefrontShopQuery shopQuery;
+    private StorefrontMetafieldQuery metafieldQuery;
     private GetStorefrontGlobalsUseCase useCase;
 
     @BeforeEach
     void setUp() {
         shopQuery = mock(StorefrontShopQuery.class);
-        useCase = new GetStorefrontGlobalsUseCase(shopQuery);
+        metafieldQuery = mock(StorefrontMetafieldQuery.class);
+        when(metafieldQuery.findForOperator(any())).thenReturn(List.of());
+        useCase = new GetStorefrontGlobalsUseCase(shopQuery, metafieldQuery);
     }
 
     private void shopExists(String primary, Set<String> supported) {
@@ -122,5 +127,38 @@ class GetStorefrontGlobalsUseCaseTest {
 
         assertThat(useCase.execute("acme", null).orElseThrow().pageTitle())
                 .isEqualTo("Sailing day trips in Mallorca");
+    }
+
+    /**
+     * The values come from another context, so this is the seam that has to be
+     * called with the operator — not with a locale, not with an owner id from a
+     * path. There is nothing else to get wrong here, and it is one line away
+     * from being silently empty on every page.
+     */
+    @Test
+    void theOperatorsMetafieldsRideTheGlobals() {
+        shopExists("es", Set.of("es"));
+        when(metafieldQuery.findForOperator(OPERATOR)).thenReturn(List.of(
+                new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00")));
+
+        StorefrontGlobals globals = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(globals.metafields())
+                .singleElement()
+                .satisfies(m -> {
+                    assertThat(m.namespace()).isEqualTo("custom");
+                    assertThat(m.key()).isEqualTo("opening-hours");
+                    assertThat(m.type()).isEqualTo("single_line_text");
+                });
+        verify(metafieldQuery).findForOperator(OPERATOR);
+    }
+
+    /** An address that does not exist reads nothing at all, metafields included. */
+    @Test
+    void anAddressThatDoesNotExistReadsNoMetafieldsEither() {
+        shopExists("es", Set.of("es", "en"));
+
+        assertThat(useCase.execute("acme", "de")).isEmpty();
+        verify(metafieldQuery, never()).findForOperator(any());
     }
 }
