@@ -23,8 +23,8 @@ import java.util.UUID;
  *
  * <p><b>Names follow Shopify's, and renaming one is a breaking change</b> the day
  * an operator authors a theme. That is why the shape is decided here, against
- * JSON, while it costs a handful of records instead of a pile of templates. Two
- * deliberate departures, both recorded rather than accidental:
+ * JSON, while it costs a handful of records instead of a pile of templates.
+ * Three deliberate departures, all recorded rather than accidental:
  *
  * <ul>
  *   <li><b>camelCase, not Liquid's snake_case.</b> A theme author arriving from
@@ -38,7 +38,7 @@ import java.util.UUID;
  *       free for {@code /pages/&#123;handle&#125;}.
  * </ul>
  *
- * <p><b>{@code pageImageUrl} has no Shopify counterpart</b>, and that is the
+ * <p><b>{@code ogImageUrl} has no Shopify counterpart</b>, and that is the
  * third departure: Shopify writes its own Open Graph tags through
  * {@code content_for_header}, which we have no equivalent of, so a theme needs
  * the value itself.
@@ -46,7 +46,7 @@ import java.util.UUID;
 public record StorefrontGlobalsResponse(Shop shop,
                                         String pageTitle,
                                         String pageDescription,
-                                        String pageImageUrl,
+                                        String ogImageUrl,
                                         Routes routes,
                                         Localization localization) {
 
@@ -137,7 +137,7 @@ public record StorefrontGlobalsResponse(Shop shop,
      */
     public static Set<UUID> mediaIds(StorefrontGlobals globals) {
         Set<UUID> ids = new LinkedHashSet<>();
-        add(ids, globals.pageImageMediaId());
+        add(ids, globals.ogImageMediaId());
         BrandView brand = globals.shop().brand();
         add(ids, brand.logoMediaId());
         add(ids, brand.squareLogoMediaId());
@@ -161,7 +161,7 @@ public record StorefrontGlobalsResponse(Shop shop,
         List<Policy> policies = shop.policies().stream()
                 .map(p -> policy(p, prefix))
                 .toList();
-        Image pageImage = image(globals.pageImageMediaId(), assets, urls);
+        Image ogImage = image(globals.ogImageMediaId(), assets, urls);
 
         return new StorefrontGlobalsResponse(
                 new Shop(
@@ -184,7 +184,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                         named(policies, "LEGAL_NOTICE")),
                 globals.pageTitle(),
                 globals.pageDescription(),
-                pageImage == null ? null : pageImage.url(),
+                ogImage == null ? null : ogImage.url(),
                 new Routes(prefix.isEmpty() ? StorefrontRoutes.HOME : prefix,
                         prefix + StorefrontRoutes.EXPERIENCES),
                 localization(globals));

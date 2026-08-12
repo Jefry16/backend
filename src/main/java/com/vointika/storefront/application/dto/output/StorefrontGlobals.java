@@ -21,12 +21,12 @@ import java.util.UUID;
  * is exactly what this layer deals in (PATTERNS §5). Presentation is where the
  * ids become URLs.
  *
- * @param pageImageMediaId still an id here, for that reason
+ * @param ogImageMediaId still an id here, for that reason
  */
 public record StorefrontGlobals(ShopView shop,
                                 String pageTitle,
                                 String pageDescription,
-                                UUID pageImageMediaId,
+                                UUID ogImageMediaId,
                                 LocalizationData localization) {
 
     /**

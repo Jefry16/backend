@@ -152,7 +152,7 @@ class StorefrontHomeControllerTest {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.pageImageUrl").value("https://media.vointika.test/acme/og.png"));
+                .andExpect(jsonPath("$.ogImageUrl").value("https://media.vointika.test/acme/og.png"));
     }
 
     /** {@code LEGAL_NOTICE} addresses {@code /policies/legal-notice}: the enum name is not the slug. */

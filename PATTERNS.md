@@ -88,7 +88,7 @@ port or an event (never a direct import).
 >
 > - **There is no `page` object.** Shopify's `page` is a CMS page and so is ours,
 >   so the current page's metadata is `pageTitle` / `pageDescription` /
->   `pageImageUrl` at the top level — their `page_title`/`page_description`
+>   `ogImageUrl` at the top level — their `page_title`/`page_description`
 >   globals — leaving the name free for `/pages/{handle}`.
 > - **camelCase, not Liquid's snake_case**, so the storefront reads like the rest
 >   of this codebase rather than like Shopify.
