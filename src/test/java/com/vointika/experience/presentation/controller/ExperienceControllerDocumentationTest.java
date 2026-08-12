@@ -103,7 +103,8 @@ class ExperienceControllerDocumentationTest {
                 "https://media.staging.vointika.com/thumb.jpg",
                 List.of(UUID.fromString("bbbbbbbb-0000-4000-8000-000000000002")),
                 List.of("https://media.staging.vointika.com/1.jpg"),
-                24, false, new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
+                24, false, "Sunset Dive | Acme Tours", "A guided reef dive at dusk, daily.",
+                new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
     }
 
     private static final String CREATE_BODY = """
@@ -167,6 +168,8 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].galleryUrls").description("Resolved gallery URLs (media-id order)"),
                                 fieldWithPath("data[].bookingCutoffHours").description("Advance-notice hours"),
                                 fieldWithPath("data[].published").description("Whether the experience is published (shopper-visible)"),
+                                fieldWithPath("data[].seoTitle").description("Search-engine title override, or null — falls back to the shop's").optional(),
+                                fieldWithPath("data[].seoDescription").description("Meta description override, or null — falls back to the shop's").optional(),
                                 fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),
                                 fieldWithPath("data[].createdBy").description("Creator user id"),
                                 fieldWithPath("data[].createdAt").description("When created"),
@@ -182,6 +185,11 @@ class ExperienceControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.context").value("experiences"))
+                // The bug this endpoint had: the request accepted these two and the
+                // response never returned them, so an editor loaded the form without
+                // them and the next save — a whole replace — cleared both.
+                .andExpect(jsonPath("$.seoTitle").value("Sunset Dive | Acme Tours"))
+                .andExpect(jsonPath("$.seoDescription").value("A guided reef dive at dusk, daily."))
                 .andDo(document("experiences/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
