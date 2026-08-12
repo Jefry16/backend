@@ -1,0 +1,164 @@
+package com.vointika.storefront.presentation.controller;
+
+import com.vointika.shared.media.MediaUrlResolver;
+import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.StorefrontPageQuery.PageView;
+import com.vointika.shared.port.StorefrontShopQuery.BrandView;
+import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.web.security.SecurityConfig;
+import com.vointika.storefront.application.dto.output.StorefrontGlobals;
+import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
+import com.vointika.storefront.application.dto.output.StorefrontPageOutput;
+import com.vointika.storefront.application.policy.TenantHandleResolver;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
+import com.vointika.storefront.application.usecase.GetStorefrontCmsPageUseCase;
+import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * {@code /pages/&#123;handle&#125;} — the second route with an object of its own,
+ * and the first address a menu item has been able to link to.
+ *
+ * <p>Importing {@link StorefrontPublicRoutes} is what proves the route is public;
+ * omit it and every request 401s, which is exactly what these addresses did
+ * before this slice.
+ */
+@WebMvcTest(StorefrontCmsPageController.class)
+@Import({SecurityConfig.class, StorefrontPublicRoutes.class})
+class StorefrontCmsPageControllerTest {
+
+    private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
+    private static final UUID PAGE = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3e11");
+
+    @Autowired private MockMvc mockMvc;
+
+    @MockitoBean private TenantHandleResolver tenantHandleResolver;
+    @MockitoBean private GetStorefrontCmsPageUseCase getStorefrontCmsPageUseCase;
+    @MockitoBean private MediaAssetBatchQuery mediaAssetBatchQuery;
+    @MockitoBean private MediaUrlResolver mediaUrlResolver;
+    @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
+    @MockitoBean private CheckStorefrontLockUseCase checkStorefrontLockUseCase;
+
+    @BeforeEach
+    void setUp() {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+        when(mediaAssetBatchQuery.findAssetsByIds(any(), any())).thenReturn(Map.of());
+        when(mediaUrlResolver.toUrl(anyString())).thenAnswer(call -> "https://media.test/" + call.getArgument(0));
+        when(checkStorefrontLockUseCase.execute(anyString(), any())).thenReturn(LockState.UNLOCKED);
+    }
+
+    private static StorefrontPageOutput output(String current, String primary, String handle, String title) {
+        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", "Palma", null, null,
+                "Sailing day trips", "The best sailing in Mallorca", null, null,
+                "EUR", "€", "Europe/Madrid", "Madrid",
+                new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),
+                List.of());
+        StorefrontGlobals globals = new StorefrontGlobals(shop, title, "About this shop", null,
+                List.of(), List.of(), List.of(),
+                new LocalizationData(current, primary, List.of(primary)));
+        return new StorefrontPageOutput(globals,
+                new PageView(PAGE, handle, title, "<p>Since 2011.</p>", null, null));
+    }
+
+    private void served(String pathLocale, String handle, StorefrontPageOutput output) {
+        when(getStorefrontCmsPageUseCase.execute("acme", pathLocale, handle))
+                .thenReturn(Optional.of(output));
+    }
+
+    /** The globals are still all there — a page route is globals plus one object. */
+    @Test
+    void aPageIsTheGlobalsPlusThePage() throws Exception {
+        served(null, "about-us", output("es", "es", "about-us", "About us"));
+
+        mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.shop.name").value("Acme Tours"))
+                .andExpect(jsonPath("$.localization.language.code").value("es"))
+                .andExpect(jsonPath("$.page.id").value(PAGE.toString()))
+                .andExpect(jsonPath("$.page.handle").value("about-us"))
+                .andExpect(jsonPath("$.page.title").value("About us"))
+                .andExpect(jsonPath("$.page.body").value("<p>Since 2011.</p>"))
+                .andExpect(jsonPath("$.page.url").value("/pages/about-us"));
+    }
+
+    /**
+     * The page's own title becomes the title tag. {@code pageTitle} is where that
+     * lives — {@code page} is the CMS object, exactly as in Shopify.
+     */
+    @Test
+    void thePagesTitleBecomesThePageTitle() throws Exception {
+        served(null, "about-us", output("es", "es", "about-us", "About us"));
+
+        mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.pageTitle").value("About us"));
+    }
+
+    /** A localized address carries its prefix into the page's own url. */
+    @Test
+    void aLocalizedPageCarriesThePrefix() throws Exception {
+        served("en", "about-us", output("en", "es", "about-us", "About us"));
+
+        mockMvc.perform(get("/en/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.url").value("/en/pages/about-us"));
+    }
+
+    /** Every miss is the same 404, so none of them says which kind it was. */
+    @Test
+    void anUnknownHandleIs404() throws Exception {
+        when(getStorefrontCmsPageUseCase.execute("acme", null, "nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/pages/nope").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("There is no storefront at this address"));
+    }
+
+    @Test
+    void aHostNoOperatorOwnsIs404() throws Exception {
+        when(tenantHandleResolver.resolve("nope.localhost")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/pages/about-us").header("Host", "nope.localhost:8080"))
+                .andExpect(status().isNotFound());
+    }
+
+    /** A page route is a public page, and crawlers HEAD it. */
+    @Test
+    void servesHeadAsWellAsGet() throws Exception {
+        served(null, "about-us", output("es", "es", "about-us", "About us"));
+
+        mockMvc.perform(head("/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * The handle variable is constrained to the {@code Handle} shape, so a
+     * segment that is not handle-shaped is not this route at all — 401 is the
+     * pass condition, the same way {@code /error} is for the locale pattern.
+     */
+    @Test
+    void aSegmentThatIsNotHandleShapedIsNotAPageRoute() throws Exception {
+        mockMvc.perform(get("/pages/Not_A_Handle").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isUnauthorized());
+    }
+}

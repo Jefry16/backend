@@ -114,6 +114,16 @@ port or an event (never a direct import).
 >   The link carries `{title, type, url, levels, links}`: no `handle` (no column
 >   behind it) and none of Shopify's `active`/`current` family, which are the
 >   first fields whose value would depend on which address was asked for.
+> - **A page route is globals + one object, and the object is absent elsewhere.**
+>   `/pages/{handle}` adds `page`, serialized `NON_NULL` so the home page simply
+>   does not carry it — Liquid's model, where a template gets the globals plus
+>   its own object and the others are not defined. The page's SEO substitutes the
+>   shop's through `StorefrontGlobals.withSeo`, so the globals are assembled once
+>   and the one page-shaped difference is applied by the use case that knows
+>   about pages. The chain itself is `SeoText`, extracted at its second caller.
+> - **A handle a locale renames has one address in that locale.** The canonical
+>   handle 404s there rather than serving the same page twice — the rule that
+>   makes `/{primary}` a 404 when the primary already lives at `/`.
 > - **`shop.metafields` is Shopify's shape with our vocabulary** —
 >   `shop.metafields.<namespace>.<key>` addressing a `{type, value}` object.
 >   Their `type` codes are not ours (`single_line_text`, not

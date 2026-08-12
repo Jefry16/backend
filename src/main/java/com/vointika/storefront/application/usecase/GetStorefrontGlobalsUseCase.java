@@ -13,6 +13,7 @@ import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
 import com.vointika.storefront.application.policy.LocaleRule;
 import com.vointika.storefront.application.policy.MenuTree;
+import com.vointika.storefront.application.policy.SeoText;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -74,11 +75,10 @@ public class GetStorefrontGlobalsUseCase {
                                              List<MenuData> menus) {
         return new StorefrontGlobals(
                 shop,
-                // The home page has no object of its own, so the shop IS the whole
-                // fallback chain. A page type that carries its own SEO widens this,
-                // and that is the slice to extract it in — not this one.
-                shop.seoTitle() != null ? shop.seoTitle() : shop.name(),
-                shop.seoDescription(),
+                // The home page has no object of its own, so the shop is the whole
+                // chain. A page type with its own SEO substitutes it (withSeo).
+                SeoText.title(null, null, shop.seoTitle(), shop.name()),
+                SeoText.description(null, shop.seoDescription()),
                 shop.ogImageMediaId(),
                 metafields,
                 featured,

@@ -21,4 +21,8 @@ public interface PageJpaRepository extends JpaRepository<PageJpaEntity, UUID> {
     /** The storefront's link resolution: published pages only, many ids, one read. */
     List<PageJpaEntity> findByTourOperatorIdAndIdInAndPublishedTrue(
             UUID tourOperatorId, Collection<UUID> ids);
+
+    /** The storefront addressing a page by its canonical handle. */
+    Optional<PageJpaEntity> findByTourOperatorIdAndHandleAndPublishedTrue(
+            UUID tourOperatorId, String handle);
 }

@@ -24,4 +24,11 @@ public interface PageTranslationJpaRepository
 
     boolean existsByTourOperatorIdAndLocaleAndHandleAndPageIdNot(
             UUID tourOperatorId, String locale, String handle, UUID pageId);
+
+    /**
+     * The storefront addressing a page by the handle one locale publishes. The
+     * unique index on (operator, locale, handle) is what makes this at most one.
+     */
+    Optional<PageTranslationJpaEntity> findByTourOperatorIdAndLocaleAndHandle(
+            UUID tourOperatorId, String locale, String handle);
 }
