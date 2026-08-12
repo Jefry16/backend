@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -60,6 +61,39 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
                     experience.getStartingPrice(),
                     experience.getThumbnailMediaId());
         }).toList();
+    }
+
+    /**
+     * The link-resolution half. Two reads whatever the menu holds: the published
+     * experiences among the ids asked for, then their translations in the
+     * rendered locale. An id absent from the answer is unpublished, deleted or
+     * another operator's — all three are "there is no link here", deliberately
+     * indistinguishable.
+     */
+    @Override
+    public Map<UUID, String> findPublishedHandles(UUID tourOperatorId, Set<UUID> experienceIds, String locale) {
+        if (experienceIds.isEmpty()) {
+            return Map.of();
+        }
+        List<ExperienceJpaEntity> published =
+                experienceRepository.findByTourOperatorIdAndIdInAndPublishedTrue(tourOperatorId, experienceIds);
+        if (published.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<UUID, ExperienceTranslationJpaEntity> translations = new HashMap<>();
+        for (ExperienceTranslationJpaEntity translation
+                : translationRepository.findByTourOperatorIdAndLocale(tourOperatorId, locale)) {
+            translations.put(translation.getExperienceId(), translation);
+        }
+
+        Map<UUID, String> handles = new HashMap<>(published.size());
+        for (ExperienceJpaEntity experience : published) {
+            ExperienceTranslationJpaEntity translation = translations.get(experience.getId());
+            handles.put(experience.getId(),
+                    overlay(translation == null ? null : translation.getHandle(), experience.getHandle()));
+        }
+        return handles;
     }
 
     /** Nullable-wins-canonical, the same overlay every translated read in this project uses. */

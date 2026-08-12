@@ -2,6 +2,8 @@ package com.vointika.shared.port;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -35,6 +37,18 @@ public interface StorefrontExperienceQuery {
      *               that locale's card has to link to
      */
     List<ExperienceCardView> findFeatured(UUID tourOperatorId, String locale);
+
+    /**
+     * Where these experiences live, for callers holding ids — a menu item points
+     * at an experience and has to become a link.
+     *
+     * <p><b>Published only, and an id that is missing from the result is the
+     * answer</b>: an unpublished or deleted experience has no address, so a
+     * caller drops the link rather than rendering one that 404s. Same reason the
+     * handle is the translated one — a link in a locale points at that locale's
+     * address.
+     */
+    Map<UUID, String> findPublishedHandles(UUID tourOperatorId, Set<UUID> experienceIds, String locale);
 
     /**
      * @param startingPrice the lowest price across the experience's audiences,

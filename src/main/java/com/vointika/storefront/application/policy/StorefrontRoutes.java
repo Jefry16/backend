@@ -45,6 +45,14 @@ public final class StorefrontRoutes {
 
     public static final String EXPERIENCES = "/experiences";
 
+    /**
+     * Where a CMS page lives. <b>There is no route on it yet</b> — the page type
+     * is unbuilt — but a menu item can already point at a page, and the link it
+     * becomes has to be the address that page will have. Same known gap as an
+     * experience card's link.
+     */
+    public static final String PAGES = "/pages";
+
     /** <b>Built from the locale template, never retyped</b> — a second copy of that regex is a second thing to keep true. */
     public static final String LOCALIZED_EXPERIENCES = LOCALE + EXPERIENCES;
 

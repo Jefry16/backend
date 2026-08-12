@@ -5,6 +5,7 @@ import com.vointika.touroperator.infrastructure.persistence.entity.MenuItemTrans
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,4 +18,8 @@ public interface MenuItemTranslationJpaRepository
                 SELECT i.id FROM MenuItemJpaEntity i WHERE i.menuId = :menuId)
             """)
     List<MenuItemTranslationJpaEntity> findByMenuId(UUID menuId);
+
+    /** The storefront's half: one locale, every item of the operator's menus, one read. */
+    List<MenuItemTranslationJpaEntity> findByMenuItemIdInAndLocale(
+            Collection<UUID> menuItemIds, String locale);
 }

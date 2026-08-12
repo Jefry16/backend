@@ -105,6 +105,15 @@ port or an event (never a direct import).
 >   cannot copy that, so the bound is the merchant's `featured` flag plus a hard
 >   cap. The filter, order and cap all live in one derived query name, and the
 >   tests parse it rather than assert a string.
+> - **`linklists` is a map of menus by handle, and every link in it resolves.**
+>   An item pointing at an unpublished or deleted target is dropped, along with
+>   anything nested under it — unpublishing is how an operator takes something
+>   off the storefront, so leaving the link would defeat the act. Resolution is
+>   two batch lookups for the whole navigation (`experience` and `page` each
+>   answer for their own handles, in the rendered locale), never one per item.
+>   The link carries `{title, type, url, levels, links}`: no `handle` (no column
+>   behind it) and none of Shopify's `active`/`current` family, which are the
+>   first fields whose value would depend on which address was asked for.
 > - **`shop.metafields` is Shopify's shape with our vocabulary** —
 >   `shop.metafields.<namespace>.<key>` addressing a `{type, value}` object.
 >   Their `type` codes are not ours (`single_line_text`, not

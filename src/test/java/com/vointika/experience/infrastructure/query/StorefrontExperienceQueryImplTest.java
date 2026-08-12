@@ -122,4 +122,36 @@ class StorefrontExperienceQueryImplTest {
         when(entity.getStartingPrice()).thenReturn(new BigDecimal("95.00"));
         return entity;
     }
+
+    /** The link-resolution half: published only, translated handle, absent means "no link". */
+    @Test
+    void publishedHandlesResolveInTheRenderedLocale() {
+        ExperienceJpaEntity experience = experience();
+        ExperienceTranslationJpaEntity spanish = mock(ExperienceTranslationJpaEntity.class);
+        when(spanish.getExperienceId()).thenReturn(ONE);
+        when(spanish.getHandle()).thenReturn("paseo-al-atardecer");
+
+        when(experienceRepository.findByTourOperatorIdAndIdInAndPublishedTrue(OPERATOR, java.util.Set.of(ONE)))
+                .thenReturn(List.of(experience));
+        when(translationRepository.findByTourOperatorIdAndLocale(OPERATOR, "es"))
+                .thenReturn(List.of(spanish));
+
+        assertThat(query.findPublishedHandles(OPERATOR, java.util.Set.of(ONE), "es"))
+                .containsEntry(ONE, "paseo-al-atardecer");
+    }
+
+    @Test
+    void anUnpublishedExperienceIsSimplyAbsent() {
+        when(experienceRepository.findByTourOperatorIdAndIdInAndPublishedTrue(OPERATOR, java.util.Set.of(ONE)))
+                .thenReturn(List.of());
+
+        assertThat(query.findPublishedHandles(OPERATOR, java.util.Set.of(ONE), "es")).isEmpty();
+        verifyNoInteractions(translationRepository);
+    }
+
+    @Test
+    void noIdsReadsNothing() {
+        assertThat(query.findPublishedHandles(OPERATOR, java.util.Set.of(), "es")).isEmpty();
+        verifyNoInteractions(experienceRepository, translationRepository);
+    }
 }

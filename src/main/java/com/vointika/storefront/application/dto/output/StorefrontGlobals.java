@@ -27,6 +27,8 @@ import java.util.UUID;
  * @param metafields     flat here, nested by namespace in presentation — the
  *                       shape a theme addresses is a URL-side concern, and the
  *                       order they arrive in is the query's promise
+ * @param menus          resolved and pruned: every link points somewhere that
+ *                       exists, and the tree is the operator's arrangement
  * @param featuredExperiences bounded and ordered by the port, capped at
  *                       {@code FEATURED_LIMIT}: these ride <b>every</b> page, so
  *                       an unbounded list here is a payload a merchant grows by
@@ -38,6 +40,7 @@ public record StorefrontGlobals(ShopView shop,
                                 UUID ogImageMediaId,
                                 List<MetafieldView> metafields,
                                 List<ExperienceCardView> featuredExperiences,
+                                List<MenuData> menus,
                                 LocalizationData localization) {
 
     /**

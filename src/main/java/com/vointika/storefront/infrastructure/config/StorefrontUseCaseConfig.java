@@ -1,6 +1,8 @@
 package com.vointika.storefront.infrastructure.config;
 
 import com.vointika.shared.port.StorefrontExperienceQuery;
+import com.vointika.shared.port.StorefrontMenuQuery;
+import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
@@ -32,9 +34,11 @@ public class StorefrontUseCaseConfig {
     public GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase(
             StorefrontShopQuery storefrontShopQuery,
             StorefrontMetafieldQuery storefrontMetafieldQuery,
-            StorefrontExperienceQuery storefrontExperienceQuery) {
+            StorefrontExperienceQuery storefrontExperienceQuery,
+            StorefrontMenuQuery storefrontMenuQuery,
+            StorefrontPageQuery storefrontPageQuery) {
         return new GetStorefrontGlobalsUseCase(storefrontShopQuery, storefrontMetafieldQuery,
-                storefrontExperienceQuery);
+                storefrontExperienceQuery, storefrontMenuQuery, storefrontPageQuery);
     }
 
     @Bean

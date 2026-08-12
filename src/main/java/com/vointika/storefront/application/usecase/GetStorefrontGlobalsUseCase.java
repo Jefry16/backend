@@ -1,18 +1,26 @@
 package com.vointika.storefront.application.usecase;
 
 import com.vointika.shared.port.StorefrontExperienceQuery;
+import com.vointika.shared.port.StorefrontMenuQuery;
+import com.vointika.shared.port.StorefrontMenuQuery.MenuItemView;
+import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
 import com.vointika.storefront.application.policy.LocaleRule;
+import com.vointika.storefront.application.policy.MenuTree;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Assembles the objects every storefront address carries. <b>Every route calls
@@ -32,13 +40,19 @@ public class GetStorefrontGlobalsUseCase {
     private final StorefrontShopQuery shopQuery;
     private final StorefrontMetafieldQuery metafieldQuery;
     private final StorefrontExperienceQuery experienceQuery;
+    private final StorefrontMenuQuery menuQuery;
+    private final StorefrontPageQuery pageQuery;
 
     public GetStorefrontGlobalsUseCase(StorefrontShopQuery shopQuery,
                                        StorefrontMetafieldQuery metafieldQuery,
-                                       StorefrontExperienceQuery experienceQuery) {
+                                       StorefrontExperienceQuery experienceQuery,
+                                       StorefrontMenuQuery menuQuery,
+                                       StorefrontPageQuery pageQuery) {
         this.shopQuery = shopQuery;
         this.metafieldQuery = metafieldQuery;
         this.experienceQuery = experienceQuery;
+        this.menuQuery = menuQuery;
+        this.pageQuery = pageQuery;
     }
 
     /**
@@ -50,12 +64,14 @@ public class GetStorefrontGlobalsUseCase {
                         .flatMap(locale -> shopQuery.findShop(locales.tourOperatorId(), locale)
                                 .map(shop -> globals(shop, locale, locales,
                                         metafieldQuery.findForOperator(locales.tourOperatorId()),
-                                        experienceQuery.findFeatured(locales.tourOperatorId(), locale)))));
+                                        experienceQuery.findFeatured(locales.tourOperatorId(), locale),
+                                        menus(locales.tourOperatorId(), locale)))));
     }
 
     private static StorefrontGlobals globals(ShopView shop, String locale, ShopLocalesView locales,
                                              List<StorefrontMetafieldQuery.MetafieldView> metafields,
-                                             List<StorefrontExperienceQuery.ExperienceCardView> featured) {
+                                             List<StorefrontExperienceQuery.ExperienceCardView> featured,
+                                             List<MenuData> menus) {
         return new StorefrontGlobals(
                 shop,
                 // The home page has no object of its own, so the shop IS the whole
@@ -66,8 +82,43 @@ public class GetStorefrontGlobalsUseCase {
                 shop.ogImageMediaId(),
                 metafields,
                 featured,
+                menus,
                 new LocalizationData(locale, locales.primaryLocale(),
                         primaryFirst(locales.primaryLocale(), locales.supportedLocales())));
+    }
+
+    /**
+     * <b>Two batch lookups for the whole navigation, whatever it holds</b> — the
+     * ids are collected across every menu first, so a header and a footer that
+     * both link to the same page cost one read between them, not one each.
+     */
+    private List<MenuData> menus(UUID tourOperatorId, String locale) {
+        List<StorefrontMenuQuery.MenuView> menus = menuQuery.findMenus(tourOperatorId, locale);
+        if (menus.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> experienceIds = new LinkedHashSet<>();
+        Set<UUID> pageIds = new LinkedHashSet<>();
+        for (StorefrontMenuQuery.MenuView menu : menus) {
+            for (MenuItemView item : menu.items()) {
+                switch (item.linkType()) {
+                    case "EXPERIENCE" -> experienceIds.add(item.resourceId());
+                    case "PAGE" -> pageIds.add(item.resourceId());
+                    default -> { }
+                }
+            }
+        }
+
+        Map<UUID, String> experienceHandles =
+                experienceQuery.findPublishedHandles(tourOperatorId, experienceIds, locale);
+        Map<UUID, String> pageHandles =
+                pageQuery.findPublishedHandles(tourOperatorId, pageIds, locale);
+
+        return menus.stream()
+                .map(menu -> new MenuData(menu.handle(), menu.title(),
+                        MenuTree.build(menu.items(), experienceHandles, pageHandles)))
+                .toList();
     }
 
     private static List<String> primaryFirst(String primary, Set<String> supported) {
