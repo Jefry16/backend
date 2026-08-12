@@ -1,5 +1,6 @@
 package com.vointika.storefront.presentation.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
@@ -10,6 +11,7 @@ import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 
@@ -55,7 +57,8 @@ public record StorefrontGlobalsResponse(Shop shop,
                                         Routes routes,
                                         List<ExperienceCard> featuredExperiences,
                                         Map<String, Menu> linklists,
-                                        Localization localization) {
+                                        Localization localization,
+                                        @JsonInclude(JsonInclude.Include.NON_NULL) Page page) {
 
     /**
      * @param description the meta description, which is what Shopify's
@@ -140,6 +143,24 @@ public record StorefrontGlobalsResponse(Shop shop,
     public record Metafield(String type, String value) {}
 
     public record Routes(String root, String experiences) {}
+
+    /**
+     * A CMS page — <b>the object this route is associated with</b>, absent from
+     * every other address rather than present and null. That is Liquid's model:
+     * a template gets the globals plus its own object, and the others simply are
+     * not defined.
+     *
+     * <p>The name is Shopify's and means what theirs means, which is why the
+     * current page's metadata is {@code pageTitle}/{@code pageDescription} at the
+     * top level and not here.
+     *
+     * @param body raw HTML the operator authored, unescaped by design — our
+     *             rendering of their content, the same trust boundary the policy
+     *             page sits on
+     * @param url  this page's own address, prefix included, so a canonical tag
+     *             does not have to be assembled from parts
+     */
+    public record Page(UUID id, String handle, String title, String body, String url) {}
 
     /**
      * One menu, addressed by handle the way Shopify's is —
@@ -242,6 +263,15 @@ public record StorefrontGlobalsResponse(Shop shop,
                                                  String origin,
                                                  Map<UUID, MediaAsset> assets,
                                                  MediaUrlResolver urls) {
+        return from(globals, null, origin, assets, urls);
+    }
+
+    /** The same globals, plus the object the route is associated with. */
+    public static StorefrontGlobalsResponse from(StorefrontGlobals globals,
+                                                 PageView page,
+                                                 String origin,
+                                                 Map<UUID, MediaAsset> assets,
+                                                 MediaUrlResolver urls) {
         ShopView shop = globals.shop();
         String prefix = localePrefix(globals);
         List<Policy> policies = shop.policies().stream()
@@ -278,7 +308,9 @@ public record StorefrontGlobalsResponse(Shop shop,
                         .map(card -> card(card, prefix, assets, urls))
                         .toList(),
                 linklists(globals.menus(), prefix),
-                localization(globals));
+                localization(globals),
+                page == null ? null : new Page(page.id(), page.handle(), page.title(), page.body(),
+                        prefix + StorefrontRoutes.PAGES + "/" + page.handle()));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */

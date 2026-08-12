@@ -52,4 +52,17 @@ public record StorefrontGlobals(ShopView shop,
      *                  reshuffles between requests is a bug report.
      */
     public record LocalizationData(String current, String primary, List<String> supported) {}
+
+    /**
+     * The same globals with the page's own SEO in place of the shop's defaults.
+     *
+     * <p>A page type that carries its own title and description substitutes them
+     * here rather than the assembler branching per route — the globals are built
+     * once, identically, and the one page-shaped difference is applied by the use
+     * case that knows about pages.
+     */
+    public StorefrontGlobals withSeo(String newPageTitle, String newPageDescription) {
+        return new StorefrontGlobals(shop, newPageTitle, newPageDescription, ogImageMediaId,
+                metafields, featuredExperiences, menus, localization);
+    }
 }

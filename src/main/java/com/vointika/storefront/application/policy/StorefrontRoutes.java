@@ -53,6 +53,16 @@ public final class StorefrontRoutes {
      */
     public static final String PAGES = "/pages";
 
+    /**
+     * One CMS page. Constrained to the {@code Handle} shape for the reason every
+     * pattern here is constrained: this is a {@code PublicRoute} pattern before
+     * it is a route. Non-capturing, because {@code PathPatternParser} refuses a
+     * capture group outright.
+     */
+    public static final String PAGE = PAGES + "/{handle:[a-z0-9]+(?:-[a-z0-9]+)*}";
+
+    public static final String LOCALIZED_PAGE = LOCALE + PAGE;
+
     /** <b>Built from the locale template, never retyped</b> — a second copy of that regex is a second thing to keep true. */
     public static final String LOCALIZED_EXPERIENCES = LOCALE + EXPERIENCES;
 

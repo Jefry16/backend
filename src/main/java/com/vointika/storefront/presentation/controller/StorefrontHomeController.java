@@ -1,6 +1,5 @@
 package com.vointika.storefront.presentation.controller;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
@@ -67,33 +66,16 @@ public class StorefrontHomeController {
 
     private StorefrontGlobalsResponse render(HttpServletRequest request, String pathLocale) {
         String handle = tenantHandleResolver.resolve(request.getServerName())
-                .orElseThrow(StorefrontHomeController::notFound);
+                .orElseThrow(StorefrontControllers::notFound);
         StorefrontGlobals globals = getStorefrontGlobals.execute(handle, pathLocale)
-                .orElseThrow(StorefrontHomeController::notFound);
+                .orElseThrow(StorefrontControllers::notFound);
 
         Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(globals);
         Map<UUID, MediaAsset> assets = mediaIds.isEmpty()
                 ? Map.of()
                 : mediaAssetBatchQuery.findAssetsByIds(globals.shop().id(), mediaIds);
 
-        return StorefrontGlobalsResponse.from(globals, origin(request), assets, mediaUrlResolver);
+        return StorefrontGlobalsResponse.from(globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }
 
-    /**
-     * What {@code shop.url} is. Built from the request rather than from
-     * configuration so it stays right behind a proxy — {@code ForwardedHeaderFilter}
-     * makes the servlet API honour {@code X-Forwarded-Proto} and
-     * {@code X-Forwarded-Host}, the same reason the tenant is read from
-     * {@code getServerName()}.
-     */
-    private static String origin(HttpServletRequest request) {
-        String scheme = request.getScheme();
-        int port = request.getServerPort();
-        boolean defaultPort = ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
-        return scheme + "://" + request.getServerName() + (defaultPort ? "" : ":" + port);
-    }
-
-    private static ResourceNotFoundException notFound() {
-        return new ResourceNotFoundException("There is no storefront at this address");
-    }
 }
