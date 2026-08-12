@@ -14,6 +14,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.touroperator.application.port.StorefrontPasswordGeneratorPort;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.shared.service.HandleGenerator;
@@ -64,6 +65,7 @@ public class CreateTourOperatorUseCase {
     private final EventPublisherPort eventPublisher;
     private final AuditTrailPort auditTrailPort;
     private final DiagnosticLogPort diagnosticLog;
+    private final StorefrontPasswordGeneratorPort storefrontPasswordGenerator;
 
     public CreateTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
@@ -77,7 +79,8 @@ public class CreateTourOperatorUseCase {
             UserAccountQuery userAccountQuery,
             EventPublisherPort eventPublisher,
             AuditTrailPort auditTrailPort,
-            DiagnosticLogPort diagnosticLog) {
+            DiagnosticLogPort diagnosticLog,
+            StorefrontPasswordGeneratorPort storefrontPasswordGenerator) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.memberRepository = memberRepository;
         this.menuRepository = menuRepository;
@@ -90,6 +93,7 @@ public class CreateTourOperatorUseCase {
         this.eventPublisher = eventPublisher;
         this.auditTrailPort = auditTrailPort;
         this.diagnosticLog = diagnosticLog;
+        this.storefrontPasswordGenerator = storefrontPasswordGenerator;
     }
 
     public CreateTourOperatorOutput execute(CreateTourOperatorInput input) {
@@ -146,6 +150,13 @@ public class CreateTourOperatorUseCase {
             TourOperator candidate = new TourOperator(
                     idGenerator.newId(), name, handle,
                     input.timezoneId(), input.currencyId(), address, createdBy);
+            // A brand-new store is private, the way a new Shopify store is: it
+            // exists at its address and answers the gate, not the shop. The
+            // password is generated rather than left unset because enabling
+            // protection with none stored is a 422 — and because an operator
+            // choosing one here would reuse a password they use elsewhere for a
+            // value that is stored, and read back, in plaintext.
+            candidate.updateStorefrontPassword(true, storefrontPasswordGenerator.generate(), null);
             try {
                 tourOperator = transactionRunner.call(() -> {
                     tourOperatorRepository.save(candidate);

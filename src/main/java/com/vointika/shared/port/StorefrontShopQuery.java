@@ -37,6 +37,17 @@ public interface StorefrontShopQuery {
     Optional<ShopLocalesView> findLocales(String handle);
 
     /**
+     * The gate's configuration, asked <b>before any locale exists</b> — the gate
+     * runs before locale resolution, and that ordering is the whole point of it.
+     *
+     * <p>It is a second read of the same row rather than fields on
+     * {@link ShopLocalesView} on purpose: this one carries the plaintext
+     * password, and keeping it out of the read that builds the public payload
+     * means no future edit to the globals can leak it by accident.
+     */
+    Optional<GateView> findGate(String handle);
+
+    /**
      * Stage two, once the locale rule has chosen one. Per-locale translations
      * overlay the canonical row <b>nullable-wins-canonical</b>: a translation
      * column that is null falls back rather than blanking the field.
@@ -48,6 +59,20 @@ public interface StorefrontShopQuery {
 
     /** The locale decision's inputs, and the tenant's identity. */
     record ShopLocalesView(UUID tourOperatorId, String primaryLocale, Set<String> supportedLocales) {}
+
+    /**
+     * @param shopName        not translated — V8 left {@code name} off the overlay
+     *                        deliberately, because a brand name is not content
+     * @param passwordMessage already overlaid from the <b>primary-locale</b>
+     *                        translation. The gate has no locale of its own: it
+     *                        runs before one is chosen, and choosing one first is
+     *                        the leak the ordering exists to prevent.
+     */
+    record GateView(UUID tourOperatorId,
+                    String shopName,
+                    boolean passwordEnabled,
+                    String storefrontPassword,
+                    String passwordMessage) {}
 
     /**
      * @param policies titles and types only. A footer wants four links and only

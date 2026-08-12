@@ -2,8 +2,12 @@ package com.vointika.storefront.infrastructure.config;
 
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
+import com.vointika.storefront.application.port.UnlockTokenPort;
+import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontTenantUseCase;
+import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
+import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +30,23 @@ public class StorefrontUseCaseConfig {
     public GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase(
             StorefrontShopQuery storefrontShopQuery) {
         return new GetStorefrontGlobalsUseCase(storefrontShopQuery);
+    }
+
+    @Bean
+    public CheckStorefrontLockUseCase checkStorefrontLockUseCase(
+            StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
+        return new CheckStorefrontLockUseCase(storefrontShopQuery, unlockTokenPort);
+    }
+
+    @Bean
+    public UnlockStorefrontUseCase unlockStorefrontUseCase(
+            StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
+        return new UnlockStorefrontUseCase(storefrontShopQuery, unlockTokenPort);
+    }
+
+    @Bean
+    public GetPasswordPageUseCase getPasswordPageUseCase(StorefrontShopQuery storefrontShopQuery) {
+        return new GetPasswordPageUseCase(storefrontShopQuery);
     }
 
     /**

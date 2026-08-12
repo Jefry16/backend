@@ -120,6 +120,33 @@ class StorefrontShopQueryImplTest {
     }
 
     /**
+     * The gate is read before any locale is chosen, so the visitor message is
+     * overlaid with the operator's <b>own primary locale</b>. Overlay it with a
+     * path locale instead and the gate starts answering differently per language,
+     * which is the leak the ordering exists to prevent.
+     */
+    @Test
+    void theGateOverlaysItsMessageWithThePrimaryLocale() {
+        TourOperatorTranslationJpaEntity spanish = mock(TourOperatorTranslationJpaEntity.class);
+        when(spanish.getPasswordMessage()).thenReturn("Abrimos el lunes");
+        when(translationRepository.findByTourOperatorIdAndLocale(OPERATOR, "es"))
+                .thenReturn(Optional.of(spanish));
+
+        assertThat(query.findGate("acme")).hasValueSatisfying(gate -> {
+            assertThat(gate.tourOperatorId()).isEqualTo(OPERATOR);
+            assertThat(gate.shopName()).isEqualTo("Acme Tours");
+            assertThat(gate.passwordMessage()).isEqualTo("Abrimos el lunes");
+        });
+    }
+
+    @Test
+    void aHandleNoOperatorOwnsHasNoGate() {
+        when(operatorRepository.findByHandle("nope")).thenReturn(Optional.empty());
+
+        assertThat(query.findGate("nope")).isEmpty();
+    }
+
+    /**
      * Nullable-wins-canonical, and the null half is the one that breaks quietly:
      * a translation row that fills in the title but not the description must not
      * blank the description.

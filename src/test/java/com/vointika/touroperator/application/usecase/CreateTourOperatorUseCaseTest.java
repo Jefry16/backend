@@ -63,6 +63,9 @@ class CreateTourOperatorUseCaseTest {
     private DiagnosticLogPort diagnosticLog;
     private CreateTourOperatorUseCase useCase;
 
+    /** A fixed value so the assertions can name it; the real one is 12 random characters. */
+    private static final String GENERATED_PASSWORD = "Kx7mQp2rTvWy";
+
     private final UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     private final UUID timezoneId = UUID.randomUUID();
     private final UUID currencyId = UUID.randomUUID();
@@ -86,7 +89,8 @@ class CreateTourOperatorUseCaseTest {
                 tourOperatorRepository, memberRepository, menuRepository,
                 timezoneRepository, currencyRepository,
                 new HandleGenerator(), transactionRunner, idGenerator,
-                userAccountQuery, eventPublisher, auditTrailPort, diagnosticLog);
+                userAccountQuery, eventPublisher, auditTrailPort, diagnosticLog,
+                () -> GENERATED_PASSWORD);
 
         // Happy-path defaults; individual tests override.
         when(timezoneRepository.findById(any())).thenReturn(Optional.of(mock(Timezone.class)));
@@ -101,6 +105,27 @@ class CreateTourOperatorUseCaseTest {
 
     private CreateTourOperatorInput input() {
         return new CreateTourOperatorInput(userId.toString(), "Acme Tours", "123 Beach Rd", timezoneId, currencyId);
+    }
+
+    /**
+     * <b>A brand-new store is private</b>, the way a new Shopify store is: it
+     * exists at its address and answers the gate rather than the shop. Without
+     * this, the first request after an operator is created serves its (empty)
+     * shop to anyone who guesses the handle.
+     *
+     * <p>The password is generated rather than left for the operator to set,
+     * because enabling protection with none stored is a 422 — the gate would be
+     * on with no way through it.
+     */
+    @Test
+    void aNewOperatorStartsBehindTheGateWithAGeneratedPassword() {
+        useCase.execute(input());
+
+        ArgumentCaptor<TourOperator> opCaptor = ArgumentCaptor.forClass(TourOperator.class);
+        verify(tourOperatorRepository).save(opCaptor.capture());
+        TourOperator saved = opCaptor.getValue();
+        assertTrue(saved.isPasswordEnabled());
+        assertEquals(GENERATED_PASSWORD, saved.getStorefrontPassword());
     }
 
     /**

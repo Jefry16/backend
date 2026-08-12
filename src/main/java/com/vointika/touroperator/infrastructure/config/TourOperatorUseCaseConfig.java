@@ -20,6 +20,7 @@ import com.vointika.touroperator.application.policy.TourOperatorMembershipPolicy
 import com.vointika.touroperator.application.usecase.AcceptInvitationUseCase;
 import com.vointika.touroperator.application.usecase.ChangeMemberRoleUseCase;
 import com.vointika.touroperator.application.usecase.CreateMenuUseCase;
+import com.vointika.touroperator.application.port.StorefrontPasswordGeneratorPort;
 import com.vointika.touroperator.application.usecase.CreateTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.DeleteMenuUseCase;
 import com.vointika.touroperator.application.usecase.GetMemberUseCase;
@@ -96,7 +97,8 @@ public class TourOperatorUseCaseConfig {
             UserAccountQuery userAccountQuery,
             EventPublisherPort eventPublisher,
             AuditTrailPort auditTrailPort,
-            DiagnosticLogPort diagnosticLog) {
+            DiagnosticLogPort diagnosticLog,
+            StorefrontPasswordGeneratorPort storefrontPasswordGenerator) {
         return new CreateTourOperatorUseCase(
                 tourOperatorRepository,
                 tourOperatorMemberRepository,
@@ -109,7 +111,8 @@ public class TourOperatorUseCaseConfig {
                 userAccountQuery,
                 eventPublisher,
                 auditTrailPort,
-                diagnosticLog);
+                diagnosticLog,
+                storefrontPasswordGenerator);
     }
 
     @Bean
