@@ -76,12 +76,34 @@ port or an event (never a direct import).
 
 ## 2a. The render envelope (a server-rendered page's context object)
 
-> **None of this code exists right now (2026-08-11).** The storefront was cut
-> back to a placeholder: every page, view, output DTO and query seam below was
-> deleted, and only tenant resolution and the routes survive. **This section is
-> kept deliberately** — it is the contract to rebuild from, and every rule in it
-> was paid for once. The code is one `git show` away; the reasoning is not.
-> Read it as a specification, not a description.
+> **Half of this is live again, and the half that is has changed shape
+> (2026-08-11).** The globals — `shop`, `localization`, `routes` and the page's
+> SEO — are built and served as **JSON** on `/` and `/{locale}`, because the
+> contract is being settled before anything is server-rendered again. What is
+> still deleted is everything page-specific: the experiences listing, the policy
+> page, every template, and the theme object model as a *render* context.
+>
+> Four things below are now decided differently, and the reasons are in MAP's
+> index-slice entry:
+>
+> - **There is no `page` object.** Shopify's `page` is a CMS page and so is ours,
+>   so the current page's metadata is `pageTitle` / `pageDescription` /
+>   `ogImageUrl` at the top level — their `page_title`/`page_description`
+>   globals — leaving the name free for `/pages/{handle}`.
+> - **camelCase, not Liquid's snake_case**, so the storefront reads like the rest
+>   of this codebase rather than like Shopify.
+> - **`localization` mirrors Shopify's shape**: `language` is the one being
+>   served, and each entry carries `primary` (is it the shop's default) plus both
+>   names — `name` in the shop's primary locale, `endonymName` in its own. Both
+>   are derived from the JDK's CLDR data rather than curated, because Shopify's
+>   `name` is one value per *pair* of languages.
+> - **There is no key-side copy of the shop.** The use case carries the shared
+>   port's `ShopView` directly; a field-for-field application DTO beside it would
+>   be the identical-pair shape MAP already carries as debt.
+>
+> Everything else below is still a **specification, not a description** — the
+> contract to rebuild from, every rule in it paid for once. The code is one
+> `git show` away; the reasoning is not.
 
 A page a template renders takes **named objects, never a flat bag of scalars**,
 and the same set on every page. `storefront` was the canonical one:

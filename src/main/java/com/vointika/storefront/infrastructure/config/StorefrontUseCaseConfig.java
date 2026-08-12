@@ -1,8 +1,9 @@
 package com.vointika.storefront.infrastructure.config;
 
-import com.vointika.shared.port.StorefrontTenantQuery;
+import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontTenantUseCase;
+import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,8 +18,14 @@ public class StorefrontUseCaseConfig {
 
     @Bean
     public CheckStorefrontTenantUseCase checkStorefrontTenantUseCase(
-            StorefrontTenantQuery storefrontTenantQuery) {
-        return new CheckStorefrontTenantUseCase(storefrontTenantQuery);
+            StorefrontShopQuery storefrontShopQuery) {
+        return new CheckStorefrontTenantUseCase(storefrontShopQuery);
+    }
+
+    @Bean
+    public GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase(
+            StorefrontShopQuery storefrontShopQuery) {
+        return new GetStorefrontGlobalsUseCase(storefrontShopQuery);
     }
 
     /**
