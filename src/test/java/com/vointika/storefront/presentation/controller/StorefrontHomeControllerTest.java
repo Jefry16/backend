@@ -6,6 +6,8 @@ import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
+import com.vointika.storefront.application.dto.output.MenuData;
+import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
@@ -105,6 +107,15 @@ class StorefrontHomeControllerTest {
                         new MetafieldView("legal", "licence", "single_line_text", "TA-1123")),
                 List.of(new ExperienceCardView(EXPERIENCE, "sunset-sail", "Sunset sail",
                         "Sail into the sunset", new java.math.BigDecimal("95.00"), THUMB)),
+                List.of(new MenuData("main-menu", "Main menu", List.of(
+                                new MenuLinkData("Home", "HOME", null, null, List.of()),
+                                new MenuLinkData("Trips", "EXPERIENCE_LIST", null, null, List.of(
+                                        new MenuLinkData("Sunset sail", "EXPERIENCE", "sunset-sail",
+                                                null, List.of()))),
+                                new MenuLinkData("About", "PAGE", "about-us", null, List.of()),
+                                new MenuLinkData("Blog", "EXTERNAL_URL", null,
+                                        "https://example.com/blog", List.of()))),
+                        new MenuData("footer", "Footer", List.of())),
                 new LocalizationData(current, primary, supported));
     }
 
@@ -362,7 +373,7 @@ class StorefrontHomeControllerTest {
         StorefrontGlobals bare = new StorefrontGlobals(
                 globals("es", "es", List.of("es")).shop(),
                 "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE,
-                List.of(), List.of(), new LocalizationData("es", "es", List.of("es")));
+                List.of(), List.of(), List.of(), new LocalizationData("es", "es", List.of("es")));
         served(null, bare);
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
@@ -420,5 +431,74 @@ class StorefrontHomeControllerTest {
 
         mockMvc.perform(get("/en").header("Host", "acme.localhost:8080"))
                 .andExpect(jsonPath("$.featuredExperiences[0].url").value("/en/experiences/sunset-sail"));
+    }
+
+    /** Keyed by handle, the way {@code linklists["main-menu"]} is in Liquid. */
+    @Test
+    void theGlobalsCarryEveryMenuKeyedByHandle() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.linklists['main-menu'].title").value("Main menu"))
+                .andExpect(jsonPath("$.linklists.footer.title").value("Footer"))
+                .andExpect(jsonPath("$.linklists.footer.links").isEmpty());
+    }
+
+    /** Each link type becomes the address it names; an external one passes through. */
+    @Test
+    void everyLinkTypeBecomesAUrl() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].url").value("/"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[1].url").value("/experiences"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[1].links[0].url")
+                        .value("/experiences/sunset-sail"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[2].url").value("/pages/about-us"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[3].url")
+                        .value("https://example.com/blog"));
+    }
+
+    /**
+     * <b>Internal links carry the locale prefix; an external one must not.</b>
+     * Prefixing somebody else's domain would produce a path on ours.
+     */
+    @Test
+    void aSecondaryLocalePrefixesInternalLinksOnly() throws Exception {
+        served("en", globals("en", "es", List.of("es", "en")));
+
+        mockMvc.perform(get("/en").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].url").value("/en"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[1].url").value("/en/experiences"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[2].url").value("/en/pages/about-us"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[3].url")
+                        .value("https://example.com/blog"));
+    }
+
+    /**
+     * {@code levels} is how deep the tree runs below a link — a theme uses it to
+     * decide whether a link needs a dropdown at all. Derived, like aspectRatio.
+     */
+    @Test
+    void aLinkKnowsHowDeepItGoes() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].levels").value(0))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[1].levels").value(1))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[1].links[0].levels").value(0));
+    }
+
+    /** No {@code handle}, and none of the request-dependent active/current family. */
+    @Test
+    void aLinkCarriesOnlyWhatWeHave() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].handle").doesNotExist())
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].active").doesNotExist())
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].current").doesNotExist())
+                .andExpect(jsonPath("$.linklists['main-menu'].links[0].type").value("HOME"));
     }
 }

@@ -4,6 +4,8 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
+import com.vointika.storefront.application.dto.output.MenuData;
+import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
@@ -52,6 +54,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                                         String ogImageUrl,
                                         Routes routes,
                                         List<ExperienceCard> featuredExperiences,
+                                        Map<String, Menu> linklists,
                                         Localization localization) {
 
     /**
@@ -137,6 +140,36 @@ public record StorefrontGlobalsResponse(Shop shop,
     public record Metafield(String type, String value) {}
 
     public record Routes(String root, String experiences) {}
+
+    /**
+     * One menu, addressed by handle the way Shopify's is —
+     * {@code linklists["main-menu"].links}.
+     */
+    public record Menu(String title, List<Link> links) {}
+
+    /**
+     * Shopify's {@code link}, minus what we do not have and what depends on the
+     * request.
+     *
+     * <p><b>No {@code handle}</b>: theirs is a slug of the link's title and we
+     * store no such column, so it would be invented. <b>No {@code active},
+     * {@code current}, {@code child_active} or {@code child_current}</b>: those
+     * are computed from the page being rendered, which would make them the first
+     * fields in the globals whose value depends on which address you asked for.
+     * They can be added when a theme needs them.
+     *
+     * <p><b>Every link here points somewhere that exists.</b> Items whose target
+     * was unpublished or deleted are gone, along with anything nested under them.
+     *
+     * @param type   our vocabulary — {@code HOME}, {@code EXPERIENCE_LIST},
+     *               {@code EXPERIENCE}, {@code PAGE}, {@code EXTERNAL_URL} — not
+     *               Shopify's {@code page_link}/{@code product_link} forms, the
+     *               same call as the metafield type codes
+     * @param levels how deep the tree runs below this link. Derived, like
+     *               {@code aspectRatio}: a theme uses it to decide whether a link
+     *               needs a dropdown at all.
+     */
+    public record Link(String title, String type, String url, int levels, List<Link> links) {}
 
     /**
      * One featured experience, top-level rather than under {@code shop} — it is
@@ -244,7 +277,44 @@ public record StorefrontGlobalsResponse(Shop shop,
                 globals.featuredExperiences().stream()
                         .map(card -> card(card, prefix, assets, urls))
                         .toList(),
+                linklists(globals.menus(), prefix),
                 localization(globals));
+    }
+
+    /** Keyed by handle, insertion-ordered on the query's handle ordering. */
+    private static Map<String, Menu> linklists(List<MenuData> menus, String prefix) {
+        Map<String, Menu> byHandle = new LinkedHashMap<>();
+        for (MenuData menu : menus) {
+            byHandle.put(menu.handle(), new Menu(menu.title(), links(menu.links(), prefix)));
+        }
+        return byHandle;
+    }
+
+    private static List<Link> links(List<MenuLinkData> links, String prefix) {
+        return links.stream().map(link -> {
+            List<Link> children = links(link.links(), prefix);
+            return new Link(link.title(), link.linkType(), linkUrl(link, prefix),
+                    depth(children), children);
+        }).toList();
+    }
+
+    /**
+     * <b>Every internal link carries the locale prefix</b>, or a visitor reading
+     * in Spanish clicks the header and leaves the language. An
+     * {@code EXTERNAL_URL} is absolute and passes through untouched.
+     */
+    private static String linkUrl(MenuLinkData link, String prefix) {
+        return switch (link.linkType()) {
+            case "HOME" -> prefix.isEmpty() ? StorefrontRoutes.HOME : prefix;
+            case "EXPERIENCE_LIST" -> prefix + StorefrontRoutes.EXPERIENCES;
+            case "EXPERIENCE" -> prefix + StorefrontRoutes.EXPERIENCES + "/" + link.targetHandle();
+            case "PAGE" -> prefix + StorefrontRoutes.PAGES + "/" + link.targetHandle();
+            default -> link.externalUrl();
+        };
+    }
+
+    private static int depth(List<Link> children) {
+        return children.stream().mapToInt(child -> 1 + child.levels()).max().orElse(0);
     }
 
     private static ExperienceCard card(ExperienceCardView card, String prefix,

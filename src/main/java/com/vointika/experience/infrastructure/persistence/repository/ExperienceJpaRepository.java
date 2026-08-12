@@ -4,6 +4,7 @@ import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEn
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,4 +33,8 @@ public interface ExperienceJpaRepository extends JpaRepository<ExperienceJpaEnti
      */
     List<ExperienceJpaEntity> findTop12ByTourOperatorIdAndPublishedTrueAndFeaturedTrueOrderByCreatedAtAscIdAsc(
             UUID tourOperatorId);
+
+    /** The storefront's link resolution: published experiences only, many ids, one read. */
+    List<ExperienceJpaEntity> findByTourOperatorIdAndIdInAndPublishedTrue(
+            UUID tourOperatorId, Collection<UUID> ids);
 }

@@ -2,7 +2,11 @@ package com.vointika.storefront.application.usecase;
 
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
+import com.vointika.shared.port.StorefrontMenuQuery;
+import com.vointika.shared.port.StorefrontMenuQuery.MenuItemView;
+import com.vointika.shared.port.StorefrontMenuQuery.MenuView;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
+import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
@@ -13,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -32,6 +37,8 @@ class GetStorefrontGlobalsUseCaseTest {
     private StorefrontShopQuery shopQuery;
     private StorefrontMetafieldQuery metafieldQuery;
     private StorefrontExperienceQuery experienceQuery;
+    private StorefrontMenuQuery menuQuery;
+    private StorefrontPageQuery pageQuery;
     private GetStorefrontGlobalsUseCase useCase;
 
     @BeforeEach
@@ -41,7 +48,12 @@ class GetStorefrontGlobalsUseCaseTest {
         when(metafieldQuery.findForOperator(any())).thenReturn(List.of());
         experienceQuery = mock(StorefrontExperienceQuery.class);
         when(experienceQuery.findFeatured(any(), anyString())).thenReturn(List.of());
-        useCase = new GetStorefrontGlobalsUseCase(shopQuery, metafieldQuery, experienceQuery);
+        menuQuery = mock(StorefrontMenuQuery.class);
+        when(menuQuery.findMenus(any(), anyString())).thenReturn(List.of());
+        pageQuery = mock(StorefrontPageQuery.class);
+        when(pageQuery.findPublishedHandles(any(), any(), anyString())).thenReturn(Map.of());
+        useCase = new GetStorefrontGlobalsUseCase(shopQuery, metafieldQuery, experienceQuery,
+                menuQuery, pageQuery);
     }
 
     private void shopExists(String primary, Set<String> supported) {
@@ -192,5 +204,45 @@ class GetStorefrontGlobalsUseCaseTest {
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
         verify(experienceQuery, never()).findFeatured(any(), anyString());
+    }
+
+    /**
+     * <b>The ids are collected across every menu before either lookup runs.</b> A
+     * header and a footer both linking to the same page must cost one read
+     * between them, not one each — and a menu with fifty items must still cost
+     * two, not fifty.
+     */
+    @Test
+    void everyMenusTargetsAreResolvedInTwoLookups() {
+        shopExists("es", Set.of("es"));
+        UUID experienceId = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3e10");
+        UUID pageId = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3e11");
+        when(menuQuery.findMenus(OPERATOR, "es")).thenReturn(List.of(
+                new MenuView("main-menu", "Main menu", List.of(
+                        new MenuItemView(UUID.randomUUID(), null, "Sail", "EXPERIENCE", experienceId, null, 0),
+                        new MenuItemView(UUID.randomUUID(), null, "About", "PAGE", pageId, null, 1))),
+                new MenuView("footer", "Footer", List.of(
+                        new MenuItemView(UUID.randomUUID(), null, "About", "PAGE", pageId, null, 0)))));
+        when(experienceQuery.findPublishedHandles(OPERATOR, Set.of(experienceId), "es"))
+                .thenReturn(Map.of(experienceId, "sunset-sail"));
+        when(pageQuery.findPublishedHandles(OPERATOR, Set.of(pageId), "es"))
+                .thenReturn(Map.of(pageId, "about-us"));
+
+        StorefrontGlobals globals = useCase.execute("acme", null).orElseThrow();
+
+        assertThat(globals.menus()).extracting("handle").containsExactly("main-menu", "footer");
+        // The page id appears in both menus and is asked for once, as a set.
+        verify(pageQuery).findPublishedHandles(OPERATOR, Set.of(pageId), "es");
+        verify(experienceQuery).findPublishedHandles(OPERATOR, Set.of(experienceId), "es");
+    }
+
+    /** No menus means no lookups at all — nothing to resolve. */
+    @Test
+    void anOperatorWithNoMenusAsksNeitherContext() {
+        shopExists("es", Set.of("es"));
+
+        assertThat(useCase.execute("acme", null).orElseThrow().menus()).isEmpty();
+        verify(pageQuery, never()).findPublishedHandles(any(), any(), anyString());
+        verify(experienceQuery, never()).findPublishedHandles(any(), any(), anyString());
     }
 }
