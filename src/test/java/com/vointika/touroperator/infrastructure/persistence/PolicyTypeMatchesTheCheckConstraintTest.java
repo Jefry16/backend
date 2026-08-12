@@ -1,6 +1,7 @@
 package com.vointika.touroperator.infrastructure.persistence;
 
 import com.vointika.touroperator.domain.enums.PolicyType;
+import com.vointika.architecture.MigrationCheckConstraints;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -21,6 +22,6 @@ class PolicyTypeMatchesTheCheckConstraintTest {
 
     @Test
     void everyPolicyTypeIsAcceptedByTheCheckConstraint() throws IOException {
-        MigrationCheckConstraints.assertEnumMatches("type", PolicyType.class, "tour_operator_policies");
+        MigrationCheckConstraints.assertEnumMatches("touroperator", "type", PolicyType.class, "tour_operator_policies");
     }
 }

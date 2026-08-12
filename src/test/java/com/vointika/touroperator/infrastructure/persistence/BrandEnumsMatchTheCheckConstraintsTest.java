@@ -2,6 +2,7 @@ package com.vointika.touroperator.infrastructure.persistence;
 
 import com.vointika.touroperator.domain.enums.BrandColorRole;
 import com.vointika.touroperator.domain.enums.BrandSocialPlatform;
+import com.vointika.architecture.MigrationCheckConstraints;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -21,13 +22,13 @@ class BrandEnumsMatchTheCheckConstraintsTest {
 
     @Test
     void everySocialPlatformIsAcceptedByTheCheckConstraint() throws IOException {
-        MigrationCheckConstraints.assertEnumMatches("platform", BrandSocialPlatform.class,
+        MigrationCheckConstraints.assertEnumMatches("touroperator", "platform", BrandSocialPlatform.class,
                 "tour_operator_brand_social_links");
     }
 
     @Test
     void everyColorRoleIsAcceptedByTheCheckConstraint() throws IOException {
-        MigrationCheckConstraints.assertEnumMatches("role", BrandColorRole.class,
+        MigrationCheckConstraints.assertEnumMatches("touroperator", "role", BrandColorRole.class,
                 "tour_operator_brand_colors");
     }
 }
