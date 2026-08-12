@@ -28,6 +28,8 @@ public record ExperienceResponse(
         List<String> galleryUrls,
         int bookingCutoffHours,
         boolean published,
+        String seoTitle,
+        String seoDescription,
         BigDecimal startingPrice,
         UUID createdBy,
         Instant createdAt) {
@@ -38,6 +40,7 @@ public record ExperienceResponse(
                 v.featured(),
                 v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
                 v.bookingCutoffHours(),
-                v.published(), v.startingPrice(), v.createdBy(), v.createdAt());
+                v.published(), v.seoTitle(), v.seoDescription(),
+                v.startingPrice(), v.createdBy(), v.createdAt());
     }
 }

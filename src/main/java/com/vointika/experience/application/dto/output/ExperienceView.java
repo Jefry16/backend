@@ -31,6 +31,8 @@ public record ExperienceView(
         List<String> galleryUrls,
         int bookingCutoffHours,
         boolean published,
+        String seoTitle,
+        String seoDescription,
         BigDecimal startingPrice,
         Instant createdAt) {
 
@@ -47,6 +49,9 @@ public record ExperienceView(
                 e.getLongDescription().value(), e.isFeatured(),
                 e.getThumbnailMediaId(), thumbnailUrl, e.getMediaIds(), gallery,
                 e.getBookingCutoffHours().value(),
-                e.isPublished(), e.getStartingPrice().value(), e.getCreatedAt());
+                e.isPublished(),
+                e.getSeoTitle() == null ? null : e.getSeoTitle().value(),
+                e.getSeoDescription() == null ? null : e.getSeoDescription().value(),
+                e.getStartingPrice().value(), e.getCreatedAt());
     }
 }

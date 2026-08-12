@@ -13,7 +13,9 @@ public record ExperienceTranslationView(
         String name,
         String description,
         String longDescription,
-        String handle) {
+        String handle,
+        String seoTitle,
+        String seoDescription) {
 
     public static ExperienceTranslationView from(ExperienceTranslation t) {
         return new ExperienceTranslationView(
@@ -21,6 +23,8 @@ public record ExperienceTranslationView(
                 t.name() == null ? null : t.name().value(),
                 t.description() == null ? null : t.description().value(),
                 t.longDescription() == null ? null : t.longDescription().value(),
-                t.handle() == null ? null : t.handle().value());
+                t.handle() == null ? null : t.handle().value(),
+                t.seoTitle() == null ? null : t.seoTitle().value(),
+                t.seoDescription() == null ? null : t.seoDescription().value());
     }
 }

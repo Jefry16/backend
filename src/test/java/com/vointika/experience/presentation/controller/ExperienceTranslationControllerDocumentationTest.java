@@ -88,7 +88,8 @@ class ExperienceTranslationControllerDocumentationTest {
 
     private ExperienceTranslationView esView() {
         return new ExperienceTranslationView("es", "Buceo al atardecer", "Buceo en el arrecife",
-                "Descripción larga…", "buceo-al-atardecer");
+                "Descripción larga…", "buceo-al-atardecer",
+                "Buceo al atardecer | Acme Tours", "Buceo guiado en el arrecife al anochecer.");
     }
 
     private static final String BODY = """
@@ -124,6 +125,12 @@ class ExperienceTranslationControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.locale").value("es"))
+                // The upsert has always accepted these two — the input record it takes
+                // as its body carries them and the use case writes them — but nothing
+                // could read them back, so a whole-replace save cleared them.
+                .andExpect(jsonPath("$.seoTitle").value("Buceo al atardecer | Acme Tours"))
+                .andExpect(jsonPath("$.seoDescription")
+                        .value("Buceo guiado en el arrecife al anochecer."))
                 .andDo(document("experiences/translations/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
