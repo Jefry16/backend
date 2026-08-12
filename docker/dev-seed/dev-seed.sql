@@ -742,34 +742,34 @@ ON CONFLICT (slot_id, audience_id) DO NOTHING;
 -- handle) on About.
 INSERT INTO page.pages
     (id, tour_operator_id, title, handle, body, seo_title, seo_description,
-     status, created_by, created_at, updated_at)
+     published, created_by, created_at, updated_at)
 VALUES
     (:'page_about_id', :'operator_id', 'About us', 'about-us',
      '<h1>Who we are</h1>' || E'\n' ||
      '<p>Family-run boat tours on the coast since 1998. Small groups, local skippers, no rush.</p>',
      'About our boat tours', 'Family-run boat tours on the coast since 1998.',
-     'PUBLISHED', :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '60 days'),
+     TRUE, :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '60 days'),
     (:'page_contact_id', :'operator_id', 'Contact', 'contact',
      '<h1>Get in touch</h1>' || E'\n' ||
      '<p>Email <a href="mailto:hello@acme.test">hello@acme.test</a> or find us at the Old Port kiosk from 9:00.</p>',
      NULL, NULL,
-     'PUBLISHED', :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '370 days'),
+     TRUE, :'user_id', NOW() - INTERVAL '370 days', NOW() - INTERVAL '370 days'),
     (:'page_faq_id', :'operator_id', 'FAQ', 'faq',
      '<h1>Frequently asked questions</h1>' || E'\n' ||
      '<h2>What if it rains?</h2><p>We reschedule or refund — your pick.</p>',
      NULL, NULL,
-     'DRAFT', :'user_id', NOW() - INTERVAL '340 days', NOW() - INTERVAL '340 days'),
+     FALSE, :'user_id', NOW() - INTERVAL '340 days', NOW() - INTERVAL '340 days'),
     (:'page_boats_id', :'operator_id', 'Our boats', 'our-boats',
      '<h1>The fleet</h1>' || E'\n' ||
      '<p>Two sailing boats and a RIB, all under twelve passengers.</p>' || E'\n' ||
      '<ul><li><strong>Sea Swallow</strong> — 11 m sloop, twelve guests.</li>' ||
      '<li><strong>Blue Marlin</strong> — 9 m RIB, eight guests.</li></ul>',
      'Our boats', 'Two sailing boats and a RIB, all under twelve passengers.',
-     'PUBLISHED', :'user_maria_id', NOW() - INTERVAL '150 days', NOW() - INTERVAL '20 days'),
+     TRUE, :'user_maria_id', NOW() - INTERVAL '150 days', NOW() - INTERVAL '20 days'),
     (:'page_press_id', :'operator_id', 'Press', 'press',
      '<h1>Press</h1>' || E'\n' || '<p>Kit and photos on request.</p>',
      NULL, NULL,
-     'DRAFT', :'user_sofia_id', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days')
+     FALSE, :'user_sofia_id', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO page.page_translations

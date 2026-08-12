@@ -1,10 +1,7 @@
 package com.vointika.page.infrastructure.persistence.entity;
 
-import com.vointika.page.domain.enums.PageStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -43,9 +40,8 @@ public class PageJpaEntity {
     @Column(length = 320)
     private String seoDescription;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
-    private PageStatus status;
+    @Column(nullable = false)
+    private boolean published;
 
     @Column(nullable = false, updatable = false)
     private UUID createdBy;

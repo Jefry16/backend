@@ -16,7 +16,7 @@ public record PageResponse(
         String body,
         String seoTitle,
         String seoDescription,
-        String status,
+        boolean published,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -29,7 +29,7 @@ public record PageResponse(
                 p.getBody().value(),
                 p.getSeoTitle().map(PageSeoTitle::value).orElse(null),
                 p.getSeoDescription().map(PageSeoDescription::value).orElse(null),
-                p.getStatus().name(),
+                p.isPublished(),
                 p.getCreatedAt(),
                 p.getUpdatedAt());
     }

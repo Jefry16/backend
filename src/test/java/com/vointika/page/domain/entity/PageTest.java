@@ -1,6 +1,5 @@
 package com.vointika.page.domain.entity;
 
-import com.vointika.page.domain.enums.PageStatus;
 import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
@@ -28,22 +27,22 @@ class PageTest {
     @Test
     void newPageStartsDraftAndTransitionsAreGuarded() {
         Page p = page();
-        assertThat(p.getStatus()).isEqualTo(PageStatus.DRAFT);
+        assertThat(p.isPublished()).isFalse();
         assertThatThrownBy(p::unpublish).isInstanceOf(ConflictException.class);
         p.publish();
-        assertThat(p.getStatus()).isEqualTo(PageStatus.PUBLISHED);
+        assertThat(p.isPublished()).isTrue();
         assertThatThrownBy(p::publish).isInstanceOf(ConflictException.class);
         p.unpublish();
-        assertThat(p.getStatus()).isEqualTo(PageStatus.DRAFT);
+        assertThat(p.isPublished()).isFalse();
     }
 
     @Test
     void auditSnapshotExposesExactlyTheAuditedFields() {
         Map<String, Object> snapshot = page().auditSnapshot();
         assertThat(snapshot.keySet()).containsExactly(
-                "title", "handle", "body", "seoTitle", "seoDescription", "status");
+                "title", "handle", "body", "seoTitle", "seoDescription", "published");
         assertThat(snapshot.get("handle")).isEqualTo("about-us");
-        assertThat(snapshot.get("status")).isEqualTo("DRAFT");
+        assertThat(snapshot.get("published")).isEqualTo("false");
     }
 
     @Test

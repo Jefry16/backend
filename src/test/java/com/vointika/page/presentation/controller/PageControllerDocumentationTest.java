@@ -9,7 +9,6 @@ import com.vointika.page.application.usecase.RenamePageUseCase;
 import com.vointika.page.application.usecase.UnpublishPageUseCase;
 import com.vointika.page.application.usecase.UpdatePageUseCase;
 import com.vointika.page.domain.entity.Page;
-import com.vointika.page.domain.enums.PageStatus;
 import com.vointika.page.domain.projection.PageListItem;
 import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
@@ -111,7 +110,7 @@ class PageControllerDocumentationTest {
                 new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"),
                 new PageSeoTitle("About"), new PageSeoDescription("Who we are"),
-                PageStatus.DRAFT,
+                false,
                 UUID.fromString(USER),
                 Instant.parse("2026-07-27T10:00:00Z"), Instant.parse("2026-07-27T10:00:00Z"));
     }
@@ -121,7 +120,7 @@ class PageControllerDocumentationTest {
         authenticated();
         when(listPagesUseCase.execute(any(), any())).thenReturn(new CursorPage<>(
                 List.of(new PageListItem(UUID.fromString(PAGE), "About us", "about-us",
-                        PageStatus.DRAFT,
+                        false,
                         Instant.parse("2026-07-27T10:00:00Z"), Instant.parse("2026-07-27T10:00:00Z"))),
                 null));
 
@@ -136,7 +135,7 @@ class PageControllerDocumentationTest {
                                 fieldWithPath("data[].context").description("The entity's collection: \"pages\""),
                                 fieldWithPath("data[].title").description("Display title"),
                                 fieldWithPath("data[].handle").description("URL segment (/pages/{handle}), unique per operator"),
-                                fieldWithPath("data[].status").description("DRAFT or PUBLISHED"),
+                                fieldWithPath("data[].published").description("Whether the page is live on the storefront"),
                                 fieldWithPath("data[].createdAt").description("When created"),
                                 fieldWithPath("data[].updatedAt").description("Last content change"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
@@ -163,7 +162,7 @@ class PageControllerDocumentationTest {
                                 fieldWithPath("body").description("Operator-authored raw HTML (stored verbatim; escaping is the renderer's concern)"),
                                 fieldWithPath("seoTitle").description("SEO <title> override (≤70); null = derive from the title").optional(),
                                 fieldWithPath("seoDescription").description("SEO meta description override (≤320); null = none").optional(),
-                                fieldWithPath("status").description("DRAFT or PUBLISHED"),
+                                fieldWithPath("published").description("Whether the page is live on the storefront"),
                                 fieldWithPath("createdAt").description("When created"),
                                 fieldWithPath("updatedAt").description("Last content change"))));
     }
