@@ -1,5 +1,6 @@
 package com.vointika.storefront.application.usecase;
 
+import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontShopQuery;
 import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
@@ -30,11 +31,14 @@ public class GetStorefrontGlobalsUseCase {
 
     private final StorefrontShopQuery shopQuery;
     private final StorefrontMetafieldQuery metafieldQuery;
+    private final StorefrontExperienceQuery experienceQuery;
 
     public GetStorefrontGlobalsUseCase(StorefrontShopQuery shopQuery,
-                                       StorefrontMetafieldQuery metafieldQuery) {
+                                       StorefrontMetafieldQuery metafieldQuery,
+                                       StorefrontExperienceQuery experienceQuery) {
         this.shopQuery = shopQuery;
         this.metafieldQuery = metafieldQuery;
+        this.experienceQuery = experienceQuery;
     }
 
     /**
@@ -45,11 +49,13 @@ public class GetStorefrontGlobalsUseCase {
                 LocaleRule.resolve(pathLocale, locales.primaryLocale(), locales.supportedLocales())
                         .flatMap(locale -> shopQuery.findShop(locales.tourOperatorId(), locale)
                                 .map(shop -> globals(shop, locale, locales,
-                                        metafieldQuery.findForOperator(locales.tourOperatorId())))));
+                                        metafieldQuery.findForOperator(locales.tourOperatorId()),
+                                        experienceQuery.findFeatured(locales.tourOperatorId(), locale)))));
     }
 
     private static StorefrontGlobals globals(ShopView shop, String locale, ShopLocalesView locales,
-                                             List<StorefrontMetafieldQuery.MetafieldView> metafields) {
+                                             List<StorefrontMetafieldQuery.MetafieldView> metafields,
+                                             List<StorefrontExperienceQuery.ExperienceCardView> featured) {
         return new StorefrontGlobals(
                 shop,
                 // The home page has no object of its own, so the shop IS the whole
@@ -59,6 +65,7 @@ public class GetStorefrontGlobalsUseCase {
                 shop.seoDescription(),
                 shop.ogImageMediaId(),
                 metafields,
+                featured,
                 new LocalizationData(locale, locales.primaryLocale(),
                         primaryFirst(locales.primaryLocale(), locales.supportedLocales())));
     }

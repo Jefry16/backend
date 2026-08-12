@@ -2,6 +2,7 @@ package com.vointika.storefront.presentation.response;
 
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
@@ -50,6 +51,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                                         String pageDescription,
                                         String ogImageUrl,
                                         Routes routes,
+                                        List<ExperienceCard> featuredExperiences,
                                         Localization localization) {
 
     /**
@@ -137,6 +139,30 @@ public record StorefrontGlobalsResponse(Shop shop,
     public record Routes(String root, String experiences) {}
 
     /**
+     * One featured experience, top-level rather than under {@code shop} — it is
+     * catalogue, which Shopify also keeps beside the shop object rather than
+     * inside it.
+     *
+     * <p><b>{@code startingPrice} is a string.</b> It is a decimal amount, and a
+     * JSON number is a double on the far side of most parsers, which loses cents
+     * on values a customer is asked to pay. The currency it is in is
+     * {@code shop.currency} — there is one per operator, so repeating it per card
+     * would be a field that cannot vary.
+     *
+     * <p><b>{@code url} points at a route that does not exist yet.</b> The
+     * experience detail page is unbuilt; the link is what gives a localized
+     * handle a reader, and it is recorded as a known gap rather than left to
+     * surprise someone.
+     */
+    public record ExperienceCard(UUID id,
+                                 String handle,
+                                 String name,
+                                 String description,
+                                 String startingPrice,
+                                 String url,
+                                 Image thumbnail) {}
+
+    /**
      * @param language  the one being served
      * @param languages every locale the shop publishes, primary first
      */
@@ -165,6 +191,11 @@ public record StorefrontGlobalsResponse(Shop shop,
         add(ids, brand.squareLogoMediaId());
         add(ids, brand.faviconMediaId());
         add(ids, brand.coverImageMediaId());
+        // The cards' thumbnails ride the same batch. Resolving them separately
+        // would be one lookup per card on every page.
+        for (ExperienceCardView card : globals.featuredExperiences()) {
+            add(ids, card.thumbnailMediaId());
+        }
         return ids;
     }
 
@@ -210,7 +241,22 @@ public record StorefrontGlobalsResponse(Shop shop,
                 ogImage == null ? null : ogImage.url(),
                 new Routes(prefix.isEmpty() ? StorefrontRoutes.HOME : prefix,
                         prefix + StorefrontRoutes.EXPERIENCES),
+                globals.featuredExperiences().stream()
+                        .map(card -> card(card, prefix, assets, urls))
+                        .toList(),
                 localization(globals));
+    }
+
+    private static ExperienceCard card(ExperienceCardView card, String prefix,
+                                       Map<UUID, MediaAsset> assets, MediaUrlResolver urls) {
+        return new ExperienceCard(
+                card.id(),
+                card.handle(),
+                card.name(),
+                card.description(),
+                card.startingPrice() == null ? null : card.startingPrice().toPlainString(),
+                prefix + StorefrontRoutes.EXPERIENCES + "/" + card.handle(),
+                image(card.thumbnailMediaId(), assets, urls));
     }
 
     private static Brand brand(BrandView brand, Map<UUID, MediaAsset> assets, MediaUrlResolver urls) {

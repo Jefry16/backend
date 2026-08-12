@@ -1,5 +1,6 @@
 package com.vointika.storefront.application.dto.output;
 
+import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
 
@@ -26,12 +27,17 @@ import java.util.UUID;
  * @param metafields     flat here, nested by namespace in presentation — the
  *                       shape a theme addresses is a URL-side concern, and the
  *                       order they arrive in is the query's promise
+ * @param featuredExperiences bounded and ordered by the port, capped at
+ *                       {@code FEATURED_LIMIT}: these ride <b>every</b> page, so
+ *                       an unbounded list here is a payload a merchant grows by
+ *                       ticking a checkbox
  */
 public record StorefrontGlobals(ShopView shop,
                                 String pageTitle,
                                 String pageDescription,
                                 UUID ogImageMediaId,
                                 List<MetafieldView> metafields,
+                                List<ExperienceCardView> featuredExperiences,
                                 LocalizationData localization) {
 
     /**

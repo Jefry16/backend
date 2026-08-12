@@ -100,6 +100,11 @@ port or an event (never a direct import).
 > - **There is no key-side copy of the shop.** The use case carries the shared
 >   port's `ShopView` directly; a field-for-field application DTO beside it would
 >   be the identical-pair shape MAP already carries as debt.
+> - **`featuredExperiences` is top-level and capped at 12.** Shopify's globals
+>   give lazy `collections`/`all_products` accessors; an eager JSON payload
+>   cannot copy that, so the bound is the merchant's `featured` flag plus a hard
+>   cap. The filter, order and cap all live in one derived query name, and the
+>   tests parse it rather than assert a string.
 > - **`shop.metafields` is Shopify's shape with our vocabulary** —
 >   `shop.metafields.<namespace>.<key>` addressing a `{type, value}` object.
 >   Their `type` codes are not ours (`single_line_text`, not
