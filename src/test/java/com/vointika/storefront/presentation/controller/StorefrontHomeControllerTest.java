@@ -4,6 +4,7 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
@@ -59,6 +60,8 @@ class StorefrontHomeControllerTest {
     private static final UUID LOGO = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb1");
     private static final UUID OG_IMAGE = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb2");
     private static final UUID POLICY = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb3");
+    private static final UUID EXPERIENCE = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb4");
+    private static final UUID THUMB = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb5");
 
     @Autowired private MockMvc mockMvc;
 
@@ -74,7 +77,8 @@ class StorefrontHomeControllerTest {
         when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
         when(mediaAssetBatchQuery.findAssetsByIds(any(), any())).thenReturn(Map.of(
                 LOGO, new MediaAsset("acme/logo.png", "Acme logo", 800, 400),
-                OG_IMAGE, new MediaAsset("acme/og.png", null, null, null)));
+                OG_IMAGE, new MediaAsset("acme/og.png", null, null, null),
+                THUMB, new MediaAsset("acme/sunset.png", "A boat at sunset", 1200, 800)));
         when(mediaUrlResolver.toUrl(anyString()))
                 .thenAnswer(call -> "https://media.vointika.test/" + call.getArgument(0));
         // Unlocked unless a test says otherwise: the gate is real in this slice
@@ -99,6 +103,8 @@ class StorefrontHomeControllerTest {
                 List.of(new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00"),
                         new MetafieldView("custom", "meeting-point", "single_line_text", "Muelle 3"),
                         new MetafieldView("legal", "licence", "single_line_text", "TA-1123")),
+                List.of(new ExperienceCardView(EXPERIENCE, "sunset-sail", "Sunset sail",
+                        "Sail into the sunset", new java.math.BigDecimal("95.00"), THUMB)),
                 new LocalizationData(current, primary, supported));
     }
 
@@ -356,11 +362,63 @@ class StorefrontHomeControllerTest {
         StorefrontGlobals bare = new StorefrontGlobals(
                 globals("es", "es", List.of("es")).shop(),
                 "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE,
-                List.of(), new LocalizationData("es", "es", List.of("es")));
+                List.of(), List.of(), new LocalizationData("es", "es", List.of("es")));
         served(null, bare);
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
                 .andExpect(jsonPath("$.shop.metafields").isEmpty())
                 .andExpect(jsonPath("$.shop.metafields").exists());
+    }
+
+    /**
+     * The cards are top-level, not under {@code shop} — they are catalogue, which
+     * is where Shopify keeps them too.
+     */
+    @Test
+    void theGlobalsCarryTheFeaturedExperiences() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.featuredExperiences[0].handle").value("sunset-sail"))
+                .andExpect(jsonPath("$.featuredExperiences[0].name").value("Sunset sail"))
+                .andExpect(jsonPath("$.featuredExperiences[0].url").value("/experiences/sunset-sail"))
+                .andExpect(jsonPath("$.shop.featuredExperiences").doesNotExist());
+    }
+
+    /**
+     * A decimal amount, as a string. A JSON number is a double on the far side of
+     * most parsers, and this is a value a customer is asked to pay.
+     */
+    @Test
+    void aCardsPriceKeepsItsCents() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.featuredExperiences[0].startingPrice").value("95.00"));
+    }
+
+    /**
+     * The thumbnails ride the same media batch as the brand images — one lookup
+     * for the whole response, which is what {@code mediaIds} exists to guarantee.
+     */
+    @Test
+    void aCardsThumbnailIsResolvedLikeEveryOtherImage() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.featuredExperiences[0].thumbnail.url")
+                        .value("https://media.vointika.test/acme/sunset.png"))
+                .andExpect(jsonPath("$.featuredExperiences[0].thumbnail.alt").value("A boat at sunset"))
+                .andExpect(jsonPath("$.featuredExperiences[0].thumbnail.aspectRatio").value(1.5));
+    }
+
+    /** On a secondary locale every card link carries the prefix, or it leaves the language. */
+    @Test
+    void aCardsUrlCarriesTheLocalePrefix() throws Exception {
+        served("en", globals("en", "es", List.of("es", "en")));
+
+        mockMvc.perform(get("/en").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.featuredExperiences[0].url").value("/en/experiences/sunset-sail"));
     }
 }

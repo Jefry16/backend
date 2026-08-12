@@ -1,5 +1,7 @@
 package com.vointika.storefront.application.usecase;
 
+import com.vointika.shared.port.StorefrontExperienceQuery;
+import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery;
@@ -29,6 +31,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
     private StorefrontShopQuery shopQuery;
     private StorefrontMetafieldQuery metafieldQuery;
+    private StorefrontExperienceQuery experienceQuery;
     private GetStorefrontGlobalsUseCase useCase;
 
     @BeforeEach
@@ -36,7 +39,9 @@ class GetStorefrontGlobalsUseCaseTest {
         shopQuery = mock(StorefrontShopQuery.class);
         metafieldQuery = mock(StorefrontMetafieldQuery.class);
         when(metafieldQuery.findForOperator(any())).thenReturn(List.of());
-        useCase = new GetStorefrontGlobalsUseCase(shopQuery, metafieldQuery);
+        experienceQuery = mock(StorefrontExperienceQuery.class);
+        when(experienceQuery.findFeatured(any(), anyString())).thenReturn(List.of());
+        useCase = new GetStorefrontGlobalsUseCase(shopQuery, metafieldQuery, experienceQuery);
     }
 
     private void shopExists(String primary, Set<String> supported) {
@@ -160,5 +165,32 @@ class GetStorefrontGlobalsUseCaseTest {
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
         verify(metafieldQuery, never()).findForOperator(any());
+    }
+
+    /**
+     * The cards are read <b>in the locale the rule chose</b>, not the primary and
+     * not the path segment — a handle and a name are both translated, so passing
+     * the wrong one shows a Spanish visitor English cards linking to English URLs.
+     */
+    @Test
+    void featuredExperiencesAreReadInTheRenderedLocale() {
+        shopExists("es", Set.of("es", "en"));
+        when(experienceQuery.findFeatured(OPERATOR, "en")).thenReturn(List.of(
+                new ExperienceCardView(OPERATOR, "sunset-sail", "Sunset sail", "Sail into the sunset",
+                        new java.math.BigDecimal("95.00"), null)));
+
+        StorefrontGlobals globals = useCase.execute("acme", "en").orElseThrow();
+
+        assertThat(globals.featuredExperiences()).singleElement()
+                .satisfies(card -> assertThat(card.handle()).isEqualTo("sunset-sail"));
+        verify(experienceQuery).findFeatured(OPERATOR, "en");
+    }
+
+    @Test
+    void anAddressThatDoesNotExistReadsNoExperiencesEither() {
+        shopExists("es", Set.of("es", "en"));
+
+        assertThat(useCase.execute("acme", "de")).isEmpty();
+        verify(experienceQuery, never()).findFeatured(any(), anyString());
     }
 }
