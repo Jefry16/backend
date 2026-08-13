@@ -57,17 +57,45 @@ import java.util.UUID;
  * <p><b>{@code ogImageUrl} has no Shopify counterpart</b>, and that is the
  * fourth departure: Shopify writes its own Open Graph tags through
  * {@code content_for_header}, which we have no equivalent of, so a theme needs
- * the value itself.
+ * the value itself. {@code canonicalUrl} is theirs and {@code pageType} is
+ * theirs flattened out of {@code request} — both here for the same reason, that
+ * nothing writes the head for us.
+ *
+ * <p><b>{@code canonicalUrl} is always self-referencing</b>, and that is a
+ * consequence of {@code LocaleRule} rather than a choice made here: the primary
+ * locale lives at the bare path and {@code /{primary}} is a 404, so one page in
+ * one language has exactly one address. It is worth serving anyway — a visit
+ * carrying {@code ?utm_source=…} is the same page, and a self-referencing
+ * canonical is what says so. Built from the <b>resolved</b> locale and handle,
+ * never echoed back off the request, so it states the address we consider
+ * authoritative rather than the one the client happened to type.
  */
 public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                         String pageTitle,
                                         String pageDescription,
                                         String ogImageUrl,
+                                        String canonicalUrl,
+                                        String pageType,
                                         Routes routes,
                                         List<ExperienceCard> featuredExperiences,
                                         Map<String, Menu> linklists,
                                         Localization localization,
                                         @JsonInclude(JsonInclude.Include.NON_NULL) Page page) {
+
+    /**
+     * Shopify's {@code request.page_type} values, for the addresses that serve
+     * globals. A theme branches on this for JSON-LD's {@code @type} and for
+     * analytics; it is the one part of their {@code request} object that is not
+     * either theme-editor state or something already served
+     * ({@code origin} is {@code tourOperator.url}, {@code locale} is
+     * {@code localization.language}).
+     *
+     * <p>Each address names its own, at the {@link #from} overload that builds
+     * it, rather than being inferred from which objects happen to be present. A
+     * route whose object is absent is not automatically the index.
+     */
+    public static final String PAGE_TYPE_INDEX = "index";
+    public static final String PAGE_TYPE_PAGE = "page";
 
     /**
      * @param description the meta description, which is what Shopify's
@@ -329,7 +357,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                  String origin,
                                                  Map<UUID, MediaAsset> assets,
                                                  MediaUrlResolver urls) {
-        return from(globals, null, origin, assets, urls);
+        return from(globals, null, PAGE_TYPE_INDEX, origin, assets, urls);
     }
 
     /** The same globals, plus the object the route is associated with. */
@@ -338,12 +366,23 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                  String origin,
                                                  Map<UUID, MediaAsset> assets,
                                                  MediaUrlResolver urls) {
+        return from(globals, page, PAGE_TYPE_PAGE, origin, assets, urls);
+    }
+
+    private static StorefrontGlobalsResponse from(StorefrontGlobals globals,
+                                                  PageView page,
+                                                  String pageType,
+                                                  String origin,
+                                                  Map<UUID, MediaAsset> assets,
+                                                  MediaUrlResolver urls) {
         TourOperatorView tourOperator = globals.tourOperator();
         String prefix = localePrefix(globals);
         List<Policy> policies = tourOperator.policies().stream()
                 .map(p -> policy(p, prefix))
                 .toList();
         Image ogImage = image(globals.ogImageMediaId(), assets, urls);
+        String root = prefix.isEmpty() ? StorefrontRoutes.HOME : prefix;
+        String pagePath = page == null ? null : prefix + StorefrontRoutes.PAGES + "/" + page.handle();
 
         return new StorefrontGlobalsResponse(
                 new TourOperator(
@@ -368,15 +407,16 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 globals.pageTitle(),
                 globals.pageDescription(),
                 ogImage == null ? null : ogImage.url(),
-                new Routes(prefix.isEmpty() ? StorefrontRoutes.HOME : prefix,
-                        prefix + StorefrontRoutes.EXPERIENCES),
+                origin + (pagePath == null ? root : pagePath),
+                pageType,
+                new Routes(root, prefix + StorefrontRoutes.EXPERIENCES),
                 globals.featuredExperiences().stream()
                         .map(card -> card(card, prefix, assets, urls))
                         .toList(),
                 linklists(globals.menus(), prefix),
                 localization(globals),
                 page == null ? null : new Page(page.id(), page.handle(), page.title(), page.body(),
-                        prefix + StorefrontRoutes.PAGES + "/" + page.handle()));
+                        pagePath));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */

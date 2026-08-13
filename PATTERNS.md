@@ -100,6 +100,21 @@ port or an event (never a direct import).
 > - **There is no key-side copy of the operator.** The use case carries the shared
 >   port's `TourOperatorView` directly; a field-for-field application DTO beside it would
 >   be the identical-pair shape MAP already carries as debt.
+> - **`canonicalUrl` and `pageType` are top-level** (2026-08-13). Shopify writes
+>   the head itself through `content_for_header`; nothing writes ours, so the
+>   values a theme needs for `<link rel="canonical">` and JSON-LD are served
+>   rather than assumed. `pageType` is Shopify's `request.page_type` flattened
+>   out — the rest of that object is either theme-editor state (`design_mode`,
+>   `visual_preview_mode`) or already served (`origin` is `tourOperator.url`,
+>   `locale` is `localization.language`). **The canonical is always
+>   self-referencing**, which falls out of `LocaleRule` rather than being a
+>   choice: the primary locale lives at the bare path and `/{primary}` is a 404,
+>   so one page in one language has exactly one address. **Build it from the
+>   resolved locale and handle, never off the request URI** — echoing the URI
+>   back repeats the query string, which is the one thing the tag exists to
+>   strip. Each route names its own `pageType` at the `from` overload that builds
+>   it; inferring it from "which objects are present" makes any future
+>   object-less route the index by accident.
 > - **A `metaobject_reference` resolves to its entry** (2026-08-13). Liquid's own
 >   rule — their docs say a reference type's `value` "directly returns the
 >   referenced object", and there is no separate `reference` property — so the
