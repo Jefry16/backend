@@ -7,8 +7,8 @@ import java.util.UUID;
  * The operator's own metafield values, for the storefront. Implemented in
  * {@code metafield}.
  *
- * <p>Separate from {@link StorefrontShopQuery} because the values live in
- * another context: {@code touroperator} owns the shop row and implements that
+ * <p>Separate from {@link StorefrontTourOperatorQuery} because the values live in
+ * another context: {@code touroperator} owns the operator row and implements that
  * port, and it may not read {@code metafield}'s tables. So the globals are
  * assembled from two seams rather than one — the alternative would be a context
  * reaching across a boundary to make one query cheaper.

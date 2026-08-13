@@ -4,7 +4,7 @@ import com.vointika.reference.domain.entity.Country;
 import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
-import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
 import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.touroperator.domain.enums.BrandColorRole;
@@ -49,7 +49,7 @@ import java.util.UUID;
  * {@code GET .../brand} gives.
  */
 @Component
-public class StorefrontShopQueryImpl implements StorefrontShopQuery {
+public class StorefrontTourOperatorQueryImpl implements StorefrontTourOperatorQuery {
 
     private static final BrandView EMPTY_BRAND =
             new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of());
@@ -65,7 +65,7 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     private final TimezoneRepository timezoneRepository;
     private final CountryRepository countryRepository;
 
-    public StorefrontShopQueryImpl(TourOperatorJpaRepository operatorRepository,
+    public StorefrontTourOperatorQueryImpl(TourOperatorJpaRepository operatorRepository,
                                    TourOperatorTranslationJpaRepository translationRepository,
                                    TourOperatorBrandJpaRepository brandRepository,
                                    TourOperatorBrandColorJpaRepository colorRepository,
@@ -88,9 +88,9 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     }
 
     @Override
-    public Optional<ShopLocalesView> findLocales(String handle) {
+    public Optional<LocalesView> findLocales(String handle) {
         return operatorRepository.findByHandle(handle)
-                .map(o -> new ShopLocalesView(o.getId(), o.getPrimaryLocale(),
+                .map(o -> new LocalesView(o.getId(), o.getPrimaryLocale(),
                         Set.copyOf(o.getSupportedLocales())));
     }
 
@@ -116,19 +116,19 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     }
 
     @Override
-    public Optional<ShopView> findShop(UUID tourOperatorId, String locale) {
+    public Optional<TourOperatorView> findOperator(UUID tourOperatorId, String locale) {
         return operatorRepository.findById(tourOperatorId)
                 .map(operator -> buildShop(operator, locale));
     }
 
-    private ShopView buildShop(TourOperatorJpaEntity operator, String locale) {
+    private TourOperatorView buildShop(TourOperatorJpaEntity operator, String locale) {
         UUID id = operator.getId();
         TourOperatorTranslationJpaEntity translation =
                 translationRepository.findByTourOperatorIdAndLocale(id, locale).orElse(null);
         Currency currency = currencyRepository.findById(operator.getCurrencyId()).orElse(null);
         Timezone timezone = timezoneRepository.findById(operator.getTimezoneId()).orElse(null);
 
-        return new ShopView(
+        return new TourOperatorView(
                 id,
                 operator.getName(),
                 operator.getHandle(),

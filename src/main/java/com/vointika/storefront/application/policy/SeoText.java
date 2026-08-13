@@ -5,10 +5,10 @@ package com.vointika.storefront.application.policy;
  * landed.
  *
  * <p><b>One chain, in one place.</b> Every page type falls back the same way —
- * its own override, then what it is called, then the shop's — and the reason the
- * shop sits at the end is written into the migration that added those columns
+ * its own override, then what it is called, then the operator's — and the reason the
+ * operator sits at the end is written into the migration that added those columns
  * (touroperator/V8): the home page has no content object to carry SEO, and every
- * other page type falls back to the shop when its own overrides are empty.
+ * other page type falls back to the operator when its own overrides are empty.
  *
  * <p>It was inlined in the globals use case while the home page was the only
  * caller. The CMS page is the second, which is when it moved here rather than
@@ -24,8 +24,8 @@ public final class SeoText {
      * @param ownTitle    what the page is called, or null for a page type that
      *                    has no title of its own (the home page)
      */
-    public static String title(String ownSeoTitle, String ownTitle, String shopSeoTitle, String shopName) {
-        return firstPresent(ownSeoTitle, ownTitle, shopSeoTitle, shopName);
+    public static String title(String ownSeoTitle, String ownTitle, String shopSeoTitle, String operatorName) {
+        return firstPresent(ownSeoTitle, ownTitle, shopSeoTitle, operatorName);
     }
 
     /**

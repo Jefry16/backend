@@ -2,7 +2,7 @@ package com.vointika.storefront.application.dto.output;
 
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,7 +16,7 @@ import java.util.UUID;
  * home page's payload are the same thing, and every later route is these objects
  * plus one more.
  *
- * <p><b>It carries the port's {@code ShopView} rather than a copy of it.</b> A
+ * <p><b>It carries the port's {@code TourOperatorView} rather than a copy of it.</b> A
  * field-for-field duplicate would be an identical DTO pair with a mapper that
  * only copies — the shape MAP already carries as debt — and it would buy
  * nothing: the view is already a record of primitives with media as ids, which
@@ -34,7 +34,7 @@ import java.util.UUID;
  *                       an unbounded list here is a payload a merchant grows by
  *                       ticking a checkbox
  */
-public record StorefrontGlobals(ShopView shop,
+public record StorefrontGlobals(TourOperatorView tourOperator,
                                 String pageTitle,
                                 String pageDescription,
                                 UUID ogImageMediaId,
@@ -54,7 +54,7 @@ public record StorefrontGlobals(ShopView shop,
     public record LocalizationData(String current, String primary, List<String> supported) {}
 
     /**
-     * The same globals with the page's own SEO in place of the shop's defaults.
+     * The same globals with the page's own SEO in place of the operator's defaults.
      *
      * <p>A page type that carries its own title and description substitutes them
      * here rather than the assembler branching per route — the globals are built
@@ -62,7 +62,7 @@ public record StorefrontGlobals(ShopView shop,
      * case that knows about pages.
      */
     public StorefrontGlobals withSeo(String newPageTitle, String newPageDescription) {
-        return new StorefrontGlobals(shop, newPageTitle, newPageDescription, ogImageMediaId,
+        return new StorefrontGlobals(tourOperator, newPageTitle, newPageDescription, ogImageMediaId,
                 metafields, featuredExperiences, menus, localization);
     }
 }

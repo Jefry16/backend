@@ -38,7 +38,7 @@ public class StorefrontMustacheConfig {
                 // methods AND fields, so a template could read private state of
                 // anything reachable from the context. false = public members only.
                 .withCollector(new DefaultCollector(false))
-                // The stock compiler THROWS on a null or missing variable. Shop SEO
+                // The stock compiler THROWS on a null or missing variable. Operator SEO
                 // and both media keys are nullable, so without this an operator who
                 // has not filled in SEO gets a 500 instead of a page.
                 .defaultValue("")

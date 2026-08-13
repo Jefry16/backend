@@ -77,7 +77,7 @@ port or an event (never a direct import).
 ## 2a. The render envelope (a server-rendered page's context object)
 
 > **Half of this is live again, and the half that is has changed shape
-> (2026-08-11).** The globals — `shop`, `localization`, `routes` and the page's
+> (2026-08-11).** The globals — `tourOperator`, `localization`, `routes` and the page's
 > SEO — are built and served as **JSON** on `/` and `/{locale}`, because the
 > contract is being settled before anything is server-rendered again. What is
 > still deleted is everything page-specific: the experiences listing, the policy
@@ -93,12 +93,12 @@ port or an event (never a direct import).
 > - **camelCase, not Liquid's snake_case**, so the storefront reads like the rest
 >   of this codebase rather than like Shopify.
 > - **`localization` mirrors Shopify's shape**: `language` is the one being
->   served, and each entry carries `primary` (is it the shop's default) plus both
->   names — `name` in the shop's primary locale, `endonymName` in its own. Both
+>   served, and each entry carries `primary` (is it the operator's default) plus both
+>   names — `name` in the operator's primary locale, `endonymName` in its own. Both
 >   are derived from the JDK's CLDR data rather than curated, because Shopify's
 >   `name` is one value per *pair* of languages.
-> - **There is no key-side copy of the shop.** The use case carries the shared
->   port's `ShopView` directly; a field-for-field application DTO beside it would
+> - **There is no key-side copy of the operator.** The use case carries the shared
+>   port's `TourOperatorView` directly; a field-for-field application DTO beside it would
 >   be the identical-pair shape MAP already carries as debt.
 > - **`featuredExperiences` is top-level and capped at 12.** Shopify's globals
 >   give lazy `collections`/`all_products` accessors; an eager JSON payload
@@ -118,7 +118,7 @@ port or an event (never a direct import).
 >   `/pages/{handle}` adds `page`, serialized `NON_NULL` so the home page simply
 >   does not carry it — Liquid's model, where a template gets the globals plus
 >   its own object and the others are not defined. The page's SEO substitutes the
->   shop's through `StorefrontGlobals.withSeo`, so the globals are assembled once
+>   operator's through `StorefrontGlobals.withSeo`, so the globals are assembled once
 >   and the one page-shaped difference is applied by the use case that knows
 >   about pages. The chain itself is `SeoText`, extracted at its second caller.
 > - **A handle a locale renames has one address in that locale.** The canonical
@@ -133,13 +133,13 @@ port or an event (never a direct import).
 >   whose village is missing. `country.name` is English only, and the code rides
 >   alongside for a client that would rather localize it.
 > - **`shop.metafields` is Shopify's shape with our vocabulary** —
->   `shop.metafields.<namespace>.<key>` addressing a `{type, value}` object.
+>   `tourOperator.metafields.<namespace>.<key>` addressing a `{type, value}` object.
 >   Their `type` codes are not ours (`single_line_text`, not
 >   `single_line_text_field`), there is no `list?` because list types are out of
 >   our catalogue, and a JSON consumer reads `.value` where Liquid renders the
 >   metafield directly. It is assembled from a **second** shared port
 >   (`StorefrontMetafieldQuery`, implemented in `metafield`), because the context
->   that owns the shop row may not read those tables.
+>   that owns the operator row may not read those tables.
 >
 > Everything else below is still a **specification, not a description** — the
 > contract to rebuild from, every rule in it paid for once. The code is one
@@ -149,7 +149,7 @@ A page a template renders takes **named objects, never a flat bag of scalars**,
 and the same set on every page. `storefront` was the canonical one:
 
 ```
-shop          id, name, address, phone, email, url, description, passwordMessage,
+tourOperator  id, name, address, phone, email, url, description, passwordMessage,
               brand { slogan, shortDescription,
                       colors { primary [ {background, foreground} ], secondary [ … ] },
                       logo, squareLogo, favicon, coverImage,   -- Image or null
@@ -163,7 +163,7 @@ localization  locale, languages [ { code, current, url } ]
 ```
 
 **A named accessor beside a list is Shopify's shape and is worth copying.**
-`shop.policies` iterates; `shop.cancellationPolicy` is the one a booking form
+`tourOperator.policies` iterates; `tourOperator.cancellationPolicy` is the one a booking form
 wants without comparing type strings, and is **null** when the operator has not
 written it, so a template guards on the object. The four names are not derived
 from the type — `TERMS` is `termsOfService`, because that is what a theme author
@@ -180,14 +180,14 @@ is finally paid for. Rows uploaded before that slice keep nulls — nothing
 backfills — so a template still has to guard. An absent media reference is a **null `Image`**, not an
 `Image` with a null URL, because the template guards on the object.
 
-**There is no `shop.logoUrl`.** The logo is `shop.brand.logo`, where Shopify
+**There is no `tourOperator.logoUrl`.** The logo is `tourOperator.brand.logo`, where Shopify
 keeps it — their shop object has no logo of its own. Removing it was a breaking
 change to a published contract, made deliberately while no operator theme
 existed to break (#100).
 
-It exists **twice, in key form and URL form** — `ShopData`/`PageData`/
+It exists **twice, in key form and URL form** — `TourOperatorData`/`PageData`/
 `BrandData`/`ImageData`/`LocalizationData` under one `StorefrontPageData` in
-`application/dto/output`, and `Shop`/`Page`/`Brand`/`Image`/`Routes`/
+`application/dto/output`, and `TourOperator`/`Page`/`Brand`/`Image`/`Routes`/
 `Localization` in `presentation/view`. That is PATTERNS §5 applied to a page:
 application deals in storage keys and locale codes, presentation resolves both
 (`routes` has no application half at all — a route is a URL, and `aspectRatio`
@@ -210,15 +210,15 @@ field with no column behind it is invention and stays out; a field with a column
 goes in whether or not this slice renders it.
 
 That used to be two rules — the second demanding "a renderer in this slice or a
-named caller in the next", which is what kept `shop.timezone` out. It was right
-for a page and wrong for a contract, and #96 dropped it: `shop` is API the day an
+named caller in the next", which is what kept `tourOperator.timezone` out. It was right
+for a page and wrong for a contract, and #96 dropped it: the object is API the day an
 operator authors a theme, so a field added later is a breaking change while a
-field added now costs one record component. `shop.timezone` is in. So are
+field added now costs one record component. `tourOperator.timezone` is in. So are
 `brand.slogan` and the palette, which nothing renders yet — the shape is the
 contract and the data follows. A field is omitted only when no column backs it,
 or when it belongs somewhere else (theme settings, `localization`).
 
-**A contract filled in data-first needs a way to see it.** Most of `shop` is
+**A contract filled in data-first needs a way to see it.** Most of `tourOperator` is
 invisible in the page, so `?format=json` (`ThemeContextDump`, off unless
 `app.storefront.context-endpoint` said otherwise) rendered the object a template
 would receive instead of the page — the diagnostic that made this rule verifiable
@@ -233,7 +233,7 @@ the home page does.
 
 **The four top-level components are repeated across every page view, and that is
 accepted.** Records cannot extend, and nesting them would put
-`{{envelope.shop.name}}` in every template. Revisit when sections make the
+`{{envelope.tourOperator.name}}` in every template. Revisit when sections make the
 render context globals-plus-a-section — likely a `Map` — which is the first real
 second consumer; do not build the map before it.
 

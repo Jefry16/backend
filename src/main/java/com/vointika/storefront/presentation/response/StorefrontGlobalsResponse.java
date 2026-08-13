@@ -7,11 +7,11 @@ import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
-import com.vointika.shared.port.StorefrontShopQuery.AddressView;
-import com.vointika.shared.port.StorefrontShopQuery.BrandView;
-import com.vointika.shared.port.StorefrontShopQuery.ColorView;
-import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.ColorView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
@@ -32,9 +32,16 @@ import java.util.UUID;
  * <p><b>Names follow Shopify's, and renaming one is a breaking change</b> the day
  * an operator authors a theme. That is why the shape is decided here, against
  * JSON, while it costs a handful of records instead of a pile of templates.
- * Three deliberate departures, all recorded rather than accidental:
+ * Four deliberate departures, all recorded rather than accidental:
  *
  * <ul>
+ *   <li><b>{@code tourOperator}, not Shopify's {@code shop}.</b> The object is
+ *       the same one theirs is, and the name is the only thing that changed:
+ *       nothing here sells from a shelf, the context that owns the row is
+ *       {@code touroperator}, the admin serves it at
+ *       {@code /api/tour-operators}, and the metafield owner type is already
+ *       {@code TOUR_OPERATOR}. Shopify's name was the last place the platform's
+ *       vocabulary outranked our own.
  *   <li><b>camelCase, not Liquid's snake_case.</b> A theme author arriving from
  *       Shopify types {@code short_description}; every other surface this project
  *       serves is camelCase, and one convention across the codebase beat one
@@ -47,11 +54,11 @@ import java.util.UUID;
  * </ul>
  *
  * <p><b>{@code ogImageUrl} has no Shopify counterpart</b>, and that is the
- * third departure: Shopify writes its own Open Graph tags through
+ * fourth departure: Shopify writes its own Open Graph tags through
  * {@code content_for_header}, which we have no equivalent of, so a theme needs
  * the value itself.
  */
-public record StorefrontGlobalsResponse(Shop shop,
+public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                         String pageTitle,
                                         String pageDescription,
                                         String ogImageUrl,
@@ -63,34 +70,34 @@ public record StorefrontGlobalsResponse(Shop shop,
 
     /**
      * @param description the meta description, which is what Shopify's
-     *                    {@code shop.description} is too — the same value
+     *                    {@code tourOperator.description} is too — the same value
      *                    {@code pageDescription} carries on a page that has no
      *                    override of its own
      * @param passwordMessage public by design: it is shown to a visitor at the
      *                        gate. The password beside it in the database is not
      *                        here and must never be.
      */
-    public record Shop(UUID id,
-                       String name,
-                       String handle,
-                       String url,
-                       String description,
-                       Address address,
-                       String phone,
-                       String email,
-                       String passwordMessage,
-                       Currency currency,
-                       Timezone timezone,
-                       Brand brand,
-                       List<Policy> policies,
-                       Map<String, Map<String, Metafield>> metafields,
-                       Policy cancellationPolicy,
-                       Policy privacyPolicy,
-                       Policy termsOfService,
-                       Policy legalNotice) {}
+    public record TourOperator(UUID id,
+                               String name,
+                               String handle,
+                               String url,
+                               String description,
+                               Address address,
+                               String phone,
+                               String email,
+                               String passwordMessage,
+                               Currency currency,
+                               Timezone timezone,
+                               Brand brand,
+                               List<Policy> policies,
+                               Map<String, Map<String, Metafield>> metafields,
+                               Policy cancellationPolicy,
+                               Policy privacyPolicy,
+                               Policy termsOfService,
+                               Policy legalNotice) {}
 
     /**
-     * Shopify's {@code address}, minus what a shop does not have.
+     * Shopify's {@code address}, minus what an operator does not have.
      *
      * <p>Their {@code first_name}, {@code last_name}, {@code company},
      * {@code id} and {@code url} are customer-address fields; {@code province_code}
@@ -154,7 +161,7 @@ public record StorefrontGlobalsResponse(Shop shop,
     /**
      * Shopify's metafield object, minus what we do not have.
      *
-     * <p>Addressed the way theirs is — {@code shop.metafields.namespace.key} —
+     * <p>Addressed the way theirs is — {@code tourOperator.metafields.namespace.key} —
      * because that is what a theme author types. <b>{@code type} is our
      * vocabulary, not theirs</b>: {@code single_line_text}, never
      * {@code single_line_text_field}, decided when the context shipped.
@@ -221,14 +228,14 @@ public record StorefrontGlobalsResponse(Shop shop,
     public record Link(String title, String type, String url, int levels, List<Link> links) {}
 
     /**
-     * One featured experience, top-level rather than under {@code shop} — it is
-     * catalogue, which Shopify also keeps beside the shop object rather than
+     * One featured experience, top-level rather than under {@code tourOperator} — it is
+     * catalogue, which Shopify also keeps beside its {@code shop} object rather than
      * inside it.
      *
      * <p><b>{@code startingPrice} is a string.</b> It is a decimal amount, and a
      * JSON number is a double on the far side of most parsers, which loses cents
      * on values a customer is asked to pay. The currency it is in is
-     * {@code shop.currency} — there is one per operator, so repeating it per card
+     * {@code tourOperator.currency} — there is one per operator, so repeating it per card
      * would be a field that cannot vary.
      *
      * <p><b>{@code url} points at a route that does not exist yet.</b> The
@@ -246,15 +253,15 @@ public record StorefrontGlobalsResponse(Shop shop,
 
     /**
      * @param language  the one being served
-     * @param languages every locale the shop publishes, primary first
+     * @param languages every locale the operator publishes, primary first
      */
     public record Localization(Language language, List<Language> languages) {}
 
     /**
-     * @param name        the language written in the shop's primary locale —
-     *                    "francés" for a Spanish shop. Shopify's {@code name}.
+     * @param name        the language written in the operator's primary locale —
+     *                    "francés" for a Spanish operator. Shopify's {@code name}.
      * @param endonymName the language written in itself — "français"
-     * @param primary     whether this is the shop's primary locale, <b>not</b>
+     * @param primary     whether this is the operator's primary locale, <b>not</b>
      *                    whether it is the one being served: that is
      *                    {@code localization.language}
      */
@@ -268,7 +275,7 @@ public record StorefrontGlobalsResponse(Shop shop,
     public static Set<UUID> mediaIds(StorefrontGlobals globals) {
         Set<UUID> ids = new LinkedHashSet<>();
         add(ids, globals.ogImageMediaId());
-        BrandView brand = globals.shop().brand();
+        BrandView brand = globals.tourOperator().brand();
         add(ids, brand.logoMediaId());
         add(ids, brand.squareLogoMediaId());
         add(ids, brand.faviconMediaId());
@@ -282,7 +289,7 @@ public record StorefrontGlobalsResponse(Shop shop,
     }
 
     /**
-     * @param origin scheme and host of the request, which is what {@code shop.url}
+     * @param origin scheme and host of the request, which is what {@code tourOperator.url}
      *               is. Taken from the request rather than from configuration so
      *               it stays correct behind a proxy, the same reason the tenant is
      *               read from {@code getServerName()}.
@@ -300,27 +307,27 @@ public record StorefrontGlobalsResponse(Shop shop,
                                                  String origin,
                                                  Map<UUID, MediaAsset> assets,
                                                  MediaUrlResolver urls) {
-        ShopView shop = globals.shop();
+        TourOperatorView tourOperator = globals.tourOperator();
         String prefix = localePrefix(globals);
-        List<Policy> policies = shop.policies().stream()
+        List<Policy> policies = tourOperator.policies().stream()
                 .map(p -> policy(p, prefix))
                 .toList();
         Image ogImage = image(globals.ogImageMediaId(), assets, urls);
 
         return new StorefrontGlobalsResponse(
-                new Shop(
-                        shop.id(),
-                        shop.name(),
-                        shop.handle(),
+                new TourOperator(
+                        tourOperator.id(),
+                        tourOperator.name(),
+                        tourOperator.handle(),
                         origin,
-                        shop.seoDescription(),
-                        address(shop.address()),
-                        shop.phone(),
-                        shop.email(),
-                        shop.passwordMessage(),
-                        new Currency(shop.currencyCode(), shop.currencySymbol()),
-                        new Timezone(shop.timezoneName(), shop.timezoneCity()),
-                        brand(shop.brand(), assets, urls),
+                        tourOperator.seoDescription(),
+                        address(tourOperator.address()),
+                        tourOperator.phone(),
+                        tourOperator.email(),
+                        tourOperator.passwordMessage(),
+                        new Currency(tourOperator.currencyCode(), tourOperator.currencySymbol()),
+                        new Timezone(tourOperator.timezoneName(), tourOperator.timezoneCity()),
+                        brand(tourOperator.brand(), assets, urls),
                         policies,
                         metafields(globals.metafields()),
                         named(policies, "CANCELLATION"),
@@ -479,7 +486,7 @@ public record StorefrontGlobalsResponse(Shop shop,
 
     /**
      * Both names come from the JDK's CLDR data rather than a curated column.
-     * Shopify's {@code name} is the language rendered <em>in the shop's primary
+     * Shopify's {@code name} is the language rendered <em>in the operator's primary
      * locale</em>, which is one value per <em>pair</em> of languages — six
      * languages is thirty-six of them, so it is not a table anyone maintains.
      * {@code getDisplayName} rather than {@code getDisplayLanguage} because it

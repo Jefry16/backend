@@ -1,7 +1,7 @@
 package com.vointika.storefront.application.usecase;
 
-import com.vointika.shared.port.StorefrontShopQuery;
-import com.vointika.shared.port.StorefrontShopQuery.GateView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.GateView;
 import com.vointika.storefront.infrastructure.security.HmacUnlockToken;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,12 +25,12 @@ class CheckStorefrontLockUseCaseTest {
      */
     private final HmacUnlockToken unlockToken = new HmacUnlockToken();
 
-    private StorefrontShopQuery storefrontShopQuery;
+    private StorefrontTourOperatorQuery storefrontShopQuery;
     private CheckStorefrontLockUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        storefrontShopQuery = mock(StorefrontShopQuery.class);
+        storefrontShopQuery = mock(StorefrontTourOperatorQuery.class);
         useCase = new CheckStorefrontLockUseCase(storefrontShopQuery, unlockToken);
     }
 

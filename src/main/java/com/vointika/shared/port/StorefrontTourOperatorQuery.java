@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Everything the storefront's globals carry about the shop, read across the
+ * Everything the storefront's globals carry about the operator, read across the
  * context boundary. Implemented in {@code touroperator}.
  *
  * <p><b>Two methods because the request needs the row in two stages.</b> Which
@@ -14,7 +14,7 @@ import java.util.UUID;
  * primary, a prefix serves a supported secondary, anything else is a 404 — and
  * that decision needs the operator's locales <em>before</em> there is a locale
  * to overlay translations with. So {@link #findLocales} answers the tenant
- * question and feeds the locale rule; {@link #findShop} reads the content once a
+ * question and feeds the locale rule; {@link #findOperator} reads the content once a
  * locale is chosen. Collapsing them into one call means either the adapter
  * applies the locale rule (a storefront policy, in the wrong context) or the
  * caller receives every translation of every field to overlay itself.
@@ -27,21 +27,21 @@ import java.util.UUID;
  * gate); the password beside it is a value the operator hands out, which is not
  * the same as one every anonymous request receives.
  */
-public interface StorefrontShopQuery {
+public interface StorefrontTourOperatorQuery {
 
     /**
      * Stage one: does a storefront live at this handle, and what may it render?
      * Empty when no operator owns the handle — which is the 404, and the only
      * thing the placeholder routes need.
      */
-    Optional<ShopLocalesView> findLocales(String handle);
+    Optional<LocalesView> findLocales(String handle);
 
     /**
      * The gate's configuration, asked <b>before any locale exists</b> — the gate
      * runs before locale resolution, and that ordering is the whole point of it.
      *
      * <p>It is a second read of the same row rather than fields on
-     * {@link ShopLocalesView} on purpose: this one carries the plaintext
+     * {@link LocalesView} on purpose: this one carries the plaintext
      * password, and keeping it out of the read that builds the public payload
      * means no future edit to the globals can leak it by accident.
      */
@@ -55,13 +55,13 @@ public interface StorefrontShopQuery {
      * @param locale a locale the operator supports; an unsupported one simply
      *               overlays nothing, because the caller has already 404'd
      */
-    Optional<ShopView> findShop(UUID tourOperatorId, String locale);
+    Optional<TourOperatorView> findOperator(UUID tourOperatorId, String locale);
 
     /** The locale decision's inputs, and the tenant's identity. */
-    record ShopLocalesView(UUID tourOperatorId, String primaryLocale, Set<String> supportedLocales) {}
+    record LocalesView(UUID tourOperatorId, String primaryLocale, Set<String> supportedLocales) {}
 
     /**
-     * @param shopName        not translated — V8 left {@code name} off the overlay
+     * @param operatorName        not translated — V8 left {@code name} off the overlay
      *                        deliberately, because a brand name is not content
      * @param passwordMessage already overlaid from the <b>primary-locale</b>
      *                        translation. The gate has no locale of its own: it
@@ -69,7 +69,7 @@ public interface StorefrontShopQuery {
      *                        the leak the ordering exists to prevent.
      */
     record GateView(UUID tourOperatorId,
-                    String shopName,
+                    String operatorName,
                     boolean passwordEnabled,
                     String storefrontPassword,
                     String passwordMessage) {}
@@ -79,7 +79,7 @@ public interface StorefrontShopQuery {
      *                 the policy route wants a body, so carrying four HTML
      *                 documents on every page to build links is the wrong trade.
      */
-    record ShopView(UUID id,
+    record TourOperatorView(UUID id,
                     String name,
                     String handle,
                     AddressView address,

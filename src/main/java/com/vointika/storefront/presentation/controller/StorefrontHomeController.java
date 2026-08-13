@@ -33,7 +33,7 @@ import java.util.UUID;
  * five round trips per page. Same rule as the experience galleries.
  *
  * <p><b>Both failures are one 404</b>: a handle no operator owns and a locale the
- * shop does not publish answer identically, so an anonymous visitor learns
+ * operator does not publish answer identically, so an anonymous visitor learns
  * nothing about which shops exist or which languages they have.
  */
 @RestController
@@ -73,7 +73,7 @@ public class StorefrontHomeController {
         Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(globals);
         Map<UUID, MediaAsset> assets = mediaIds.isEmpty()
                 ? Map.of()
-                : mediaAssetBatchQuery.findAssetsByIds(globals.shop().id(), mediaIds);
+                : mediaAssetBatchQuery.findAssetsByIds(globals.tourOperator().id(), mediaIds);
 
         return StorefrontGlobalsResponse.from(globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }

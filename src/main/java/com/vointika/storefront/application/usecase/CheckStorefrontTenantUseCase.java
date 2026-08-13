@@ -1,6 +1,6 @@
 package com.vointika.storefront.application.usecase;
 
-import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
 
 /**
  * Is there a storefront at this host? The only read the routes that are still
@@ -17,9 +17,9 @@ import com.vointika.shared.port.StorefrontShopQuery;
  */
 public class CheckStorefrontTenantUseCase {
 
-    private final StorefrontShopQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontShopQuery;
 
-    public CheckStorefrontTenantUseCase(StorefrontShopQuery storefrontShopQuery) {
+    public CheckStorefrontTenantUseCase(StorefrontTourOperatorQuery storefrontShopQuery) {
         this.storefrontShopQuery = storefrontShopQuery;
     }
 

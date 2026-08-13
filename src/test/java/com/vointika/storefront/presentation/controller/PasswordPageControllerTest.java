@@ -66,7 +66,7 @@ class PasswordPageControllerTest {
     void theGateShowsTheShopNameAndTheOperatorsMessage() throws Exception {
         mockMvc.perform(get("/password").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shopName").value("Acme Tours"))
+                .andExpect(jsonPath("$.operatorName").value("Acme Tours"))
                 .andExpect(jsonPath("$.passwordMessage").value("We open on Monday"))
                 .andExpect(jsonPath("$.error").value(false));
     }
@@ -92,8 +92,8 @@ class PasswordPageControllerTest {
     @Test
     void theLiteralRouteWinsOverTheLocalePattern() throws Exception {
         mockMvc.perform(get("/password").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.shopName").exists())
-                .andExpect(jsonPath("$.shop").doesNotExist());
+                .andExpect(jsonPath("$.operatorName").exists())
+                .andExpect(jsonPath("$.tourOperator").doesNotExist());
     }
 
     /**
@@ -128,7 +128,7 @@ class PasswordPageControllerTest {
         mockMvc.perform(post("/password").header("Host", "acme.localhost:8080").param("password", "wrong"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").value(true))
-                .andExpect(jsonPath("$.shopName").value("Acme Tours"))
+                .andExpect(jsonPath("$.operatorName").value("Acme Tours"))
                 .andExpect(cookie().doesNotExist(UnlockTokenPort.COOKIE_NAME));
     }
 

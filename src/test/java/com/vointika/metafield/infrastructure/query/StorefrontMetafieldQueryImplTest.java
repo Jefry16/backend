@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
  * <p>Nothing above this can see the two things that matter: that the owner type
  * is {@code TOUR_OPERATOR} with the operator as its own owner, and that the type
  * crosses the boundary as <b>our code</b> rather than the enum name. Get the
- * first wrong and the shop renders an experience's values; get the second wrong
+ * first wrong and the storefront renders an experience's values; get the second wrong
  * and a theme branches on {@code SINGLE_LINE_TEXT} instead of
  * {@code single_line_text}.
  */

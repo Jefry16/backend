@@ -4,9 +4,9 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
-import com.vointika.shared.port.StorefrontShopQuery.AddressView;
-import com.vointika.shared.port.StorefrontShopQuery.BrandView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
@@ -73,12 +73,12 @@ class StorefrontCmsPageControllerTest {
     }
 
     private static StorefrontPageOutput output(String current, String primary, String handle, String title) {
-        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", ADDRESS, null, null,
+        TourOperatorView operator = new TourOperatorView(OPERATOR, "Acme Tours", "acme", ADDRESS, null, null,
                 "Sailing day trips", "The best sailing in Mallorca", null, null,
                 "EUR", "€", "Europe/Madrid", "Madrid",
                 new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),
                 List.of());
-        StorefrontGlobals globals = new StorefrontGlobals(shop, title, "About this shop", null,
+        StorefrontGlobals globals = new StorefrontGlobals(operator, title, "About this operator", null,
                 List.of(), List.of(), List.of(),
                 new LocalizationData(current, primary, List.of(primary)));
         return new StorefrontPageOutput(globals,
@@ -97,7 +97,7 @@ class StorefrontCmsPageControllerTest {
 
         mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shop.name").value("Acme Tours"))
+                .andExpect(jsonPath("$.tourOperator.name").value("Acme Tours"))
                 .andExpect(jsonPath("$.localization.language.code").value("es"))
                 .andExpect(jsonPath("$.page.id").value(PAGE.toString()))
                 .andExpect(jsonPath("$.page.handle").value("about-us"))

@@ -1,7 +1,7 @@
 package com.vointika.storefront.application.usecase;
 
-import com.vointika.shared.port.StorefrontShopQuery;
-import com.vointika.shared.port.StorefrontShopQuery.GateView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.GateView;
 import com.vointika.storefront.application.port.UnlockTokenPort;
 
 /**
@@ -17,10 +17,10 @@ public class CheckStorefrontLockUseCase {
 
     public enum LockState { NO_SUCH_TENANT, UNLOCKED, LOCKED }
 
-    private final StorefrontShopQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontShopQuery;
     private final UnlockTokenPort unlockToken;
 
-    public CheckStorefrontLockUseCase(StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
+    public CheckStorefrontLockUseCase(StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
         this.storefrontShopQuery = storefrontShopQuery;
         this.unlockToken = unlockToken;
     }

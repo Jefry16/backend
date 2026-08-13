@@ -20,14 +20,14 @@ public class StorefrontMustacheConfigTest {
     private final Mustache.Compiler compiler = new StorefrontMustacheConfig().mustacheCompiler(
             name -> { throw new UnsupportedOperationException("this test compiles inline, never a partial"); });
 
-    public static class Shop {
+    public static class Operator {
         private final String storefrontPassword = "hunter2";
 
         public String name() {
             return "Acme Tours";
         }
 
-        public String getShopName() {
+        public String getOperatorName() {
             return "Acme Tours";
         }
     }
@@ -42,7 +42,7 @@ public class StorefrontMustacheConfigTest {
 
     @Test
     void aPrivateFieldIsUnreachableFromATemplate() {
-        String rendered = compiler.compile("{{name}}|{{storefrontPassword}}").execute(new Shop());
+        String rendered = compiler.compile("{{name}}|{{storefrontPassword}}").execute(new Operator());
 
         assertThat(rendered)
                 .withFailMessage("DefaultCollector(false) is what stops a template reading private "
@@ -60,7 +60,7 @@ public class StorefrontMustacheConfigTest {
      */
     @Test
     void aJavaBeanGetterIsNotAnAccessor() {
-        assertThat(compiler.compile("[{{shopName}}]").execute(new Shop())).isEqualTo("[]");
+        assertThat(compiler.compile("[{{operatorName}}]").execute(new Operator())).isEqualTo("[]");
     }
 
     /**

@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 /**
  * The two things every storefront controller does the same way.
  *
- * <p><b>The 404 message is shared deliberately.</b> An unknown shop, a locale it
+ * <p><b>The 404 message is shared deliberately.</b> An unknown operator, a locale it
  * does not publish, a handle nothing answers to and a draft all answer
  * identically, and that only holds while every route says the same words —
  * copied into each controller, it is one edit away from telling a visitor which
@@ -20,7 +20,7 @@ final class StorefrontControllers {
     }
 
     /**
-     * What {@code shop.url} is, and the base every absolute link is built on.
+     * What {@code tourOperator.url} is, and the base every absolute link is built on.
      * Read from the request rather than configuration so it stays right behind a
      * proxy — {@code ForwardedHeaderFilter} makes the servlet API honour
      * {@code X-Forwarded-Proto} and {@code X-Forwarded-Host}, the same reason the

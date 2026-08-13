@@ -284,7 +284,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- 2b. Operator translations. The `es` overlay is what a default visit resolves
--- to (primary locale is es), so this is the row that proves the shop-level
+-- to (primary locale is es), so this is the row that proves the operator-level
 -- overlay is actually read rather than the canonical always winning.
 -- password_message is left NULL: the gate is off, so a value here renders
 -- nowhere and would be untestable fiction.
