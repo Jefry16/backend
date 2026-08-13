@@ -1,5 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.touroperator.application.dto.input.UpdateTourOperatorInput;
@@ -54,11 +55,13 @@ public class UpdateTourOperatorUseCase {
     private final TourOperatorRepository tourOperatorRepository;
     private final TimezoneRepository timezoneRepository;
     private final CurrencyRepository currencyRepository;
+    private final CountryRepository countryRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public UpdateTourOperatorUseCase(TourOperatorRepository tourOperatorRepository,
+                                     CountryRepository countryRepository,
                                      TimezoneRepository timezoneRepository,
                                      CurrencyRepository currencyRepository,
                                      TourOperatorMembershipCheck membershipCheck,
@@ -67,6 +70,7 @@ public class UpdateTourOperatorUseCase {
         this.tourOperatorRepository = tourOperatorRepository;
         this.timezoneRepository = timezoneRepository;
         this.currencyRepository = currencyRepository;
+        this.countryRepository = countryRepository;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -82,7 +86,17 @@ public class UpdateTourOperatorUseCase {
         TourOperatorName name = input.name() == null
                 ? operator.getName() : new TourOperatorName(input.name());
         TourOperatorAddress address = input.address() == null
-                ? operator.getAddress() : new TourOperatorAddress(input.address());
+                ? operator.getAddress()
+                : new TourOperatorAddress(
+                        input.address().address1(), input.address().address2(),
+                        input.address().city(), input.address().province(),
+                        input.address().zip(), input.address().countryId());
+        // Only when the caller supplied one: an untouched address was already
+        // valid, and re-reading its country on every name edit is a query for
+        // nothing.
+        if (input.address() != null && countryRepository.findById(address.countryId()).isEmpty()) {
+            throw new InvalidFieldException("Country not found");
+        }
         // Blank clears; absent keeps. Both columns are nullable, so "no phone" is
         // a real state the storefront template already guards for.
         TourOperatorPhone phone = input.phone() == null

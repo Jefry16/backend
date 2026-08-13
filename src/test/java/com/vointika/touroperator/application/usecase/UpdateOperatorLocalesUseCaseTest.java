@@ -70,7 +70,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     private TourOperator operator() {
         return new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
-                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St"), UUID.randomUUID());
+                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St", null, "Palma", null, null, UUID.randomUUID()), UUID.randomUUID());
     }
 
     @Test

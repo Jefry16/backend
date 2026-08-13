@@ -15,7 +15,7 @@ public record TourOperatorDetailsResponse(
         String context,
         String name,
         String handle,
-        String address,
+        AddressResponse address,
         String phone,
         String email,
         UUID timezoneId,
@@ -23,7 +23,7 @@ public record TourOperatorDetailsResponse(
         Instant createdAt,
         Instant updatedAt) {
 
-    public TourOperatorDetailsResponse(UUID id, String name, String handle, String address,
+    public TourOperatorDetailsResponse(UUID id, String name, String handle, AddressResponse address,
                                        String phone, String email, UUID timezoneId,
                                        UUID currencyId, Instant createdAt, Instant updatedAt) {
         this(id, "tour-operators", name, handle, address, phone, email,
@@ -31,7 +31,8 @@ public record TourOperatorDetailsResponse(
     }
 
     public static TourOperatorDetailsResponse from(TourOperatorView v) {
-        return new TourOperatorDetailsResponse(v.id(), v.name(), v.handle(), v.address(),
+        return new TourOperatorDetailsResponse(v.id(), v.name(), v.handle(),
+                AddressResponse.from(v.address()),
                 v.phone(), v.email(), v.timezoneId(), v.currencyId(), v.createdAt(), v.updatedAt());
     }
 }

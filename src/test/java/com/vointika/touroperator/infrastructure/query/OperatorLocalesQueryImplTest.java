@@ -35,7 +35,7 @@ class OperatorLocalesQueryImplTest {
     @Test
     void returnsTheOperatorsSupportedLocaleCodes() {
         TourOperator op = new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
-                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St"), UUID.randomUUID());
+                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St", null, "Palma", null, null, UUID.randomUUID()), UUID.randomUUID());
         op.updateLocales(LocaleCode.of("en"),
                 new LinkedHashSet<>(List.of(LocaleCode.of("en"), LocaleCode.of("es"))));
         when(repository.findById(operatorId)).thenReturn(Optional.of(op));

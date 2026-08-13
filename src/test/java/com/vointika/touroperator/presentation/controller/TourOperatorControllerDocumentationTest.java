@@ -4,6 +4,7 @@ import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.touroperator.application.dto.output.AddressView;
 import com.vointika.touroperator.application.dto.output.TourOperatorView;
 import com.vointika.touroperator.application.usecase.GetTourOperatorUseCase;
 import com.vointika.touroperator.application.usecase.UpdateTourOperatorUseCase;
@@ -96,7 +97,14 @@ class TourOperatorControllerDocumentationTest {
                         .content("""
                                 {
                                     "name": "Acme Tours",
-                                    "address": "123 Beach Rd, Punta Cana",
+                                    "address": {
+                                        "address1": "123 Beach Rd",
+                                        "address2": "Suite 2",
+                                        "city": "Punta Cana",
+                                        "province": "La Altagracia",
+                                        "zip": "23000",
+                                        "countryId": "33333333-3333-3333-3333-333333333333"
+                                    },
                                     "timezoneId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
                                     "currencyId": "cccc0001-0000-0000-0000-000000000001"
                                 }"""))
@@ -106,7 +114,13 @@ class TourOperatorControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("name").description("The operator's display name (2-150 chars)"),
-                                fieldWithPath("address").description("The operator's postal address (<=500 chars)"),
+                                fieldWithPath("address").description("The operator's postal address"),
+                                fieldWithPath("address.address1").description("Street line (required, <=255)"),
+                                fieldWithPath("address.address2").description("Second line, or omitted").optional(),
+                                fieldWithPath("address.city").description("City (required, <=120)"),
+                                fieldWithPath("address.province").description("Province or region, or omitted").optional(),
+                                fieldWithPath("address.zip").description("Postcode, or omitted — no format is enforced, because there is no universal one").optional(),
+                                fieldWithPath("address.countryId").description("A reference country id (GET /api/countries)"),
                                 fieldWithPath("timezoneId").description("A reference timezone id (GET /api/timezones)"),
                                 fieldWithPath("currencyId").description("A reference currency id (GET /api/currencies)")),
                         responseHeaders(headerWithName("Location").description("URI of the created tour operator"))));
@@ -138,7 +152,8 @@ class TourOperatorControllerDocumentationTest {
     void getDetails() throws Exception {
         authenticate();
         when(getUseCase.execute(any(), any())).thenReturn(new TourOperatorView(
-                java.util.UUID.fromString(OPERATOR_ID), "Acme Tours", "acme", "Calle Mayor 1",
+                java.util.UUID.fromString(OPERATOR_ID), "Acme Tours", "acme", new AddressView("Calle Mayor 1", null, "Calle Mayor 1", "Madrid", "Madrid", "28013",
+                        UUID.fromString("11111111-1111-1111-1111-111111111111"), "ES", "Spain"),
                 "+34 600 000 000", "hola@acme.test",
                 java.util.UUID.randomUUID(), java.util.UUID.randomUUID(),
                 java.time.Instant.parse("2026-01-01T00:00:00Z"),
@@ -158,7 +173,16 @@ class TourOperatorControllerDocumentationTest {
                                 fieldWithPath("name").description("The business name"),
                                 fieldWithPath("handle").description(
                                         "The storefront subdomain — immutable, not editable"),
-                                fieldWithPath("address").description("The business address"),
+                                fieldWithPath("address").description(
+                                        "The business address, or null for an operator that has not entered one").optional(),
+                                fieldWithPath("address.address1").description("Street line").optional(),
+                                fieldWithPath("address.address2").description("Second line, or null").optional(),
+                                fieldWithPath("address.city").description("City").optional(),
+                                fieldWithPath("address.province").description("Province or region, or null").optional(),
+                                fieldWithPath("address.zip").description("Postcode, or null").optional(),
+                                fieldWithPath("address.countryId").description("Reference country id").optional(),
+                                fieldWithPath("address.countryCode").description("ISO 3166-1 alpha-2 code").optional(),
+                                fieldWithPath("address.countryName").description("Country name, in English").optional(),
                                 fieldWithPath("phone")
                                         .description("Public contact phone, or null").optional(),
                                 fieldWithPath("email")

@@ -124,6 +124,14 @@ port or an event (never a direct import).
 > - **A handle a locale renames has one address in that locale.** The canonical
 >   handle 404s there rather than serving the same page twice — the rule that
 >   makes `/{primary}` a 404 when the primary already lives at `/`.
+> - **`shop.address` is Shopify's `address`, minus what a shop has no use for.**
+>   Their `first_name`/`last_name`/`company`/`id`/`url` are customer-address
+>   fields and `province_code` needs ISO 3166-2 data we do not carry; `street` is
+>   theirs and derived, so it is free; `summary` is a theme's business. Only the
+>   **country** is a reference — ISO 3166-1 is closed at 249, while cities are
+>   millions with no canonical list and a curated table would block an operator
+>   whose village is missing. `country.name` is English only, and the code rides
+>   alongside for a client that would rather localize it.
 > - **`shop.metafields` is Shopify's shape with our vocabulary** —
 >   `shop.metafields.<namespace>.<key>` addressing a `{type, value}` object.
 >   Their `type` codes are not ours (`single_line_text`, not
@@ -270,12 +278,18 @@ persistence recipe (§3) **plus**:
   convention below (§4a).
 - `db/migration/<ctx>/V?__*.sql` — seeds the curated launch set.
 
-**Nested-only variant:** a reference type used *only* inside another response
-(e.g. `Country` nested in a timezone) keeps entity + JpaEntity + Mapper +
-Response and **drops** the repository / use case / controller. Don't add a
-standalone endpoint until something needs it.
+**There is no nested-only variant any more.** It used to say a reference type
+used only inside another response (`Country`, nested in a timezone) keeps entity
++ JpaEntity + Mapper + Response and drops the repository / use case / controller.
+`Country` was its only example, and the structured-address slice needed a
+repository to validate a country id and an endpoint to populate a picker — so the
+variant has zero live instances and the paragraph went with it. The underlying
+instinct survives in LAW §2.4: don't add the endpoint until something needs it,
+and `GET /api/countries` was in fact deleted once for exactly that reason before
+coming back when a caller appeared.
 
-Canonical: `reference` — `Timezone`/`Currency` full, `Country` nested-only.
+Canonical: `reference` — `Timezone`, `Currency`, `Language` and `Country`, all
+full slices.
 
 ## 4a. Response identity — `id` + `context` (HOUSE RULE)
 

@@ -4,6 +4,7 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
+import com.vointika.shared.port.StorefrontShopQuery.AddressView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
 import com.vointika.shared.web.security.SecurityConfig;
@@ -50,6 +51,9 @@ class StorefrontCmsPageControllerTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
     private static final UUID PAGE = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3e11");
+    private static final AddressView ADDRESS = new AddressView(
+            "Calle Mayor 1", null, "Calle Mayor 1", "Palma", "Illes Balears", "07001",
+            "ES", "Spain");
 
     @Autowired private MockMvc mockMvc;
 
@@ -69,7 +73,7 @@ class StorefrontCmsPageControllerTest {
     }
 
     private static StorefrontPageOutput output(String current, String primary, String handle, String title) {
-        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", "Palma", null, null,
+        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", ADDRESS, null, null,
                 "Sailing day trips", "The best sailing in Mallorca", null, null,
                 "EUR", "€", "Europe/Madrid", "Madrid",
                 new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),

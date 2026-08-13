@@ -27,7 +27,14 @@ public class TourOperatorMapper {
                 operator.getHandle().value(),
                 operator.getTimezoneId(),
                 operator.getCurrencyId(),
-                operator.getAddress().value(),
+                // Null-tolerant on purpose: every operator that predates V15 has
+                // no address, and this is the write path they go through to get one.
+                operator.getAddress() == null ? null : operator.getAddress().address1(),
+                operator.getAddress() == null ? null : operator.getAddress().address2(),
+                operator.getAddress() == null ? null : operator.getAddress().city(),
+                operator.getAddress() == null ? null : operator.getAddress().province(),
+                operator.getAddress() == null ? null : operator.getAddress().zip(),
+                operator.getAddress() == null ? null : operator.getAddress().countryId(),
                 operator.getPhone() == null ? null : operator.getPhone().value(),
                 operator.getEmail() == null ? null : operator.getEmail().value(),
                 operator.getCreatedBy(),
@@ -54,7 +61,9 @@ public class TourOperatorMapper {
                 new Handle(jpa.getHandle()),
                 jpa.getTimezoneId(),
                 jpa.getCurrencyId(),
-                new TourOperatorAddress(jpa.getAddress()),
+                jpa.getAddress1() == null ? null : new TourOperatorAddress(
+                        jpa.getAddress1(), jpa.getAddress2(), jpa.getCity(),
+                        jpa.getProvince(), jpa.getZip(), jpa.getCountryId()),
                 jpa.getCreatedBy(),
                 jpa.getCreatedAt(),
                 jpa.getUpdatedAt(),

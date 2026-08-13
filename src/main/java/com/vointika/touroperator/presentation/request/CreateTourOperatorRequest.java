@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record CreateTourOperatorRequest(
         String name,
-        String address,
+        AddressRequest address,
         UUID timezoneId,
         UUID currencyId) {
 }

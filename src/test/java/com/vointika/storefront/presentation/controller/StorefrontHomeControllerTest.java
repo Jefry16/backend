@@ -8,6 +8,7 @@ import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
+import com.vointika.shared.port.StorefrontShopQuery.AddressView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
@@ -64,6 +65,9 @@ class StorefrontHomeControllerTest {
     private static final UUID POLICY = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb3");
     private static final UUID EXPERIENCE = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb4");
     private static final UUID THUMB = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb5");
+    private static final AddressView ADDRESS = new AddressView(
+            "Calle Mayor 1", null, "Calle Mayor 1", "Palma", "Illes Balears", "07001",
+            "ES", "Spain");
 
     @Autowired private MockMvc mockMvc;
 
@@ -89,7 +93,7 @@ class StorefrontHomeControllerTest {
     }
 
     private static StorefrontGlobals globals(String current, String primary, List<String> supported) {
-        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", "Palma de Mallorca",
+        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", ADDRESS,
                 "+34 600 000 000", "hola@acme.test",
                 "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE,
                 "We open on Monday",
@@ -500,5 +504,54 @@ class StorefrontHomeControllerTest {
                 .andExpect(jsonPath("$.linklists['main-menu'].links[0].active").doesNotExist())
                 .andExpect(jsonPath("$.linklists['main-menu'].links[0].current").doesNotExist())
                 .andExpect(jsonPath("$.linklists['main-menu'].links[0].type").value("HOME"));
+    }
+
+    /**
+     * Shopify's {@code address}, minus the customer-address fields a shop has no
+     * use for. {@code street} is derived — their field, their composition — and
+     * the country is nested with both a code and a name because the name is
+     * English only and a client may want to localize it itself.
+     */
+    @Test
+    void theShopCarriesAStructuredAddress() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.shop.address.address1").value("Calle Mayor 1"))
+                .andExpect(jsonPath("$.shop.address.street").value("Calle Mayor 1"))
+                .andExpect(jsonPath("$.shop.address.city").value("Palma"))
+                .andExpect(jsonPath("$.shop.address.province").value("Illes Balears"))
+                .andExpect(jsonPath("$.shop.address.zip").value("07001"))
+                .andExpect(jsonPath("$.shop.address.country.code").value("ES"))
+                .andExpect(jsonPath("$.shop.address.country.name").value("Spain"))
+                // Not Shopify's, and deliberately absent: province_code needs ISO
+                // 3166-2 data we do not carry, and summary is a theme's business.
+                .andExpect(jsonPath("$.shop.address.province_code").doesNotExist())
+                .andExpect(jsonPath("$.shop.address.summary").doesNotExist());
+    }
+
+    /**
+     * An operator that predates the structured address has none. It serves
+     * {@code null} rather than an object of nulls, the rule {@code Image}
+     * follows, so a theme guards on the object.
+     */
+    @Test
+    void anOperatorWithNoAddressServesNull() throws Exception {
+        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", null, null, null,
+                "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE, null,
+                "EUR", "€", "Europe/Madrid", "Madrid",
+                new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),
+                List.of());
+        served(null, new StorefrontGlobals(shop, "Sailing day trips", "…", OG_IMAGE,
+                List.of(), List.of(), List.of(),
+                new LocalizationData("es", "es", List.of("es"))));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                // Null, and specifically not an object whose parts are all null —
+                // asserting a part is absent is what tells those two apart.
+                .andExpect(jsonPath("$.shop.address").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.shop.address.city").doesNotExist());
     }
 }

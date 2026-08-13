@@ -7,6 +7,7 @@ import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
+import com.vointika.shared.port.StorefrontShopQuery.AddressView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ColorView;
 import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
@@ -74,7 +75,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                        String handle,
                        String url,
                        String description,
-                       String address,
+                       Address address,
                        String phone,
                        String email,
                        String passwordMessage,
@@ -87,6 +88,33 @@ public record StorefrontGlobalsResponse(Shop shop,
                        Policy privacyPolicy,
                        Policy termsOfService,
                        Policy legalNotice) {}
+
+    /**
+     * Shopify's {@code address}, minus what a shop does not have.
+     *
+     * <p>Their {@code first_name}, {@code last_name}, {@code company},
+     * {@code id} and {@code url} are customer-address fields; {@code province_code}
+     * needs ISO 3166-2 reference data we do not carry. {@code street} is theirs
+     * and derived — the two lines as one — so it costs nothing to give.
+     * {@code summary} is skipped: its composition is Shopify-specific, and how an
+     * address reads on a page is a theme's business.
+     *
+     * <p><b>Null when the operator has no address</b>, not an object of nulls —
+     * the rule {@code Image} follows, so a template guards on the object.
+     *
+     * <p>{@code country.name} is <b>English only</b>, which is where we depart:
+     * Shopify localizes it. The code rides alongside so a client can localize
+     * with {@code Intl.DisplayNames} if it wants.
+     */
+    public record Address(String address1,
+                          String address2,
+                          String street,
+                          String city,
+                          String province,
+                          String zip,
+                          Country country) {}
+
+    public record Country(String code, String name) {}
 
     public record Currency(String code, String symbol) {}
 
@@ -286,7 +314,7 @@ public record StorefrontGlobalsResponse(Shop shop,
                         shop.handle(),
                         origin,
                         shop.seoDescription(),
-                        shop.address(),
+                        address(shop.address()),
                         shop.phone(),
                         shop.email(),
                         shop.passwordMessage(),
@@ -359,6 +387,16 @@ public record StorefrontGlobalsResponse(Shop shop,
                 card.startingPrice() == null ? null : card.startingPrice().toPlainString(),
                 prefix + StorefrontRoutes.EXPERIENCES + "/" + card.handle(),
                 image(card.thumbnailMediaId(), assets, urls));
+    }
+
+    private static Address address(AddressView address) {
+        if (address == null) {
+            return null;
+        }
+        return new Address(address.address1(), address.address2(), address.street(),
+                address.city(), address.province(), address.zip(),
+                address.countryCode() == null
+                        ? null : new Country(address.countryCode(), address.countryName()));
     }
 
     private static Brand brand(BrandView brand, Map<UUID, MediaAsset> assets, MediaUrlResolver urls) {

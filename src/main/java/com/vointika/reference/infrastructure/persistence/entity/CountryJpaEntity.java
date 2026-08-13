@@ -24,7 +24,9 @@ public class CountryJpaEntity {
     @Column(nullable = false)
     private String name;
 
-    // Storage key for the flag image; NOT NULL (every country has one).
-    @Column(name = "flag_key", nullable = false, length = 500)
+    // Storage key for the flag image, nullable since reference/V6: the full ISO
+    // list landed with no assets behind it, and a key is a claim that an object
+    // exists. Null until the "Country flag assets" slice uploads them.
+    @Column(name = "flag_key", length = 500)
     private String flagKey;
 }

@@ -1,5 +1,7 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.reference.domain.entity.Country;
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.touroperator.application.dto.output.TourOperatorView;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -22,17 +24,28 @@ public class GetTourOperatorUseCase {
 
     private final TourOperatorRepository tourOperatorRepository;
     private final TourOperatorMembershipCheck membershipCheck;
+    private final CountryRepository countryRepository;
 
     public GetTourOperatorUseCase(TourOperatorRepository tourOperatorRepository,
-                                  TourOperatorMembershipCheck membershipCheck) {
+                                  TourOperatorMembershipCheck membershipCheck,
+                                  CountryRepository countryRepository) {
         this.tourOperatorRepository = tourOperatorRepository;
         this.membershipCheck = membershipCheck;
+        this.countryRepository = countryRepository;
     }
 
     public TourOperatorView execute(UUID tourOperatorId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
         return tourOperatorRepository.findById(tourOperatorId)
-                .map(TourOperatorView::from)
+                .map(operator -> TourOperatorView.from(operator, country(operator)))
                 .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+    }
+
+    /** Null when the operator has no address yet, which is every operator that predates V15. */
+    private Country country(com.vointika.touroperator.domain.entity.TourOperator operator) {
+        if (operator.getAddress() == null) {
+            return null;
+        }
+        return countryRepository.findById(operator.getAddress().countryId()).orElse(null);
     }
 }
