@@ -36,7 +36,7 @@
 --                 past/today/future and AVAILABLE/SOLD_OUT/CANCELLED, with
 --                 per-audience pricing generated per slot
 --   page          5 CMS pages (3 published, 2 draft, one with a template suffix)
---   metafield     11 metafield definitions, a `boat` metaobject with 4 fields
+--   metafield     13 metafield definitions, a `boat` metaobject with 4 fields
 --                 and 3 entries, and values attached to experiences, pages and
 --                 the operator itself (one of them a metaobject_reference)
 --   contact       12 inbox messages (9 unread, 3 read)
@@ -185,6 +185,8 @@
 \set mfd_hours_id       '01900000-0000-7000-8000-0000000000b8'
 \set mfd_meetpt_op_id   '01900000-0000-7000-8000-0000000000b9'
 \set mfd_flagship_id    '01900000-0000-7000-8000-0000000000ba'
+\set mfd_groups_id      '01900000-0000-7000-8000-0000000000bb'
+\set mfd_window_id      '01900000-0000-7000-8000-0000000000bc'
 
 \set mod_boat_id        '01900000-0000-7000-8000-0000000000d0'
 \set mofd_name_id       '01900000-0000-7000-8000-0000000000d1'
@@ -968,7 +970,16 @@ VALUES
     -- resolves an entry rather than serving its id.
     (:'mfd_flagship_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'flagship-boat',
      'METAOBJECT_REFERENCE', 'Flagship boat', 'The boat the operator leads with.',
-     :'mod_boat_id', :'user_maria_id', NOW() - INTERVAL '58 days', NOW() - INTERVAL '58 days')
+     :'mod_boat_id', :'user_maria_id', NOW() - INTERVAL '58 days', NOW() - INTERVAL '58 days'),
+    -- The two types the storefront serves as something other than text. Seeded
+    -- so both shapes are visible on the running stack: `boolean` used to arrive
+    -- as the string "false", which is truthy in JavaScript.
+    (:'mfd_groups_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'accepts-groups',
+     'BOOLEAN', 'Accepts groups', 'Whether private group bookings are taken.',
+     NULL, :'user_maria_id', NOW() - INTERVAL '55 days', NOW() - INTERVAL '55 days'),
+    (:'mfd_window_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'booking-window',
+     'JSON', 'Booking window', 'How far ahead, and how close to departure, guests may book.',
+     NULL, :'user_maria_id', NOW() - INTERVAL '55 days', NOW() - INTERVAL '55 days')
 ON CONFLICT DO NOTHING;
 
 -- Values, keyed by (definition, owner). Coverage is deliberately uneven — the
@@ -1010,7 +1021,11 @@ FROM (VALUES
     -- Sea Swallow is PUBLISHED, so the storefront resolves it. Point this at
     -- old-gaffer instead and the metafield disappears from the payload -- the
     -- pruning rule, which is easier to believe after seeing it.
-    (:'mfd_flagship_id'::uuid,   :'operator_id'::uuid,     :'moe_swallow_id')
+    (:'mfd_flagship_id'::uuid,   :'operator_id'::uuid,     :'moe_swallow_id'),
+    -- `false` would read the same as `true` to a theme if it were served as
+    -- text, so the seeded value is the one that used to break.
+    (:'mfd_groups_id'::uuid,     :'operator_id'::uuid,     'true'),
+    (:'mfd_window_id'::uuid,     :'operator_id'::uuid,     '{"minHours":24,"maxDays":180}')
 ) AS v(definition_id, owner_id, value)
 ON CONFLICT DO NOTHING;
 

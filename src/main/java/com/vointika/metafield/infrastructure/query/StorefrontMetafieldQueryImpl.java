@@ -8,6 +8,7 @@ import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.metafield.infrastructure.persistence.repository.MetaobjectEntryJpaRepository;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -38,11 +39,14 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
 
     private final MetafieldValueRepository valueRepository;
     private final MetaobjectEntryJpaRepository entryJpa;
+    private final ObjectMapper objectMapper;
 
     public StorefrontMetafieldQueryImpl(MetafieldValueRepository valueRepository,
-                                        MetaobjectEntryJpaRepository entryJpa) {
+                                        MetaobjectEntryJpaRepository entryJpa,
+                                        ObjectMapper objectMapper) {
         this.valueRepository = valueRepository;
         this.entryJpa = entryJpa;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -55,7 +59,8 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
         List<MetafieldView> views = new ArrayList<>(values.size());
         for (MetafieldValueWithDefinition v : values) {
             if (v.type() != MetafieldType.METAOBJECT_REFERENCE) {
-                views.add(new MetafieldView(v.namespace(), v.key(), v.type().code(), v.value(), null));
+                views.add(new MetafieldView(v.namespace(), v.key(), v.type().code(),
+                        typed(v.type(), v.value()), null));
                 continue;
             }
             UUID id = entryId(v.value());
@@ -93,10 +98,55 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
             PublishedMetaobjectField first = rows.getFirst();
             views.put(id, new MetaobjectView(id, first.entryType(), first.entryHandle(), first.entryName(),
                     rows.stream()
-                            .map(r -> new MetaobjectFieldView(r.fieldKey(), r.fieldType().code(), r.value()))
+                            .map(r -> new MetaobjectFieldView(r.fieldKey(), r.fieldType().code(),
+                                    typed(r.fieldType(), r.value())))
                             .toList()));
         });
         return views;
+    }
+
+    /**
+     * The stored text as the type it actually is.
+     *
+     * <p><b>This is the only place that can decide it</b>, because
+     * {@link MetafieldType} is {@code metafield}'s and no other context may see
+     * it — the storefront would have to match on the literals {@code "boolean"}
+     * and {@code "json"} instead, and nothing would keep that copy true.
+     *
+     * <p>Everything else stays text deliberately: numbers because a JSON number
+     * is a double on the far side of most parsers and {@code number_integer}
+     * already exceeds JavaScript's exact-integer range, dates because JSON has no
+     * date type. The reasoning is on {@code StorefrontMetafieldQuery}.
+     *
+     * <p>{@code Boolean.valueOf} is safe rather than lenient here:
+     * {@code MetafieldValueValidator} normalizes to exactly {@code "true"} or
+     * {@code "false"} on write, which its javadoc says is so "a later typed
+     * exposure never re-parses surprises". This is that exposure.
+     */
+    private Object typed(MetafieldType type, String raw) {
+        return switch (type) {
+            case BOOLEAN -> Boolean.valueOf(raw);
+            case JSON -> parsedJson(raw);
+            default -> raw;
+        };
+    }
+
+    /**
+     * <b>{@code readValue}, never {@code readTree}</b> — the same trap
+     * {@code JacksonJsonSyntaxPort} records: {@code readTree} stops at the first
+     * complete document and ignores whatever trails it.
+     *
+     * <p>Falls back to the raw string rather than throwing. The write path
+     * validates JSON, so a row that fails here is corruption or predates the
+     * validator, and one bad row must not take down every page of a storefront —
+     * the rule {@link #entryId} already follows.
+     */
+    private Object parsedJson(String raw) {
+        try {
+            return objectMapper.readValue(raw, Object.class);
+        } catch (RuntimeException notJson) {
+            return raw;
+        }
     }
 
     /**
