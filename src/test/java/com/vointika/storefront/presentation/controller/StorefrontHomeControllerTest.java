@@ -228,6 +228,49 @@ class StorefrontHomeControllerTest {
     }
 
     /**
+     * <b>Absolute, and self-referencing.</b> One page in one language has exactly
+     * one address — {@code LocaleRule} 404s {@code /{primary}} rather than mint a
+     * second — so the canonical points at the page itself. It earns its place on
+     * the request that arrives with tracking parameters: same page, and this is
+     * what says so.
+     */
+    @Test
+    void theCanonicalUrlIsThisPagesOwnAbsoluteAddress() throws Exception {
+        served(null, globals("es", "es", List.of("es", "en")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/"))
+                .andExpect(jsonPath("$.pageType").value("index"));
+    }
+
+    /** A secondary locale is its own canonical, prefix and all. */
+    @Test
+    void theCanonicalUrlCarriesTheLocalePrefix() throws Exception {
+        served("en", globals("en", "es", List.of("es", "en")));
+
+        mockMvc.perform(get("/en").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/en"));
+    }
+
+    /**
+     * <b>Built from the resolved locale, never echoed off the request.</b> A
+     * canonical assembled from the raw URI would repeat back whatever the client
+     * sent — query string included, which is the exact thing the tag exists to
+     * strip.
+     */
+    @Test
+    void theCanonicalUrlDropsTheQueryString() throws Exception {
+        served(null, globals("es", "es", List.of("es")));
+
+        mockMvc.perform(get("/?utm_source=newsletter&fbclid=abc123")
+                        .header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/"));
+    }
+
+    /**
      * Both names are derived rather than curated: {@code name} is the language in
      * the operator's primary locale, {@code endonymName} the language in itself.
      * Shopify's {@code primary} is not "the one being served" — that is

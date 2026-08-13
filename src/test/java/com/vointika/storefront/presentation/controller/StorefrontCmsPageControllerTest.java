@@ -128,6 +128,32 @@ class StorefrontCmsPageControllerTest {
                 .andExpect(jsonPath("$.page.url").value("/en/pages/about-us"));
     }
 
+    /**
+     * The page's own address, absolute — and {@code pageType} is Shopify's name
+     * for this template, not a value inferred from "a page object is present".
+     * Each route names its own, so a later route whose object is absent does not
+     * silently become the index.
+     */
+    @Test
+    void aPageCarriesItsOwnCanonicalUrlAndPageType() throws Exception {
+        served(null, "about-us", output("es", "es", "about-us", "Sobre nosotros"));
+
+        mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/pages/about-us"))
+                .andExpect(jsonPath("$.pageType").value("page"));
+    }
+
+    /** And it follows the locale prefix, like every other URL the page hands out. */
+    @Test
+    void aLocalizedPagesCanonicalUrlCarriesThePrefix() throws Exception {
+        served("en", "about-us", output("en", "es", "about-us", "About us"));
+
+        mockMvc.perform(get("/en/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/en/pages/about-us"));
+    }
+
     /** Every miss is the same 404, so none of them says which kind it was. */
     @Test
     void anUnknownHandleIs404() throws Exception {
