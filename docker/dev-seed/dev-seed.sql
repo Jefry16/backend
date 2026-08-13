@@ -1031,7 +1031,13 @@ FROM (VALUES
     (:'mfd_groups_id'::uuid,     :'operator_id'::uuid,     'true'),
     (:'mfd_window_id'::uuid,     :'operator_id'::uuid,     '{"minHours":24,"maxDays":180}')
 ) AS v(definition_id, owner_id, value)
-ON CONFLICT DO NOTHING;
+-- DO UPDATE, not DO NOTHING: these values are edited in this file (the canonical
+-- opening-hours went from English to Spanish once the `en` translation landed,
+-- and DO NOTHING silently kept the old row on every existing database). The
+-- header's rule, applied.
+ON CONFLICT (definition_id, owner_id) DO UPDATE SET
+    value      = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
 
 -- Per-locale overlays for the operator's own metafields. acme is primary `es`
 -- with `en` and `fr` published, and only `en` is translated ON PURPOSE: `fr`
@@ -1049,7 +1055,9 @@ FROM (VALUES
      E'Mon-Fri 09:00-18:00\nSat 10:00-14:00\nClosed Sundays and public holidays'),
     (:'mfd_meetpt_op_id'::uuid, 'Pier 3, Port of Palma')
 ) AS t(definition_id, value)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (metafield_value_id, locale) DO UPDATE SET
+    value      = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
 
 -- 15. Contact-inbox messages. Twelve of them, so the inbox pages. created_at
 -- ASCENDS with the fixed ids (070 oldest) so the inbox's -id default order
