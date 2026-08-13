@@ -747,7 +747,7 @@ references them, which is why the seed carried none for so long. The pairing:
 the upload use case produces (`{mediaId}-{sanitized-name}.png`), and the
 `minio-init` compose service uploads the directory under
 `tour-operators/{operatorId}/` before anything reads it. Add a media row, add
-its file — nothing checks the pair at build time.
+its file — nothing checks the pair at build time. **Country flags are the second instance**: `reference.country.flag_key` is `flags/{iso2}.svg`, which resolves against the same public base, so `docker/dev-seed/flags/` is uploaded to `avatars/flags/` by the same service. Only ES, US and DO ship one — the other 246 countries carry a NULL key rather than a key with nothing behind it.
 
 **The seed can write what the API cannot, and now a test says so.** It inserts
 straight into Postgres, so nothing stops it storing a value the domain would have
