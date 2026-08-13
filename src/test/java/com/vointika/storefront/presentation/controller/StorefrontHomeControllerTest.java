@@ -6,6 +6,8 @@ import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
+import com.vointika.shared.port.StorefrontMetafieldQuery.MetaobjectView;
+import com.vointika.shared.port.StorefrontMetafieldQuery.MetaobjectFieldView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
@@ -65,6 +67,7 @@ class StorefrontHomeControllerTest {
     private static final UUID POLICY = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb3");
     private static final UUID EXPERIENCE = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb4");
     private static final UUID THUMB = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb5");
+    private static final UUID BOAT = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eb6");
     private static final AddressView ADDRESS = new AddressView(
             "Calle Mayor 1", null, "Calle Mayor 1", "Palma", "Illes Balears", "07001",
             "ES", "Spain");
@@ -106,9 +109,9 @@ class StorefrontHomeControllerTest {
                 List.of(new PolicyView(POLICY, "LEGAL_NOTICE", "Aviso legal")));
         return new StorefrontGlobals(operator, "Sailing day trips", "The best sailing in Mallorca",
                 OG_IMAGE,
-                List.of(new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00"),
-                        new MetafieldView("custom", "meeting-point", "single_line_text", "Muelle 3"),
-                        new MetafieldView("legal", "licence", "single_line_text", "TA-1123")),
+                List.of(new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00", null),
+                        new MetafieldView("custom", "meeting-point", "single_line_text", "Muelle 3", null),
+                        new MetafieldView("legal", "licence", "single_line_text", "TA-1123", null)),
                 List.of(new ExperienceCardView(EXPERIENCE, "sunset-sail", "Sunset sail",
                         "Sail into the sunset", new java.math.BigDecimal("95.00"), THUMB)),
                 List.of(new MenuData("main-menu", "Main menu", List.of(
@@ -369,6 +372,62 @@ class StorefrontHomeControllerTest {
                 .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.list").doesNotExist())
                 .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.name").doesNotExist())
                 .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.updatedAt").doesNotExist());
+    }
+
+    /**
+     * <b>Liquid's rule, and the reason it is worth pinning at the wire.</b> Their
+     * docs say a reference type's {@code value} "directly returns the referenced
+     * object", so the pair stays {@code {type, value}} and {@code value} is the
+     * entry rather than its id — which is what this contract served until the
+     * resolve landed, and a theme could do nothing with.
+     *
+     * <p>The entry id is <b>not</b> in the payload: a theme addresses an entry by
+     * handle, and the id is a database fact. {@code system} is not copied either
+     * — Shopify needs it because their fields are top-level accessors that could
+     * collide with {@code type}/{@code handle}; nesting under {@code fields}
+     * makes that impossible.
+     */
+    @Test
+    void aReferenceMetafieldServesTheEntryAsItsValue() throws Exception {
+        served(null, withMetafields(List.of(new MetafieldView("custom", "flagship-boat",
+                "metaobject_reference", BOAT.toString(),
+                new MetaobjectView(BOAT, "boat", "sea-swallow", "Sea Swallow", List.of(
+                        new MetaobjectFieldView("name", "single_line_text", "Sea Swallow"),
+                        new MetaobjectFieldView("capacity", "number_integer", "12")))))));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].type")
+                        .value("metaobject_reference"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].value.handle")
+                        .value("sea-swallow"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].value.type")
+                        .value("boat"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].value.name")
+                        .value("Sea Swallow"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].value.fields.capacity.value")
+                        .value("12"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].value.fields.capacity.type")
+                        .value("number_integer"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['flagship-boat'].value.system")
+                        .doesNotExist());
+    }
+
+    /** A scalar is untouched by any of that: still a string, no nesting. */
+    @Test
+    void aScalarMetafieldIsStillAPlainString() throws Exception {
+        served(null, withMetafields(List.of(
+                new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00", null))));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['opening-hours'].value")
+                        .value("Mon-Sat 09:00-18:00"));
+    }
+
+    private StorefrontGlobals withMetafields(List<MetafieldView> metafields) {
+        StorefrontGlobals base = globals("es", "es", List.of("es"));
+        return new StorefrontGlobals(base.tourOperator(), base.pageTitle(), base.pageDescription(),
+                base.ogImageMediaId(), metafields, List.of(), List.of(), base.localization());
     }
 
     /** An operator who has filled in nothing gets an empty object, not a null. */

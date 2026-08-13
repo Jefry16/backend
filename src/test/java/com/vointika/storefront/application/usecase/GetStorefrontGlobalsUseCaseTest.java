@@ -160,7 +160,7 @@ class GetStorefrontGlobalsUseCaseTest {
     void theOperatorsMetafieldsRideTheGlobals() {
         shopExists("es", Set.of("es"));
         when(metafieldQuery.findForOperator(OPERATOR)).thenReturn(List.of(
-                new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00")));
+                new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00", null)));
 
         StorefrontGlobals globals = useCase.execute("acme", null).orElseThrow();
 

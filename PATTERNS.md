@@ -100,6 +100,16 @@ port or an event (never a direct import).
 > - **There is no key-side copy of the operator.** The use case carries the shared
 >   port's `TourOperatorView` directly; a field-for-field application DTO beside it would
 >   be the identical-pair shape MAP already carries as debt.
+> - **A `metaobject_reference` resolves to its entry** (2026-08-13). Liquid's own
+>   rule — their docs say a reference type's `value` "directly returns the
+>   referenced object", and there is no separate `reference` property — so the
+>   pair stays `{type, value}` and `value` is the entry. Fields nest under
+>   `fields` rather than sitting top-level, which is why Shopify's `system`
+>   object is *not* copied: theirs exists only to keep built-in names from
+>   colliding with field keys, and nesting removes the collision. A reference
+>   whose entry is unpublished, deleted or another operator's is **pruned whole**,
+>   the way a dead menu link is — a bare id is worse than an absent field,
+>   because a theme can guard on absence and can do nothing with an id.
 > - **`featuredExperiences` is top-level and capped at 12.** Shopify's globals
 >   give lazy `collections`/`all_products` accessors; an eager JSON payload
 >   cannot copy that, so the bound is the merchant's `featured` flag plus a hard

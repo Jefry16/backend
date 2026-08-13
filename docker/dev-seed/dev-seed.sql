@@ -36,8 +36,9 @@
 --                 past/today/future and AVAILABLE/SOLD_OUT/CANCELLED, with
 --                 per-audience pricing generated per slot
 --   page          5 CMS pages (3 published, 2 draft, one with a template suffix)
---   metafield     8 metafield definitions, a `boat` metaobject with 4 fields
---                 and 3 entries, and values attached to experiences and pages
+--   metafield     11 metafield definitions, a `boat` metaobject with 4 fields
+--                 and 3 entries, and values attached to experiences, pages and
+--                 the operator itself (one of them a metaobject_reference)
 --   contact       12 inbox messages (9 unread, 3 read)
 --   audit         27 activity entries across 13 entity types
 --
@@ -181,6 +182,9 @@
 \set mfd_boat_id        '01900000-0000-7000-8000-0000000000b5'
 \set mfd_subtitle_id    '01900000-0000-7000-8000-0000000000b6'
 \set mfd_footer_id      '01900000-0000-7000-8000-0000000000b7'
+\set mfd_hours_id       '01900000-0000-7000-8000-0000000000b8'
+\set mfd_meetpt_op_id   '01900000-0000-7000-8000-0000000000b9'
+\set mfd_flagship_id    '01900000-0000-7000-8000-0000000000ba'
 
 \set mod_boat_id        '01900000-0000-7000-8000-0000000000d0'
 \set mofd_name_id       '01900000-0000-7000-8000-0000000000d1'
@@ -950,7 +954,21 @@ VALUES
      NULL, :'user_sofia_id', NOW() - INTERVAL '35 days', NOW() - INTERVAL '35 days'),
     (:'mfd_footer_id', :'operator_id', 'PAGE', 'custom', 'show-in-footer',
      'BOOLEAN', 'Show in footer', NULL,
-     NULL, :'user_sofia_id', NOW() - INTERVAL '35 days', NOW() - INTERVAL '35 days')
+     NULL, :'user_sofia_id', NOW() - INTERVAL '35 days', NOW() - INTERVAL '35 days'),
+    -- TOUR_OPERATOR: the owner type the storefront serves as
+    -- `tourOperator.metafields`. Without these the field is `{}` on the running
+    -- stack, so nobody can see it work -- which is how it sat until 2026-08-13.
+    (:'mfd_hours_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'opening-hours',
+     'MULTI_LINE_TEXT', 'Opening hours', 'When the office answers the phone.',
+     NULL, :'user_maria_id', NOW() - INTERVAL '60 days', NOW() - INTERVAL '60 days'),
+    (:'mfd_meetpt_op_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'default-meeting-point',
+     'SINGLE_LINE_TEXT', 'Default meeting point', 'Where guests gather unless an experience says otherwise.',
+     NULL, :'user_maria_id', NOW() - INTERVAL '60 days', NOW() - INTERVAL '60 days'),
+    -- The reference case, pinned to `boat`: this is what proves the storefront
+    -- resolves an entry rather than serving its id.
+    (:'mfd_flagship_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'flagship-boat',
+     'METAOBJECT_REFERENCE', 'Flagship boat', 'The boat the operator leads with.',
+     :'mod_boat_id', :'user_maria_id', NOW() - INTERVAL '58 days', NOW() - INTERVAL '58 days')
 ON CONFLICT DO NOTHING;
 
 -- Values, keyed by (definition, owner). Coverage is deliberately uneven — the
@@ -983,7 +1001,16 @@ FROM (VALUES
     (:'mfd_subtitle_id'::uuid,   :'page_about_id'::uuid,   'Since 1998, off the same quay'),
     (:'mfd_footer_id'::uuid,     :'page_about_id'::uuid,   'true'),
     (:'mfd_subtitle_id'::uuid,   :'page_boats_id'::uuid,   'Two sloops and a RIB'),
-    (:'mfd_footer_id'::uuid,     :'page_boats_id'::uuid,   'false')
+    (:'mfd_footer_id'::uuid,     :'page_boats_id'::uuid,   'false'),
+    -- The operator is its own owner, which is what makes TOUR_OPERATOR the one
+    -- owner type needing no second ownership check.
+    (:'mfd_hours_id'::uuid,      :'operator_id'::uuid,
+     E'Mon-Fri 09:00-18:00\nSat 10:00-14:00\nClosed Sundays and public holidays'),
+    (:'mfd_meetpt_op_id'::uuid,  :'operator_id'::uuid,     'Muelle 3, Puerto de Palma'),
+    -- Sea Swallow is PUBLISHED, so the storefront resolves it. Point this at
+    -- old-gaffer instead and the metafield disappears from the payload -- the
+    -- pruning rule, which is easier to believe after seeing it.
+    (:'mfd_flagship_id'::uuid,   :'operator_id'::uuid,     :'moe_swallow_id')
 ) AS v(definition_id, owner_id, value)
 ON CONFLICT DO NOTHING;
 

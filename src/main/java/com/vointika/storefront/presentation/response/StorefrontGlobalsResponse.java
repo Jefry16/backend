@@ -5,6 +5,7 @@ import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
+import com.vointika.shared.port.StorefrontMetafieldQuery.MetaobjectView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
@@ -171,11 +172,41 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * Liquid, where a metafield renders its own value, a JSON consumer reads
      * {@code .value} — that is what JSON costs, not a choice.
      *
-     * <p><b>A {@code metaobject_reference} carries the id, unresolved.</b>
-     * Shopify resolves a reference to the object it points at; doing that here
-     * is a read path of its own, and it waits for a theme that needs one.
+     * <p><b>{@code value} is a string for every scalar type and a
+     * {@link Metaobject} for {@code metaobject_reference}</b>, which is Liquid's
+     * own model: their docs say a reference type's {@code value} "directly
+     * returns the referenced object", and there is no separate {@code reference}
+     * property to copy. So the pair stays {@code {type, value}} and a theme
+     * reads {@code type} to know which it got. A reference whose target is
+     * unpublished or gone is <b>not here at all</b> — the port prunes it, the
+     * way a menu prunes a dead link.
      */
-    public record Metafield(String type, String value) {}
+    public record Metafield(String type, Object value) {}
+
+    /**
+     * A resolved metaobject entry.
+     *
+     * <p><b>Fields are nested, where Shopify's are top-level.</b> Theirs are
+     * accessors on the drop ({@code boat.capacity.value}), which forces a
+     * {@code system} object — their docs say it exists "to avoid collisions
+     * between system property names and user-defined metaobject fields". Nesting
+     * under {@code fields} makes a collision impossible, so {@code system} buys
+     * nothing here and is not copied.
+     *
+     * <p>There is no {@code url}: Shopify gives an entry its own page at
+     * {@code /metaobjects/{type}/{handle}} and we have no such route. A URL for
+     * an address that does not exist is invention (PATTERNS §5).
+     *
+     * @param fields keyed by field key, in the definition's field order, and
+     *               carrying only the fields that have a value
+     */
+    public record Metaobject(UUID id,
+                             String type,
+                             String handle,
+                             String name,
+                             Map<String, MetaobjectField> fields) {}
+
+    public record MetaobjectField(String type, String value) {}
 
     public record Routes(String root, String experiences) {}
 
@@ -457,9 +488,20 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
         Map<String, Map<String, Metafield>> byNamespace = new LinkedHashMap<>();
         for (MetafieldView value : values) {
             byNamespace.computeIfAbsent(value.namespace(), n -> new LinkedHashMap<>())
-                    .put(value.key(), new Metafield(value.type(), value.value()));
+                    .put(value.key(), new Metafield(value.type(), metafieldValue(value)));
         }
         return byNamespace;
+    }
+
+    /** Liquid's rule: a reference resolves to its object, everything else is text. */
+    private static Object metafieldValue(MetafieldView value) {
+        MetaobjectView target = value.metaobject();
+        if (target == null) {
+            return value.value();
+        }
+        Map<String, MetaobjectField> fields = new LinkedHashMap<>();
+        target.fields().forEach(f -> fields.put(f.key(), new MetaobjectField(f.type(), f.value())));
+        return new Metaobject(target.id(), target.type(), target.handle(), target.name(), fields);
     }
 
     private static Policy named(List<Policy> policies, String type) {
