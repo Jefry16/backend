@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Everything in this response is served to an anonymous visitor on a public
  * address, so a secret reaching it is a leak rather than a bug.
  *
- * <p>The shop row holds a <b>plaintext</b> {@code storefront_password} beside the
+ * <p>The operator row holds a <b>plaintext</b> {@code storefront_password} beside the
  * {@code password_message} that is meant to be public — one letter apart in the
  * schema, and the read that carries one could grow the other without anyone
  * noticing at review.
@@ -66,7 +66,7 @@ class StorefrontGlobalsCarryNoSecretTest {
 
     /**
      * The guard is worth only as much as its reach, so this proves it actually
-     * descends: {@code passwordMessage} lives three levels down, on {@code Shop},
+     * descends: {@code passwordMessage} lives three levels down, on {@code TourOperator},
      * and a walk that stopped at the top level would never see it.
      */
     @Test
@@ -85,7 +85,7 @@ class StorefrontGlobalsCarryNoSecretTest {
         }
 
         assertThat(reached).contains(
-                StorefrontGlobalsResponse.Shop.class,
+                StorefrontGlobalsResponse.TourOperator.class,
                 StorefrontGlobalsResponse.Brand.class,
                 StorefrontGlobalsResponse.Image.class,
                 StorefrontGlobalsResponse.Policy.class,

@@ -22,7 +22,7 @@ import java.util.UUID;
  * A CMS page — the second route with an object of its own, and the first one a
  * menu item has been able to link to since menus landed.
  *
- * <p><b>Every miss is the same 404</b>: an unknown shop, a locale it does not
+ * <p><b>Every miss is the same 404</b>: an unknown operator, a locale it does not
  * publish, a handle nothing answers to, a draft, and the canonical handle of a
  * page this locale renames. Telling any of them apart would leak what an
  * operator has not published.
@@ -66,7 +66,7 @@ public class StorefrontCmsPageController {
         Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(output.globals());
         Map<UUID, MediaAsset> assets = mediaIds.isEmpty()
                 ? Map.of()
-                : mediaAssetBatchQuery.findAssetsByIds(output.globals().shop().id(), mediaIds);
+                : mediaAssetBatchQuery.findAssetsByIds(output.globals().tourOperator().id(), mediaIds);
 
         return StorefrontGlobalsResponse.from(output.globals(), output.page(),
                 StorefrontControllers.origin(request), assets, mediaUrlResolver);

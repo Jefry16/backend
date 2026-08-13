@@ -4,7 +4,7 @@ import com.vointika.shared.port.StorefrontExperienceQuery;
 import com.vointika.shared.port.StorefrontMenuQuery;
 import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
-import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.port.UnlockTokenPort;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
@@ -27,13 +27,13 @@ public class StorefrontUseCaseConfig {
 
     @Bean
     public CheckStorefrontTenantUseCase checkStorefrontTenantUseCase(
-            StorefrontShopQuery storefrontShopQuery) {
+            StorefrontTourOperatorQuery storefrontShopQuery) {
         return new CheckStorefrontTenantUseCase(storefrontShopQuery);
     }
 
     @Bean
     public GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase(
-            StorefrontShopQuery storefrontShopQuery,
+            StorefrontTourOperatorQuery storefrontShopQuery,
             StorefrontMetafieldQuery storefrontMetafieldQuery,
             StorefrontExperienceQuery storefrontExperienceQuery,
             StorefrontMenuQuery storefrontMenuQuery,
@@ -51,18 +51,18 @@ public class StorefrontUseCaseConfig {
 
     @Bean
     public CheckStorefrontLockUseCase checkStorefrontLockUseCase(
-            StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
+            StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
         return new CheckStorefrontLockUseCase(storefrontShopQuery, unlockTokenPort);
     }
 
     @Bean
     public UnlockStorefrontUseCase unlockStorefrontUseCase(
-            StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
+            StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
         return new UnlockStorefrontUseCase(storefrontShopQuery, unlockTokenPort);
     }
 
     @Bean
-    public GetPasswordPageUseCase getPasswordPageUseCase(StorefrontShopQuery storefrontShopQuery) {
+    public GetPasswordPageUseCase getPasswordPageUseCase(StorefrontTourOperatorQuery storefrontShopQuery) {
         return new GetPasswordPageUseCase(storefrontShopQuery);
     }
 

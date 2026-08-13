@@ -20,7 +20,7 @@ import java.util.Set;
  *
  * <p><b>Every rejection is the same empty</b>, and that is deliberate: an
  * unsupported locale and a locale the operator has not published are
- * indistinguishable to a visitor, so neither tells them anything about the shop.
+ * indistinguishable to a visitor, so neither tells them anything about the operator.
  */
 public final class LocaleRule {
 

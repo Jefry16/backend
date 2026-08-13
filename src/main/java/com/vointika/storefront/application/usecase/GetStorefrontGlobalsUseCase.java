@@ -5,9 +5,9 @@ import com.vointika.shared.port.StorefrontMenuQuery;
 import com.vointika.shared.port.StorefrontMenuQuery.MenuItemView;
 import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
-import com.vointika.shared.port.StorefrontShopQuery;
-import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.LocalesView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
@@ -25,31 +25,31 @@ import java.util.UUID;
 
 /**
  * Assembles the objects every storefront address carries. <b>Every route calls
- * this one</b> — that is what keeps {@code shop.brand} from meaning something
+ * this one</b> — that is what keeps {@code operator.brand} from meaning something
  * different on the home page than on an experience page.
  *
  * <p>Two reads, in the order the request forces: the tenant's locales decide
- * which locale is being served, and only then can the shop be read with its
+ * which locale is being served, and only then can the operator be read with its
  * translations overlaid.
  *
  * <p><b>Empty means 404, for either reason.</b> An unknown handle and a locale
- * the shop does not publish give the same answer on purpose — telling them apart
+ * the operator does not publish give the same answer on purpose — telling them apart
  * tells an anonymous visitor which shops exist and which languages they have.
  */
 public class GetStorefrontGlobalsUseCase {
 
-    private final StorefrontShopQuery shopQuery;
+    private final StorefrontTourOperatorQuery operatorQuery;
     private final StorefrontMetafieldQuery metafieldQuery;
     private final StorefrontExperienceQuery experienceQuery;
     private final StorefrontMenuQuery menuQuery;
     private final StorefrontPageQuery pageQuery;
 
-    public GetStorefrontGlobalsUseCase(StorefrontShopQuery shopQuery,
+    public GetStorefrontGlobalsUseCase(StorefrontTourOperatorQuery operatorQuery,
                                        StorefrontMetafieldQuery metafieldQuery,
                                        StorefrontExperienceQuery experienceQuery,
                                        StorefrontMenuQuery menuQuery,
                                        StorefrontPageQuery pageQuery) {
-        this.shopQuery = shopQuery;
+        this.operatorQuery = operatorQuery;
         this.metafieldQuery = metafieldQuery;
         this.experienceQuery = experienceQuery;
         this.menuQuery = menuQuery;
@@ -60,26 +60,26 @@ public class GetStorefrontGlobalsUseCase {
      * @param pathLocale the locale segment of the URL, or null for the bare path
      */
     public Optional<StorefrontGlobals> execute(String handle, String pathLocale) {
-        return shopQuery.findLocales(handle).flatMap(locales ->
+        return operatorQuery.findLocales(handle).flatMap(locales ->
                 LocaleRule.resolve(pathLocale, locales.primaryLocale(), locales.supportedLocales())
-                        .flatMap(locale -> shopQuery.findShop(locales.tourOperatorId(), locale)
-                                .map(shop -> globals(shop, locale, locales,
+                        .flatMap(locale -> operatorQuery.findOperator(locales.tourOperatorId(), locale)
+                                .map(operator -> globals(operator, locale, locales,
                                         metafieldQuery.findForOperator(locales.tourOperatorId()),
                                         experienceQuery.findFeatured(locales.tourOperatorId(), locale),
                                         menus(locales.tourOperatorId(), locale)))));
     }
 
-    private static StorefrontGlobals globals(ShopView shop, String locale, ShopLocalesView locales,
+    private static StorefrontGlobals globals(TourOperatorView operator, String locale, LocalesView locales,
                                              List<StorefrontMetafieldQuery.MetafieldView> metafields,
                                              List<StorefrontExperienceQuery.ExperienceCardView> featured,
                                              List<MenuData> menus) {
         return new StorefrontGlobals(
-                shop,
-                // The home page has no object of its own, so the shop is the whole
+                operator,
+                // The home page has no object of its own, so the operator is the whole
                 // chain. A page type with its own SEO substitutes it (withSeo).
-                SeoText.title(null, null, shop.seoTitle(), shop.name()),
-                SeoText.description(null, shop.seoDescription()),
-                shop.ogImageMediaId(),
+                SeoText.title(null, null, operator.seoTitle(), operator.name()),
+                SeoText.description(null, operator.seoDescription()),
+                operator.ogImageMediaId(),
                 metafields,
                 featured,
                 menus,

@@ -8,12 +8,12 @@ import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
-import com.vointika.shared.port.StorefrontShopQuery.AddressView;
-import com.vointika.shared.port.StorefrontShopQuery.BrandView;
-import com.vointika.shared.port.StorefrontShopQuery.ColorView;
-import com.vointika.shared.port.StorefrontShopQuery.PolicyView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
-import com.vointika.shared.port.StorefrontShopQuery.SocialLinkView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.ColorView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.SocialLinkView;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
@@ -93,7 +93,7 @@ class StorefrontHomeControllerTest {
     }
 
     private static StorefrontGlobals globals(String current, String primary, List<String> supported) {
-        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", ADDRESS,
+        TourOperatorView operator = new TourOperatorView(OPERATOR, "Acme Tours", "acme", ADDRESS,
                 "+34 600 000 000", "hola@acme.test",
                 "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE,
                 "We open on Monday",
@@ -104,7 +104,7 @@ class StorefrontHomeControllerTest {
                         List.of(),
                         List.of(new SocialLinkView("INSTAGRAM", "https://instagram.com/acme"))),
                 List.of(new PolicyView(POLICY, "LEGAL_NOTICE", "Aviso legal")));
-        return new StorefrontGlobals(shop, "Sailing day trips", "The best sailing in Mallorca",
+        return new StorefrontGlobals(operator, "Sailing day trips", "The best sailing in Mallorca",
                 OG_IMAGE,
                 List.of(new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00"),
                         new MetafieldView("custom", "meeting-point", "single_line_text", "Muelle 3"),
@@ -133,22 +133,22 @@ class StorefrontHomeControllerTest {
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shop.id").value(OPERATOR.toString()))
-                .andExpect(jsonPath("$.shop.name").value("Acme Tours"))
-                .andExpect(jsonPath("$.shop.handle").value("acme"))
-                .andExpect(jsonPath("$.shop.description").value("The best sailing in Mallorca"))
-                .andExpect(jsonPath("$.shop.phone").value("+34 600 000 000"))
-                .andExpect(jsonPath("$.shop.passwordMessage").value("We open on Monday"))
-                .andExpect(jsonPath("$.shop.currency.code").value("EUR"))
-                .andExpect(jsonPath("$.shop.currency.symbol").value("€"))
-                .andExpect(jsonPath("$.shop.timezone.name").value("Europe/Madrid"))
-                .andExpect(jsonPath("$.shop.timezone.city").value("Madrid"))
+                .andExpect(jsonPath("$.tourOperator.id").value(OPERATOR.toString()))
+                .andExpect(jsonPath("$.tourOperator.name").value("Acme Tours"))
+                .andExpect(jsonPath("$.tourOperator.handle").value("acme"))
+                .andExpect(jsonPath("$.tourOperator.description").value("The best sailing in Mallorca"))
+                .andExpect(jsonPath("$.tourOperator.phone").value("+34 600 000 000"))
+                .andExpect(jsonPath("$.tourOperator.passwordMessage").value("We open on Monday"))
+                .andExpect(jsonPath("$.tourOperator.currency.code").value("EUR"))
+                .andExpect(jsonPath("$.tourOperator.currency.symbol").value("€"))
+                .andExpect(jsonPath("$.tourOperator.timezone.name").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.tourOperator.timezone.city").value("Madrid"))
                 .andExpect(jsonPath("$.pageTitle").value("Sailing day trips"))
                 .andExpect(jsonPath("$.pageDescription").value("The best sailing in Mallorca"));
     }
 
     /**
-     * {@code shop.url} comes from the request, not from configuration, so it stays
+     * {@code operator.url} comes from the request, not from configuration, so it stays
      * right behind a proxy. The port rides along when it is not the scheme's
      * default, or every dev URL would be unreachable.
      */
@@ -157,7 +157,7 @@ class StorefrontHomeControllerTest {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.shop.url").value("http://acme.localhost:8080"));
+                .andExpect(jsonPath("$.tourOperator.url").value("http://acme.localhost:8080"));
     }
 
     /** The palette is an ordered list a theme indexes into, and the brand is Shopify's shape. */
@@ -166,16 +166,16 @@ class StorefrontHomeControllerTest {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.shop.brand.slogan").value("Sail with us"))
-                .andExpect(jsonPath("$.shop.brand.colors.primary[0].background").value("#0b3d5c"))
-                .andExpect(jsonPath("$.shop.brand.colors.primary[0].foreground").value("#ffffff"))
-                .andExpect(jsonPath("$.shop.brand.colors.secondary").isEmpty())
-                .andExpect(jsonPath("$.shop.brand.socialLinks[0].platform").value("INSTAGRAM"))
-                .andExpect(jsonPath("$.shop.brand.logo.url")
+                .andExpect(jsonPath("$.tourOperator.brand.slogan").value("Sail with us"))
+                .andExpect(jsonPath("$.tourOperator.brand.colors.primary[0].background").value("#0b3d5c"))
+                .andExpect(jsonPath("$.tourOperator.brand.colors.primary[0].foreground").value("#ffffff"))
+                .andExpect(jsonPath("$.tourOperator.brand.colors.secondary").isEmpty())
+                .andExpect(jsonPath("$.tourOperator.brand.socialLinks[0].platform").value("INSTAGRAM"))
+                .andExpect(jsonPath("$.tourOperator.brand.logo.url")
                         .value("https://media.vointika.test/acme/logo.png"))
-                .andExpect(jsonPath("$.shop.brand.logo.alt").value("Acme logo"))
-                .andExpect(jsonPath("$.shop.brand.logo.aspectRatio").value(2.0))
-                .andExpect(jsonPath("$.shop.brand.squareLogo").doesNotExist());
+                .andExpect(jsonPath("$.tourOperator.brand.logo.alt").value("Acme logo"))
+                .andExpect(jsonPath("$.tourOperator.brand.logo.aspectRatio").value(2.0))
+                .andExpect(jsonPath("$.tourOperator.brand.squareLogo").doesNotExist());
     }
 
     /**
@@ -196,11 +196,11 @@ class StorefrontHomeControllerTest {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.shop.policies[0].type").value("LEGAL_NOTICE"))
-                .andExpect(jsonPath("$.shop.policies[0].title").value("Aviso legal"))
-                .andExpect(jsonPath("$.shop.policies[0].url").value("/policies/legal-notice"))
-                .andExpect(jsonPath("$.shop.legalNotice.id").value(POLICY.toString()))
-                .andExpect(jsonPath("$.shop.privacyPolicy").doesNotExist());
+                .andExpect(jsonPath("$.tourOperator.policies[0].type").value("LEGAL_NOTICE"))
+                .andExpect(jsonPath("$.tourOperator.policies[0].title").value("Aviso legal"))
+                .andExpect(jsonPath("$.tourOperator.policies[0].url").value("/policies/legal-notice"))
+                .andExpect(jsonPath("$.tourOperator.legalNotice.id").value(POLICY.toString()))
+                .andExpect(jsonPath("$.tourOperator.privacyPolicy").doesNotExist());
     }
 
     @Test
@@ -221,12 +221,12 @@ class StorefrontHomeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.routes.root").value("/en"))
                 .andExpect(jsonPath("$.routes.experiences").value("/en/experiences"))
-                .andExpect(jsonPath("$.shop.policies[0].url").value("/en/policies/legal-notice"));
+                .andExpect(jsonPath("$.tourOperator.policies[0].url").value("/en/policies/legal-notice"));
     }
 
     /**
      * Both names are derived rather than curated: {@code name} is the language in
-     * the shop's primary locale, {@code endonymName} the language in itself.
+     * the operator's primary locale, {@code endonymName} the language in itself.
      * Shopify's {@code primary} is not "the one being served" — that is
      * {@code localization.language}.
      */
@@ -258,7 +258,7 @@ class StorefrontHomeControllerTest {
     }
 
     /**
-     * An address the shop does not publish answers exactly like a shop that does
+     * An address the operator does not publish answers exactly like a operator that does
      * not exist. Telling them apart tells an anonymous visitor which shops are
      * real and which languages they have.
      */
@@ -293,7 +293,7 @@ class StorefrontHomeControllerTest {
      * exactly which languages it publishes. Locked means every path answers the
      * same.
      *
-     * <p>{@code de} is deliberately a locale this shop does not publish: the
+     * <p>{@code de} is deliberately a locale this operator does not publish: the
      * globals use case would answer empty for it, so a 302 here proves nothing
      * downstream of the gate ran.
      */
@@ -332,11 +332,11 @@ class StorefrontHomeControllerTest {
                         .header("Host", "acme.localhost:8080")
                         .cookie(new Cookie(UnlockTokenPort.COOKIE_NAME, "a-valid-token")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shop.name").value("Acme Tours"));
+                .andExpect(jsonPath("$.tourOperator.name").value("Acme Tours"));
     }
 
     /**
-     * Shopify's shape — {@code shop.metafields.namespace.key} — because that is
+     * Shopify's shape — {@code operator.metafields.namespace.key} — because that is
      * the address a theme author types. Ours differs in exactly two ways, both
      * decided rather than accidental: the {@code type} vocabulary is ours
      * ({@code single_line_text}, not {@code single_line_text_field}), and a
@@ -349,12 +349,12 @@ class StorefrontHomeControllerTest {
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shop.metafields.custom['opening-hours'].value")
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['opening-hours'].value")
                         .value("Mon-Sat 09:00-18:00"))
-                .andExpect(jsonPath("$.shop.metafields.custom['opening-hours'].type")
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['opening-hours'].type")
                         .value("single_line_text"))
-                .andExpect(jsonPath("$.shop.metafields.custom['meeting-point'].value").value("Muelle 3"))
-                .andExpect(jsonPath("$.shop.metafields.legal.licence.value").value("TA-1123"));
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['meeting-point'].value").value("Muelle 3"))
+                .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.value").value("TA-1123"));
     }
 
     /**
@@ -366,27 +366,27 @@ class StorefrontHomeControllerTest {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.shop.metafields.legal.licence.list").doesNotExist())
-                .andExpect(jsonPath("$.shop.metafields.legal.licence.name").doesNotExist())
-                .andExpect(jsonPath("$.shop.metafields.legal.licence.updatedAt").doesNotExist());
+                .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.list").doesNotExist())
+                .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.name").doesNotExist())
+                .andExpect(jsonPath("$.tourOperator.metafields.legal.licence.updatedAt").doesNotExist());
     }
 
     /** An operator who has filled in nothing gets an empty object, not a null. */
     @Test
     void anOperatorWithNoMetafieldsGetsAnEmptyMap() throws Exception {
         StorefrontGlobals bare = new StorefrontGlobals(
-                globals("es", "es", List.of("es")).shop(),
+                globals("es", "es", List.of("es")).tourOperator(),
                 "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE,
                 List.of(), List.of(), List.of(), new LocalizationData("es", "es", List.of("es")));
         served(null, bare);
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
-                .andExpect(jsonPath("$.shop.metafields").isEmpty())
-                .andExpect(jsonPath("$.shop.metafields").exists());
+                .andExpect(jsonPath("$.tourOperator.metafields").isEmpty())
+                .andExpect(jsonPath("$.tourOperator.metafields").exists());
     }
 
     /**
-     * The cards are top-level, not under {@code shop} — they are catalogue, which
+     * The cards are top-level, not under {@code operator} — they are catalogue, which
      * is where Shopify keeps them too.
      */
     @Test
@@ -398,7 +398,7 @@ class StorefrontHomeControllerTest {
                 .andExpect(jsonPath("$.featuredExperiences[0].handle").value("sunset-sail"))
                 .andExpect(jsonPath("$.featuredExperiences[0].name").value("Sunset sail"))
                 .andExpect(jsonPath("$.featuredExperiences[0].url").value("/experiences/sunset-sail"))
-                .andExpect(jsonPath("$.shop.featuredExperiences").doesNotExist());
+                .andExpect(jsonPath("$.tourOperator.featuredExperiences").doesNotExist());
     }
 
     /**
@@ -507,7 +507,7 @@ class StorefrontHomeControllerTest {
     }
 
     /**
-     * Shopify's {@code address}, minus the customer-address fields a shop has no
+     * Shopify's {@code address}, minus the customer-address fields a operator has no
      * use for. {@code street} is derived — their field, their composition — and
      * the country is nested with both a code and a name because the name is
      * English only and a client may want to localize it itself.
@@ -518,17 +518,17 @@ class StorefrontHomeControllerTest {
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shop.address.address1").value("Calle Mayor 1"))
-                .andExpect(jsonPath("$.shop.address.street").value("Calle Mayor 1"))
-                .andExpect(jsonPath("$.shop.address.city").value("Palma"))
-                .andExpect(jsonPath("$.shop.address.province").value("Illes Balears"))
-                .andExpect(jsonPath("$.shop.address.zip").value("07001"))
-                .andExpect(jsonPath("$.shop.address.country.code").value("ES"))
-                .andExpect(jsonPath("$.shop.address.country.name").value("Spain"))
+                .andExpect(jsonPath("$.tourOperator.address.address1").value("Calle Mayor 1"))
+                .andExpect(jsonPath("$.tourOperator.address.street").value("Calle Mayor 1"))
+                .andExpect(jsonPath("$.tourOperator.address.city").value("Palma"))
+                .andExpect(jsonPath("$.tourOperator.address.province").value("Illes Balears"))
+                .andExpect(jsonPath("$.tourOperator.address.zip").value("07001"))
+                .andExpect(jsonPath("$.tourOperator.address.country.code").value("ES"))
+                .andExpect(jsonPath("$.tourOperator.address.country.name").value("Spain"))
                 // Not Shopify's, and deliberately absent: province_code needs ISO
                 // 3166-2 data we do not carry, and summary is a theme's business.
-                .andExpect(jsonPath("$.shop.address.province_code").doesNotExist())
-                .andExpect(jsonPath("$.shop.address.summary").doesNotExist());
+                .andExpect(jsonPath("$.tourOperator.address.province_code").doesNotExist())
+                .andExpect(jsonPath("$.tourOperator.address.summary").doesNotExist());
     }
 
     /**
@@ -538,12 +538,12 @@ class StorefrontHomeControllerTest {
      */
     @Test
     void anOperatorWithNoAddressServesNull() throws Exception {
-        ShopView shop = new ShopView(OPERATOR, "Acme Tours", "acme", null, null, null,
+        TourOperatorView operator = new TourOperatorView(OPERATOR, "Acme Tours", "acme", null, null, null,
                 "Sailing day trips", "The best sailing in Mallorca", OG_IMAGE, null,
                 "EUR", "€", "Europe/Madrid", "Madrid",
                 new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),
                 List.of());
-        served(null, new StorefrontGlobals(shop, "Sailing day trips", "…", OG_IMAGE,
+        served(null, new StorefrontGlobals(operator, "Sailing day trips", "…", OG_IMAGE,
                 List.of(), List.of(), List.of(),
                 new LocalizationData("es", "es", List.of("es"))));
 
@@ -551,7 +551,7 @@ class StorefrontHomeControllerTest {
                 .andExpect(status().isOk())
                 // Null, and specifically not an object whose parts are all null —
                 // asserting a part is absent is what tells those two apart.
-                .andExpect(jsonPath("$.shop.address").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.shop.address.city").doesNotExist());
+                .andExpect(jsonPath("$.tourOperator.address").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.tourOperator.address.city").doesNotExist());
     }
 }

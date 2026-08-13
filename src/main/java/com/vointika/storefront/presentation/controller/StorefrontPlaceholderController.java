@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * ({@link TenantHandleResolver}: apex, multi-label and reserved labels address
  * nobody), and an unknown handle still 404s, so the addresses keep telling the
  * truth about which storefronts exist. Everything that read a storefront's
- * <em>data</em> — the shop, its brand, its policies, its published experiences,
+ * <em>data</em> — the operator, its brand, its policies, its published experiences,
  * the theme object model and the password gate — was deleted rather than left
  * running against a page that renders none of it. Recover it from git when the
  * real pages return.

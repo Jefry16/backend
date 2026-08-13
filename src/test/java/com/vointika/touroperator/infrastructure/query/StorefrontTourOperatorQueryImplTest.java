@@ -5,7 +5,7 @@ import com.vointika.reference.domain.entity.Timezone;
 import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.touroperator.domain.enums.BrandColorRole;
 import com.vointika.touroperator.domain.enums.BrandSocialPlatform;
 import com.vointika.touroperator.domain.enums.PolicyType;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
  * nothing above it can see the parts that matter: the use-case tests stub the
  * port, so the overlay, the role split and the colour order all run only here.
  */
-class StorefrontShopQueryImplTest {
+class StorefrontTourOperatorQueryImplTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
     private static final UUID CURRENCY = UUID.fromString("cccc0002-0000-0000-0000-000000000002");
@@ -55,7 +55,7 @@ class StorefrontShopQueryImplTest {
     private TourOperatorBrandSocialLinkJpaRepository socialLinkRepository;
     private TourOperatorPolicyJpaRepository policyRepository;
     private TourOperatorPolicyTranslationJpaRepository policyTranslationRepository;
-    private StorefrontShopQueryImpl query;
+    private StorefrontTourOperatorQueryImpl query;
 
     @BeforeEach
     void setUp() {
@@ -100,7 +100,7 @@ class StorefrontShopQueryImplTest {
         when(operatorRepository.findById(OPERATOR)).thenReturn(Optional.of(operator));
         when(operatorRepository.findByHandle("acme")).thenReturn(Optional.of(operator));
 
-        query = new StorefrontShopQueryImpl(operatorRepository, translationRepository, brandRepository,
+        query = new StorefrontTourOperatorQueryImpl(operatorRepository, translationRepository, brandRepository,
                 colorRepository, socialLinkRepository, policyRepository, policyTranslationRepository,
                 currencyRepository, timezoneRepository, countryRepository);
     }
@@ -136,7 +136,7 @@ class StorefrontShopQueryImplTest {
 
         assertThat(query.findGate("acme")).hasValueSatisfying(gate -> {
             assertThat(gate.tourOperatorId()).isEqualTo(OPERATOR);
-            assertThat(gate.shopName()).isEqualTo("Acme Tours");
+            assertThat(gate.operatorName()).isEqualTo("Acme Tours");
             assertThat(gate.passwordMessage()).isEqualTo("Abrimos el lunes");
         });
     }
@@ -161,21 +161,21 @@ class StorefrontShopQueryImplTest {
         when(translationRepository.findByTourOperatorIdAndLocale(OPERATOR, "es"))
                 .thenReturn(Optional.of(translation));
 
-        ShopView shop = query.findShop(OPERATOR, "es").orElseThrow();
+        TourOperatorView operator = query.findOperator(OPERATOR, "es").orElseThrow();
 
-        assertThat(shop.seoTitle()).isEqualTo("Título traducido");
-        assertThat(shop.seoDescription()).isEqualTo("Canonical description");
+        assertThat(operator.seoTitle()).isEqualTo("Título traducido");
+        assertThat(operator.seoDescription()).isEqualTo("Canonical description");
     }
 
     /** Nothing writes a brand row at creation, so its absence is ordinary — a page still renders. */
     @Test
     void anOperatorWithNoBrandRowGetsAnEmptyBrandNotNull() {
-        ShopView shop = query.findShop(OPERATOR, "es").orElseThrow();
+        TourOperatorView operator = query.findOperator(OPERATOR, "es").orElseThrow();
 
-        assertThat(shop.brand()).isNotNull();
-        assertThat(shop.brand().slogan()).isNull();
-        assertThat(shop.brand().primaryColors()).isEmpty();
-        assertThat(shop.brand().socialLinks()).isEmpty();
+        assertThat(operator.brand()).isNotNull();
+        assertThat(operator.brand().slogan()).isNull();
+        assertThat(operator.brand().primaryColors()).isEmpty();
+        assertThat(operator.brand().socialLinks()).isEmpty();
     }
 
     /**
@@ -196,11 +196,11 @@ class StorefrontShopQueryImplTest {
         when(brandRepository.findById(OPERATOR)).thenReturn(Optional.of(mock(TourOperatorBrandJpaEntity.class)));
         when(colorRepository.findByTourOperatorIdOrderByPositionAsc(OPERATOR)).thenReturn(palette);
 
-        ShopView shop = query.findShop(OPERATOR, "es").orElseThrow();
+        TourOperatorView operator = query.findOperator(OPERATOR, "es").orElseThrow();
 
-        assertThat(shop.brand().primaryColors()).extracting("background")
+        assertThat(operator.brand().primaryColors()).extracting("background")
                 .containsExactly("#111111", "#222222");
-        assertThat(shop.brand().secondaryColors()).extracting("background")
+        assertThat(operator.brand().secondaryColors()).extracting("background")
                 .containsExactly("#aaaaaa", "#bbbbbb");
     }
 
@@ -217,7 +217,7 @@ class StorefrontShopQueryImplTest {
         when(link.getUrl()).thenReturn("https://instagram.com/acme");
         when(socialLinkRepository.findByTourOperatorIdOrderByPlatformAsc(OPERATOR)).thenReturn(List.of(link));
 
-        assertThat(query.findShop(OPERATOR, "es").orElseThrow().brand().socialLinks())
+        assertThat(query.findOperator(OPERATOR, "es").orElseThrow().brand().socialLinks())
                 .singleElement()
                 .satisfies(l -> assertThat(l.platform()).isEqualTo("INSTAGRAM"));
     }
@@ -241,7 +241,7 @@ class StorefrontShopQueryImplTest {
         when(policyTranslationRepository.findByTourOperatorIdAndLocale(OPERATOR, "es"))
                 .thenReturn(List.of(translated));
 
-        assertThat(query.findShop(OPERATOR, "es").orElseThrow().policies())
+        assertThat(query.findOperator(OPERATOR, "es").orElseThrow().policies())
                 .singleElement()
                 .satisfies(p -> {
                     assertThat(p.type()).isEqualTo("LEGAL_NOTICE");

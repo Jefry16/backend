@@ -8,11 +8,11 @@ import com.vointika.shared.port.StorefrontMenuQuery.MenuView;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
-import com.vointika.shared.port.StorefrontShopQuery;
-import com.vointika.shared.port.StorefrontShopQuery.AddressView;
-import com.vointika.shared.port.StorefrontShopQuery.BrandView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
-import com.vointika.shared.port.StorefrontShopQuery.ShopView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.LocalesView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class GetStorefrontGlobalsUseCaseTest {
             "Calle Mayor 1", null, "Calle Mayor 1", "Palma", "Illes Balears", "07001",
             "ES", "Spain");
 
-    private StorefrontShopQuery shopQuery;
+    private StorefrontTourOperatorQuery operatorQuery;
     private StorefrontMetafieldQuery metafieldQuery;
     private StorefrontExperienceQuery experienceQuery;
     private StorefrontMenuQuery menuQuery;
@@ -47,7 +47,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        shopQuery = mock(StorefrontShopQuery.class);
+        operatorQuery = mock(StorefrontTourOperatorQuery.class);
         metafieldQuery = mock(StorefrontMetafieldQuery.class);
         when(metafieldQuery.findForOperator(any())).thenReturn(List.of());
         experienceQuery = mock(StorefrontExperienceQuery.class);
@@ -56,19 +56,19 @@ class GetStorefrontGlobalsUseCaseTest {
         when(menuQuery.findMenus(any(), anyString())).thenReturn(List.of());
         pageQuery = mock(StorefrontPageQuery.class);
         when(pageQuery.findPublishedHandles(any(), any(), anyString())).thenReturn(Map.of());
-        useCase = new GetStorefrontGlobalsUseCase(shopQuery, metafieldQuery, experienceQuery,
+        useCase = new GetStorefrontGlobalsUseCase(operatorQuery, metafieldQuery, experienceQuery,
                 menuQuery, pageQuery);
     }
 
     private void shopExists(String primary, Set<String> supported) {
-        when(shopQuery.findLocales("acme"))
-                .thenReturn(Optional.of(new ShopLocalesView(OPERATOR, primary, supported)));
-        when(shopQuery.findShop(any(), anyString()))
-                .thenAnswer(call -> Optional.of(shop("Acme Tours", null)));
+        when(operatorQuery.findLocales("acme"))
+                .thenReturn(Optional.of(new LocalesView(OPERATOR, primary, supported)));
+        when(operatorQuery.findOperator(any(), anyString()))
+                .thenAnswer(call -> Optional.of(operator("Acme Tours", null)));
     }
 
-    private static ShopView shop(String name, String seoTitle) {
-        return new ShopView(OPERATOR, name, "acme", ADDRESS, null, null,
+    private static TourOperatorView operator(String name, String seoTitle) {
+        return new TourOperatorView(OPERATOR, name, "acme", ADDRESS, null, null,
                 seoTitle, "The best sailing in Mallorca", null, null,
                 "EUR", "€", "Europe/Madrid", "Madrid",
                 new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),
@@ -77,14 +77,14 @@ class GetStorefrontGlobalsUseCaseTest {
 
     @Test
     void aHandleNoOperatorOwnsHasNoGlobals() {
-        when(shopQuery.findLocales("nope")).thenReturn(Optional.empty());
+        when(operatorQuery.findLocales("nope")).thenReturn(Optional.empty());
 
         assertThat(useCase.execute("nope", null)).isEmpty();
     }
 
     /**
      * The locale rule runs <b>before</b> the content read, so a 404 costs one
-     * query rather than two — and, more to the point, the shop is never read for
+     * query rather than two — and, more to the point, the operator is never read for
      * an address that does not exist.
      */
     @Test
@@ -92,7 +92,7 @@ class GetStorefrontGlobalsUseCaseTest {
         shopExists("es", Set.of("es", "en"));
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
-        verify(shopQuery, never()).findShop(any(), anyString());
+        verify(operatorQuery, never()).findOperator(any(), anyString());
     }
 
     @Test
@@ -103,7 +103,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
         assertThat(globals.localization().current()).isEqualTo("es");
         assertThat(globals.localization().primary()).isEqualTo("es");
-        verify(shopQuery).findShop(OPERATOR, "es");
+        verify(operatorQuery).findOperator(OPERATOR, "es");
     }
 
     @Test
@@ -113,7 +113,7 @@ class GetStorefrontGlobalsUseCaseTest {
         StorefrontGlobals globals = useCase.execute("acme", "en").orElseThrow();
 
         assertThat(globals.localization().current()).isEqualTo("en");
-        verify(shopQuery).findShop(OPERATOR, "en");
+        verify(operatorQuery).findOperator(OPERATOR, "en");
     }
 
     /**
@@ -129,22 +129,22 @@ class GetStorefrontGlobalsUseCaseTest {
         assertThat(globals.localization().supported()).containsExactly("es", "de", "en", "fr");
     }
 
-    /** The home page has no object of its own, so the shop is the whole chain. */
+    /** The home page has no object of its own, so the operator is the whole chain. */
     @Test
     void thePageTitleFallsBackToTheShopName() {
-        when(shopQuery.findLocales("acme"))
-                .thenReturn(Optional.of(new ShopLocalesView(OPERATOR, "es", Set.of("es"))));
-        when(shopQuery.findShop(any(), anyString())).thenReturn(Optional.of(shop("Acme Tours", null)));
+        when(operatorQuery.findLocales("acme"))
+                .thenReturn(Optional.of(new LocalesView(OPERATOR, "es", Set.of("es"))));
+        when(operatorQuery.findOperator(any(), anyString())).thenReturn(Optional.of(operator("Acme Tours", null)));
 
         assertThat(useCase.execute("acme", null).orElseThrow().pageTitle()).isEqualTo("Acme Tours");
     }
 
     @Test
     void thePageTitlePrefersTheShopsSeoTitle() {
-        when(shopQuery.findLocales("acme"))
-                .thenReturn(Optional.of(new ShopLocalesView(OPERATOR, "es", Set.of("es"))));
-        when(shopQuery.findShop(any(), anyString()))
-                .thenReturn(Optional.of(shop("Acme Tours", "Sailing day trips in Mallorca")));
+        when(operatorQuery.findLocales("acme"))
+                .thenReturn(Optional.of(new LocalesView(OPERATOR, "es", Set.of("es"))));
+        when(operatorQuery.findOperator(any(), anyString()))
+                .thenReturn(Optional.of(operator("Acme Tours", "Sailing day trips in Mallorca")));
 
         assertThat(useCase.execute("acme", null).orElseThrow().pageTitle())
                 .isEqualTo("Sailing day trips in Mallorca");

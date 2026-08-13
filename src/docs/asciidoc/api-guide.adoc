@@ -389,14 +389,14 @@ Any member.
 operation::tour-operators/members/get[]
 
 [[resources-operator-seo-get]]
-==== Get Shop SEO
+==== Get Operator SEO
 
-Any member. The shop-level SEO defaults every page type falls back to.
+Any member. The operator-level SEO defaults every page type falls back to.
 
 operation::tour-operators/seo/get[]
 
 [[resources-operator-seo-update]]
-==== Update Shop SEO
+==== Update Operator SEO
 
 ADMIN+ only. `ogImageMediaId` must be a media id from this operator's library.
 

@@ -17,7 +17,7 @@ public interface TourOperatorBrandColorJpaRepository
      * without the ORDER BY the palette reorders between requests, which reads as
      * a bug rather than as a missing sort. The adapter groups by role and passes
      * the order through, so no assertion over a mocked repository can see it;
-     * {@code StorefrontShopQueryImplTest} parses this name with Spring Data's
+     * {@code StorefrontTourOperatorQueryImplTest} parses this name with Spring Data's
      * own {@code PartTree} instead.
      */
     List<TourOperatorBrandColorJpaEntity> findByTourOperatorIdOrderByPositionAsc(UUID tourOperatorId);

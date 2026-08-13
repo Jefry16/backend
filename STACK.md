@@ -124,9 +124,9 @@ bites, so the next session reads it instead of re-discovering it.
   inline one leaves its indentation behind when falsey.** jmustache strips a line
   that holds nothing but a tag; a line like `····{{#x}}<img …>{{/x}}` is not that,
   so when `x` is absent the four spaces and the newline are still emitted. The
-  storefront's `{{#shop.brand.logo}}` shipped a stray blank line that way. Same
+  storefront's `{{#tourOperator.brand.logo}}` shipped a stray blank line that way. Same
   fix as the block tags above — hug: open the section at the end of the previous
-  line (`<header>{{#shop.brand.logo}}`) so nothing is left when it is skipped. The
+  line (`<header>{{#tourOperator.brand.logo}}`) so nothing is left when it is skipped. The
   footer's phone/email guards already did this; the rule is general.
 - **Flyway ignores an applied migration whose version is *ahead* of everything
   local, and reports it the moment you add one past it.** A branch that lacks a

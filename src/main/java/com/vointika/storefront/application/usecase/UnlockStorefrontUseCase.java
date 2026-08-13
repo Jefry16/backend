@@ -1,7 +1,7 @@
 package com.vointika.storefront.application.usecase;
 
-import com.vointika.shared.port.StorefrontShopQuery;
-import com.vointika.shared.port.StorefrontShopQuery.GateView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.GateView;
 import com.vointika.storefront.application.port.UnlockTokenPort;
 
 import java.nio.charset.StandardCharsets;
@@ -16,10 +16,10 @@ import java.util.Optional;
  */
 public class UnlockStorefrontUseCase {
 
-    private final StorefrontShopQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontShopQuery;
     private final UnlockTokenPort unlockToken;
 
-    public UnlockStorefrontUseCase(StorefrontShopQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
+    public UnlockStorefrontUseCase(StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
         this.storefrontShopQuery = storefrontShopQuery;
         this.unlockToken = unlockToken;
     }
