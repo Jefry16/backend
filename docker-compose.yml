@@ -70,6 +70,10 @@ services:
       APP_S3_SECRET_KEY: ${APP_S3_SECRET_KEY:-minioadmin}
     volumes:
       - ./docker/dev-seed/media:/seed-media:ro
+      # Country flags, dev only. They live under the same public bucket because
+      # country.flag_key is 'flags/{iso2}.svg' and resolves against
+      # app.s3.public-base-url, which is the avatars base.
+      - ./docker/dev-seed/flags:/seed-flags:ro
     entrypoint: >
       /bin/sh -c "
       until /usr/bin/mc alias set local http://minio:9000 \"$$APP_S3_ACCESS_KEY\" \"$$APP_S3_SECRET_KEY\" 2>/dev/null; do
@@ -79,7 +83,8 @@ services:
       /usr/bin/mc anonymous set download local/avatars &&
       /usr/bin/mc cp --quiet --recursive /seed-media/
       local/avatars/tour-operators/01900000-0000-7000-8000-000000000002/ &&
-      echo 'minio-init: avatars bucket ready, dev-seed media uploaded.'
+      /usr/bin/mc cp --quiet --recursive /seed-flags/ local/avatars/flags/ &&
+      echo 'minio-init: avatars bucket ready, dev-seed media and country flags uploaded.'
       "
     restart: "no"
 

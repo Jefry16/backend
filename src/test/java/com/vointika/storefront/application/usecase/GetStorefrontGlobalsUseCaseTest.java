@@ -9,6 +9,7 @@ import com.vointika.shared.port.StorefrontMetafieldQuery;
 import com.vointika.shared.port.StorefrontPageQuery;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontShopQuery;
+import com.vointika.shared.port.StorefrontShopQuery.AddressView;
 import com.vointika.shared.port.StorefrontShopQuery.BrandView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopLocalesView;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
@@ -33,6 +34,9 @@ import static org.mockito.Mockito.when;
 class GetStorefrontGlobalsUseCaseTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
+    private static final AddressView ADDRESS = new AddressView(
+            "Calle Mayor 1", null, "Calle Mayor 1", "Palma", "Illes Balears", "07001",
+            "ES", "Spain");
 
     private StorefrontShopQuery shopQuery;
     private StorefrontMetafieldQuery metafieldQuery;
@@ -64,7 +68,7 @@ class GetStorefrontGlobalsUseCaseTest {
     }
 
     private static ShopView shop(String name, String seoTitle) {
-        return new ShopView(OPERATOR, name, "acme", "Palma", null, null,
+        return new ShopView(OPERATOR, name, "acme", ADDRESS, null, null,
                 seoTitle, "The best sailing in Mallorca", null, null,
                 "EUR", "€", "Europe/Madrid", "Madrid",
                 new BrandView(null, null, null, null, null, null, List.of(), List.of(), List.of()),

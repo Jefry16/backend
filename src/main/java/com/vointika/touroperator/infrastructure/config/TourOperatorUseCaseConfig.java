@@ -1,6 +1,7 @@
 package com.vointika.touroperator.infrastructure.config;
 
 import com.vointika.shared.port.DiagnosticLogPort;
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.LanguageRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
@@ -91,6 +92,7 @@ public class TourOperatorUseCaseConfig {
             MenuRepository menuRepository,
             TimezoneRepository timezoneRepository,
             CurrencyRepository currencyRepository,
+            CountryRepository countryRepository,
             HandleGenerator handleGenerator,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
@@ -105,6 +107,7 @@ public class TourOperatorUseCaseConfig {
                 menuRepository,
                 timezoneRepository,
                 currencyRepository,
+                countryRepository,
                 handleGenerator,
                 transactionRunner,
                 idGenerator,
@@ -496,19 +499,22 @@ public class TourOperatorUseCaseConfig {
     @Bean
     public GetTourOperatorUseCase getTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
-            TourOperatorMembershipCheck membershipCheck) {
-        return new GetTourOperatorUseCase(tourOperatorRepository, membershipCheck);
+            TourOperatorMembershipCheck membershipCheck,
+            CountryRepository countryRepository) {
+        return new GetTourOperatorUseCase(tourOperatorRepository, membershipCheck, countryRepository);
     }
 
     @Bean
     public UpdateTourOperatorUseCase updateTourOperatorUseCase(
             TourOperatorRepository tourOperatorRepository,
+            CountryRepository countryRepository,
             TimezoneRepository timezoneRepository,
             CurrencyRepository currencyRepository,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new UpdateTourOperatorUseCase(tourOperatorRepository, timezoneRepository,
-                currencyRepository, membershipCheck, transactionRunner, auditTrailPort);
+        return new UpdateTourOperatorUseCase(tourOperatorRepository, countryRepository,
+                timezoneRepository, currencyRepository, membershipCheck, transactionRunner,
+                auditTrailPort);
     }
 }

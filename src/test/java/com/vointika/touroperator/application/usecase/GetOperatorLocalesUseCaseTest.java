@@ -42,7 +42,7 @@ class GetOperatorLocalesUseCaseTest {
 
     private TourOperator operator() {
         TourOperator op = new TourOperator(operatorId, new TourOperatorName("Acme"), new Handle("acme"),
-                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St"), UUID.randomUUID());
+                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("1 St", null, "Palma", null, null, UUID.randomUUID()), UUID.randomUUID());
         op.updateLocales(LocaleCode.of("es"),
                 new LinkedHashSet<>(List.of(LocaleCode.of("en"), LocaleCode.of("es"))));
         return op;

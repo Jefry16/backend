@@ -59,7 +59,7 @@ class UpdateOperatorSeoUseCaseTest {
             return null;
         }).when(transactionRunner).run(any());
         operator = new TourOperator(OP, new TourOperatorName("Acme"), new Handle("acme"),
-                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1"),
+                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1", null, "Palma", null, null, UUID.randomUUID()),
                 USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")));
         when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator));

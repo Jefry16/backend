@@ -69,7 +69,9 @@ class UserTourOperatorMembershipsQueryImplTest {
 
     private TourOperatorJpaEntity operator(UUID id, String name, String handle) {
         return new TourOperatorJpaEntity(
-                id, name, handle, tzId, currencyId, "some address", null, null,
+                id, name, handle, tzId, currencyId,
+                "Calle Mayor 1", null, "Madrid", null, "28013", UUID.randomUUID(),
+                null, null,
                 UUID.randomUUID(), Instant.now(), Instant.now(),
                 "en", false, null, null,
                 null, null, null,

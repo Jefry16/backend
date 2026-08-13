@@ -241,7 +241,17 @@ public class TourOperator {
     public Map<String, Object> auditSnapshot() {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("name", name == null ? null : name.value());
-        snapshot.put("address", address == null ? null : address.value());
+        // Six flat keys, not one composed line: AuditChanges.diff is a flat map
+        // diff, so this reads "city: Madrid -> Palma" in the activity log instead
+        // of one opaque blob that changes wholesale. countryId goes in as a UUID
+        // string, exactly as timezoneId and currencyId already do.
+        snapshot.put("address1", address == null ? null : address.address1());
+        snapshot.put("address2", address == null ? null : address.address2());
+        snapshot.put("city", address == null ? null : address.city());
+        snapshot.put("province", address == null ? null : address.province());
+        snapshot.put("zip", address == null ? null : address.zip());
+        snapshot.put("countryId",
+                address == null || address.countryId() == null ? null : address.countryId().toString());
         snapshot.put("phone", phone == null ? null : phone.value());
         snapshot.put("email", email == null ? null : email.value());
         snapshot.put("timezoneId", timezoneId == null ? null : timezoneId.toString());

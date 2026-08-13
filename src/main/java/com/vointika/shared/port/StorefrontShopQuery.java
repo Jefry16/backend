@@ -82,7 +82,7 @@ public interface StorefrontShopQuery {
     record ShopView(UUID id,
                     String name,
                     String handle,
-                    String address,
+                    AddressView address,
                     String phone,
                     String email,
                     String seoTitle,
@@ -114,6 +114,23 @@ public interface StorefrontShopQuery {
                      List<ColorView> primaryColors,
                      List<ColorView> secondaryColors,
                      List<SocialLinkView> socialLinks) {}
+
+    /**
+     * Flat primitives, with the country already resolved — the port's contract is
+     * primitives, and the Shopify-shaped nesting is the response's decision, made
+     * once where the payload is assembled.
+     *
+     * <p>Null for an operator that has no address. Every operator created before
+     * the structured-address slice is in that state.
+     */
+    record AddressView(String address1,
+                       String address2,
+                       String street,
+                       String city,
+                       String province,
+                       String zip,
+                       String countryCode,
+                       String countryName) {}
 
     record ColorView(String background, String foreground) {}
 

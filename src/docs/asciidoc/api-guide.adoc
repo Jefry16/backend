@@ -229,6 +229,15 @@ operation::ui-languages/list[]
 
 operation::currencies/list[]
 
+[[resources-countries]]
+==== List Countries
+
+Every ISO 3166-1 country. A form posts back the `id`, so this is where a country
+selector gets them; `code` is there for a client that would rather render the
+name itself.
+
+operation::countries/list[]
+
 [[resources-timezones]]
 ==== List Timezones
 

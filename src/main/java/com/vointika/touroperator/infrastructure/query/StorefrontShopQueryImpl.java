@@ -1,5 +1,7 @@
 package com.vointika.touroperator.infrastructure.query;
 
+import com.vointika.reference.domain.entity.Country;
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.StorefrontShopQuery;
@@ -61,6 +63,7 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
     private final TourOperatorPolicyTranslationJpaRepository policyTranslationRepository;
     private final CurrencyRepository currencyRepository;
     private final TimezoneRepository timezoneRepository;
+    private final CountryRepository countryRepository;
 
     public StorefrontShopQueryImpl(TourOperatorJpaRepository operatorRepository,
                                    TourOperatorTranslationJpaRepository translationRepository,
@@ -70,7 +73,8 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                                    TourOperatorPolicyJpaRepository policyRepository,
                                    TourOperatorPolicyTranslationJpaRepository policyTranslationRepository,
                                    CurrencyRepository currencyRepository,
-                                   TimezoneRepository timezoneRepository) {
+                                   TimezoneRepository timezoneRepository,
+                                   CountryRepository countryRepository) {
         this.operatorRepository = operatorRepository;
         this.translationRepository = translationRepository;
         this.brandRepository = brandRepository;
@@ -80,6 +84,7 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
         this.policyTranslationRepository = policyTranslationRepository;
         this.currencyRepository = currencyRepository;
         this.timezoneRepository = timezoneRepository;
+        this.countryRepository = countryRepository;
     }
 
     @Override
@@ -127,7 +132,7 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                 id,
                 operator.getName(),
                 operator.getHandle(),
-                operator.getAddress(),
+                address(operator, locale),
                 operator.getPhone(),
                 operator.getEmail(),
                 overlay(translation == null ? null : translation.getSeoTitle(), operator.getSeoTitle()),
@@ -140,6 +145,28 @@ public class StorefrontShopQueryImpl implements StorefrontShopQuery {
                 timezone == null ? null : timezone.getCityName(),
                 brand(id, translation),
                 policies(id, locale));
+    }
+
+    /**
+     * A third reference read beside currency and timezone, resolved the same
+     * null-tolerant way: a missing country row must not take the whole page down.
+     */
+    private AddressView address(TourOperatorJpaEntity operator, String locale) {
+        if (operator.getAddress1() == null) {
+            return null;
+        }
+        Country country = operator.getCountryId() == null
+                ? null : countryRepository.findById(operator.getCountryId()).orElse(null);
+        String address2 = operator.getAddress2();
+        return new AddressView(
+                operator.getAddress1(),
+                address2,
+                address2 == null ? operator.getAddress1() : operator.getAddress1() + ", " + address2,
+                operator.getCity(),
+                operator.getProvince(),
+                operator.getZip(),
+                country == null ? null : country.getCode(),
+                country == null ? null : country.getName());
     }
 
     private BrandView brand(UUID tourOperatorId, TourOperatorTranslationJpaEntity translation) {

@@ -2,6 +2,7 @@ package com.vointika.touroperator.infrastructure.query;
 
 import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.StorefrontShopQuery.ShopView;
@@ -67,6 +68,7 @@ class StorefrontShopQueryImplTest {
         policyTranslationRepository = mock(TourOperatorPolicyTranslationJpaRepository.class);
         CurrencyRepository currencyRepository = mock(CurrencyRepository.class);
         TimezoneRepository timezoneRepository = mock(TimezoneRepository.class);
+        CountryRepository countryRepository = mock(CountryRepository.class);
 
         Currency euro = mock(Currency.class);
         when(euro.getCode()).thenReturn("EUR");
@@ -100,7 +102,7 @@ class StorefrontShopQueryImplTest {
 
         query = new StorefrontShopQueryImpl(operatorRepository, translationRepository, brandRepository,
                 colorRepository, socialLinkRepository, policyRepository, policyTranslationRepository,
-                currencyRepository, timezoneRepository);
+                currencyRepository, timezoneRepository, countryRepository);
     }
 
     @Test

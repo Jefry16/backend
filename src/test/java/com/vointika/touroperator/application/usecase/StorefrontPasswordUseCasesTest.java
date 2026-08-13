@@ -56,7 +56,7 @@ class StorefrontPasswordUseCasesTest {
 
     private TourOperator operator(boolean enabled, String password, String message) {
         return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Handle("acme"),
-                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Calle Mayor 1"),
+                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Calle Mayor 1", null, "Palma", null, null, UUID.randomUUID()),
                 USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")),
                 enabled, password, message, null, null, null, null, null);

@@ -3,6 +3,8 @@ package com.vointika.touroperator.application.usecase;
 import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
+import com.vointika.reference.domain.entity.Country;
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.port.AuditTrailPort;
@@ -15,6 +17,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.UserAccountQuery;
 import com.vointika.shared.port.UserContactView;
 import com.vointika.shared.service.IdGenerator;
+import com.vointika.touroperator.application.dto.input.AddressInput;
 import com.vointika.touroperator.application.dto.input.CreateTourOperatorInput;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
 import com.vointika.shared.service.HandleGenerator;
@@ -57,6 +60,7 @@ class CreateTourOperatorUseCaseTest {
     private MenuRepository menuRepository;
     private TimezoneRepository timezoneRepository;
     private CurrencyRepository currencyRepository;
+    private CountryRepository countryRepository;
     private IdGenerator idGenerator;
     private UserAccountQuery userAccountQuery;
     private EventPublisherPort eventPublisher;
@@ -69,6 +73,9 @@ class CreateTourOperatorUseCaseTest {
     private final UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     private final UUID timezoneId = UUID.randomUUID();
     private final UUID currencyId = UUID.randomUUID();
+    private final UUID countryId = UUID.randomUUID();
+    private final AddressInput ADDRESS =
+            new AddressInput("123 Beach Rd", null, "Punta Cana", null, "23000", countryId);
 
     @BeforeEach
     void setUp() {
@@ -77,6 +84,7 @@ class CreateTourOperatorUseCaseTest {
         menuRepository = mock(MenuRepository.class);
         timezoneRepository = mock(TimezoneRepository.class);
         currencyRepository = mock(CurrencyRepository.class);
+        countryRepository = mock(CountryRepository.class);
         idGenerator = mock(IdGenerator.class);
         userAccountQuery = mock(UserAccountQuery.class);
         eventPublisher = mock(EventPublisherPort.class);
@@ -87,7 +95,7 @@ class CreateTourOperatorUseCaseTest {
         };
         useCase = new CreateTourOperatorUseCase(
                 tourOperatorRepository, memberRepository, menuRepository,
-                timezoneRepository, currencyRepository,
+                timezoneRepository, currencyRepository, countryRepository,
                 new HandleGenerator(), transactionRunner, idGenerator,
                 userAccountQuery, eventPublisher, auditTrailPort, diagnosticLog,
                 () -> GENERATED_PASSWORD);
@@ -95,6 +103,7 @@ class CreateTourOperatorUseCaseTest {
         // Happy-path defaults; individual tests override.
         when(timezoneRepository.findById(any())).thenReturn(Optional.of(mock(Timezone.class)));
         when(currencyRepository.findById(any())).thenReturn(Optional.of(mock(Currency.class)));
+        when(countryRepository.findById(any())).thenReturn(Optional.of(mock(Country.class)));
         when(idGenerator.newId()).thenAnswer(inv -> UUID.randomUUID());
         when(tourOperatorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(memberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -104,7 +113,7 @@ class CreateTourOperatorUseCaseTest {
     }
 
     private CreateTourOperatorInput input() {
-        return new CreateTourOperatorInput(userId.toString(), "Acme Tours", "123 Beach Rd", timezoneId, currencyId);
+        return new CreateTourOperatorInput(userId.toString(), "Acme Tours", ADDRESS, timezoneId, currencyId);
     }
 
     /**
@@ -139,7 +148,7 @@ class CreateTourOperatorUseCaseTest {
     @Test
     void anOperatorNamedAfterInfrastructureDoesNotClaimThatHost() {
         CreateTourOperatorInput reserved = new CreateTourOperatorInput(
-                userId.toString(), "API", "123 Beach Rd", timezoneId, currencyId);
+                userId.toString(), "API", ADDRESS, timezoneId, currencyId);
 
         useCase.execute(reserved);
 
@@ -267,7 +276,7 @@ class CreateTourOperatorUseCaseTest {
     @Test
     void invalidAuthenticatedUserThrowsUnauthorized() {
         CreateTourOperatorInput bad = new CreateTourOperatorInput(
-                "not-a-uuid", "Acme Tours", "123 Beach Rd", timezoneId, currencyId);
+                "not-a-uuid", "Acme Tours", ADDRESS, timezoneId, currencyId);
         assertThrows(UnauthorizedException.class, () -> useCase.execute(bad));
     }
 
@@ -281,5 +290,27 @@ class CreateTourOperatorUseCaseTest {
         ArgumentCaptor<TourOperator> opCaptor = ArgumentCaptor.forClass(TourOperator.class);
         verify(tourOperatorRepository).save(opCaptor.capture());
         assertEquals("acme-tours-2", opCaptor.getValue().getHandle().value());
+    }
+
+    /**
+     * The country is a reference row, so its existence is the use case's to check
+     * — a value object cannot query. Same seam and same 422 as the timezone and
+     * currency beside it.
+     */
+    @Test
+    void unknownCountryThrowsInvalidField() {
+        when(countryRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThrows(InvalidFieldException.class, () -> useCase.execute(input()));
+        verify(tourOperatorRepository, never()).save(any());
+    }
+
+    /** An address is still required at creation; it is the read-back that was missing. */
+    @Test
+    void missingAddressThrowsInvalidField() {
+        CreateTourOperatorInput noAddress = new CreateTourOperatorInput(
+                userId.toString(), "Acme Tours", null, timezoneId, currencyId);
+
+        assertThrows(InvalidFieldException.class, () -> useCase.execute(noAddress));
     }
 }

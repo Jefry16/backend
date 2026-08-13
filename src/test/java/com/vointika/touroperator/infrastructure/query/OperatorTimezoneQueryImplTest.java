@@ -52,7 +52,7 @@ class OperatorTimezoneQueryImplTest {
 
     private TourOperator operator() {
         return new TourOperator(OP, new TourOperatorName("Acme Tours"), new Handle("acme"),
-                TZ, CUR, new TourOperatorAddress("Calle Mayor 1"), UUID.randomUUID(),
+                TZ, CUR, new TourOperatorAddress("Calle Mayor 1", null, "Palma", null, null, UUID.randomUUID()), UUID.randomUUID(),
                 Instant.now(), Instant.now(), LocaleCode.of("es"), Set.of(LocaleCode.of("es")));
     }
 

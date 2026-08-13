@@ -98,7 +98,7 @@ class AcceptInvitationUseCaseTest {
     private TourOperator operator() {
         return new TourOperator(operatorId, new TourOperatorName("Acme Tours"),
                 new Handle("acme-tours"), UUID.randomUUID(), UUID.randomUUID(),
-                new TourOperatorAddress("123 Beach Rd"), UUID.randomUUID());
+                new TourOperatorAddress("123 Beach Rd", null, "Palma", null, null, UUID.randomUUID()), UUID.randomUUID());
     }
 
     // ---- token matrix ----

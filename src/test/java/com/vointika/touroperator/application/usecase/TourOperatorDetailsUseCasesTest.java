@@ -2,6 +2,7 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.reference.domain.entity.Currency;
 import com.vointika.reference.domain.entity.Timezone;
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.exception.ForbiddenException;
@@ -50,6 +51,7 @@ class TourOperatorDetailsUseCasesTest {
 
     private TourOperatorRepository operatorRepository;
     private TimezoneRepository timezoneRepository;
+    private CountryRepository countryRepository;
     private CurrencyRepository currencyRepository;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
@@ -59,6 +61,7 @@ class TourOperatorDetailsUseCasesTest {
     void setUp() {
         operatorRepository = mock(TourOperatorRepository.class);
         timezoneRepository = mock(TimezoneRepository.class);
+        countryRepository = mock(CountryRepository.class);
         currencyRepository = mock(CurrencyRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
@@ -75,7 +78,7 @@ class TourOperatorDetailsUseCasesTest {
 
     private TourOperator operator() {
         TourOperator o = new TourOperator(OP, new TourOperatorName("Acme Tours"),
-                new Handle("acme"), TZ, CUR, new TourOperatorAddress("Calle Mayor 1"),
+                new Handle("acme"), TZ, CUR, new TourOperatorAddress("Calle Mayor 1", null, "Palma", null, null, UUID.randomUUID()),
                 USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")));
         o.updateDetails(o.getName(), o.getAddress(),
@@ -85,7 +88,7 @@ class TourOperatorDetailsUseCasesTest {
     }
 
     private UpdateTourOperatorUseCase update() {
-        return new UpdateTourOperatorUseCase(operatorRepository, timezoneRepository,
+        return new UpdateTourOperatorUseCase(operatorRepository, countryRepository, timezoneRepository,
                 currencyRepository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
@@ -97,7 +100,7 @@ class TourOperatorDetailsUseCasesTest {
 
     @Test
     void getReturnsTheOperatorsDetails() {
-        var view = new GetTourOperatorUseCase(operatorRepository, membershipCheck)
+        var view = new GetTourOperatorUseCase(operatorRepository, membershipCheck, countryRepository)
                 .execute(OP, USER);
 
         verify(membershipCheck).ensureMember(USER, OP);

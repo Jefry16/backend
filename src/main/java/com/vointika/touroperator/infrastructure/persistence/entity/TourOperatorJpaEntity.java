@@ -32,8 +32,26 @@ public class TourOperatorJpaEntity {
     @Column(nullable = false)
     private UUID currencyId;
 
-    @Column(nullable = false)
-    private String address;
+    // The postal address, in parts (V15). All nullable: dropping the old
+    // free-text column left every existing row without one, and a half-written
+    // address is refused by a CHECK rather than by these annotations.
+    @Column(length = 255)
+    private String address1;
+
+    @Column(length = 255)
+    private String address2;
+
+    @Column(length = 120)
+    private String city;
+
+    @Column(length = 120)
+    private String province;
+
+    @Column(length = 20)
+    private String zip;
+
+    @Column
+    private UUID countryId;
 
     /**
      * The shop's public contact details (V9), <b>mapped read-only on purpose</b>.

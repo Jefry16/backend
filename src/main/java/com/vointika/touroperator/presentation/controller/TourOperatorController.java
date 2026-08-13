@@ -80,7 +80,7 @@ public class TourOperatorController {
                 new CreateTourOperatorInput(
                         userId,
                         request.name(),
-                        request.address(),
+                        request.address() == null ? null : request.address().toInput(),
                         request.timezoneId(),
                         request.currencyId()));
         return ResponseEntity.created(URI.create("/api/tour-operators/" + output.id())).build();

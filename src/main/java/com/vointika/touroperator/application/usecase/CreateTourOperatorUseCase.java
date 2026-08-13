@@ -1,5 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.reference.domain.repository.CurrencyRepository;
 import com.vointika.reference.domain.repository.TimezoneRepository;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -58,6 +59,7 @@ public class CreateTourOperatorUseCase {
     private final MenuRepository menuRepository;
     private final TimezoneRepository timezoneRepository;
     private final CurrencyRepository currencyRepository;
+    private final CountryRepository countryRepository;
     private final HandleGenerator handleGenerator;
     private final TransactionRunner transactionRunner;
     private final IdGenerator idGenerator;
@@ -73,6 +75,7 @@ public class CreateTourOperatorUseCase {
             MenuRepository menuRepository,
             TimezoneRepository timezoneRepository,
             CurrencyRepository currencyRepository,
+            CountryRepository countryRepository,
             HandleGenerator handleGenerator,
             TransactionRunner transactionRunner,
             IdGenerator idGenerator,
@@ -86,6 +89,7 @@ public class CreateTourOperatorUseCase {
         this.menuRepository = menuRepository;
         this.timezoneRepository = timezoneRepository;
         this.currencyRepository = currencyRepository;
+        this.countryRepository = countryRepository;
         this.handleGenerator = handleGenerator;
         this.transactionRunner = transactionRunner;
         this.idGenerator = idGenerator;
@@ -107,9 +111,20 @@ public class CreateTourOperatorUseCase {
 
         // 2. Validate value objects (422 on invalid input).
         TourOperatorName name = new TourOperatorName(input.name());
-        TourOperatorAddress address = new TourOperatorAddress(input.address());
+        if (input.address() == null) {
+            throw new InvalidFieldException("Address is required");
+        }
+        TourOperatorAddress address = new TourOperatorAddress(
+                input.address().address1(), input.address().address2(), input.address().city(),
+                input.address().province(), input.address().zip(), input.address().countryId());
 
         // 3. Required reference ids must be present and must exist.
+        // The country is a reference row, so its existence is the use case's to
+        // check — a value object cannot query. Same seam, and same 422, as the
+        // timezone and currency below.
+        if (countryRepository.findById(address.countryId()).isEmpty()) {
+            throw new InvalidFieldException("Country not found");
+        }
         if (input.timezoneId() == null) {
             throw new InvalidFieldException("Timezone is required");
         }

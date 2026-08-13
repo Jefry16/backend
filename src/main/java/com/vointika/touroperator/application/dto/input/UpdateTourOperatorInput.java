@@ -9,14 +9,22 @@ import java.util.UUID;
  * thing.
  *
  * <p>Clearing an optional field is therefore a <b>blank string</b>, not null:
- * {@code ""} on phone or email removes it. {@code name} and {@code address} are
- * required columns and cannot be cleared, only replaced.
+ * {@code ""} on phone or email removes it. {@code name} and {@code address}
+ * cannot be cleared, only replaced.
+ *
+ * <p><b>{@code address} is the exception to the blank rule, because it is an
+ * object.</b> Omit it and the address is untouched; send it and it replaces the
+ * stored one <em>whole</em>, optional parts included — sending only a city would
+ * otherwise put a new city on an old street, which is a wrong address rather
+ * than a partial one. The nesting is what makes the tri-state expressible: a
+ * record cannot tell an absent field from an explicit null, but it can tell an
+ * absent object.
  *
  * <p>{@code handle} is absent by design — it is the storefront subdomain.
  */
 public record UpdateTourOperatorInput(
         String name,
-        String address,
+        AddressInput address,
         String phone,
         String email,
         UUID timezoneId,

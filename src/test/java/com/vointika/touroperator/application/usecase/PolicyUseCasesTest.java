@@ -88,7 +88,7 @@ class PolicyUseCasesTest {
 
     private TourOperator operator() {
         return new TourOperator(OP, new TourOperatorName("Acme"), new Handle("acme"),
-                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1"),
+                UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1", null, "Palma", null, null, UUID.randomUUID()),
                 USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en"), LocaleCode.of("es")));
     }

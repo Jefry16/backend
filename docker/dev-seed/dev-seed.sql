@@ -226,7 +226,9 @@ ON CONFLICT DO NOTHING;
 -- 2. Tour operator. Timezone/currency resolve by name/code with a fallback to
 -- the first reference row, so a changed reference set still seeds.
 INSERT INTO touroperator.tour_operators
-    (id, name, handle, timezone_id, currency_id, address, phone, email, primary_locale,
+    (id, name, handle, timezone_id, currency_id,
+     address1, address2, city, province, zip, country_id,
+     phone, email, primary_locale,
      seo_title, seo_description, og_image_media_id, created_by, created_at, updated_at)
 VALUES
     (:'operator_id', 'Acme Tours', 'acme',
@@ -236,7 +238,13 @@ VALUES
      COALESCE(
          (SELECT id FROM reference.currencies WHERE code = 'EUR'),
          (SELECT id FROM reference.currencies ORDER BY code LIMIT 1)),
-     'Calle Mayor 1, 28013 Madrid',
+     -- The address is structured since touroperator/V15. Resolved by code, the
+     -- way the timezone and currency above are resolved by name — the country
+     -- ids in reference/V6 are derived from the code, not hand-written here.
+     'Calle Mayor 1', NULL, 'Madrid', 'Madrid', '28013',
+     COALESCE(
+         (SELECT id FROM reference.country WHERE code = 'ES'),
+         (SELECT id FROM reference.country ORDER BY code LIMIT 1)),
      '+34 910 000 000', 'hola@acme.test', 'es',
      -- Canonical SEO is English like every other canonical row here; the `es`
      -- overlay below is what a default visit resolves to.
@@ -255,7 +263,12 @@ ON CONFLICT (id) DO UPDATE SET
     handle           = EXCLUDED.handle,
     timezone_id    = EXCLUDED.timezone_id,
     currency_id    = EXCLUDED.currency_id,
-    address         = EXCLUDED.address,
+    address1        = EXCLUDED.address1,
+    address2        = EXCLUDED.address2,
+    city            = EXCLUDED.city,
+    province        = EXCLUDED.province,
+    zip             = EXCLUDED.zip,
+    country_id      = EXCLUDED.country_id,
     phone           = EXCLUDED.phone,
     email           = EXCLUDED.email,
     primary_locale  = EXCLUDED.primary_locale,
