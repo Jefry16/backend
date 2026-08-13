@@ -1051,6 +1051,116 @@ ADMIN+ only.
 
 operation::tour-operator-metafields/delete[]
 
+[[resources-metafield-translations]]
+=== Metafield Translations
+
+Per-locale overlays for metafield *values*. A value with no translation in the
+locale being served falls back to the canonical one, per key — so an operator who
+has translated two of five metafields gets two translated and three canonical.
+
+Three things are fixed by design:
+
+* **Only text types can be translated** — `single_line_text` and
+  `multi_line_text`. A translated `true` is `true` and a translated `2026-08-13`
+  is the same date, so every other type is a 422 naming the key. A
+  `metaobject_reference` is not a gap either: pointing at a different entry per
+  locale is content *selection*, not translation — translate the entry's own
+  fields instead.
+* **The whole locale is written at once**, keyed `namespace.key`. A blank value
+  clears that key; a key left out of the payload is untouched, so a partial form
+  cannot delete what it never rendered.
+* **Nothing is written when anything is invalid.** Half a translated locale is
+  worse than a rejected save, because nothing tells the operator which half
+  landed.
+
+The path is `metafield-translations`, not `metafields/translations`: the latter
+collides with `/metafields/{namespace}/{key}`.
+
+[[resources-tour-operator-metafield-translations-list-locales]]
+==== List the Operator's Translated Locales
+
+Which locales have any translation — the editor's "started" markers. Any member.
+
+operation::tour-operator-metafield-translations/list-locales[]
+
+[[resources-tour-operator-metafield-translations-get]]
+==== Get the Operator's Metafield Translations
+
+One locale's overlay, keyed `namespace.key`. An untranslated locale is an empty
+object, not a 404. Any member.
+
+operation::tour-operator-metafield-translations/get[]
+
+[[resources-tour-operator-metafield-translations-upsert]]
+==== Set the Operator's Metafield Translations
+
+ADMIN+ only. A locale the operator does not publish → 422.
+
+operation::tour-operator-metafield-translations/upsert[]
+
+[[resources-tour-operator-metafield-translations-delete]]
+==== Clear the Operator's Metafield Translations
+
+ADMIN+ only. 204 whether or not anything was there.
+
+operation::tour-operator-metafield-translations/delete[]
+
+[[resources-experience-metafield-translations-list-locales]]
+==== List an Experience's Translated Locales
+
+Any member.
+
+operation::experience-metafield-translations/list-locales[]
+
+[[resources-experience-metafield-translations-get]]
+==== Get an Experience's Metafield Translations
+
+Any member.
+
+operation::experience-metafield-translations/get[]
+
+[[resources-experience-metafield-translations-upsert]]
+==== Set an Experience's Metafield Translations
+
+ADMIN+ only.
+
+operation::experience-metafield-translations/upsert[]
+
+[[resources-experience-metafield-translations-delete]]
+==== Clear an Experience's Metafield Translations
+
+ADMIN+ only.
+
+operation::experience-metafield-translations/delete[]
+
+[[resources-page-metafield-translations-list-locales]]
+==== List a Page's Translated Locales
+
+Any member.
+
+operation::page-metafield-translations/list-locales[]
+
+[[resources-page-metafield-translations-get]]
+==== Get a Page's Metafield Translations
+
+Any member.
+
+operation::page-metafield-translations/get[]
+
+[[resources-page-metafield-translations-upsert]]
+==== Set a Page's Metafield Translations
+
+ADMIN+ only.
+
+operation::page-metafield-translations/upsert[]
+
+[[resources-page-metafield-translations-delete]]
+==== Clear a Page's Metafield Translations
+
+ADMIN+ only.
+
+operation::page-metafield-translations/delete[]
+
 [[resources-metaobject-definitions-list]]
 ==== List Metaobject Definitions
 

@@ -46,12 +46,18 @@ public interface StorefrontMetafieldQuery {
      * a string too: JSON has no date type and the stored form is ISO-8601
      * already.
      *
+     * <p><b>Values are overlaid for {@code locale} before they are typed.</b> A
+     * value with no translation in that locale falls back to the canonical one,
+     * per key rather than per resource — so an operator who has translated two of
+     * five metafields gets two translated and three canonical, not all five in
+     * one language or the other. Only text types can carry a translation at all.
+     *
      * <p>Only JDK types cross ({@code Map}, {@code List}, {@code String},
      * {@code Number}, {@code Boolean}, null). <b>No parser type may appear in
      * this record</b> — {@code shared} is imported by every context, and a
      * Jackson node here would put a JSON library on all of them.
      */
-    List<MetafieldView> findForOperator(UUID tourOperatorId);
+    List<MetafieldView> findForOperator(UUID tourOperatorId, String locale);
 
     /**
      * @param type      the type <b>code</b> — our vocabulary, not Shopify's
