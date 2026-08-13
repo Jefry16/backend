@@ -457,6 +457,38 @@ class StorefrontHomeControllerTest {
                         .doesNotExist());
     }
 
+    /**
+     * <b>At the wire, not just in the adapter.</b> {@code jsonPath().value(true)}
+     * fails against the string {@code "true"}, which is the whole point: as text
+     * the value is truthy in JavaScript either way, so a theme writing
+     * {@code if (mf.value)} used to get the opposite of what the operator set.
+     * Only a test that reads the serialized body can tell the two apart.
+     */
+    @Test
+    void aBooleanMetafieldSerializesAsABoolean() throws Exception {
+        served(null, withMetafields(List.of(
+                new MetafieldView("custom", "accepts-groups", "boolean", false, null))));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['accepts-groups'].value")
+                        .value(false))
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['accepts-groups'].value")
+                        .isBoolean());
+    }
+
+    /** And a json metafield is addressed into, not parsed by the theme. */
+    @Test
+    void aJsonMetafieldIsAddressableBySubKey() throws Exception {
+        served(null, withMetafields(List.of(new MetafieldView("custom", "booking-window", "json",
+                Map.of("minHours", 24, "maxDays", 180), null))));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tourOperator.metafields.custom['booking-window'].value.minHours")
+                        .value(24));
+    }
+
     /** A scalar is untouched by any of that: still a string, no nesting. */
     @Test
     void aScalarMetafieldIsStillAPlainString() throws Exception {

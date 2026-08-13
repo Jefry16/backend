@@ -115,6 +115,18 @@ port or an event (never a direct import).
 >   strip. Each route names its own `pageType` at the `from` overload that builds
 >   it; inferring it from "which objects are present" makes any future
 >   object-less route the index by accident.
+> - **A metafield's `value` carries its type** (2026-08-13). `boolean` is a JSON
+>   boolean and `json` is the parsed value; everything else stays a string.
+>   Liquid's model — their docs say the format "depends on the type". **The
+>   typing happens in the owning context's adapter**, for the same reason the
+>   brand palette's role split does: `storefront` cannot see `MetafieldType`, so
+>   deciding it there means matching on the literals `"boolean"` and `"json"` —
+>   a second copy of an enum with nothing keeping the copies equal. **Numbers
+>   stay strings**: `number_integer` normalizes through `Long` and so reaches
+>   past JavaScript's exact-integer ceiling of 2^53, `number_decimal` allows 38
+>   digits, and a JSON number would silently drop them — the call
+>   `startingPrice` already made. Only JDK types may cross the port; a parser's
+>   node type in `shared` would put a JSON library on every context.
 > - **A `metaobject_reference` resolves to its entry** (2026-08-13). Liquid's own
 >   rule — their docs say a reference type's `value` "directly returns the
 >   referenced object", and there is no separate `reference` property — so the

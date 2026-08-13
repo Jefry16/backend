@@ -200,14 +200,29 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * Liquid, where a metafield renders its own value, a JSON consumer reads
      * {@code .value} — that is what JSON costs, not a choice.
      *
-     * <p><b>{@code value} is a string for every scalar type and a
-     * {@link Metaobject} for {@code metaobject_reference}</b>, which is Liquid's
-     * own model: their docs say a reference type's {@code value} "directly
-     * returns the referenced object", and there is no separate {@code reference}
-     * property to copy. So the pair stays {@code {type, value}} and a theme
-     * reads {@code type} to know which it got. A reference whose target is
-     * unpublished or gone is <b>not here at all</b> — the port prunes it, the
-     * way a menu prunes a dead link.
+     * <p><b>{@code value} carries the type it says it is</b>, which is Liquid's
+     * own model: their docs say the format "depends on the type", and that a
+     * reference type's {@code value} "directly returns the referenced object" —
+     * there is no separate {@code reference} property to copy. So the pair stays
+     * {@code {type, value}} and a theme reads {@code type} to know what it got:
+     *
+     * <ul>
+     *   <li>{@code boolean} → a JSON boolean. <b>It used to be the string
+     *       {@code "false"}</b>, which is truthy in JavaScript, so
+     *       {@code if (mf.value)} returned the opposite of what the operator set.
+     *   <li>{@code json} → the parsed value, addressable by sub-key rather than
+     *       a string the theme has to parse itself.
+     *   <li>{@code metaobject_reference} → a {@link Metaobject}. One whose target
+     *       is unpublished or gone is <b>not here at all</b> — the port prunes
+     *       it, the way a menu prunes a dead link.
+     *   <li>everything else → a string, <b>numbers included</b>:
+     *       {@code number_integer} reaches past JavaScript's exact-integer range
+     *       and {@code number_decimal} allows 38 digits, so a JSON number would
+     *       silently lose them. The call {@code startingPrice} already made.
+     * </ul>
+     *
+     * <p>The typing happens in {@code metafield}'s adapter, not here — only that
+     * context can see the type enum (PATTERNS §2a).
      */
     public record Metafield(String type, Object value) {}
 
@@ -234,7 +249,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                              String name,
                              Map<String, MetaobjectField> fields) {}
 
-    public record MetaobjectField(String type, String value) {}
+    public record MetaobjectField(String type, Object value) {}
 
     public record Routes(String root, String experiences) {}
 

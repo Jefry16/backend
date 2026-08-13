@@ -28,6 +28,28 @@ public interface StorefrontMetafieldQuery {
      * menus follow: a link to nothing is pruned rather than served broken. The
      * alternative is a bare id in the payload, which is what this read shipped
      * with until it was fixed, and a theme could do nothing with it.
+     *
+     * <p><b>Values are typed here, not by the caller.</b> {@code boolean} arrives
+     * as a {@link Boolean} and {@code json} as the parsed value; every other type
+     * stays a {@code String}. The typing belongs to this side of the boundary
+     * because only {@code metafield} can see {@code MetafieldType} — deciding it
+     * in {@code storefront} would mean matching on the literals
+     * {@code "boolean"} and {@code "json"}, a second copy of an enum it is fenced
+     * from and nothing to keep the copies equal. Same reason the brand palette's
+     * role split happens in {@code touroperator} (PATTERNS §2a).
+     *
+     * <p><b>Numbers stay strings on purpose.</b> {@code number_integer}
+     * normalizes through {@code Long}, so it reaches 9.2e18 — past JavaScript's
+     * exact-integer ceiling of 2^53, where a JSON number quietly loses digits —
+     * and {@code number_decimal} allows 38 digits of precision. The call
+     * {@code startingPrice} already made, for the same reason. {@code date} stays
+     * a string too: JSON has no date type and the stored form is ISO-8601
+     * already.
+     *
+     * <p>Only JDK types cross ({@code Map}, {@code List}, {@code String},
+     * {@code Number}, {@code Boolean}, null). <b>No parser type may appear in
+     * this record</b> — {@code shared} is imported by every context, and a
+     * Jackson node here would put a JSON library on all of them.
      */
     List<MetafieldView> findForOperator(UUID tourOperatorId);
 
@@ -37,16 +59,17 @@ public interface StorefrontMetafieldQuery {
      *                  {@code single_line_text_field}), decided when the context
      *                  shipped. It crosses as a string because the enum belongs
      *                  to {@code metafield}.
-     * @param value     the stored text. For {@code metaobject_reference} it is
-     *                  the entry id, and {@code metaobject} carries what it
-     *                  points at; presentation serves one or the other, never
-     *                  both.
+     * @param value     the stored value, <b>typed by the owning context</b> —
+     *                  see {@link #findForOperator}. For
+     *                  {@code metaobject_reference} it is the entry id, and
+     *                  {@code metaobject} carries what it points at;
+     *                  presentation serves one or the other, never both.
      * @param metaobject the resolved target, <b>null on every other type</b>
      */
     record MetafieldView(String namespace,
                          String key,
                          String type,
-                         String value,
+                         Object value,
                          MetaobjectView metaobject) {}
 
     /**
@@ -71,5 +94,6 @@ public interface StorefrontMetafieldQuery {
                           String name,
                           List<MetaobjectFieldView> fields) {}
 
-    record MetaobjectFieldView(String key, String type, String value) {}
+    /** Typed exactly as {@link MetafieldView#value} is — the same catalogue. */
+    record MetaobjectFieldView(String key, String type, Object value) {}
 }

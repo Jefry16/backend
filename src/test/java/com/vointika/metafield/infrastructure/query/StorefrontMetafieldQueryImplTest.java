@@ -7,11 +7,13 @@ import com.vointika.metafield.infrastructure.persistence.repository.MetaobjectEn
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.port.StorefrontMetafieldQuery;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,7 +46,7 @@ class StorefrontMetafieldQueryImplTest {
     void setUp() {
         valueRepository = mock(MetafieldValueRepository.class);
         entryJpa = mock(MetaobjectEntryJpaRepository.class);
-        query = new StorefrontMetafieldQueryImpl(valueRepository, entryJpa);
+        query = new StorefrontMetafieldQueryImpl(valueRepository, entryJpa, new ObjectMapper());
     }
 
     @Test
@@ -143,6 +145,97 @@ class StorefrontMetafieldQueryImplTest {
 
         assertThat(query.findForOperator(OPERATOR)).isEmpty();
         verifyNoInteractions(entryJpa);
+    }
+
+    /**
+     * <b>The bug this fixes.</b> As the string {@code "false"} the value is
+     * truthy in JavaScript, so a theme writing {@code if (mf.value)} got the
+     * opposite of what the operator set. {@code MetafieldValueValidator}
+     * normalizes to exactly {@code "true"}/{@code "false"} on write, which is why
+     * {@code Boolean.valueOf} is safe rather than lenient here.
+     */
+    @Test
+    void aBooleanIsABooleanNotItsText() {
+        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(typed("custom", "accepts-groups", MetafieldType.BOOLEAN, "false"),
+                        typed("custom", "guided", MetafieldType.BOOLEAN, "true")));
+
+        assertThat(query.findForOperator(OPERATOR))
+                .extracting(StorefrontMetafieldQuery.MetafieldView::value)
+                .containsExactly(Boolean.FALSE, Boolean.TRUE);
+    }
+
+    /** A theme addresses into it; it does not parse a string first. */
+    @Test
+    void jsonArrivesParsed() {
+        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(typed("custom", "booking-window", MetafieldType.JSON,
+                        "{\"minHours\":24,\"maxDays\":180}")));
+
+        Object value = query.findForOperator(OPERATOR).getFirst().value();
+
+        assertThat(value).isInstanceOf(Map.class);
+        assertThat(value).isEqualTo(Map.of("minHours", 24, "maxDays", 180));
+    }
+
+    /** Including the shapes that are not objects — an array is valid JSON too. */
+    @Test
+    void aJsonArrayArrivesAsAList() {
+        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(typed("custom", "languages", MetafieldType.JSON, "[\"es\",\"en\"]")));
+
+        assertThat(query.findForOperator(OPERATOR).getFirst().value())
+                .isEqualTo(List.of("es", "en"));
+    }
+
+    /**
+     * The write path validates JSON, so this row is corruption or predates the
+     * validator. One bad row must not take down every page of the storefront —
+     * the rule the unparseable reference already follows.
+     */
+    @Test
+    void malformedJsonFallsBackToItsTextRatherThanThrowing() {
+        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(typed("custom", "broken", MetafieldType.JSON, "{\"a\":1} trailing")));
+
+        assertThat(query.findForOperator(OPERATOR).getFirst().value())
+                .isEqualTo("{\"a\":1} trailing");
+    }
+
+    /**
+     * <b>Numbers stay text deliberately.</b> {@code number_integer} normalizes
+     * through {@code Long}, so it reaches past JavaScript's exact-integer ceiling
+     * of 2^53 and a JSON number would drop digits — the value below is one that
+     * does. Same call {@code startingPrice} already made.
+     */
+    @Test
+    void aNumberStaysTextSoItsDigitsSurviveTheConsumer() {
+        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(typed("custom", "licence-number", MetafieldType.NUMBER_INTEGER,
+                        "9007199254740993")));
+
+        assertThat(query.findForOperator(OPERATOR).getFirst().value())
+                .isEqualTo("9007199254740993");
+    }
+
+    /** A metaobject field reuses the same catalogue, so it is typed the same way. */
+    @Test
+    void aMetaobjectFieldIsTypedToo() {
+        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY)));
+        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of(
+                field("has-toilet", MetafieldType.BOOLEAN, "true"),
+                field("capacity", MetafieldType.NUMBER_INTEGER, "12")));
+
+        assertThat(query.findForOperator(OPERATOR).getFirst().metaobject().fields())
+                .extracting(StorefrontMetafieldQuery.MetaobjectFieldView::value)
+                .containsExactly(Boolean.TRUE, "12");
+    }
+
+    private static MetafieldValueWithDefinition typed(String namespace, String key,
+                                                      MetafieldType type, String value) {
+        return new MetafieldValueWithDefinition(namespace, key, type, "Name", value,
+                Instant.parse("2026-08-13T10:00:00Z"));
     }
 
     private static MetafieldValueWithDefinition value(String namespace, String key, String value) {
