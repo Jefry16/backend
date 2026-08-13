@@ -381,11 +381,12 @@ class StorefrontHomeControllerTest {
      * entry rather than its id — which is what this contract served until the
      * resolve landed, and a theme could do nothing with.
      *
-     * <p>The entry id is <b>not</b> in the payload: a theme addresses an entry by
-     * handle, and the id is a database fact. {@code system} is not copied either
-     * — Shopify needs it because their fields are top-level accessors that could
-     * collide with {@code type}/{@code handle}; nesting under {@code fields}
-     * makes that impossible.
+     * <p>{@code system} is not copied: Shopify needs it because their fields are
+     * top-level accessors that could collide with {@code type} or {@code handle},
+     * and nesting under {@code fields} makes that impossible. The {@code id}
+     * survives anyway — PATTERNS §4a says a response identifies itself — but it
+     * sits beside the rest rather than in a wrapper that exists to solve a
+     * problem we do not have.
      */
     @Test
     void aReferenceMetafieldServesTheEntryAsItsValue() throws Exception {
