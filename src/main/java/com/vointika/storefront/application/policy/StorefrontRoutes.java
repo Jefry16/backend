@@ -1,5 +1,7 @@
 package com.vointika.storefront.application.policy;
 
+import java.util.List;
+
 /**
  * Every address the storefront answers on, defined once because <b>two
  * registries have to agree on each of them</b>: the {@code @GetMapping} and the
@@ -94,6 +96,30 @@ public final class StorefrontRoutes {
      * later inherits the same collision, and it is asserted rather than assumed.
      */
     public static final String PASSWORD = "/password";
+
+    /**
+     * Every address that serves a <b>page</b>, and the reason this list exists
+     * rather than three hand-kept copies of it.
+     *
+     * <p>A page route has to be registered in four places — its
+     * {@code @GetMapping}, a {@code PublicRoute} for GET, another for HEAD, and
+     * the lock interceptor's patterns — and until 2026-08-14 each was written out
+     * by hand. Three of the four agreeing is a state nothing detected: the page
+     * answers, so every test and every curl passes, while a store the operator
+     * locked serves it to anyone. The registries now derive from this list, so
+     * the only way to add a route to some-but-not-all is to edit them apart on
+     * purpose.
+     *
+     * <p><b>{@link #PASSWORD} is deliberately not here.</b> It is public and it is
+     * a route, but gating the gate would redirect it to itself; it is registered
+     * on its own beside this list, and {@code StorefrontRouteRegistriesTest}
+     * knows it as the one declared exception.
+     */
+    public static final List<String> PAGE_ROUTES = List.of(
+            HOME, LOCALE,
+            EXPERIENCES, LOCALIZED_EXPERIENCES,
+            POLICY, LOCALIZED_POLICY,
+            PAGE, LOCALIZED_PAGE);
 
     private StorefrontRoutes() {
     }

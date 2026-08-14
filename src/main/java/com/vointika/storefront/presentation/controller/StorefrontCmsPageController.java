@@ -63,10 +63,8 @@ public class StorefrontCmsPageController {
         StorefrontPageOutput output = getStorefrontCmsPage.execute(shopHandle, pathLocale, handle)
                 .orElseThrow(StorefrontControllers::notFound);
 
-        Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(output.globals());
-        Map<UUID, MediaAsset> assets = mediaIds.isEmpty()
-                ? Map.of()
-                : mediaAssetBatchQuery.findAssetsByIds(output.globals().tourOperator().id(), mediaIds);
+        Map<UUID, MediaAsset> assets =
+                StorefrontControllers.assets(output.globals(), mediaAssetBatchQuery);
 
         return StorefrontGlobalsResponse.from(output.globals(), output.page(),
                 StorefrontControllers.origin(request), assets, mediaUrlResolver);

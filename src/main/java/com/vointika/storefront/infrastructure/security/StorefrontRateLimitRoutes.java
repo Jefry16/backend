@@ -1,6 +1,7 @@
 package com.vointika.storefront.infrastructure.security;
 
 import com.vointika.shared.web.security.RateLimitRule;
+import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.shared.web.security.RateLimitRuleRegistrar;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,7 @@ public class StorefrontRateLimitRoutes implements RateLimitRuleRegistrar {
     @Override
     public List<RateLimitRule> rateLimitRules() {
         return List.of(
-                new RateLimitRule(HttpMethod.POST, "/password", 20, Duration.ofHours(1))
+                new RateLimitRule(HttpMethod.POST, StorefrontRoutes.PASSWORD, 20, Duration.ofHours(1))
         );
     }
 }

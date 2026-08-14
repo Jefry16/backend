@@ -6,6 +6,7 @@ import com.vointika.storefront.application.policy.StorefrontRoutes;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,28 +43,21 @@ public class StorefrontPublicRoutes implements PublicRouteRegistrar {
 
     @Override
     public List<PublicRoute> publicRoutes() {
-        return List.of(
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.HOME),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.HOME),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALE),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALE),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.EXPERIENCES),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.EXPERIENCES),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_EXPERIENCES),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_EXPERIENCES),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.POLICY),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.POLICY),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_POLICY),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_POLICY),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.PAGE),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.PAGE),
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.LOCALIZED_PAGE),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.LOCALIZED_PAGE),
-                // The gate itself. POST is the submission; without it the form
-                // would 401 at the filter chain and never reach the controller.
-                new PublicRoute(HttpMethod.GET, StorefrontRoutes.PASSWORD),
-                new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.PASSWORD),
-                new PublicRoute(HttpMethod.POST, StorefrontRoutes.PASSWORD)
-        );
+        List<PublicRoute> routes = new ArrayList<>();
+        // GET and HEAD for every page: Spring MVC serves HEAD from a @GetMapping
+        // for free, Spring Security does not, so a GET-only entry rejects HEAD at
+        // the filter chain as a 401 the handler never sees. Crawlers, link
+        // checkers and uptime monitors all send HEAD.
+        for (String page : StorefrontRoutes.PAGE_ROUTES) {
+            routes.add(new PublicRoute(HttpMethod.GET, page));
+            routes.add(new PublicRoute(HttpMethod.HEAD, page));
+        }
+        // The gate itself, which is not in PAGE_ROUTES because it must not be
+        // gated. POST is the submission; without it the form would 401 at the
+        // filter chain and never reach the controller.
+        routes.add(new PublicRoute(HttpMethod.GET, StorefrontRoutes.PASSWORD));
+        routes.add(new PublicRoute(HttpMethod.HEAD, StorefrontRoutes.PASSWORD));
+        routes.add(new PublicRoute(HttpMethod.POST, StorefrontRoutes.PASSWORD));
+        return List.copyOf(routes);
     }
 }
