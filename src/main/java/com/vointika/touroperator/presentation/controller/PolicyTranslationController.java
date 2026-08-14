@@ -47,8 +47,8 @@ public class PolicyTranslationController {
     public ResponseEntity<List<PolicyTranslationResponse>> list(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID policyId,
-            @AuthenticationPrincipal String userIdStr) {
-        return ResponseEntity.ok(listUseCase.execute(tourOperatorId, policyId, UUID.fromString(userIdStr))
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(listUseCase.execute(tourOperatorId, policyId, userId)
                 .stream().map(PolicyTranslationResponse::from).toList());
     }
 
@@ -58,8 +58,8 @@ public class PolicyTranslationController {
             @PathVariable UUID policyId,
             @PathVariable String locale,
             @RequestBody UpsertPolicyTranslationInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        upsertUseCase.execute(tourOperatorId, policyId, locale, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        upsertUseCase.execute(tourOperatorId, policyId, locale, body, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -68,8 +68,8 @@ public class PolicyTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID policyId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String userIdStr) {
-        deleteUseCase.execute(tourOperatorId, policyId, locale, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        deleteUseCase.execute(tourOperatorId, policyId, locale, userId);
         return ResponseEntity.noContent().build();
     }
 }

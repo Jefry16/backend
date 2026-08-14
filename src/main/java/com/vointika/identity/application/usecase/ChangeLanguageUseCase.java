@@ -9,7 +9,6 @@ import com.vointika.shared.port.TransactionRunner;
 
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 public class ChangeLanguageUseCase {
 
@@ -37,7 +36,7 @@ public class ChangeLanguageUseCase {
                     + "': supported " + String.join(", ", supportedLanguages));
         }
 
-        User user = userRepository.findById(UUID.fromString(input.userId()))
+        User user = userRepository.findById(input.userId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
         if (language.equals(user.getLanguage())) {
             return; // idempotent — already set

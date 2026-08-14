@@ -56,7 +56,7 @@ class ChangePasswordUseCaseTest {
         when(passwordHasher.matches("NewPass2@", "hashed")).thenReturn(false);
         when(passwordHasher.hash("NewPass2@")).thenReturn("new-hashed");
 
-        useCase.execute(new ChangePasswordInput(userId.toString(), "OldPass1!", "NewPass2@"));
+        useCase.execute(new ChangePasswordInput(userId, "OldPass1!", "NewPass2@"));
 
         verify(userRepository).save(user);
         verify(refreshTokenRepository).revokeAllByUserId(userId);
@@ -69,7 +69,7 @@ class ChangePasswordUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UnauthorizedException.class,
-                () -> useCase.execute(new ChangePasswordInput(userId.toString(), "OldPass1!", "NewPass2@")));
+                () -> useCase.execute(new ChangePasswordInput(userId, "OldPass1!", "NewPass2@")));
     }
 
     @Test
@@ -79,7 +79,7 @@ class ChangePasswordUseCaseTest {
         when(passwordHasher.matches("WrongPass1!", "hashed")).thenReturn(false);
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
-                () -> useCase.execute(new ChangePasswordInput(userId.toString(), "WrongPass1!", "NewPass2@")));
+                () -> useCase.execute(new ChangePasswordInput(userId, "WrongPass1!", "NewPass2@")));
         assertEquals("Current password is incorrect", ex.getMessage());
     }
 
@@ -91,13 +91,13 @@ class ChangePasswordUseCaseTest {
         when(passwordHasher.matches("SamePass1!", "hashed")).thenReturn(true);
 
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new ChangePasswordInput(userId.toString(), "SamePass1!", "SamePass1!")));
+                () -> useCase.execute(new ChangePasswordInput(userId, "SamePass1!", "SamePass1!")));
     }
 
     @Test
     void shouldThrowWhenNewPasswordIsWeak() {
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new ChangePasswordInput(userId.toString(), "OldPass1!", "weak")));
+                () -> useCase.execute(new ChangePasswordInput(userId, "OldPass1!", "weak")));
     }
 
     private User verifiedUser() {

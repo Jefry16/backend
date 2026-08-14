@@ -62,10 +62,10 @@ public class PickupLocationController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<PickupLocationResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListPickupLocationsUseCase.SCHEMA, tourOperatorId);
-        CursorPage<PickupLocation> page = listPickupLocationsUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<PickupLocation> page = listPickupLocationsUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, PickupLocationResponse::from));
     }
 
@@ -74,9 +74,9 @@ public class PickupLocationController {
     public ResponseEntity<PickupLocationResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pickupLocationId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         PickupLocation p = getPickupLocationUseCase.execute(
-                tourOperatorId, pickupLocationId, UUID.fromString(callerUserId));
+                tourOperatorId, pickupLocationId, callerUserId);
         return ResponseEntity.ok(PickupLocationResponse.from(p));
     }
 
@@ -85,9 +85,9 @@ public class PickupLocationController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody PickupLocationInput body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createPickupLocationUseCase.execute(
-                tourOperatorId, UUID.fromString(callerUserId), body);
+                tourOperatorId, callerUserId, body);
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/pickup-locations/" + id))
                 .build();
@@ -99,9 +99,9 @@ public class PickupLocationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pickupLocationId,
             @RequestBody PickupLocationInput body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updatePickupLocationUseCase.execute(
-                tourOperatorId, pickupLocationId, UUID.fromString(callerUserId), body);
+                tourOperatorId, pickupLocationId, callerUserId, body);
         return ResponseEntity.noContent().build();
     }
 
@@ -110,8 +110,8 @@ public class PickupLocationController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pickupLocationId,
-            @AuthenticationPrincipal String callerUserId) {
-        deletePickupLocationUseCase.execute(tourOperatorId, pickupLocationId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deletePickupLocationUseCase.execute(tourOperatorId, pickupLocationId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

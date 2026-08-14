@@ -7,7 +7,6 @@ import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.port.TransactionRunner;
 
-import java.util.UUID;
 
 public class ClearAvatarUseCase {
 
@@ -27,7 +26,7 @@ public class ClearAvatarUseCase {
     }
 
     public void execute(ClearAvatarInput input) {
-        User user = userRepository.findById(UUID.fromString(input.userId()))
+        User user = userRepository.findById(input.userId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
         String oldKey = user.getAvatarKey();
         if (oldKey == null) {

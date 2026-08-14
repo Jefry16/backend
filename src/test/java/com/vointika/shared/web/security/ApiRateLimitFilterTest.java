@@ -17,11 +17,13 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class ApiRateLimitFilterTest {
 
-    private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+    /** A UUID, not its text: the filter keys on the parsed principal the JWT filter stores. */
+    private static final UUID USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     @Mock private ObjectProvider<RateLimiterPort> rateLimiterProvider;
     @Mock private RateLimiterPort rateLimiter;

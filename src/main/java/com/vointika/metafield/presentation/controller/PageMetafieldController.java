@@ -47,9 +47,9 @@ public class PageMetafieldController {
     public ResponseEntity<List<MetafieldValueResponse>> list(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(listUseCase
-                .execute(tourOperatorId, OWNER, pageId, UUID.fromString(callerUserId)).stream()
+                .execute(tourOperatorId, OWNER, pageId, callerUserId).stream()
                 .map(MetafieldValueResponse::from)
                 .toList());
     }
@@ -61,9 +61,9 @@ public class PageMetafieldController {
             @PathVariable String namespace,
             @PathVariable String key,
             @RequestBody UpsertMetafieldValueRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         upsertUseCase.execute(new UpsertMetafieldValueInput(
-                UUID.fromString(callerUserId), tourOperatorId, OWNER, pageId,
+                callerUserId, tourOperatorId, OWNER, pageId,
                 namespace, key, body.value()));
         return ResponseEntity.noContent().build();
     }
@@ -74,9 +74,9 @@ public class PageMetafieldController {
             @PathVariable UUID pageId,
             @PathVariable String namespace,
             @PathVariable String key,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         deleteUseCase.execute(tourOperatorId, OWNER, pageId, namespace, key,
-                UUID.fromString(callerUserId));
+                callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

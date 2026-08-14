@@ -49,7 +49,7 @@ class ChangeLanguageUseCaseTest {
         User user = userWithLanguage("en");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        useCase.execute(new ChangeLanguageInput(userId.toString(), "es"));
+        useCase.execute(new ChangeLanguageInput(userId, "es"));
 
         assertEquals("es", user.getLanguage());
         verify(userRepository).save(user);
@@ -60,7 +60,7 @@ class ChangeLanguageUseCaseTest {
         User user = userWithLanguage("en");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        useCase.execute(new ChangeLanguageInput(userId.toString(), "  ES "));
+        useCase.execute(new ChangeLanguageInput(userId, "  ES "));
 
         assertEquals("es", user.getLanguage());
         verify(userRepository).save(user);
@@ -71,7 +71,7 @@ class ChangeLanguageUseCaseTest {
         User user = userWithLanguage("es");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        useCase.execute(new ChangeLanguageInput(userId.toString(), "es"));
+        useCase.execute(new ChangeLanguageInput(userId, "es"));
 
         verify(userRepository, never()).save(any());
     }
@@ -79,7 +79,7 @@ class ChangeLanguageUseCaseTest {
     @Test
     void shouldRejectUnsupportedLanguage() {
         InvalidFieldException ex = assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new ChangeLanguageInput(userId.toString(), "fr")));
+                () -> useCase.execute(new ChangeLanguageInput(userId, "fr")));
         assertEquals("Unsupported language code 'fr': supported en, es", ex.getMessage());
         verifyNoInteractions(userRepository);
     }
@@ -87,9 +87,9 @@ class ChangeLanguageUseCaseTest {
     @Test
     void shouldRejectMissingLanguage() {
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new ChangeLanguageInput(userId.toString(), null)));
+                () -> useCase.execute(new ChangeLanguageInput(userId, null)));
         assertThrows(InvalidFieldException.class,
-                () -> useCase.execute(new ChangeLanguageInput(userId.toString(), "  ")));
+                () -> useCase.execute(new ChangeLanguageInput(userId, "  ")));
         verifyNoInteractions(userRepository);
     }
 
@@ -98,7 +98,7 @@ class ChangeLanguageUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UnauthorizedException.class,
-                () -> useCase.execute(new ChangeLanguageInput(userId.toString(), "es")));
+                () -> useCase.execute(new ChangeLanguageInput(userId, "es")));
     }
 
     private User userWithLanguage(String language) {

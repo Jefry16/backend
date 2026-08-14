@@ -12,7 +12,6 @@ import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.identity.domain.valueobject.Password;
 import com.vointika.shared.port.TransactionRunner;
 
-import java.util.UUID;
 
 public class ChangePasswordUseCase {
 
@@ -42,7 +41,7 @@ public class ChangePasswordUseCase {
 
         // 2. Find user
         User user = userRepository
-                .findById(UUID.fromString(input.userId()))
+                .findById(input.userId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
 
         // 3. Verify current password

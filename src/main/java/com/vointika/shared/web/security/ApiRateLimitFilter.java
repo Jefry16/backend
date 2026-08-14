@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Coarse per-user safety cap on the authenticated admin API (PATTERNS §8a, third
@@ -58,7 +59,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (!(auth instanceof UsernamePasswordAuthenticationToken)
-                || !(auth.getPrincipal() instanceof String userId)) {
+                || !(auth.getPrincipal() instanceof UUID userId)) {
             filterChain.doFilter(request, response);
             return;
         }

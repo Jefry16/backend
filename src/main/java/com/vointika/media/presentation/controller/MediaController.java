@@ -71,12 +71,12 @@ public class MediaController {
     public ResponseEntity<Void> upload(
             @PathVariable UUID tourOperatorId,
             @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         // A Supplier, not a stream: the use case reads the bytes twice — once to
         // measure the image, once to store it. The container has already spooled
         // the whole part, so a second getInputStream() re-reads the spool.
         UUID mediaId = uploadMediaUseCase.execute(
-                tourOperatorId, UUID.fromString(userIdStr),
+                tourOperatorId, userId,
                 file.getContentType(), file.getSize(), file.getOriginalFilename(),
                 () -> {
                     try {
@@ -102,8 +102,8 @@ public class MediaController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID mediaId,
             @RequestBody DescribeMediaInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        describeMediaUseCase.execute(tourOperatorId, mediaId, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        describeMediaUseCase.execute(tourOperatorId, mediaId, body, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -111,10 +111,10 @@ public class MediaController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<MediaResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListMediaUseCase.SCHEMA, tourOperatorId);
-        CursorPage<MediaView> page = listMediaUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<MediaView> page = listMediaUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, v -> MediaResponse.from(v, mediaUrlResolver)));
     }
 
@@ -123,8 +123,8 @@ public class MediaController {
     public ResponseEntity<MediaResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID mediaId,
-            @AuthenticationPrincipal String userIdStr) {
-        MediaView view = getMediaUseCase.execute(tourOperatorId, mediaId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        MediaView view = getMediaUseCase.execute(tourOperatorId, mediaId, userId);
         return ResponseEntity.ok(MediaResponse.from(view, mediaUrlResolver));
     }
 
@@ -133,8 +133,8 @@ public class MediaController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID mediaId,
-            @AuthenticationPrincipal String userIdStr) {
-        deleteMediaUseCase.execute(tourOperatorId, mediaId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        deleteMediaUseCase.execute(tourOperatorId, mediaId, userId);
         return ResponseEntity.noContent().build();
     }
 }

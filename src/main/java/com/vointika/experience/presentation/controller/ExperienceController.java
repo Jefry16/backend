@@ -65,10 +65,10 @@ public class ExperienceController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<ExperienceResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListExperiencesUseCase.SCHEMA, tourOperatorId);
-        CursorPage<ExperienceView> page = listExperiencesUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<ExperienceView> page = listExperiencesUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, ExperienceResponse::from));
     }
 
@@ -77,8 +77,8 @@ public class ExperienceController {
     public ResponseEntity<ExperienceResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
-            @AuthenticationPrincipal String userIdStr) {
-        ExperienceView view = getExperienceUseCase.execute(tourOperatorId, experienceId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        ExperienceView view = getExperienceUseCase.execute(tourOperatorId, experienceId, userId);
         return ResponseEntity.ok(ExperienceResponse.from(view));
     }
 
@@ -87,8 +87,8 @@ public class ExperienceController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody ExperienceRequest body,
-            @AuthenticationPrincipal String userIdStr) {
-        UUID id = createExperienceUseCase.execute(tourOperatorId, UUID.fromString(userIdStr), toInput(body));
+            @AuthenticationPrincipal UUID userId) {
+        UUID id = createExperienceUseCase.execute(tourOperatorId, userId, toInput(body));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/experiences/" + id))
                 .build();
@@ -100,8 +100,8 @@ public class ExperienceController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
             @RequestBody ExperienceRequest body,
-            @AuthenticationPrincipal String userIdStr) {
-        updateExperienceUseCase.execute(tourOperatorId, experienceId, UUID.fromString(userIdStr), toInput(body));
+            @AuthenticationPrincipal UUID userId) {
+        updateExperienceUseCase.execute(tourOperatorId, experienceId, userId, toInput(body));
         return ResponseEntity.noContent().build();
     }
 
@@ -110,8 +110,8 @@ public class ExperienceController {
     public ResponseEntity<Void> publish(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
-            @AuthenticationPrincipal String userIdStr) {
-        publishExperienceUseCase.execute(tourOperatorId, experienceId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        publishExperienceUseCase.execute(tourOperatorId, experienceId, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -120,8 +120,8 @@ public class ExperienceController {
     public ResponseEntity<Void> unpublish(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
-            @AuthenticationPrincipal String userIdStr) {
-        unpublishExperienceUseCase.execute(tourOperatorId, experienceId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        unpublishExperienceUseCase.execute(tourOperatorId, experienceId, userId);
         return ResponseEntity.noContent().build();
     }
 

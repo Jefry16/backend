@@ -47,9 +47,9 @@ public class StorefrontPasswordController {
     @GetMapping
     public ResponseEntity<StorefrontPasswordResponse> get(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(StorefrontPasswordResponse.from(
-                getUseCase.execute(tourOperatorId, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, callerUserId)));
     }
 
     /**
@@ -61,9 +61,9 @@ public class StorefrontPasswordController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @RequestBody UpdateStorefrontPasswordRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updateUseCase.execute(tourOperatorId, body.enabled(), body.password(), body.message(),
-                UUID.fromString(callerUserId));
+                callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

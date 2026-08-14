@@ -82,11 +82,11 @@ public class PolicyController {
     public ResponseEntity<CursorPageResponse<PolicyResponse>> list(
             @PathVariable UUID tourOperatorId,
             HttpServletRequest request,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         ListQuery query = listQueryParser.parse(
                 request, ListPoliciesUseCase.SCHEMA, tourOperatorId);
         return ResponseEntity.ok(CursorPageResponse.of(
-                listUseCase.execute(query, UUID.fromString(userIdStr)), PolicyResponse::from));
+                listUseCase.execute(query, userId), PolicyResponse::from));
     }
 
     /** Writes a policy the operator has not written yet. ADMIN+. 409 on a repeat type. */
@@ -94,8 +94,8 @@ public class PolicyController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody CreatePolicyInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        UUID id = createUseCase.execute(tourOperatorId, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        UUID id = createUseCase.execute(tourOperatorId, body, userId);
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/policies/" + id))
                 .build();
@@ -106,9 +106,9 @@ public class PolicyController {
     public ResponseEntity<PolicyResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID policyId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(PolicyResponse.from(
-                getUseCase.execute(tourOperatorId, policyId, UUID.fromString(userIdStr))));
+                getUseCase.execute(tourOperatorId, policyId, userId)));
     }
 
     /** Replaces the policy's text. The type is not settable — it is the address. */
@@ -117,8 +117,8 @@ public class PolicyController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID policyId,
             @RequestBody UpdatePolicyInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        updateUseCase.execute(tourOperatorId, policyId, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        updateUseCase.execute(tourOperatorId, policyId, body, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -127,8 +127,8 @@ public class PolicyController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID policyId,
-            @AuthenticationPrincipal String userIdStr) {
-        deleteUseCase.execute(tourOperatorId, policyId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        deleteUseCase.execute(tourOperatorId, policyId, userId);
         return ResponseEntity.noContent().build();
     }
 }

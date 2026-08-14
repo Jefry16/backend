@@ -49,9 +49,9 @@ public class AudienceTranslationController {
     public ResponseEntity<List<AudienceTranslationResponse>> list(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID audienceId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         List<AudienceTranslationResponse> body = listUseCase
-                .execute(tourOperatorId, audienceId, UUID.fromString(callerUserId)).stream()
+                .execute(tourOperatorId, audienceId, callerUserId).stream()
                 .map(AudienceTranslationResponse::from)
                 .toList();
         return ResponseEntity.ok(body);
@@ -63,8 +63,8 @@ public class AudienceTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID audienceId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
-        var view = getUseCase.execute(tourOperatorId, audienceId, locale, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        var view = getUseCase.execute(tourOperatorId, audienceId, locale, callerUserId);
         return ResponseEntity.ok(AudienceTranslationResponse.from(view));
     }
 
@@ -75,9 +75,9 @@ public class AudienceTranslationController {
             @PathVariable UUID audienceId,
             @PathVariable String locale,
             @RequestBody UpsertAudienceTranslationRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         upsertUseCase.execute(tourOperatorId, audienceId, locale,
-                body.name(), UUID.fromString(callerUserId));
+                body.name(), callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -87,8 +87,8 @@ public class AudienceTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID audienceId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, audienceId, locale, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, audienceId, locale, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

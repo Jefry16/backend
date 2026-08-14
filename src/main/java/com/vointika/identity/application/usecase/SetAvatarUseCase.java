@@ -12,7 +12,6 @@ import com.vointika.shared.service.IdGenerator;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 public class SetAvatarUseCase {
 
@@ -58,7 +57,7 @@ public class SetAvatarUseCase {
             throw new InvalidFieldException("File too large: max 5 MB");
         }
 
-        User user = userRepository.findById(UUID.fromString(input.userId()))
+        User user = userRepository.findById(input.userId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
         String oldKey = user.getAvatarKey();
 

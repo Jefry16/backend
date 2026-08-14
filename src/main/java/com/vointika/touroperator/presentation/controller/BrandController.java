@@ -48,17 +48,17 @@ public class BrandController {
     @GetMapping
     public ResponseEntity<BrandResponse> get(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(BrandResponse.from(
-                getUseCase.execute(tourOperatorId, UUID.fromString(userIdStr))));
+                getUseCase.execute(tourOperatorId, userId)));
     }
 
     @PutMapping
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @RequestBody UpdateBrandInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        updateUseCase.execute(tourOperatorId, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        updateUseCase.execute(tourOperatorId, body, userId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -84,9 +84,9 @@ public class MetaobjectDefinitionController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody CreateMetaobjectDefinitionRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createUseCase.execute(new CreateMetaobjectDefinitionInput(
-                UUID.fromString(callerUserId), tourOperatorId,
+                callerUserId, tourOperatorId,
                 body.type(), body.name(), body.description(),
                 body.fields() == null ? List.of() : body.fields()));
         return ResponseEntity
@@ -99,12 +99,12 @@ public class MetaobjectDefinitionController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<MetaobjectDefinitionListItemResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(
                 request, ListMetaobjectDefinitionsUseCase.SCHEMA, tourOperatorId);
         CursorPage<MetaobjectDefinitionListItem> page =
-                listUseCase.execute(query, UUID.fromString(callerUserId));
+                listUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(
                 CursorPageResponse.of(page, MetaobjectDefinitionListItemResponse::from));
     }
@@ -114,9 +114,9 @@ public class MetaobjectDefinitionController {
     public ResponseEntity<MetaobjectDefinitionResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(MetaobjectDefinitionResponse.from(
-                getUseCase.execute(tourOperatorId, definitionId, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, definitionId, callerUserId)));
     }
 
     /** Updates name/description ({@code type} is immutable). ADMIN+. */
@@ -125,9 +125,9 @@ public class MetaobjectDefinitionController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
             @RequestBody UpdateMetaobjectDefinitionRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updateUseCase.execute(new UpdateMetaobjectDefinitionInput(
-                UUID.fromString(callerUserId), tourOperatorId, definitionId,
+                callerUserId, tourOperatorId, definitionId,
                 body.name(), body.description()));
         return ResponseEntity.noContent().build();
     }
@@ -137,8 +137,8 @@ public class MetaobjectDefinitionController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, definitionId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, definitionId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -148,9 +148,9 @@ public class MetaobjectDefinitionController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
             @RequestBody AddMetaobjectFieldRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         addFieldUseCase.execute(new AddMetaobjectFieldInput(
-                UUID.fromString(callerUserId), tourOperatorId, definitionId,
+                callerUserId, tourOperatorId, definitionId,
                 body.key(), body.type(), body.name()));
         return ResponseEntity.noContent().build();
     }
@@ -162,9 +162,9 @@ public class MetaobjectDefinitionController {
             @PathVariable UUID definitionId,
             @PathVariable String key,
             @RequestBody RenameMetaobjectFieldRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         renameFieldUseCase.execute(new RenameMetaobjectFieldInput(
-                UUID.fromString(callerUserId), tourOperatorId, definitionId, key, body.name()));
+                callerUserId, tourOperatorId, definitionId, key, body.name()));
         return ResponseEntity.noContent().build();
     }
 
@@ -174,8 +174,8 @@ public class MetaobjectDefinitionController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
             @PathVariable String key,
-            @AuthenticationPrincipal String callerUserId) {
-        removeFieldUseCase.execute(tourOperatorId, definitionId, key, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        removeFieldUseCase.execute(tourOperatorId, definitionId, key, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

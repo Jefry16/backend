@@ -59,10 +59,10 @@ public class TeamMemberController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<MemberResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListMembersUseCase.SCHEMA, tourOperatorId);
-        CursorPage<MemberListView> page = listMembersUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<MemberListView> page = listMembersUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, MemberResponse::from));
     }
 
@@ -74,9 +74,9 @@ public class TeamMemberController {
     public ResponseEntity<MemberResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID userId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         MemberListView view = getMemberUseCase.execute(
-                tourOperatorId, userId, UUID.fromString(callerUserId));
+                tourOperatorId, userId, callerUserId);
         return ResponseEntity.ok(MemberResponse.from(view));
     }
 
@@ -91,11 +91,11 @@ public class TeamMemberController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID userId,
             @RequestBody(required = false) ChangeMemberRoleRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         changeMemberRoleUseCase.execute(
                 tourOperatorId, userId,
                 body == null ? null : body.role(),
-                UUID.fromString(callerUserId));
+                callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -108,9 +108,9 @@ public class TeamMemberController {
     public ResponseEntity<Void> remove(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID userId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         removeTeamMemberUseCase.execute(
-                tourOperatorId, userId, UUID.fromString(callerUserId));
+                tourOperatorId, userId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

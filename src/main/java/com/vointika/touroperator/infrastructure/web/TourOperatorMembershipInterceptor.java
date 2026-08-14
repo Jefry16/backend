@@ -47,6 +47,7 @@ public class TourOperatorMembershipInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    /** The operator id out of the URI. A malformed one is a 404, like a missing operator. */
     private static UUID parseUuid(String raw) {
         try {
             return UUID.fromString(raw);
@@ -55,11 +56,17 @@ public class TourOperatorMembershipInterceptor implements HandlerInterceptor {
         }
     }
 
+    /**
+     * A non-UUID principal is the anonymous one, and it gets the same 404 every
+     * non-member gets. It no longer round-trips through text: {@code
+     * JwtAuthenticationFilter} stores the parsed UUID, so this reads it rather
+     * than re-parsing {@code toString()}.
+     */
     private static UUID principalUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getPrincipal() == null) {
+        if (auth == null || !(auth.getPrincipal() instanceof UUID userId)) {
             throw new ResourceNotFoundException("Tour operator not found");
         }
-        return parseUuid(auth.getPrincipal().toString());
+        return userId;
     }
 }

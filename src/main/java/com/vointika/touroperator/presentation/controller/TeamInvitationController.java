@@ -66,10 +66,10 @@ public class TeamInvitationController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<InvitationResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListInvitationsUseCase.SCHEMA, tourOperatorId);
-        CursorPage<InvitationView> page = listInvitationsUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<InvitationView> page = listInvitationsUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, InvitationResponse::from));
     }
 
@@ -77,9 +77,9 @@ public class TeamInvitationController {
     public ResponseEntity<Void> invite(
             @PathVariable UUID tourOperatorId,
             @RequestBody InviteTeamMemberRequest body,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         UUID invitationId = inviteTeamMemberUseCase.execute(
-                tourOperatorId, UUID.fromString(userIdStr), body.email(), body.name(), body.role());
+                tourOperatorId, userId, body.email(), body.name(), body.role());
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId
                         + "/invitations/" + invitationId))
@@ -91,9 +91,9 @@ public class TeamInvitationController {
     public ResponseEntity<InvitationResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID invitationId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         InvitationView view = getInvitationUseCase.execute(
-                tourOperatorId, invitationId, UUID.fromString(userIdStr));
+                tourOperatorId, invitationId, userId);
         return ResponseEntity.ok(InvitationResponse.from(view));
     }
 
@@ -102,8 +102,8 @@ public class TeamInvitationController {
     public ResponseEntity<Void> resend(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID invitationId,
-            @AuthenticationPrincipal String userIdStr) {
-        resendInvitationUseCase.execute(tourOperatorId, invitationId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        resendInvitationUseCase.execute(tourOperatorId, invitationId, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -112,8 +112,8 @@ public class TeamInvitationController {
     public ResponseEntity<Void> revoke(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID invitationId,
-            @AuthenticationPrincipal String userIdStr) {
-        revokeInvitationUseCase.execute(tourOperatorId, invitationId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        revokeInvitationUseCase.execute(tourOperatorId, invitationId, userId);
         return ResponseEntity.noContent().build();
     }
 }

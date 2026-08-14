@@ -39,8 +39,8 @@ public class TourOperatorLocalesController {
     @GetMapping
     public ResponseEntity<OperatorLocalesResponse> get(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String userIdStr) {
-        OperatorLocalesView view = getOperatorLocalesUseCase.execute(tourOperatorId, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        OperatorLocalesView view = getOperatorLocalesUseCase.execute(tourOperatorId, userId);
         return ResponseEntity.ok(OperatorLocalesResponse.from(view));
     }
 
@@ -49,12 +49,12 @@ public class TourOperatorLocalesController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @RequestBody UpdateOperatorLocalesRequest body,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         updateOperatorLocalesUseCase.execute(
                 tourOperatorId,
                 body.primaryLocale(),
                 body.supportedLocales(),
-                UUID.fromString(userIdStr));
+                userId);
         return ResponseEntity.noContent().build();
     }
 }

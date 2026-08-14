@@ -7,7 +7,6 @@ import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery;
 
-import java.util.UUID;
 
 public class GetProfileUseCase {
 
@@ -21,7 +20,7 @@ public class GetProfileUseCase {
     }
 
     public GetProfileOutput execute(GetProfileInput input) {
-        User user = userRepository.findById(UUID.fromString(input.userId()))
+        User user = userRepository.findById(input.userId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
         return new GetProfileOutput(
                 user.getId(),

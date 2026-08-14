@@ -49,11 +49,11 @@ public class ContactMessageController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<ContactMessageListItemResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(
                 request, ListContactMessagesUseCase.SCHEMA, tourOperatorId);
-        CursorPage<ContactMessage> page = listUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<ContactMessage> page = listUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, ContactMessageListItemResponse::from));
     }
 
@@ -62,9 +62,9 @@ public class ContactMessageController {
     public ResponseEntity<ContactMessageResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID messageId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(ContactMessageResponse.from(
-                getUseCase.execute(tourOperatorId, messageId, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, messageId, callerUserId)));
     }
 
     /** Hard-deletes a message (spam, handled inquiries). ADMIN+. */
@@ -72,8 +72,8 @@ public class ContactMessageController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID messageId,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, messageId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, messageId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -45,7 +45,7 @@ class GetProfileUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(membershipsQuery.findForUser(userId)).thenReturn(List.of());
 
-        GetProfileOutput output = useCase.execute(new GetProfileInput(userId.toString()));
+        GetProfileOutput output = useCase.execute(new GetProfileInput(userId));
 
         assertEquals(userId, output.id());
         assertEquals("John Doe", output.name());
@@ -68,7 +68,7 @@ class GetProfileUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(membershipsQuery.findForUser(userId)).thenReturn(List.of(ownedOp, staffedOp));
 
-        GetProfileOutput output = useCase.execute(new GetProfileInput(userId.toString()));
+        GetProfileOutput output = useCase.execute(new GetProfileInput(userId));
 
         assertEquals(List.of(ownedOp, staffedOp), output.tourOperators());
         assertEquals("OWNER", output.tourOperators().get(0).role());
@@ -81,7 +81,7 @@ class GetProfileUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
-                () -> useCase.execute(new GetProfileInput(userId.toString())));
+                () -> useCase.execute(new GetProfileInput(userId)));
         assertEquals("Invalid authenticated user", ex.getMessage());
         verifyNoInteractions(membershipsQuery);
     }
