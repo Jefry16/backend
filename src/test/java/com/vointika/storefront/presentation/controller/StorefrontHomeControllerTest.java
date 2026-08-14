@@ -156,7 +156,7 @@ class StorefrontHomeControllerTest {
      * default, or every dev URL would be unreachable.
      */
     @Test
-    void theShopUrlIsTheRequestsOrigin() throws Exception {
+    void theOperatorUrlIsTheRequestsOrigin() throws Exception {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
@@ -305,7 +305,7 @@ class StorefrontHomeControllerTest {
 
     /**
      * An address the operator does not publish answers exactly like a operator that does
-     * not exist. Telling them apart tells an anonymous visitor which shops are
+     * not exist. Telling them apart tells an anonymous visitor which operators are
      * real and which languages they have.
      */
     @Test
@@ -390,7 +390,7 @@ class StorefrontHomeControllerTest {
      * itself.
      */
     @Test
-    void theShopCarriesItsMetafieldsNestedByNamespace() throws Exception {
+    void theOperatorCarriesItsMetafieldsNestedByNamespace() throws Exception {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
@@ -648,7 +648,7 @@ class StorefrontHomeControllerTest {
      * English only and a client may want to localize it itself.
      */
     @Test
-    void theShopCarriesAStructuredAddress() throws Exception {
+    void theOperatorCarriesAStructuredAddress() throws Exception {
         served(null, globals("es", "es", List.of("es")));
 
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))

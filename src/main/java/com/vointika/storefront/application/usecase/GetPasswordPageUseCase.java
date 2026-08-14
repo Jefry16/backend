@@ -20,14 +20,14 @@ import java.util.Optional;
  */
 public class GetPasswordPageUseCase {
 
-    private final StorefrontTourOperatorQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontTourOperatorQuery;
 
-    public GetPasswordPageUseCase(StorefrontTourOperatorQuery storefrontShopQuery) {
-        this.storefrontShopQuery = storefrontShopQuery;
+    public GetPasswordPageUseCase(StorefrontTourOperatorQuery storefrontTourOperatorQuery) {
+        this.storefrontTourOperatorQuery = storefrontTourOperatorQuery;
     }
 
     public Optional<PasswordPageOutput> execute(String handle) {
-        return storefrontShopQuery.findGate(handle)
+        return storefrontTourOperatorQuery.findGate(handle)
                 .map(gate -> new PasswordPageOutput(gate.operatorName(), gate.passwordMessage()));
     }
 }

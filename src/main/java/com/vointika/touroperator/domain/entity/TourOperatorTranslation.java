@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * A per-locale overlay on a {@link TourOperator} — the shop's own translatable
+ * A per-locale overlay on a {@link TourOperator} — the operator's own translatable
  * text. Every field is nullable: a null field falls back to the canonical
  * operator value at render time.
  *

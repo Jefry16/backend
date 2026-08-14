@@ -60,7 +60,7 @@ class GetStorefrontGlobalsUseCaseTest {
                 menuQuery, pageQuery);
     }
 
-    private void shopExists(String primary, Set<String> supported) {
+    private void operatorExists(String primary, Set<String> supported) {
         when(operatorQuery.findLocales("acme"))
                 .thenReturn(Optional.of(new LocalesView(OPERATOR, primary, supported)));
         when(operatorQuery.findOperator(any(), anyString()))
@@ -88,8 +88,8 @@ class GetStorefrontGlobalsUseCaseTest {
      * an address that does not exist.
      */
     @Test
-    void anAddressThatDoesNotExistNeverReadsTheShop() {
-        shopExists("es", Set.of("es", "en"));
+    void anAddressThatDoesNotExistNeverReadsTheOperator() {
+        operatorExists("es", Set.of("es", "en"));
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
         verify(operatorQuery, never()).findOperator(any(), anyString());
@@ -97,7 +97,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
     @Test
     void theBarePathRendersThePrimaryLocale() {
-        shopExists("es", Set.of("es", "en"));
+        operatorExists("es", Set.of("es", "en"));
 
         StorefrontGlobals globals = useCase.execute("acme", null).orElseThrow();
 
@@ -108,7 +108,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
     @Test
     void aPrefixedPathRendersThatLocale() {
-        shopExists("es", Set.of("es", "en"));
+        operatorExists("es", Set.of("es", "en"));
 
         StorefrontGlobals globals = useCase.execute("acme", "en").orElseThrow();
 
@@ -122,7 +122,7 @@ class GetStorefrontGlobalsUseCaseTest {
      */
     @Test
     void theLanguagesAreOrderedPrimaryFirstThenAlphabetically() {
-        shopExists("es", Set.of("fr", "es", "en", "de"));
+        operatorExists("es", Set.of("fr", "es", "en", "de"));
 
         StorefrontGlobals globals = useCase.execute("acme", null).orElseThrow();
 
@@ -131,7 +131,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
     /** The home page has no object of its own, so the operator is the whole chain. */
     @Test
-    void thePageTitleFallsBackToTheShopName() {
+    void thePageTitleFallsBackToTheOperatorName() {
         when(operatorQuery.findLocales("acme"))
                 .thenReturn(Optional.of(new LocalesView(OPERATOR, "es", Set.of("es"))));
         when(operatorQuery.findOperator(any(), anyString())).thenReturn(Optional.of(operator("Acme Tours", null)));
@@ -140,7 +140,7 @@ class GetStorefrontGlobalsUseCaseTest {
     }
 
     @Test
-    void thePageTitlePrefersTheShopsSeoTitle() {
+    void thePageTitlePrefersTheOperatorsSeoTitle() {
         when(operatorQuery.findLocales("acme"))
                 .thenReturn(Optional.of(new LocalesView(OPERATOR, "es", Set.of("es"))));
         when(operatorQuery.findOperator(any(), anyString()))
@@ -158,7 +158,7 @@ class GetStorefrontGlobalsUseCaseTest {
      */
     @Test
     void theOperatorsMetafieldsRideTheGlobals() {
-        shopExists("es", Set.of("es"));
+        operatorExists("es", Set.of("es"));
         when(metafieldQuery.findForOperator(OPERATOR, "es")).thenReturn(List.of(
                 new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00", null)));
 
@@ -177,7 +177,7 @@ class GetStorefrontGlobalsUseCaseTest {
     /** An address that does not exist reads nothing at all, metafields included. */
     @Test
     void anAddressThatDoesNotExistReadsNoMetafieldsEither() {
-        shopExists("es", Set.of("es", "en"));
+        operatorExists("es", Set.of("es", "en"));
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
         verify(metafieldQuery, never()).findForOperator(any(), anyString());
@@ -190,7 +190,7 @@ class GetStorefrontGlobalsUseCaseTest {
      */
     @Test
     void featuredExperiencesAreReadInTheRenderedLocale() {
-        shopExists("es", Set.of("es", "en"));
+        operatorExists("es", Set.of("es", "en"));
         when(experienceQuery.findFeatured(OPERATOR, "en")).thenReturn(List.of(
                 new ExperienceCardView(OPERATOR, "sunset-sail", "Sunset sail", "Sail into the sunset",
                         new java.math.BigDecimal("95.00"), null)));
@@ -204,7 +204,7 @@ class GetStorefrontGlobalsUseCaseTest {
 
     @Test
     void anAddressThatDoesNotExistReadsNoExperiencesEither() {
-        shopExists("es", Set.of("es", "en"));
+        operatorExists("es", Set.of("es", "en"));
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
         verify(experienceQuery, never()).findFeatured(any(), anyString());
@@ -218,7 +218,7 @@ class GetStorefrontGlobalsUseCaseTest {
      */
     @Test
     void everyMenusTargetsAreResolvedInTwoLookups() {
-        shopExists("es", Set.of("es"));
+        operatorExists("es", Set.of("es"));
         UUID experienceId = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3e10");
         UUID pageId = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3e11");
         when(menuQuery.findMenus(OPERATOR, "es")).thenReturn(List.of(
@@ -243,7 +243,7 @@ class GetStorefrontGlobalsUseCaseTest {
     /** No menus means no lookups at all — nothing to resolve. */
     @Test
     void anOperatorWithNoMenusAsksNeitherContext() {
-        shopExists("es", Set.of("es"));
+        operatorExists("es", Set.of("es"));
 
         assertThat(useCase.execute("acme", null).orElseThrow().menus()).isEmpty();
         verify(pageQuery, never()).findPublishedHandles(any(), any(), anyString());

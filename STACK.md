@@ -84,7 +84,7 @@ bites, so the next session reads it instead of re-discovering it.
   methods — but the same flag switches `getMethod` from the
   `name()`/`get<Name>()`/`is<Name>()` search to a plain `clazz.getMethod(name)`, and
   `getField` to `clazz.getField(name)`. So a context object must expose **exactly-named
-  public accessors**: a `record` works, `getShopName()` for `{{shopName}}` does not —
+  public accessors**: a `record` works, `getOperatorName()` for `{{operatorName}}` does not —
   and it fails by rendering an empty page, never by throwing. **A default *interface*
   method still resolves**, which reading the source suggests it should not:
   `getIfaceMethod` really is dead with coercion off (it ends in `makeAccessible`,

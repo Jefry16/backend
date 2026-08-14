@@ -3,7 +3,7 @@ package com.vointika.touroperator.domain.valueobject;
 import com.vointika.shared.exception.InvalidFieldException;
 
 /**
- * Optional shop-level SEO meta-description — the last fallback for every page
+ * Optional operator-level SEO meta-description — the last fallback for every page
  * type whose own description overrides are empty. Mirrors {@code page}'s limit
  * (320 chars, what Shopify's admin allows; engines display ~160).
  *

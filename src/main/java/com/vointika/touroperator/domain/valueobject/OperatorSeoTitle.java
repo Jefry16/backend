@@ -3,7 +3,7 @@ package com.vointika.touroperator.domain.valueobject;
 import com.vointika.shared.exception.InvalidFieldException;
 
 /**
- * Optional shop-level SEO {@code <title>} — the default a page falls back to
+ * Optional operator-level SEO {@code <title>} — the default a page falls back to
  * when it has no title of its own, and the only title source the home page has
  * besides the operator's name. Mirrors {@code page}'s limit (70 chars, Shopify's
  * search-listing title); the width is SERP truncation, not a per-context choice.

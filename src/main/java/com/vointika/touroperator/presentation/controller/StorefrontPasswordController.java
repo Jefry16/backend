@@ -23,7 +23,7 @@ import java.util.UUID;
  *
  * <p><b>This is enforced.</b> The gate was deleted with the storefront's data in
  * #135 and restored once the pages had something to protect again, so a value
- * set here decides whether the storefront answers the shop or the gate.
+ * set here decides whether the storefront answers the storefront or the gate.
  *
  * <p><b>A new operator arrives here already protected</b>: creation generates a
  * password and enables the gate, the way a new Shopify store is password-locked

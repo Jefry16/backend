@@ -16,17 +16,17 @@ import java.util.Optional;
  */
 public class UnlockStorefrontUseCase {
 
-    private final StorefrontTourOperatorQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontTourOperatorQuery;
     private final UnlockTokenPort unlockToken;
 
-    public UnlockStorefrontUseCase(StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
-        this.storefrontShopQuery = storefrontShopQuery;
+    public UnlockStorefrontUseCase(StorefrontTourOperatorQuery storefrontTourOperatorQuery, UnlockTokenPort unlockToken) {
+        this.storefrontTourOperatorQuery = storefrontTourOperatorQuery;
         this.unlockToken = unlockToken;
     }
 
     /** @return the value to put in the unlock cookie, or empty when refused */
     public Optional<String> execute(String handle, String submittedPassword) {
-        return storefrontShopQuery.findGate(handle)
+        return storefrontTourOperatorQuery.findGate(handle)
                 .filter(GateView::passwordEnabled)
                 .filter(gate -> accepts(gate, submittedPassword))
                 .map(gate -> unlockToken.compute(gate.storefrontPassword(), gate.tourOperatorId()));

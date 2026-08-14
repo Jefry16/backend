@@ -4,7 +4,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 
 /**
  * The brand's short description — Shopify's {@code shop.brand.short_description},
- * a sentence or two a theme renders where the shop introduces itself.
+ * a sentence or two a theme renders where the operator introduces itself.
  *
  * <p>150 characters, matching {@code tour_operator_brand.short_description} and
  * its column on the translation overlay; the canonical row and the overlay have

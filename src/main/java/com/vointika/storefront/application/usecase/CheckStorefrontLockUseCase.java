@@ -17,11 +17,11 @@ public class CheckStorefrontLockUseCase {
 
     public enum LockState { NO_SUCH_TENANT, UNLOCKED, LOCKED }
 
-    private final StorefrontTourOperatorQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontTourOperatorQuery;
     private final UnlockTokenPort unlockToken;
 
-    public CheckStorefrontLockUseCase(StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockToken) {
-        this.storefrontShopQuery = storefrontShopQuery;
+    public CheckStorefrontLockUseCase(StorefrontTourOperatorQuery storefrontTourOperatorQuery, UnlockTokenPort unlockToken) {
+        this.storefrontTourOperatorQuery = storefrontTourOperatorQuery;
         this.unlockToken = unlockToken;
     }
 
@@ -30,7 +30,7 @@ public class CheckStorefrontLockUseCase {
      *                       visitor presented none
      */
     public LockState execute(String handle, String presentedToken) {
-        return storefrontShopQuery.findGate(handle)
+        return storefrontTourOperatorQuery.findGate(handle)
                 .map(gate -> state(gate, presentedToken))
                 .orElse(LockState.NO_SUCH_TENANT);
     }

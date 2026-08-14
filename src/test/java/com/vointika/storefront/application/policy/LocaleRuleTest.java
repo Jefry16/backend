@@ -36,7 +36,7 @@ class LocaleRuleTest {
     }
 
     @Test
-    void aLocaleTheShopDoesNotSupportIsNotAnAddress() {
+    void aLocaleTheOperatorDoesNotSupportIsNotAnAddress() {
         assertThat(LocaleRule.resolve("de", "es", SUPPORTED)).isEmpty();
     }
 

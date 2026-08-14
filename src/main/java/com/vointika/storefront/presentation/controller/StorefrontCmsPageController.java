@@ -57,9 +57,9 @@ public class StorefrontCmsPageController {
     }
 
     private StorefrontGlobalsResponse render(HttpServletRequest request, String pathLocale, String handle) {
-        String shopHandle = tenantHandleResolver.resolve(request.getServerName())
+        String operatorHandle = tenantHandleResolver.resolve(request.getServerName())
                 .orElseThrow(StorefrontControllers::notFound);
-        StorefrontPageOutput output = getStorefrontCmsPage.execute(shopHandle, pathLocale, handle)
+        StorefrontPageOutput output = getStorefrontCmsPage.execute(operatorHandle, pathLocale, handle)
                 .orElseThrow(StorefrontControllers::notFound);
 
         Map<UUID, MediaAsset> assets =

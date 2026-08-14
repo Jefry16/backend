@@ -27,18 +27,18 @@ public class StorefrontUseCaseConfig {
 
     @Bean
     public CheckStorefrontTenantUseCase checkStorefrontTenantUseCase(
-            StorefrontTourOperatorQuery storefrontShopQuery) {
-        return new CheckStorefrontTenantUseCase(storefrontShopQuery);
+            StorefrontTourOperatorQuery storefrontTourOperatorQuery) {
+        return new CheckStorefrontTenantUseCase(storefrontTourOperatorQuery);
     }
 
     @Bean
     public GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase(
-            StorefrontTourOperatorQuery storefrontShopQuery,
+            StorefrontTourOperatorQuery storefrontTourOperatorQuery,
             StorefrontMetafieldQuery storefrontMetafieldQuery,
             StorefrontExperienceQuery storefrontExperienceQuery,
             StorefrontMenuQuery storefrontMenuQuery,
             StorefrontPageQuery storefrontPageQuery) {
-        return new GetStorefrontGlobalsUseCase(storefrontShopQuery, storefrontMetafieldQuery,
+        return new GetStorefrontGlobalsUseCase(storefrontTourOperatorQuery, storefrontMetafieldQuery,
                 storefrontExperienceQuery, storefrontMenuQuery, storefrontPageQuery);
     }
 
@@ -51,19 +51,19 @@ public class StorefrontUseCaseConfig {
 
     @Bean
     public CheckStorefrontLockUseCase checkStorefrontLockUseCase(
-            StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
-        return new CheckStorefrontLockUseCase(storefrontShopQuery, unlockTokenPort);
+            StorefrontTourOperatorQuery storefrontTourOperatorQuery, UnlockTokenPort unlockTokenPort) {
+        return new CheckStorefrontLockUseCase(storefrontTourOperatorQuery, unlockTokenPort);
     }
 
     @Bean
     public UnlockStorefrontUseCase unlockStorefrontUseCase(
-            StorefrontTourOperatorQuery storefrontShopQuery, UnlockTokenPort unlockTokenPort) {
-        return new UnlockStorefrontUseCase(storefrontShopQuery, unlockTokenPort);
+            StorefrontTourOperatorQuery storefrontTourOperatorQuery, UnlockTokenPort unlockTokenPort) {
+        return new UnlockStorefrontUseCase(storefrontTourOperatorQuery, unlockTokenPort);
     }
 
     @Bean
-    public GetPasswordPageUseCase getPasswordPageUseCase(StorefrontTourOperatorQuery storefrontShopQuery) {
-        return new GetPasswordPageUseCase(storefrontShopQuery);
+    public GetPasswordPageUseCase getPasswordPageUseCase(StorefrontTourOperatorQuery storefrontTourOperatorQuery) {
+        return new GetPasswordPageUseCase(storefrontTourOperatorQuery);
     }
 
     /**

@@ -63,7 +63,7 @@ class PasswordPageControllerTest {
     }
 
     @Test
-    void theGateShowsTheShopNameAndTheOperatorsMessage() throws Exception {
+    void theGateShowsTheOperatorNameAndItsMessage() throws Exception {
         mockMvc.perform(get("/password").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.operatorName").value("Acme Tours"))

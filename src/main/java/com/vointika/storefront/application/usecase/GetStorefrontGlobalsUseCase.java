@@ -34,7 +34,7 @@ import java.util.UUID;
  *
  * <p><b>Empty means 404, for either reason.</b> An unknown handle and a locale
  * the operator does not publish give the same answer on purpose — telling them apart
- * tells an anonymous visitor which shops exist and which languages they have.
+ * tells an anonymous visitor which operators exist and which languages they have.
  */
 public class GetStorefrontGlobalsUseCase {
 

@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Per-locale translation overlays for the operator itself — the shop text every
+ * Per-locale translation overlays for the operator itself — the operator text every
  * page type falls back to. Reads are member-visible; upsert/delete are ADMIN+
  * (membership enforced by the {@code /api/tour-operators/**} interceptor). A
  * translation's locale must be one the operator supports (else 422).

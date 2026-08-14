@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * touroperator's implementation of the storefront's shop read.
+ * touroperator's implementation of the storefront's operator read.
  *
  * <p><b>The role split and the colour order happen here, not in the caller.</b>
  * {@code BrandColorRole} is this context's enum, so a role-tagged flat list
@@ -118,10 +118,10 @@ public class StorefrontTourOperatorQueryImpl implements StorefrontTourOperatorQu
     @Override
     public Optional<TourOperatorView> findOperator(UUID tourOperatorId, String locale) {
         return operatorRepository.findById(tourOperatorId)
-                .map(operator -> buildShop(operator, locale));
+                .map(operator -> buildOperator(operator, locale));
     }
 
-    private TourOperatorView buildShop(TourOperatorJpaEntity operator, String locale) {
+    private TourOperatorView buildOperator(TourOperatorJpaEntity operator, String locale) {
         UUID id = operator.getId();
         TourOperatorTranslationJpaEntity translation =
                 translationRepository.findByTourOperatorIdAndLocale(id, locale).orElse(null);

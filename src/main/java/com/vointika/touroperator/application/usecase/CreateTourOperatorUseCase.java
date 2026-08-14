@@ -166,7 +166,7 @@ public class CreateTourOperatorUseCase {
                     idGenerator.newId(), name, handle,
                     input.timezoneId(), input.currencyId(), address, createdBy);
             // A brand-new store is private, the way a new Shopify store is: it
-            // exists at its address and answers the gate, not the shop. The
+            // exists at its address and answers the gate, not the storefront. The
             // password is generated rather than left unset because enabling
             // protection with none stored is a 422 — and because an operator
             // choosing one here would reuse a password they use elsewhere for a
