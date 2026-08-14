@@ -911,14 +911,16 @@ INSERT INTO metafield.metaobject_entry_values
 SELECT md5('metaobject_entry_value:' || e.id || ':' || fd.id)::uuid,
        e.id, fd.id, v.value, e.created_by, e.created_at, e.updated_at
 FROM (VALUES
+    -- Canonical text is SPANISH: acme's primary locale is `es`. The English on
+    -- Sea Swallow lives in metaobject_entry_value_translations, below.
     ('sea-swallow', 'name',       'Sea Swallow'),
     ('sea-swallow', 'capacity',   '12'),
     ('sea-swallow', 'year-built', '2014'),
-    ('sea-swallow', 'notes',      E'Sloop, 11 m.\nRefit in 2022: new sails and a bigger bimini.'),
+    ('sea-swallow', 'notes',      E'Balandro, 11 m.\nReformado en 2022: velas nuevas y un bimini más grande.'),
     ('blue-marlin', 'name',       'Blue Marlin'),
     ('blue-marlin', 'capacity',   '8'),
     ('blue-marlin', 'year-built', '2019'),
-    ('blue-marlin', 'notes',      'RIB, 9 m. Used for the diving trips and rough-water days.'),
+    ('blue-marlin', 'notes',      'Semirrígida, 9 m. Para las salidas de buceo y los días de mar gruesa.'),
     ('old-gaffer',  'name',       'Old Gaffer'),
     ('old-gaffer',  'capacity',   '6')
 ) AS v(entry_handle, field_key, value)
@@ -928,7 +930,12 @@ JOIN metafield.metaobject_entries e
    AND e.handle = v.entry_handle
 JOIN metafield.metaobject_field_definitions fd
     ON fd.definition_id = :'mod_boat_id' AND fd.key = v.field_key
-ON CONFLICT DO NOTHING;
+-- DO UPDATE for the reason the header gives: these strings are edited in this
+-- file (the canonical notes went English → Spanish when the `en` translation
+-- landed), and DO NOTHING would keep the old row silently.
+ON CONFLICT (entry_id, field_definition_id) DO UPDATE SET
+    value      = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
 
 INSERT INTO metafield.metafield_definitions
     (id, tour_operator_id, owner_type, namespace, key, type, name, description,
