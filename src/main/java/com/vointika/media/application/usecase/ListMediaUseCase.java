@@ -20,7 +20,7 @@ import java.util.UUID;
  *
  * <p>The uploader's name is a snapshot on the media row (frozen at upload), so
  * there is no post-pagination identity enrichment — which is exactly what makes
- * {@code createdByName} sortable/filterable off the single root (§3.5 forbids the
+ * {@code createdByName} sortable/filterable off the single root (PATTERNS §6 forbids the
  * alternative join).
  */
 public class ListMediaUseCase {

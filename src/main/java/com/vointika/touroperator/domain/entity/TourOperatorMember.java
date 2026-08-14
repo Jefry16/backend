@@ -26,7 +26,7 @@ public class TourOperatorMember {
     // Denormalized display copies of the member's identity name/email (owned by
     // the identity context, resolved via UserAccountQuery at member-write time).
     // Carried on the row so the roster list can sort/filter by them directly —
-    // identity's tables can't be joined (§3.5). See the V1 members-table comment.
+    // identity's tables can't be joined (PATTERNS §6). See the V1 members-table comment.
     private final String name;
     private final String email;
 

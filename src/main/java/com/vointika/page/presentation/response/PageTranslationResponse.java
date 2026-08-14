@@ -1,11 +1,6 @@
 package com.vointika.page.presentation.response;
 
 import com.vointika.page.domain.entity.PageTranslation;
-import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
-import com.vointika.page.domain.valueobject.PageTitle;
-import com.vointika.shared.valueobject.Handle;
 
 /** One locale's overlay; every content field nullable (null = untranslated, falls back to canonical). */
 public record PageTranslationResponse(

@@ -2,7 +2,6 @@ package com.vointika.experience.application.dto.output;
 
 import com.vointika.experience.domain.entity.ExperienceTranslation;
 
-import java.util.List;
 
 /**
  * One locale's translation overlay for read APIs. Null fields = untranslated

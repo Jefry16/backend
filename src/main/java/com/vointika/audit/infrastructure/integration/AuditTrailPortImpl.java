@@ -13,7 +13,6 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Adapter behind {@link AuditTrailPort}. Deliberately carries no

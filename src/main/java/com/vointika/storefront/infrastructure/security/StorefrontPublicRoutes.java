@@ -28,8 +28,11 @@ import java.util.List;
  *
  * <p>OPTIONS stays closed, deliberately: nothing preflights a server-rendered
  * same-origin page, so opening it would be a decision rather than a correction.
- * The {@code /password} entries went with the password gate when the storefront
- * became a placeholder.
+ *
+ * <p>The {@code /password} entries below are <b>live</b>, on GET, HEAD and POST —
+ * the gate cannot authenticate the request that is there to unlock it. Deleting
+ * them 401s the gate at the filter chain, which is why this says so next to them
+ * rather than leaving the reader to infer it.
  *
  * <p><b>Every pattern here is a security pattern first and a route second.</b>
  * The locale entry uses {@link StorefrontRoutes#LOCALE}, whose variable is

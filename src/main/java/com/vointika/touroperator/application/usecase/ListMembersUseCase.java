@@ -25,7 +25,7 @@ import java.util.UUID;
  * <p>name/email are denormalized onto the member row (see the V1 members-table
  * comment + {@link TourOperatorMember}), so the list reads them straight off the
  * row — which is exactly what makes them sortable/filterable, since identity's
- * tables can't be joined (§3.5). No post-pagination enrichment.
+ * tables can't be joined (PATTERNS §6). No post-pagination enrichment.
  */
 public class ListMembersUseCase {
 

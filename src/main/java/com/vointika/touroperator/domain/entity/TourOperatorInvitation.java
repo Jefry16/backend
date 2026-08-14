@@ -35,7 +35,7 @@ public class TourOperatorInvitation {
     private InvitationStatus status;
     private final UUID invitedByUserId;
     // Frozen snapshot of the inviter's name at invite time — so the list can
-    // sort/filter by who invited without resolving identity (§3.5).
+    // sort/filter by who invited without resolving identity (PATTERNS §6).
     private final String invitedByName;
     private final Instant createdAt;
     private Instant expiresAt;

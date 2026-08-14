@@ -59,7 +59,7 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 )
                 // After the JWT filter, so the principal is populated: the
-                // coarse per-user runaway-script cap (§7.9 third layer).
+                // coarse per-user runaway-script cap (PATTERNS §8a third layer).
                 .addFilterAfter(
                         new ApiRateLimitFilter(rateLimiterProvider, rateLimitEnabled),
                         UsernamePasswordAuthenticationFilter.class

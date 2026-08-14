@@ -6,7 +6,7 @@ import java.util.UUID;
  * Shared-kernel port for verifying a user's membership/role in a tour operator,
  * so any bounded context can enforce the rule without importing from
  * {@code touroperator}. The adapter lives in {@code touroperator.application.policy};
- * this port stays role-agnostic (no {@code MemberRole} in {@code shared}, §4.2).
+ * this port stays role-agnostic (no {@code MemberRole} in {@code shared}, PATTERNS §6).
  */
 public interface TourOperatorMembershipCheck {
 

@@ -8,7 +8,6 @@ import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Handle;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 

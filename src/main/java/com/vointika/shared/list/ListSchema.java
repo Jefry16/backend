@@ -73,7 +73,7 @@ public final class ListSchema {
         }
 
         public Builder defaultSort(String token) {
-            this.defaultSort = parseSortToken(token);
+            this.defaultSort = SortSpec.parse(token);
             return this;
         }
 
@@ -93,14 +93,5 @@ public final class ListSchema {
             return new ListSchema(this);
         }
 
-        private static SortSpec parseSortToken(String token) {
-            if (token == null || token.isEmpty()) {
-                throw new IllegalArgumentException("sort token must not be empty");
-            }
-            if (token.charAt(0) == '-') {
-                return new SortSpec(token.substring(1), SortDirection.DESC);
-            }
-            return new SortSpec(token, SortDirection.ASC);
-        }
     }
 }

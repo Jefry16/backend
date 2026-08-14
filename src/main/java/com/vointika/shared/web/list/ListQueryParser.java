@@ -9,7 +9,6 @@ import com.vointika.shared.list.FilterType;
 import com.vointika.shared.list.ListConstants;
 import com.vointika.shared.list.ListQuery;
 import com.vointika.shared.list.ListSchema;
-import com.vointika.shared.list.SortDirection;
 import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.list.ValueCoercion;
 import jakarta.servlet.http.HttpServletRequest;
@@ -109,15 +108,13 @@ public class ListQueryParser {
         return parsed;
     }
 
+    /** The grammar lives on {@link SortSpec}; this only restates the failure as a 422. */
     private static SortSpec parseSortToken(String token) {
-        if (token.charAt(0) == '-') {
-            String field = token.substring(1);
-            if (field.isEmpty()) {
-                throw new InvalidFieldException("Invalid sort: missing field");
-            }
-            return new SortSpec(field, SortDirection.DESC);
+        try {
+            return SortSpec.parse(token);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidFieldException("Invalid sort: missing field");
         }
-        return new SortSpec(token, SortDirection.ASC);
     }
 
     private static Object coerceValue(String field, FilterFieldDef def, FilterOp op, String raw) {

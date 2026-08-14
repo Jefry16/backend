@@ -53,13 +53,13 @@ public class RequestPasswordResetUseCase {
         // 1. Validate email format
         Email email = new Email(input.email());
 
-        // Per-email cooldown (§7.9): 3 sends/hour. Dropping silently keeps the
+        // Per-email cooldown (PATTERNS §8a): 3 sends/hour. Dropping silently keeps the
         // endpoint's unconditional 204 — no enumeration, no bombing, no SES burn.
         if (!rateLimiter.tryAcquire("rl:pwreset:email:" + email.value(), 3, Duration.ofHours(1))) {
             return;
         }
 
-        // 2. Find user — silently do nothing if not found. §7.5: do the same
+        // 2. Find user — silently do nothing if not found. Timing parity: do the same
         //    token work + a DB round-trip as the real path first, so response
         //    timing doesn't reveal whether the email is registered.
         Optional<User> maybeUser = userRepository.findByEmail(email);

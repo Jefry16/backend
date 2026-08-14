@@ -2,7 +2,6 @@ package com.vointika.experience.presentation.response;
 
 import com.vointika.experience.application.dto.output.ExperienceTranslationView;
 
-import java.util.List;
 
 /**
  * One locale's translation overlay. {@code locale} is its identity; null content
