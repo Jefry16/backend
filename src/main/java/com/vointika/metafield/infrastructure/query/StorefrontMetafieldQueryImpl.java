@@ -58,7 +58,7 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
                 .listForOwnerLocalized(tourOperatorId, MetafieldOwnerType.TOUR_OPERATOR,
                         tourOperatorId, locale);
 
-        Map<UUID, MetaobjectView> resolved = resolve(tourOperatorId, referencedEntryIds(values));
+        Map<UUID, MetaobjectView> resolved = resolve(tourOperatorId, referencedEntryIds(values), locale);
 
         List<MetafieldView> views = new ArrayList<>(values.size());
         for (MetafieldValueWithDefinition v : values) {
@@ -87,12 +87,12 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
                 .collect(Collectors.toSet());
     }
 
-    private Map<UUID, MetaobjectView> resolve(UUID tourOperatorId, Set<UUID> entryIds) {
+    private Map<UUID, MetaobjectView> resolve(UUID tourOperatorId, Set<UUID> entryIds, String locale) {
         if (entryIds.isEmpty()) {
             return Map.of();
         }
         Map<UUID, List<PublishedMetaobjectField>> byEntry = entryJpa
-                .findPublishedFields(tourOperatorId, entryIds)
+                .findPublishedFields(tourOperatorId, entryIds, locale)
                 .stream()
                 .collect(Collectors.groupingBy(PublishedMetaobjectField::entryId,
                         LinkedHashMap::new, Collectors.toList()));

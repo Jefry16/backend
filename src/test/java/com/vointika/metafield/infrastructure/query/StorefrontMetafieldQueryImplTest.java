@@ -91,7 +91,7 @@ class StorefrontMetafieldQueryImplTest {
     void aReferenceCarriesTheEntryItPointsAt() {
         when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY)));
-        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of(
+        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY), LOCALE)).thenReturn(List.of(
                 field("name", MetafieldType.SINGLE_LINE_TEXT, "Sea Swallow"),
                 field("capacity", MetafieldType.NUMBER_INTEGER, "12")));
 
@@ -118,7 +118,7 @@ class StorefrontMetafieldQueryImplTest {
         when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY),
                         value("custom", "opening-hours", "Mon-Sat 09:00-18:00")));
-        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of());
+        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY), LOCALE)).thenReturn(List.of());
 
         assertThat(query.findForOperator(OPERATOR, LOCALE))
                 .extracting(StorefrontMetafieldQuery.MetafieldView::key)
@@ -225,7 +225,7 @@ class StorefrontMetafieldQueryImplTest {
     void aMetaobjectFieldIsTypedToo() {
         when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY)));
-        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of(
+        when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY), LOCALE)).thenReturn(List.of(
                 field("has-toilet", MetafieldType.BOOLEAN, "true"),
                 field("capacity", MetafieldType.NUMBER_INTEGER, "12")));
 

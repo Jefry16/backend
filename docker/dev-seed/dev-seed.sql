@@ -37,7 +37,7 @@
 --                 per-audience pricing generated per slot
 --   page          5 CMS pages (3 published, 2 draft, one with a template suffix)
 --   metafield     13 metafield definitions (2 with `en` translations), a `boat`
---                 metaobject with 4 fields
+--                 metaobject with 4 fields (Sea Swallow's text translated to `en`)
 --                 and 3 entries, and values attached to experiences, pages and
 --                 the operator itself (one of them a metaobject_reference)
 --   contact       12 inbox messages (9 unread, 3 read)
@@ -1056,6 +1056,25 @@ FROM (VALUES
     (:'mfd_meetpt_op_id'::uuid, 'Pier 3, Port of Palma')
 ) AS t(definition_id, value)
 ON CONFLICT (metafield_value_id, locale) DO UPDATE SET
+    value      = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
+
+-- The boat's own text in English. The metafield above resolves Sea Swallow, so
+-- without this the entry's `notes` stayed Spanish inside an otherwise English
+-- payload — the gap slice 2 closes. `capacity` and `year-built` have no rows:
+-- a number is the same number in every language.
+INSERT INTO metafield.metaobject_entry_value_translations
+    (entry_value_id, locale, value, created_by, created_at, updated_at)
+SELECT ev.id, 'en', t.value, :'user_maria_id',
+       NOW() - INTERVAL '38 days', NOW() - INTERVAL '10 days'
+FROM (VALUES
+    ('notes', E'Sloop, 11 m.\nRefitted in 2022: new sails and a bigger bimini.')
+) AS t(field_key, value)
+JOIN metafield.metaobject_field_definitions fd
+    ON fd.definition_id = :'mod_boat_id' AND fd.key = t.field_key
+JOIN metafield.metaobject_entry_values ev
+    ON ev.field_definition_id = fd.id AND ev.entry_id = :'moe_swallow_id'
+ON CONFLICT (entry_value_id, locale) DO UPDATE SET
     value      = EXCLUDED.value,
     updated_at = EXCLUDED.updated_at;
 
