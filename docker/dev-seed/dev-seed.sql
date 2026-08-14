@@ -3,13 +3,26 @@
 -- production. The method is the archive's: pure SQL (no cross-context Java),
 -- idempotent, fail-loud.
 --
--- Idempotent: every insert is ON CONFLICT DO NOTHING, so the service re-runs
--- on every `docker compose up` without duplicating rows. **DO NOTHING does not
--- converge**: change a value in this file and an existing database keeps the old
--- one, silently, while the seed still reports success. Rows whose values are
--- expected to be edited use ON CONFLICT ... DO UPDATE instead — see the tour
--- operator. Otherwise `docker compose down -v` is the only way to pick up a
--- change. Fixed UUIDs keep the
+-- Idempotent AND convergent: the service re-runs on every `docker compose up`
+-- without duplicating rows, and **editing a value in this file lands on an
+-- existing database**. That second half was not true until 2026-08-14: almost
+-- every insert was ON CONFLICT DO NOTHING, which silently keeps the old row
+-- while still reporting success. It cost three debugging rounds in two days —
+-- each time a working feature looked broken because the fixture behind it was
+-- stale — so every insert carrying content an author would edit now uses
+-- ON CONFLICT ... DO UPDATE.
+--
+-- Two keep DO NOTHING on purpose:
+--   * tour_operator_locales — the whole row IS its key, so there is nothing to
+--     update. (Removing a locale still needs `docker compose down -v`; no
+--     conflict clause can express a deletion.)
+--   * audit.audit_log — an append-only record of what happened. Rewriting it in
+--     place is a category error: the trail's whole job is to say what was done
+--     and when.
+--
+-- Anything the admin API changed locally IS reset on the next `up`. That is the
+-- trade, and it is the right one for a fixture: a seed you cannot correct is
+-- worse than a seed that reasserts itself. Fixed UUIDs keep the
 -- cross-row foreign keys stable across re-runs. ON_ERROR_STOP is set by
 -- run.sh: schema drift (a renamed/dropped column) aborts the WHOLE seed
 -- loudly instead of half-applying — if this file fails after a migration,
@@ -228,7 +241,13 @@ VALUES
     (:'user_noa_id', 'noa@acme.test', 'Noa Lindqvist',
      '$2a$10$g/AqLa2GMVbNRPyYas8h1e/.Gtfk8YsvHq8g0QTJrCZaRhmnRYr3m',
      'UNVERIFIED', 'en', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    email                    = EXCLUDED.email,
+    name                     = EXCLUDED.name,
+    hashed_password          = EXCLUDED.hashed_password,
+    status                   = EXCLUDED.status,
+    language                 = EXCLUDED.language,
+    updated_at               = NOW();
 
 -- 2. Tour operator. Timezone/currency resolve by name/code with a fallback to
 -- the first reference row, so a changed reference set still seeds.
@@ -283,6 +302,8 @@ ON CONFLICT (id) DO UPDATE SET
     seo_description = EXCLUDED.seo_description,
     updated_at     = NOW();
 
+-- DO NOTHING and nothing else is possible: the row is nothing but its key, so
+-- there is no value to converge on.
 INSERT INTO touroperator.tour_operator_locales (tour_operator_id, locale)
 VALUES
     (:'operator_id', 'es'),
@@ -387,7 +408,15 @@ VALUES
      'tour-operators/' || :'operator_id' || '/' || :'media_og_id' || '-og-share-card.png',
      'image/png', 14294, 'og-share-card.png', 'Acme Tours share card', 1200, 630,
      :'user_id', 'Dev Admin', NOW() - INTERVAL '9 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    storage_key              = EXCLUDED.storage_key,
+    content_type             = EXCLUDED.content_type,
+    size_bytes               = EXCLUDED.size_bytes,
+    original_name            = EXCLUDED.original_name,
+    alt                      = EXCLUDED.alt,
+    width                    = EXCLUDED.width,
+    height                   = EXCLUDED.height,
+    created_by_name          = EXCLUDED.created_by_name;
 
 -- 4. Brand. Without it the whole brand leg is unverifiable against a running
 -- stack — the lesson #88 and #92 both had to report.
@@ -523,7 +552,11 @@ VALUES
      NOW() - INTERVAL '40 days',  'Sofía Marín',    'sofia@acme.test'),
     (:'member_noa_id',   :'operator_id', :'user_noa_id',   'STAFF', TRUE,
      NOW() - INTERVAL '6 days',   'Noa Lindqvist',  'noa@acme.test')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    role                     = EXCLUDED.role,
+    is_default               = EXCLUDED.is_default,
+    name                     = EXCLUDED.name,
+    email                    = EXCLUDED.email;
 
 -- 7. Invitations, one per status. The token hashes are arbitrary fixed strings:
 -- they are unique (a UNIQUE constraint) and never verified against a real token
@@ -550,7 +583,13 @@ VALUES
      'seed-hash-accepted-000000000000000000000000000', 'ACCEPTED',
      :'user_id', 'Dev Admin', NOW() - INTERVAL '43 days', NOW() - INTERVAL '36 days',
      NOW() - INTERVAL '40 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    email                    = EXCLUDED.email,
+    name                     = EXCLUDED.name,
+    role                     = EXCLUDED.role,
+    status                   = EXCLUDED.status,
+    expires_at               = EXCLUDED.expires_at,
+    accepted_at              = EXCLUDED.accepted_at;
 
 -- 8. Audiences (+es overlay on the two originals). "Family pack" is the only
 -- one with pax_per_unit > 1: without it nothing exercises the difference
@@ -563,7 +602,9 @@ VALUES
     (:'audience_infant_id', :'operator_id', 'Infant',      1, :'user_maria_id', NOW() - INTERVAL '150 days'),
     (:'audience_senior_id', :'operator_id', 'Senior',      1, :'user_maria_id', NOW() - INTERVAL '150 days'),
     (:'audience_family_id', :'operator_id', 'Family pack', 4, :'user_maria_id', NOW() - INTERVAL '60 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name                     = EXCLUDED.name,
+    pax_per_unit             = EXCLUDED.pax_per_unit;
 
 INSERT INTO audience.audience_translations
     (audience_id, tour_operator_id, locale, name)
@@ -572,7 +613,8 @@ VALUES
     (:'audience_child_id',  :'operator_id', 'es', 'Niño'),
     (:'audience_senior_id', :'operator_id', 'es', 'Sénior'),
     (:'audience_family_id', :'operator_id', 'es', 'Pack familiar')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (audience_id, locale) DO UPDATE SET
+    name                     = EXCLUDED.name;
 
 -- 9. Pickup locations (standalone catalog — no slot relationship by design).
 INSERT INTO pickup.pickup_locations
@@ -582,7 +624,9 @@ VALUES
     (:'pickup_marina_id',  :'operator_id', :'user_id',       'Marina Gate B',   TIME '08:45', NOW() - INTERVAL '380 days'),
     (:'pickup_hotel_id',   :'operator_id', :'user_maria_id', 'Hotel Sol lobby', TIME '07:50', NOW() - INTERVAL '140 days'),
     (:'pickup_station_id', :'operator_id', :'user_diego_id', 'Atocha station',  TIME '07:15', NOW() - INTERVAL '70 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name                     = EXCLUDED.name,
+    "time"                   = EXCLUDED."time";
 
 -- 10. Experiences. Four published and one draft, so the list has both states and
 -- the storefront has something to hide. Galleries and thumbnails point at the
@@ -651,7 +695,19 @@ VALUES
      '{}'::uuid[], NULL, 48, FALSE, 95.00,
      NULL, NULL,
      NOW() - INTERVAL '4 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    handle                   = EXCLUDED.handle,
+    name                     = EXCLUDED.name,
+    description              = EXCLUDED.description,
+    long_description         = EXCLUDED.long_description,
+    featured                 = EXCLUDED.featured,
+    media_ids                = EXCLUDED.media_ids,
+    thumbnail_media_id       = EXCLUDED.thumbnail_media_id,
+    booking_cutoff_hours     = EXCLUDED.booking_cutoff_hours,
+    published                = EXCLUDED.published,
+    starting_price           = EXCLUDED.starting_price,
+    seo_title                = EXCLUDED.seo_title,
+    seo_description          = EXCLUDED.seo_description;
 
 -- Two of five carry an `es` overlay, and only one of those localizes its handle
 -- — so the storefront resolves a translated slug on one experience and falls
@@ -668,7 +724,13 @@ VALUES
     (:'experience_c_id', :'operator_id', 'es', 'Aventura en kayak por las cuevas',
      'Rema hasta cuevas marinas a las que solo se llega por el agua.', NULL,
      NULL, NULL, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (experience_id, locale) DO UPDATE SET
+    name                     = EXCLUDED.name,
+    description              = EXCLUDED.description,
+    long_description         = EXCLUDED.long_description,
+    handle                   = EXCLUDED.handle,
+    seo_title                = EXCLUDED.seo_title,
+    seo_description          = EXCLUDED.seo_description;
 
 -- 11. Slots: sixteen, dated relative to today (operator-local wall clock, no
 -- tz), day = 0–6 Sunday-first derived from the date. Snapshot
@@ -710,7 +772,13 @@ FROM (VALUES
     (:'slot_d1_id'::uuid, :'experience_d_id'::uuid,  7, TIME '08:00', TIME '12:00', 'AVAILABLE')
 ) AS v(id, experience_id, day_offset, start_time, end_time, status)
 JOIN experience.experiences e ON e.id = v.experience_id
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    start_at                 = EXCLUDED.start_at,
+    end_at                   = EXCLUDED.end_at,
+    day                      = EXCLUDED.day,
+    experience_name          = EXCLUDED.experience_name,
+    experience_description   = EXCLUDED.experience_description,
+    status                   = EXCLUDED.status;
 
 -- Per-(slot, audience) pricing snapshots, generated rather than listed: sixteen
 -- slots times two-to-three audience tiers is fifty-odd rows, and hand-numbering
@@ -756,7 +824,12 @@ SELECT md5('audience_slot:' || s.id || ':' || t.audience_id)::uuid,
 FROM experience.slots s
 JOIN tier t ON t.experience_id = s.experience_id
 JOIN fill f ON f.slot_id = s.id
-ON CONFLICT (slot_id, audience_id) DO NOTHING;
+ON CONFLICT (slot_id, audience_id) DO UPDATE SET
+    audience_name            = EXCLUDED.audience_name,
+    price                    = EXCLUDED.price,
+    capacity                 = EXCLUDED.capacity,
+    pax_per_unit             = EXCLUDED.pax_per_unit,
+    booked_count             = EXCLUDED.booked_count;
 
 -- 12. CMS pages: three published, two draft, +es overlay (with localized
 -- handle) on About.
@@ -790,7 +863,14 @@ VALUES
      '<h1>Press</h1>' || E'\n' || '<p>Kit and photos on request.</p>',
      NULL, NULL,
      FALSE, :'user_sofia_id', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    title                    = EXCLUDED.title,
+    handle                   = EXCLUDED.handle,
+    body                     = EXCLUDED.body,
+    seo_title                = EXCLUDED.seo_title,
+    seo_description          = EXCLUDED.seo_description,
+    published                = EXCLUDED.published,
+    updated_at               = NOW();
 
 INSERT INTO page.page_translations
     (page_id, locale, tour_operator_id, handle, title, body, seo_title, seo_description)
@@ -803,7 +883,12 @@ VALUES
      '<h1>La flota</h1>' || E'\n' ||
      '<p>Dos veleros y una neumática, todos para menos de doce pasajeros.</p>',
      NULL, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (page_id, locale) DO UPDATE SET
+    handle                   = EXCLUDED.handle,
+    title                    = EXCLUDED.title,
+    body                     = EXCLUDED.body,
+    seo_title                = EXCLUDED.seo_title,
+    seo_description          = EXCLUDED.seo_description;
 
 -- 13. Navigation menus. The two defaults every operator gets at creation
 -- (seeded here because this operator is inserted raw, bypassing the use
@@ -818,7 +903,10 @@ VALUES
      NOW() - INTERVAL '400 days', NOW() - INTERVAL '20 days'),
     (:'menu_footer_id', :'operator_id', 'footer',    'Footer',    :'user_id',
      NOW() - INTERVAL '400 days', NOW() - INTERVAL '20 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    handle                   = EXCLUDED.handle,
+    title                    = EXCLUDED.title,
+    updated_at               = NOW();
 
 -- Items resolve their menu by (operator, handle) instead of assuming the
 -- fixed menu ids above landed: on a dev DB whose defaults came from the V5
@@ -856,14 +944,21 @@ FROM (VALUES
 ) AS v(id, menu_handle, parent_id, title, link_type, resource_id, url, position)
 JOIN touroperator.menus m
     ON m.tour_operator_id = :'operator_id' AND m.handle = v.menu_handle
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    title                    = EXCLUDED.title,
+    link_type                = EXCLUDED.link_type,
+    resource_id              = EXCLUDED.resource_id,
+    url                      = EXCLUDED.url,
+    position                 = EXCLUDED.position,
+    updated_at               = NOW();
 
 INSERT INTO touroperator.menu_item_translations (menu_item_id, locale, title)
 VALUES
     (:'mi_home_id',        'es', 'Inicio'),
     (:'mi_experiences_id', 'es', 'Experiencias'),
     (:'mi_about_id',       'es', 'Sobre nosotros')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (menu_item_id, locale) DO UPDATE SET
+    title                    = EXCLUDED.title;
 
 -- 14. Custom data. A metaobject definition with four fields and three entries
 -- (two published, one not), plus eight metafield definitions across both owner
@@ -881,7 +976,11 @@ VALUES
     (:'mod_boat_id', :'operator_id', 'boat', 'Boat',
      'A vessel in the fleet. Referenced from experiences.',
      :'user_maria_id', NOW() - INTERVAL '160 days', NOW() - INTERVAL '160 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    type                     = EXCLUDED.type,
+    name                     = EXCLUDED.name,
+    description              = EXCLUDED.description,
+    updated_at               = NOW();
 
 INSERT INTO metafield.metaobject_field_definitions
     (id, definition_id, key, type, name, position, created_at, updated_at)
@@ -890,7 +989,10 @@ VALUES
     (:'mofd_capacity_id', :'mod_boat_id', 'capacity',   'NUMBER_INTEGER',   'Capacity',   1, NOW() - INTERVAL '160 days', NOW() - INTERVAL '160 days'),
     (:'mofd_year_id',     :'mod_boat_id', 'year-built', 'NUMBER_INTEGER',   'Year built', 2, NOW() - INTERVAL '160 days', NOW() - INTERVAL '160 days'),
     (:'mofd_notes_id',    :'mod_boat_id', 'notes',      'MULTI_LINE_TEXT',  'Notes',      3, NOW() - INTERVAL '155 days', NOW() - INTERVAL '155 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name                     = EXCLUDED.name,
+    position                 = EXCLUDED.position,
+    updated_at               = NOW();
 
 INSERT INTO metafield.metaobject_entries
     (id, tour_operator_id, definition_id, handle, name, published, created_by, created_at, updated_at)
@@ -901,7 +1003,11 @@ VALUES
      :'user_maria_id', NOW() - INTERVAL '159 days', NOW() - INTERVAL '40 days'),
     (:'moe_gaffer_id',  :'operator_id', :'mod_boat_id', 'old-gaffer',  'Old Gaffer',  FALSE,
      :'user_diego_id', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    handle                   = EXCLUDED.handle,
+    name                     = EXCLUDED.name,
+    published                = EXCLUDED.published,
+    updated_at               = NOW();
 
 -- Entry values, generated from a (handle, key, value) list so adding a boat is
 -- one row rather than four ids. Old Gaffer deliberately fills only two of the
@@ -988,7 +1094,11 @@ VALUES
     (:'mfd_window_id', :'operator_id', 'TOUR_OPERATOR', 'custom', 'booking-window',
      'JSON', 'Booking window', 'How far ahead, and how close to departure, guests may book.',
      NULL, :'user_maria_id', NOW() - INTERVAL '55 days', NOW() - INTERVAL '55 days')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name                     = EXCLUDED.name,
+    description              = EXCLUDED.description,
+    metaobject_definition_id = EXCLUDED.metaobject_definition_id,
+    updated_at               = NOW();
 
 -- Values, keyed by (definition, owner). Coverage is deliberately uneven — the
 -- sunset sail fills every field, the food walk fills two, the draft experience
@@ -1140,7 +1250,11 @@ VALUES
      'Partnership — concierge referrals',
      'Buenos días. Somos un hotel a diez minutos del puerto y nos gustaría ofrecer vuestras salidas a nuestros huéspedes. ¿Con quién hablamos?',
      NOW() - INTERVAL '3 hours')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name                     = EXCLUDED.name,
+    email                    = EXCLUDED.email,
+    summary                  = EXCLUDED.summary,
+    content                  = EXCLUDED.content;
 
 -- 16. Activity trail. Invented history, as the header says — but the Activity
 -- screen filters by entity type, actor and action, and none of that is
@@ -1231,4 +1345,6 @@ FROM (VALUES
      'contact_message.deleted', '{"email":"spam@example.com"}', NULL, 1)
 ) AS v(hex, actor_type, actor_id, actor_name, entity_type, entity_id, action,
        details, changes, days_ago)
+-- DO NOTHING, deliberately: this is an append-only record of what happened.
+-- Rewriting a trail entry in place would make it a lie.
 ON CONFLICT DO NOTHING;
