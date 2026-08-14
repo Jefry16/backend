@@ -40,7 +40,6 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -114,7 +113,6 @@ class AudienceTranslationControllerDocumentationTest {
     void upsert() throws Exception {
         authenticated();
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNoContent())
@@ -125,7 +123,6 @@ class AudienceTranslationControllerDocumentationTest {
     void deleteOne() throws Exception {
         authenticated();
         mockMvc.perform(delete("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("audience-translations/delete"));
@@ -134,7 +131,6 @@ class AudienceTranslationControllerDocumentationTest {
     @Test
     void upsertRequiresAuthentication() throws Exception {
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isUnauthorized());
     }
@@ -145,7 +141,6 @@ class AudienceTranslationControllerDocumentationTest {
         doThrow(new ForbiddenException("admin"))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
@@ -158,7 +153,6 @@ class AudienceTranslationControllerDocumentationTest {
         // The handler dropped its `body == null` guard because @RequestBody is
         // required by default — this is what makes that guard unreachable.
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -172,7 +166,6 @@ class AudienceTranslationControllerDocumentationTest {
         doThrow(new InvalidFieldException("unsupported"))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "fr")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isUnprocessableEntity());

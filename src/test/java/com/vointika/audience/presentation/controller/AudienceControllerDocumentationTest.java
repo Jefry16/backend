@@ -51,7 +51,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -105,7 +104,7 @@ class AudienceControllerDocumentationTest {
         authenticated();
         when(createAudienceUseCase.execute(any(), any(), any())).thenReturn(UUID.fromString(AUD));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated())
@@ -158,7 +157,7 @@ class AudienceControllerDocumentationTest {
     void update() throws Exception {
         authenticated();
 
-        mockMvc.perform(patch("/api/tour-operators/{id}/audiences/{audienceId}", OP, AUD).with(csrf())
+        mockMvc.perform(patch("/api/tour-operators/{id}/audiences/{audienceId}", OP, AUD)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNoContent())
@@ -175,7 +174,7 @@ class AudienceControllerDocumentationTest {
 
     @Test
     void createRequiresAuthentication() throws Exception {
-        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isUnauthorized());
     }
@@ -184,7 +183,7 @@ class AudienceControllerDocumentationTest {
     void staffCannotCreate() throws Exception {
         authenticated();
         doThrow(new ForbiddenException("admin")).when(createAudienceUseCase).execute(any(), any(), any());
-        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
@@ -195,7 +194,7 @@ class AudienceControllerDocumentationTest {
         authenticated();
         doThrow(new ResourceAlreadyExistsException("exists"))
                 .when(createAudienceUseCase).execute(any(), any(), any());
-        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isConflict());

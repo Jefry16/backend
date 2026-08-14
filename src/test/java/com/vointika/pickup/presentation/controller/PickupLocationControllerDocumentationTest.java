@@ -46,7 +46,6 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -100,7 +99,7 @@ class PickupLocationControllerDocumentationTest {
     void create() throws Exception {
         authenticated();
         when(createPickupLocationUseCase.execute(any(), any(), any())).thenReturn(UUID.fromString(PICKUP));
-        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated())
@@ -135,7 +134,7 @@ class PickupLocationControllerDocumentationTest {
     @Test
     void update() throws Exception {
         authenticated();
-        mockMvc.perform(patch("/api/tour-operators/{id}/pickup-locations/{pickupLocationId}", OP, PICKUP).with(csrf())
+        mockMvc.perform(patch("/api/tour-operators/{id}/pickup-locations/{pickupLocationId}", OP, PICKUP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNoContent())
@@ -145,7 +144,7 @@ class PickupLocationControllerDocumentationTest {
     @Test
     void deleteOne() throws Exception {
         authenticated();
-        mockMvc.perform(delete("/api/tour-operators/{id}/pickup-locations/{pickupLocationId}", OP, PICKUP).with(csrf())
+        mockMvc.perform(delete("/api/tour-operators/{id}/pickup-locations/{pickupLocationId}", OP, PICKUP)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("pickup-locations/delete"));
@@ -153,7 +152,7 @@ class PickupLocationControllerDocumentationTest {
 
     @Test
     void createRequiresAuthentication() throws Exception {
-        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isUnauthorized());
     }
@@ -162,7 +161,7 @@ class PickupLocationControllerDocumentationTest {
     void staffCannotCreate() throws Exception {
         authenticated();
         doThrow(new ForbiddenException("admin")).when(createPickupLocationUseCase).execute(any(), any(), any());
-        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
@@ -173,7 +172,7 @@ class PickupLocationControllerDocumentationTest {
         authenticated();
         doThrow(new ResourceAlreadyExistsException("exists"))
                 .when(createPickupLocationUseCase).execute(any(), any(), any());
-        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isConflict());

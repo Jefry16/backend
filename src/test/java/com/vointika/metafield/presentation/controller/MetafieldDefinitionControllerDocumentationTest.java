@@ -52,7 +52,6 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -114,7 +113,7 @@ class MetafieldDefinitionControllerDocumentationTest {
         authenticated();
         when(createUseCase.execute(any())).thenReturn(UUID.fromString(DEF));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/metafield-definitions", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/metafield-definitions", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isCreated())
@@ -137,7 +136,7 @@ class MetafieldDefinitionControllerDocumentationTest {
         when(createUseCase.execute(any())).thenThrow(
                 new ResourceAlreadyExistsException("A metafield definition with this namespace and key already exists"));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/metafield-definitions", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/metafield-definitions", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isConflict());
@@ -191,7 +190,6 @@ class MetafieldDefinitionControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(put("/api/tour-operators/{id}/metafield-definitions/{definitionId}", OP, DEF)
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Sub-heading\",\"description\":null}"))
@@ -208,7 +206,6 @@ class MetafieldDefinitionControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(delete("/api/tour-operators/{id}/metafield-definitions/{definitionId}", OP, DEF)
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metafield-definitions/delete",

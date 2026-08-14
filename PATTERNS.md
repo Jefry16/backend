@@ -720,6 +720,15 @@ token leaves in an httpOnly cookie. That pair stays.
   public route), collaborators `@MockitoBean`, assertions + RestDocs
   `document(...)`. Authenticated endpoints send `Authorization: Bearer …` and
   stub `AccessTokenValidatorPort.isValid/extractUserId`.
+
+  **Never `.with(csrf())`.** `SecurityConfig` disables CSRF, so it changes no
+  behaviour — but whatever the request carries is *published*, and MockMvc's
+  token lands in the guide as a `_csrf` query parameter (or, on a `DELETE`, an
+  invented form body) that the API does not accept. It reached 52 of 153
+  operations before anyone diffed the generated output;
+  `DocumentationTestsPublishNoCsrfTest` now fails the build on it. The general
+  rule it is an instance of: **a documentation test's request is a published
+  example, so anything added to make the test pass is added to the contract.**
 - **The read-only column guard** — a table whose columns are mapped
   `insertable/updatable = false` gets a test asserting a column is writable
   **exactly while the domain can carry it**, as a biconditional. Three tables

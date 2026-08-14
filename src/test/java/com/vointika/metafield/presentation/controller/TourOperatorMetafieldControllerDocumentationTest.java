@@ -48,7 +48,6 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -124,7 +123,6 @@ class TourOperatorMetafieldControllerDocumentationTest {
 
         mockMvc.perform(put("/api/tour-operators/{id}/metafields/{namespace}/{key}",
                         OP, "custom", "opening-hours")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"value\":\"Mon–Sat 09:00–18:00\"}"))
@@ -141,7 +139,6 @@ class TourOperatorMetafieldControllerDocumentationTest {
 
         mockMvc.perform(delete("/api/tour-operators/{id}/metafields/{namespace}/{key}",
                         OP, "custom", "opening-hours")
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operator-metafields/delete",
@@ -160,7 +157,6 @@ class TourOperatorMetafieldControllerDocumentationTest {
 
         mockMvc.perform(put("/api/tour-operators/{id}/metafields/{namespace}/{key}",
                         OP, "custom", "opening-hours")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"value\":\"x\"}"))
@@ -182,7 +178,6 @@ class TourOperatorMetafieldControllerDocumentationTest {
 
         mockMvc.perform(put("/api/tour-operators/{id}/metafields/{namespace}/{key}",
                         OP, "custom", "missing")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"value\":\"x\"}"))

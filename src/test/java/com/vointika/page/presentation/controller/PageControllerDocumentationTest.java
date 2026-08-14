@@ -56,7 +56,6 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -172,7 +171,7 @@ class PageControllerDocumentationTest {
         authenticated();
         when(createPageUseCase.execute(any())).thenReturn(UUID.fromString(PAGE));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/pages", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pages", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isCreated())
@@ -193,7 +192,7 @@ class PageControllerDocumentationTest {
         when(createPageUseCase.execute(any()))
                 .thenThrow(new ResourceAlreadyExistsException("A page with this handle already exists"));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/pages", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pages", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isConflict());
@@ -203,7 +202,7 @@ class PageControllerDocumentationTest {
     void update() throws Exception {
         authenticated();
 
-        mockMvc.perform(patch("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE).with(csrf())
+        mockMvc.perform(patch("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"About\",\"body\":\"<p>New</p>\"}"))
@@ -221,13 +220,13 @@ class PageControllerDocumentationTest {
     void publishAndUnpublish() throws Exception {
         authenticated();
 
-        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/publish", OP, PAGE).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/publish", OP, PAGE)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/publish",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/unpublish", OP, PAGE).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/unpublish", OP, PAGE)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent());
     }
@@ -236,7 +235,7 @@ class PageControllerDocumentationTest {
     void rename() throws Exception {
         authenticated();
 
-        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/rename", OP, PAGE).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/rename", OP, PAGE)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"handle\":\"about\"}"))
@@ -251,7 +250,7 @@ class PageControllerDocumentationTest {
     void deleteOne() throws Exception {
         authenticated();
 
-        mockMvc.perform(delete("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE).with(csrf())
+        mockMvc.perform(delete("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/delete",

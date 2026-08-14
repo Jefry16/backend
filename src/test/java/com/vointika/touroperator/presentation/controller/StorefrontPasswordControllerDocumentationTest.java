@@ -38,7 +38,6 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -98,7 +97,7 @@ class StorefrontPasswordControllerDocumentationTest {
     void update() throws Exception {
         authenticated();
 
-        mockMvc.perform(put("/api/tour-operators/{id}/storefront-password", OP).with(csrf())
+        mockMvc.perform(put("/api/tour-operators/{id}/storefront-password", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"enabled\":true,\"password\":\"sunset2026\","
@@ -118,7 +117,7 @@ class StorefrontPasswordControllerDocumentationTest {
         Mockito.doThrow(new InvalidFieldException("A password is required to enable password protection"))
                 .when(updateUseCase).execute(any(), anyBoolean(), any(), any(), any());
 
-        mockMvc.perform(put("/api/tour-operators/{id}/storefront-password", OP).with(csrf())
+        mockMvc.perform(put("/api/tour-operators/{id}/storefront-password", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"enabled\":true}"))

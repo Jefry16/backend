@@ -45,7 +45,6 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -115,7 +114,7 @@ class SlotControllerDocumentationTest {
     void createSingle() throws Exception {
         authenticated();
         when(createSlotUseCase.execute(any())).thenReturn(UUID.fromString(SLOT));
-        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(SINGLE_BODY))
                 .andExpect(status().isCreated())
@@ -126,7 +125,7 @@ class SlotControllerDocumentationTest {
     @Test
     void createRecurring() throws Exception {
         authenticated();
-        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slots", OP, EXP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slots", OP, EXP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(RECURRING_BODY))
                 .andExpect(status().isCreated())
@@ -140,7 +139,7 @@ class SlotControllerDocumentationTest {
                 "No date in the validity window falls on the selected days"))
                 .when(createSlotsUseCase).execute(any());
 
-        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slots", OP, EXP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slots", OP, EXP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(RECURRING_BODY))
                 .andExpect(status().isUnprocessableEntity());
@@ -173,7 +172,7 @@ class SlotControllerDocumentationTest {
     void cancel() throws Exception {
         authenticated();
         when(cancelSlotUseCase.execute(any(), any(), any())).thenReturn(view());
-        mockMvc.perform(post("/api/tour-operators/{id}/slots/{slotId}/cancel", OP, SLOT).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/slots/{slotId}/cancel", OP, SLOT)
                         .header("Authorization", BEARER))
                 .andExpect(status().isOk())
                 .andDo(document("slots/cancel"));
@@ -183,7 +182,7 @@ class SlotControllerDocumentationTest {
     void update() throws Exception {
         authenticated();
         when(updateSlotUseCase.execute(any(), any(), any(), any())).thenReturn(view());
-        mockMvc.perform(patch("/api/tour-operators/{id}/slots/{slotId}", OP, SLOT).with(csrf())
+        mockMvc.perform(patch("/api/tour-operators/{id}/slots/{slotId}", OP, SLOT)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(UPDATE_BODY))
                 .andExpect(status().isOk())
@@ -192,7 +191,7 @@ class SlotControllerDocumentationTest {
 
     @Test
     void createRequiresAuthentication() throws Exception {
-        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP)
                         .contentType(MediaType.APPLICATION_JSON).content(SINGLE_BODY))
                 .andExpect(status().isUnauthorized());
     }
@@ -201,7 +200,7 @@ class SlotControllerDocumentationTest {
     void staffCannotCreate() throws Exception {
         authenticated();
         doThrow(new ForbiddenException("admin")).when(createSlotUseCase).execute(any());
-        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(SINGLE_BODY))
                 .andExpect(status().isForbidden());
@@ -212,7 +211,7 @@ class SlotControllerDocumentationTest {
         authenticated();
         doThrow(new ConflictException("Slot is already cancelled"))
                 .when(cancelSlotUseCase).execute(any(), any(), any());
-        mockMvc.perform(post("/api/tour-operators/{id}/slots/{slotId}/cancel", OP, SLOT).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/slots/{slotId}/cancel", OP, SLOT)
                         .header("Authorization", BEARER))
                 .andExpect(status().isConflict());
     }
