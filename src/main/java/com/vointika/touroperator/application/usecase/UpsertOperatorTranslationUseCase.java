@@ -23,7 +23,7 @@ import java.util.UUID;
 
 /**
  * Creates or replaces the operator's own translation overlay for one locale —
- * the shop-level text every page type falls back to. ADMIN+; membership enforced
+ * the operator-level text every page type falls back to. ADMIN+; membership enforced
  * by the interceptor.
  *
  * <p>Guards: caller not ADMIN+ → 403; operator missing → 404; a locale outside

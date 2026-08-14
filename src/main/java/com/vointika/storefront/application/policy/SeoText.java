@@ -24,8 +24,8 @@ public final class SeoText {
      * @param ownTitle    what the page is called, or null for a page type that
      *                    has no title of its own (the home page)
      */
-    public static String title(String ownSeoTitle, String ownTitle, String shopSeoTitle, String operatorName) {
-        return firstPresent(ownSeoTitle, ownTitle, shopSeoTitle, operatorName);
+    public static String title(String ownSeoTitle, String ownTitle, String operatorSeoTitle, String operatorName) {
+        return firstPresent(ownSeoTitle, ownTitle, operatorSeoTitle, operatorName);
     }
 
     /**
@@ -33,8 +33,8 @@ public final class SeoText {
      * worse than none — search engines write their own snippet from the page
      * either way, and a duplicated line is what they discard.
      */
-    public static String description(String ownSeoDescription, String shopSeoDescription) {
-        return firstPresent(ownSeoDescription, shopSeoDescription);
+    public static String description(String ownSeoDescription, String operatorSeoDescription) {
+        return firstPresent(ownSeoDescription, operatorSeoDescription);
     }
 
     private static String firstPresent(String... candidates) {

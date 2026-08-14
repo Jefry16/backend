@@ -25,13 +25,13 @@ class CheckStorefrontLockUseCaseTest {
      */
     private final HmacUnlockToken unlockToken = new HmacUnlockToken();
 
-    private StorefrontTourOperatorQuery storefrontShopQuery;
+    private StorefrontTourOperatorQuery storefrontTourOperatorQuery;
     private CheckStorefrontLockUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        storefrontShopQuery = mock(StorefrontTourOperatorQuery.class);
-        useCase = new CheckStorefrontLockUseCase(storefrontShopQuery, unlockToken);
+        storefrontTourOperatorQuery = mock(StorefrontTourOperatorQuery.class);
+        useCase = new CheckStorefrontLockUseCase(storefrontTourOperatorQuery, unlockToken);
     }
 
     @Test
@@ -82,13 +82,13 @@ class CheckStorefrontLockUseCaseTest {
 
     @Test
     void anUnknownHandleIsNoSuchTenant() {
-        when(storefrontShopQuery.findGate("nope")).thenReturn(Optional.empty());
+        when(storefrontTourOperatorQuery.findGate("nope")).thenReturn(Optional.empty());
 
         assertThat(useCase.execute("nope", null)).isEqualTo(LockState.NO_SUCH_TENANT);
     }
 
     private void gate(boolean passwordEnabled, String password) {
-        when(storefrontShopQuery.findGate("acme")).thenReturn(Optional.of(new GateView(
+        when(storefrontTourOperatorQuery.findGate("acme")).thenReturn(Optional.of(new GateView(
                 OPERATOR, "Acme Tours", passwordEnabled, password, null)));
     }
 }

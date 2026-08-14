@@ -34,7 +34,7 @@ import java.util.UUID;
  * and {@code address} are NOT NULL columns and can only be replaced.
  *
  * <p>{@code handle} is not editable and is not in the input: it is the
- * storefront subdomain, so changing it moves the shop's public address and
+ * storefront subdomain, so changing it moves the operator's public address and
  * breaks every link to it. That stays a deliberate omission rather than a
  * validation error.
  *

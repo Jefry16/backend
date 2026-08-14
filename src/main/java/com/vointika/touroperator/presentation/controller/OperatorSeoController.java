@@ -17,7 +17,7 @@ import java.util.UUID;
 
 /**
  * The operator's canonical SEO defaults — the last fallback for every storefront
- * page, and the home page's only title source besides the shop name. Reads
+ * page, and the home page's only title source besides the operator name. Reads
  * member-visible; changes ADMIN+.
  *
  * <p>A settings sub-resource like {@code /locales} and

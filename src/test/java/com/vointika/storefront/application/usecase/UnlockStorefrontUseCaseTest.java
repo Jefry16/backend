@@ -20,13 +20,13 @@ class UnlockStorefrontUseCaseTest {
     /** The real token adapter, so the minted value is checked as a browser would carry it. */
     private final HmacUnlockToken unlockToken = new HmacUnlockToken();
 
-    private StorefrontTourOperatorQuery storefrontShopQuery;
+    private StorefrontTourOperatorQuery storefrontTourOperatorQuery;
     private UnlockStorefrontUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        storefrontShopQuery = mock(StorefrontTourOperatorQuery.class);
-        useCase = new UnlockStorefrontUseCase(storefrontShopQuery, unlockToken);
+        storefrontTourOperatorQuery = mock(StorefrontTourOperatorQuery.class);
+        useCase = new UnlockStorefrontUseCase(storefrontTourOperatorQuery, unlockToken);
     }
 
     @Test
@@ -78,13 +78,13 @@ class UnlockStorefrontUseCaseTest {
 
     @Test
     void anUnknownHandleIsRefusedLikeAWrongPassword() {
-        when(storefrontShopQuery.findGate("nope")).thenReturn(Optional.empty());
+        when(storefrontTourOperatorQuery.findGate("nope")).thenReturn(Optional.empty());
 
         assertThat(useCase.execute("nope", "hunter2")).isEmpty();
     }
 
     private void gate(boolean passwordEnabled, String password) {
-        when(storefrontShopQuery.findGate("acme")).thenReturn(Optional.of(new GateView(
+        when(storefrontTourOperatorQuery.findGate("acme")).thenReturn(Optional.of(new GateView(
                 OPERATOR, "Acme Tours", passwordEnabled, password, null)));
     }
 }

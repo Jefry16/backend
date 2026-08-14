@@ -3,7 +3,7 @@ package com.vointika.touroperator.domain.valueobject;
 import com.vointika.shared.exception.InvalidFieldException;
 
 /**
- * The shop's public phone number, as the operator writes it.
+ * The operator's public phone number, as the operator writes it.
  *
  * <p><b>No format is imposed, deliberately.</b> V9 left the column without a
  * CHECK because "E.164-vs-national is a product decision nobody has made", and

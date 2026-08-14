@@ -36,8 +36,8 @@ public class GetStorefrontCmsPageUseCase {
      * @param pathLocale the locale segment of the URL, or null for the bare path
      * @param handle     the page handle as it appears in the URL
      */
-    public Optional<StorefrontPageOutput> execute(String shopHandle, String pathLocale, String handle) {
-        return getStorefrontGlobals.execute(shopHandle, pathLocale).flatMap(globals ->
+    public Optional<StorefrontPageOutput> execute(String operatorHandle, String pathLocale, String handle) {
+        return getStorefrontGlobals.execute(operatorHandle, pathLocale).flatMap(globals ->
                 pageQuery.findByHandle(globals.tourOperator().id(), handle, globals.localization().current())
                         .map(page -> new StorefrontPageOutput(withPageSeo(globals, page), page)));
     }

@@ -33,7 +33,7 @@ import java.util.UUID;
  *
  * <p><b>Both failures are one 404</b>: a handle no operator owns and a locale the
  * operator does not publish answer identically, so an anonymous visitor learns
- * nothing about which shops exist or which languages they have.
+ * nothing about which operators exist or which languages they have.
  */
 @RestController
 public class StorefrontHomeController {

@@ -191,7 +191,7 @@ public class TourOperator {
     }
 
     /**
-     * Replaces the shop-level SEO defaults. Each argument is the whole new value:
+     * Replaces the operator-level SEO defaults. Each argument is the whole new value:
      * null clears the override, which is what the storefront reads as "fall back"
      * — an empty string would be a title of zero characters, not the absence of
      * one.
@@ -212,7 +212,7 @@ public class TourOperator {
      * explicit null.
      *
      * <p>{@code handle} is not here and never will be: it is the storefront
-     * subdomain, so changing it moves the shop's address.
+     * subdomain, so changing it moves the operator's address.
      *
      * <p><b>Changing {@code timezoneId} reinterprets every stored departure.</b>
      * Slots hold operator-LOCAL wall-clock times ({@code LocalDateTime}, no

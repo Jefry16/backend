@@ -118,9 +118,9 @@ class CreateTourOperatorUseCaseTest {
 
     /**
      * <b>A brand-new store is private</b>, the way a new Shopify store is: it
-     * exists at its address and answers the gate rather than the shop. Without
+     * exists at its address and answers the gate rather than the storefront. Without
      * this, the first request after an operator is created serves its (empty)
-     * shop to anyone who guesses the handle.
+     * storefront to anyone who guesses the handle.
      *
      * <p>The password is generated rather than left for the operator to set,
      * because enabling protection with none stored is a 422 — the gate would be

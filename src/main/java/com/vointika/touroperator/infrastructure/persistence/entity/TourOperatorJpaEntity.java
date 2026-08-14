@@ -54,7 +54,7 @@ public class TourOperatorJpaEntity {
     private UUID countryId;
 
     /**
-     * The shop's public contact details (V9), <b>mapped read-only on purpose</b>.
+     * The operator's public contact details (V9), <b>mapped read-only on purpose</b>.
      *
      * <p>There is no write path yet, and the domain {@code TourOperator} does not
      * carry them — so {@code TourOperatorMapper.toJpa} rebuilds this entity from a
@@ -96,7 +96,7 @@ public class TourOperatorJpaEntity {
     @Column(columnDefinition = "text")
     private String passwordMessage;
 
-    /** Shop-level SEO defaults — the fallback every page type resolves through. */
+    /** Operator-level SEO defaults — the fallback every page type resolves through. */
     @Column(length = 70)
     private String seoTitle;
 

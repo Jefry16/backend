@@ -17,13 +17,13 @@ import com.vointika.shared.port.StorefrontTourOperatorQuery;
  */
 public class CheckStorefrontTenantUseCase {
 
-    private final StorefrontTourOperatorQuery storefrontShopQuery;
+    private final StorefrontTourOperatorQuery storefrontTourOperatorQuery;
 
-    public CheckStorefrontTenantUseCase(StorefrontTourOperatorQuery storefrontShopQuery) {
-        this.storefrontShopQuery = storefrontShopQuery;
+    public CheckStorefrontTenantUseCase(StorefrontTourOperatorQuery storefrontTourOperatorQuery) {
+        this.storefrontTourOperatorQuery = storefrontTourOperatorQuery;
     }
 
     public boolean execute(String handle) {
-        return storefrontShopQuery.findLocales(handle).isPresent();
+        return storefrontTourOperatorQuery.findLocales(handle).isPresent();
     }
 }
