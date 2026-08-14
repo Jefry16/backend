@@ -2,6 +2,7 @@ package com.vointika.metafield.domain.repository;
 
 import com.vointika.metafield.domain.entity.MetafieldValue;
 import com.vointika.metafield.domain.projection.MetafieldValueWithDefinition;
+import com.vointika.metafield.domain.projection.TranslatableMetafieldValue;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 
 import java.util.List;
@@ -24,6 +25,11 @@ public interface MetafieldValueRepository {
      */
     List<MetafieldValueWithDefinition> listForOwnerLocalized(
             UUID tourOperatorId, MetafieldOwnerType ownerType, UUID ownerId, String locale);
+
+    /** Every stored value for one owner as {@code namespace.key} + type + id — the
+     *  translation upsert's whole lookup, in one query. */
+    List<TranslatableMetafieldValue> listTranslatableForOwner(
+            UUID tourOperatorId, MetafieldOwnerType ownerType, UUID ownerId);
 
     void delete(UUID valueId);
 

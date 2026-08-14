@@ -159,7 +159,6 @@ public class MetafieldUseCaseConfig {
 
     @Bean
     public UpsertMetafieldTranslationsUseCase upsertMetafieldTranslationsUseCase(
-            MetafieldDefinitionRepository definitionRepository,
             MetafieldValueRepository valueRepository,
             MetafieldValueTranslationRepository translationRepository,
             MetafieldOwnerAccess metafieldOwnerAccess,
@@ -168,7 +167,7 @@ public class MetafieldUseCaseConfig {
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new UpsertMetafieldTranslationsUseCase(definitionRepository, valueRepository,
+        return new UpsertMetafieldTranslationsUseCase(valueRepository,
                 translationRepository, metafieldOwnerAccess, metafieldValueValidator,
                 operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
     }

@@ -88,7 +88,6 @@ class OperatorTranslationUseCasesTest {
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- upsert ----
 
     @Test
     void upsertStoresTheOverlayAndAudits() {
@@ -195,7 +194,6 @@ class OperatorTranslationUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ---- read ----
 
     @Test
     void getReturnsAnEmptyOverlayForAnUntranslatedLocale() {
@@ -226,7 +224,6 @@ class OperatorTranslationUseCasesTest {
                 .satisfies(v -> assertThat(v.seoTitle()).isEqualTo("Título"));
     }
 
-    // ---- delete ----
 
     @Test
     void deleteRemovesTheOverlayAndAudits() {

@@ -79,7 +79,6 @@ class PickupLocationUseCasesTest {
         return new DeletePickupLocationUseCase(repository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- create ----
 
     @Test
     void createPersists() {
@@ -110,7 +109,6 @@ class PickupLocationUseCasesTest {
         verify(repository, never()).save(any());
     }
 
-    // ---- update ----
 
     @Test
     void updateRenames() {
@@ -163,7 +161,6 @@ class PickupLocationUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ---- delete ----
 
     @Test
     void deleteRemovesCatalogRow() {

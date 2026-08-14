@@ -101,7 +101,6 @@ class AcceptInvitationUseCaseTest {
                 new TourOperatorAddress("123 Beach Rd", null, "Palma", null, null, UUID.randomUUID()), UUID.randomUUID());
     }
 
-    // ---- token matrix ----
 
     @Test
     void unknownTokenIs404() {
@@ -124,7 +123,6 @@ class AcceptInvitationUseCaseTest {
         assertThrows(GoneException.class, () -> useCase.execute("raw", null, "Ada", "Password1!"));
     }
 
-    // ---- authenticated branch ----
 
     @Test
     void authenticatedWithAMismatchedEmailIs403() {
@@ -153,7 +151,6 @@ class AcceptInvitationUseCaseTest {
         verify(invitationRepository).save(any()); // accepted
     }
 
-    // ---- anonymous branch ----
 
     @Test
     void anonymousWithoutCredentialsIs422() {

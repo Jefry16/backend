@@ -119,7 +119,6 @@ class PolicyUseCasesTest {
                 operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- create ----
 
     @Test
     void createWritesThePolicyAndAudits() {
@@ -187,7 +186,6 @@ class PolicyUseCasesTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
-    // ---- update ----
 
     @Test
     void updateRewritesTheTextAndKeepsCreatedAt() {
@@ -227,7 +225,6 @@ class PolicyUseCasesTest {
                 .isInstanceOf(InvalidFieldException.class);
     }
 
-    // ---- get / list ----
 
     @Test
     void getReturnsThePolicy() {
@@ -276,7 +273,6 @@ class PolicyUseCasesTest {
         assertThat(ListPoliciesUseCase.SCHEMA.defaultSort().field()).isEqualTo("type");
     }
 
-    // ---- delete ----
 
     @Test
     void deleteRemovesThePolicyAndAudits() {
@@ -306,7 +302,6 @@ class PolicyUseCasesTest {
         verify(auditTrailPort, never()).append(any());
     }
 
-    // ---- translations ----
 
     @Test
     void translationUpsertStoresTheOverlayAndAudits() {

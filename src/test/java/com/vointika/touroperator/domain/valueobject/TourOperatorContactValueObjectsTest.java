@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TourOperatorContactValueObjectsTest {
 
-    // ---- phone ----
 
     @Test
     void aPhoneKeepsWhateverFormatTheOperatorWrites() {
@@ -34,7 +33,6 @@ class TourOperatorContactValueObjectsTest {
         assertThrows(InvalidFieldException.class, () -> new TourOperatorPhone("9".repeat(31)));
     }
 
-    // ---- email ----
 
     @Test
     void anEmailIsLowerCasedAndTrimmed() {

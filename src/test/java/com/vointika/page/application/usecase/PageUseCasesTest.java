@@ -75,7 +75,6 @@ class PageUseCasesTest {
         return new CreatePageInput(USER, OP, "About us", handle, "<p>Hello</p>", null, null);
     }
 
-    // ---- create ----
 
     @Test
     void createPersistsDraftAndAudits() {
@@ -105,7 +104,6 @@ class PageUseCasesTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
-    // ---- update ----
 
     @Test
     void updateReplacesContentAndAuditsTheDiff() {
@@ -137,7 +135,6 @@ class PageUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ---- publish / unpublish ----
 
     @Test
     void publishFlipsStatusAndAudits() {
@@ -150,7 +147,6 @@ class PageUseCasesTest {
         verify(auditTrailPort).append(any());
     }
 
-    // ---- rename ----
 
     @Test
     void renameToTheSameHandleIsANoOp() {
@@ -182,7 +178,6 @@ class PageUseCasesTest {
         verify(auditTrailPort).append(any());
     }
 
-    // ---- delete ----
 
     private DeletePageUseCase delete() {
         return new DeletePageUseCase(repository, membershipCheck, transactionRunner, auditTrailPort,

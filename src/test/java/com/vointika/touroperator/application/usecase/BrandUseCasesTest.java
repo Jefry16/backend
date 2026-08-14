@@ -92,7 +92,6 @@ class BrandUseCasesTest {
                 null, null, null, null, colors, links);
     }
 
-    // ---- read ----
 
     @Test
     void anOperatorWithNoBrandRowReadsAnEmptyBrandNotA404() {
@@ -106,7 +105,6 @@ class BrandUseCasesTest {
         assertThat(view.socialLinks()).isEmpty();
     }
 
-    // ---- write ----
 
     @Test
     void updateReplacesTheWholeBrandAndAudits() {

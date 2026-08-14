@@ -66,7 +66,6 @@ class AudienceUseCasesTest {
         return new Audience(AUD, OP, new AudienceName(name), new PaxPerUnit(pax), USER, Instant.now());
     }
 
-    // ---- create ----
 
     @Test
     void createPersistsAndReturnsId() {
@@ -102,7 +101,6 @@ class AudienceUseCasesTest {
         verify(repository, never()).save(any());
     }
 
-    // ---- update ----
 
     @Test
     void updateRenamesAndSaves() {
@@ -159,7 +157,6 @@ class AudienceUseCasesTest {
         verify(repository, never()).save(any());
     }
 
-    // ---- get ----
 
     @Test
     void getRequiresMemberAndReturns() {
