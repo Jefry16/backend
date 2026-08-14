@@ -36,7 +36,8 @@
 --                 past/today/future and AVAILABLE/SOLD_OUT/CANCELLED, with
 --                 per-audience pricing generated per slot
 --   page          5 CMS pages (3 published, 2 draft, one with a template suffix)
---   metafield     13 metafield definitions, a `boat` metaobject with 4 fields
+--   metafield     13 metafield definitions (2 with `en` translations), a `boat`
+--                 metaobject with 4 fields
 --                 and 3 entries, and values attached to experiences, pages and
 --                 the operator itself (one of them a metaobject_reference)
 --   contact       12 inbox messages (9 unread, 3 read)
@@ -1015,8 +1016,11 @@ FROM (VALUES
     (:'mfd_footer_id'::uuid,     :'page_boats_id'::uuid,   'false'),
     -- The operator is its own owner, which is what makes TOUR_OPERATOR the one
     -- owner type needing no second ownership check.
+    -- Canonical is SPANISH: acme's primary locale is `es`, and every other piece
+    -- of its content is Spanish. The English below is a translation row, not a
+    -- second canonical.
     (:'mfd_hours_id'::uuid,      :'operator_id'::uuid,
-     E'Mon-Fri 09:00-18:00\nSat 10:00-14:00\nClosed Sundays and public holidays'),
+     E'Lun-Vie 09:00-18:00\nSáb 10:00-14:00\nCerrado domingos y festivos'),
     (:'mfd_meetpt_op_id'::uuid,  :'operator_id'::uuid,     'Muelle 3, Puerto de Palma'),
     -- Sea Swallow is PUBLISHED, so the storefront resolves it. Point this at
     -- old-gaffer instead and the metafield disappears from the payload -- the
@@ -1027,7 +1031,33 @@ FROM (VALUES
     (:'mfd_groups_id'::uuid,     :'operator_id'::uuid,     'true'),
     (:'mfd_window_id'::uuid,     :'operator_id'::uuid,     '{"minHours":24,"maxDays":180}')
 ) AS v(definition_id, owner_id, value)
-ON CONFLICT DO NOTHING;
+-- DO UPDATE, not DO NOTHING: these values are edited in this file (the canonical
+-- opening-hours went from English to Spanish once the `en` translation landed,
+-- and DO NOTHING silently kept the old row on every existing database). The
+-- header's rule, applied.
+ON CONFLICT (definition_id, owner_id) DO UPDATE SET
+    value      = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
+
+-- Per-locale overlays for the operator's own metafields. acme is primary `es`
+-- with `en` and `fr` published, and only `en` is translated ON PURPOSE: `fr`
+-- falling back to the Spanish text is the behaviour worth being able to see, and
+-- a fixture where every locale is complete cannot show it. `flagship-boat` and
+-- `accepts-groups` have no rows here because a reference and a boolean are not
+-- translatable at all.
+INSERT INTO metafield.metafield_value_translations
+    (metafield_value_id, locale, value, created_by, created_at, updated_at)
+SELECT md5('metafield_value:' || t.definition_id || ':' || :'operator_id')::uuid,
+       'en', t.value, :'user_maria_id',
+       NOW() - INTERVAL '40 days', NOW() - INTERVAL '10 days'
+FROM (VALUES
+    (:'mfd_hours_id'::uuid,
+     E'Mon-Fri 09:00-18:00\nSat 10:00-14:00\nClosed Sundays and public holidays'),
+    (:'mfd_meetpt_op_id'::uuid, 'Pier 3, Port of Palma')
+) AS t(definition_id, value)
+ON CONFLICT (metafield_value_id, locale) DO UPDATE SET
+    value      = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
 
 -- 15. Contact-inbox messages. Twelve of them, so the inbox pages. created_at
 -- ASCENDS with the fixed ids (070 oldest) so the inbox's -id default order

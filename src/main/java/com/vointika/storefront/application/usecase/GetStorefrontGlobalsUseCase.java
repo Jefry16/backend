@@ -64,7 +64,7 @@ public class GetStorefrontGlobalsUseCase {
                 LocaleRule.resolve(pathLocale, locales.primaryLocale(), locales.supportedLocales())
                         .flatMap(locale -> operatorQuery.findOperator(locales.tourOperatorId(), locale)
                                 .map(operator -> globals(operator, locale, locales,
-                                        metafieldQuery.findForOperator(locales.tourOperatorId()),
+                                        metafieldQuery.findForOperator(locales.tourOperatorId(), locale),
                                         experienceQuery.findFeatured(locales.tourOperatorId(), locale),
                                         menus(locales.tourOperatorId(), locale)))));
     }

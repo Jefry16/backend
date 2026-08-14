@@ -37,6 +37,7 @@ class StorefrontMetafieldQueryImplTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
     private static final UUID ENTRY = UUID.fromString("01900000-0000-7000-8000-0000000000d5");
+    private static final String LOCALE = "es";
 
     private MetafieldValueRepository valueRepository;
     private MetaobjectEntryJpaRepository entryJpa;
@@ -51,33 +52,34 @@ class StorefrontMetafieldQueryImplTest {
 
     @Test
     void itReadsTheOperatorsOwnValuesWithTheOperatorAsOwner() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(value("custom", "opening-hours", "Mon-Sat 09:00-18:00")));
 
-        assertThat(query.findForOperator(OPERATOR)).singleElement().satisfies(v -> {
+        assertThat(query.findForOperator(OPERATOR, LOCALE)).singleElement().satisfies(v -> {
             assertThat(v.namespace()).isEqualTo("custom");
             assertThat(v.key()).isEqualTo("opening-hours");
             assertThat(v.value()).isEqualTo("Mon-Sat 09:00-18:00");
         });
-        verify(valueRepository).listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR);
+        verify(valueRepository).listForOwnerLocalized(
+                OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE);
     }
 
     /** Our vocabulary, not Shopify's and not the enum's name. */
     @Test
     void theTypeCrossesAsItsCode() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(value("custom", "opening-hours", "x")));
 
-        assertThat(query.findForOperator(OPERATOR).getFirst().type()).isEqualTo("single_line_text");
+        assertThat(query.findForOperator(OPERATOR, LOCALE).getFirst().type()).isEqualTo("single_line_text");
     }
 
     /** An operator who has filled in nothing has nothing to render. */
     @Test
     void noValuesIsAnEmptyList() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of());
 
-        assertThat(query.findForOperator(OPERATOR)).isEmpty();
+        assertThat(query.findForOperator(OPERATOR, LOCALE)).isEmpty();
     }
 
     /**
@@ -87,13 +89,13 @@ class StorefrontMetafieldQueryImplTest {
      */
     @Test
     void aReferenceCarriesTheEntryItPointsAt() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY)));
         when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of(
                 field("name", MetafieldType.SINGLE_LINE_TEXT, "Sea Swallow"),
                 field("capacity", MetafieldType.NUMBER_INTEGER, "12")));
 
-        assertThat(query.findForOperator(OPERATOR)).singleElement().satisfies(v -> {
+        assertThat(query.findForOperator(OPERATOR, LOCALE)).singleElement().satisfies(v -> {
             assertThat(v.value()).isEqualTo(ENTRY.toString());
             assertThat(v.metaobject().id()).isEqualTo(ENTRY);
             assertThat(v.metaobject().type()).isEqualTo("boat");
@@ -113,12 +115,12 @@ class StorefrontMetafieldQueryImplTest {
      */
     @Test
     void aReferenceToNothingShowableIsDroppedEntirely() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY),
                         value("custom", "opening-hours", "Mon-Sat 09:00-18:00")));
         when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of());
 
-        assertThat(query.findForOperator(OPERATOR))
+        assertThat(query.findForOperator(OPERATOR, LOCALE))
                 .extracting(StorefrontMetafieldQuery.MetafieldView::key)
                 .containsExactly("opening-hours");
     }
@@ -126,10 +128,10 @@ class StorefrontMetafieldQueryImplTest {
     /** No reference, no second query — the resolve is not a cost every page pays. */
     @Test
     void scalarsAloneDoNotTouchTheEntryTable() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(value("custom", "opening-hours", "Mon-Sat 09:00-18:00")));
 
-        assertThat(query.findForOperator(OPERATOR)).singleElement()
+        assertThat(query.findForOperator(OPERATOR, LOCALE)).singleElement()
                 .satisfies(v -> assertThat(v.metaobject()).isNull());
         verifyNoInteractions(entryJpa);
     }
@@ -140,10 +142,10 @@ class StorefrontMetafieldQueryImplTest {
      */
     @Test
     void aReferenceThatIsNotAnIdIsDroppedRatherThanThrowing() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", "not-a-uuid")));
 
-        assertThat(query.findForOperator(OPERATOR)).isEmpty();
+        assertThat(query.findForOperator(OPERATOR, LOCALE)).isEmpty();
         verifyNoInteractions(entryJpa);
     }
 
@@ -156,11 +158,11 @@ class StorefrontMetafieldQueryImplTest {
      */
     @Test
     void aBooleanIsABooleanNotItsText() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(typed("custom", "accepts-groups", MetafieldType.BOOLEAN, "false"),
                         typed("custom", "guided", MetafieldType.BOOLEAN, "true")));
 
-        assertThat(query.findForOperator(OPERATOR))
+        assertThat(query.findForOperator(OPERATOR, LOCALE))
                 .extracting(StorefrontMetafieldQuery.MetafieldView::value)
                 .containsExactly(Boolean.FALSE, Boolean.TRUE);
     }
@@ -168,11 +170,11 @@ class StorefrontMetafieldQueryImplTest {
     /** A theme addresses into it; it does not parse a string first. */
     @Test
     void jsonArrivesParsed() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(typed("custom", "booking-window", MetafieldType.JSON,
                         "{\"minHours\":24,\"maxDays\":180}")));
 
-        Object value = query.findForOperator(OPERATOR).getFirst().value();
+        Object value = query.findForOperator(OPERATOR, LOCALE).getFirst().value();
 
         assertThat(value).isInstanceOf(Map.class);
         assertThat(value).isEqualTo(Map.of("minHours", 24, "maxDays", 180));
@@ -181,10 +183,10 @@ class StorefrontMetafieldQueryImplTest {
     /** Including the shapes that are not objects — an array is valid JSON too. */
     @Test
     void aJsonArrayArrivesAsAList() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(typed("custom", "languages", MetafieldType.JSON, "[\"es\",\"en\"]")));
 
-        assertThat(query.findForOperator(OPERATOR).getFirst().value())
+        assertThat(query.findForOperator(OPERATOR, LOCALE).getFirst().value())
                 .isEqualTo(List.of("es", "en"));
     }
 
@@ -195,10 +197,10 @@ class StorefrontMetafieldQueryImplTest {
      */
     @Test
     void malformedJsonFallsBackToItsTextRatherThanThrowing() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(typed("custom", "broken", MetafieldType.JSON, "{\"a\":1} trailing")));
 
-        assertThat(query.findForOperator(OPERATOR).getFirst().value())
+        assertThat(query.findForOperator(OPERATOR, LOCALE).getFirst().value())
                 .isEqualTo("{\"a\":1} trailing");
     }
 
@@ -210,24 +212,24 @@ class StorefrontMetafieldQueryImplTest {
      */
     @Test
     void aNumberStaysTextSoItsDigitsSurviveTheConsumer() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(typed("custom", "licence-number", MetafieldType.NUMBER_INTEGER,
                         "9007199254740993")));
 
-        assertThat(query.findForOperator(OPERATOR).getFirst().value())
+        assertThat(query.findForOperator(OPERATOR, LOCALE).getFirst().value())
                 .isEqualTo("9007199254740993");
     }
 
     /** A metaobject field reuses the same catalogue, so it is typed the same way. */
     @Test
     void aMetaobjectFieldIsTypedToo() {
-        when(valueRepository.listForOwner(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+        when(valueRepository.listForOwnerLocalized(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, LOCALE))
                 .thenReturn(List.of(reference("custom", "flagship-boat", ENTRY)));
         when(entryJpa.findPublishedFields(OPERATOR, Set.of(ENTRY))).thenReturn(List.of(
                 field("has-toilet", MetafieldType.BOOLEAN, "true"),
                 field("capacity", MetafieldType.NUMBER_INTEGER, "12")));
 
-        assertThat(query.findForOperator(OPERATOR).getFirst().metaobject().fields())
+        assertThat(query.findForOperator(OPERATOR, LOCALE).getFirst().metaobject().fields())
                 .extracting(StorefrontMetafieldQuery.MetaobjectFieldView::value)
                 .containsExactly(Boolean.TRUE, "12");
     }

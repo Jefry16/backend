@@ -38,6 +38,12 @@ public class MetafieldValueRepositoryImpl implements MetafieldValueRepository {
     }
 
     @Override
+    public List<MetafieldValueWithDefinition> listForOwnerLocalized(
+            UUID tourOperatorId, MetafieldOwnerType ownerType, UUID ownerId, String locale) {
+        return jpa.listForOwnerLocalized(tourOperatorId, ownerType, ownerId, locale);
+    }
+
+    @Override
     public void delete(UUID valueId) {
         jpa.deleteById(valueId);
     }

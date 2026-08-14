@@ -49,7 +49,7 @@ class GetStorefrontGlobalsUseCaseTest {
     void setUp() {
         operatorQuery = mock(StorefrontTourOperatorQuery.class);
         metafieldQuery = mock(StorefrontMetafieldQuery.class);
-        when(metafieldQuery.findForOperator(any())).thenReturn(List.of());
+        when(metafieldQuery.findForOperator(any(), anyString())).thenReturn(List.of());
         experienceQuery = mock(StorefrontExperienceQuery.class);
         when(experienceQuery.findFeatured(any(), anyString())).thenReturn(List.of());
         menuQuery = mock(StorefrontMenuQuery.class);
@@ -159,7 +159,7 @@ class GetStorefrontGlobalsUseCaseTest {
     @Test
     void theOperatorsMetafieldsRideTheGlobals() {
         shopExists("es", Set.of("es"));
-        when(metafieldQuery.findForOperator(OPERATOR)).thenReturn(List.of(
+        when(metafieldQuery.findForOperator(OPERATOR, "es")).thenReturn(List.of(
                 new MetafieldView("custom", "opening-hours", "single_line_text", "Mon-Sat 09:00-18:00", null)));
 
         StorefrontGlobals globals = useCase.execute("acme", null).orElseThrow();
@@ -171,7 +171,7 @@ class GetStorefrontGlobalsUseCaseTest {
                     assertThat(m.key()).isEqualTo("opening-hours");
                     assertThat(m.type()).isEqualTo("single_line_text");
                 });
-        verify(metafieldQuery).findForOperator(OPERATOR);
+        verify(metafieldQuery).findForOperator(OPERATOR, "es");
     }
 
     /** An address that does not exist reads nothing at all, metafields included. */
@@ -180,7 +180,7 @@ class GetStorefrontGlobalsUseCaseTest {
         shopExists("es", Set.of("es", "en"));
 
         assertThat(useCase.execute("acme", "de")).isEmpty();
-        verify(metafieldQuery, never()).findForOperator(any());
+        verify(metafieldQuery, never()).findForOperator(any(), anyString());
     }
 
     /**

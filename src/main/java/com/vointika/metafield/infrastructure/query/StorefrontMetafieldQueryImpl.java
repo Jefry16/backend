@@ -21,10 +21,13 @@ import java.util.stream.Collectors;
 /**
  * metafield's implementation of the storefront's read.
  *
- * <p>It reuses the same {@code listForOwner} the admin editor uses, with the
- * operator as both tenant and owner — the ordering the storefront needs
- * (namespace, then key) is already that query's promise, so there is no second
- * query and no second place for the order to be decided.
+ * <p>It reads through {@code listForOwnerLocalized}, with the operator as both
+ * tenant and owner. <b>That is a different query from the admin editor's</b>, and
+ * deliberately so: the editor shows what the operator typed, so overlaying there
+ * would make a translated field look canonical and the next save would write the
+ * translation back over the original. The ordering promise (namespace, then key)
+ * is repeated in both, because it is what stops a storefront payload reshuffling
+ * between requests.
  *
  * <p><b>References are resolved here, in one extra query, and only when there is
  * one to resolve.</b> A {@code metaobject_reference} stores an entry id; a theme
@@ -50,9 +53,10 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
     }
 
     @Override
-    public List<MetafieldView> findForOperator(UUID tourOperatorId) {
+    public List<MetafieldView> findForOperator(UUID tourOperatorId, String locale) {
         List<MetafieldValueWithDefinition> values = valueRepository
-                .listForOwner(tourOperatorId, MetafieldOwnerType.TOUR_OPERATOR, tourOperatorId);
+                .listForOwnerLocalized(tourOperatorId, MetafieldOwnerType.TOUR_OPERATOR,
+                        tourOperatorId, locale);
 
         Map<UUID, MetaobjectView> resolved = resolve(tourOperatorId, referencedEntryIds(values));
 

@@ -37,6 +37,42 @@ public interface MetafieldValueJpaRepository extends JpaRepository<MetafieldValu
             @Param("ownerId") UUID ownerId);
 
     /**
+     * The same read with one locale's translations overlaid — the storefront's,
+     * and only the storefront's.
+     *
+     * <p><b>It is a second query rather than a nullable locale on the one above
+     * on purpose.</b> The admin editor shows what the operator typed; overlaying
+     * there would make a translated field look canonical and the next save would
+     * write the translation back over the original. Two readers, two questions.
+     *
+     * <p>The overlay is {@code COALESCE} over a LEFT JOIN because the fallback is
+     * <b>a missing row</b>, not a null column — a metafield value is one row with
+     * one value, so there is no per-field nullability to fall through (the
+     * column-shaped overlay every other translation table uses).
+     *
+     * <p>Ordering repeats {@code listForOwner}'s deliberately: it is the query's
+     * promise to its caller, and a storefront payload that reshuffles between
+     * requests is a bug report.
+     */
+    @Query("""
+            SELECT new com.vointika.metafield.domain.projection.MetafieldValueWithDefinition(
+                d.namespace, d.key, d.type, d.name, COALESCE(t.value, v.value), v.updatedAt)
+            FROM MetafieldValueJpaEntity v
+            JOIN MetafieldDefinitionJpaEntity d ON d.id = v.definitionId
+            LEFT JOIN MetafieldValueTranslationJpaEntity t
+                   ON t.metafieldValueId = v.id AND t.locale = :locale
+            WHERE d.tourOperatorId = :tourOperatorId
+              AND d.ownerType = :ownerType
+              AND v.ownerId = :ownerId
+            ORDER BY d.namespace, d.key
+            """)
+    List<MetafieldValueWithDefinition> listForOwnerLocalized(
+            @Param("tourOperatorId") UUID tourOperatorId,
+            @Param("ownerType") MetafieldOwnerType ownerType,
+            @Param("ownerId") UUID ownerId,
+            @Param("locale") String locale);
+
+    /**
      * Deletes every metaobject_reference value pointing at one entry (runs in
      * the entry-delete tx so no dangling references survive). flushAutomatically
      * per the house @Modifying convention — a pending same-tx save on another

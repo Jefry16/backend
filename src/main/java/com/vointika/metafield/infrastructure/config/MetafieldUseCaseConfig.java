@@ -10,14 +10,20 @@ import com.vointika.metafield.application.usecase.GetMetafieldDefinitionUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldDefinitionsUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldValuesUseCase;
 import com.vointika.metafield.application.usecase.UpdateMetafieldDefinitionUseCase;
+import com.vointika.metafield.application.usecase.UpsertMetafieldTranslationsUseCase;
+import com.vointika.metafield.application.usecase.GetMetafieldTranslationsUseCase;
+import com.vointika.metafield.application.usecase.ListMetafieldTranslationLocalesUseCase;
+import com.vointika.metafield.application.usecase.DeleteMetafieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
+import com.vointika.metafield.domain.repository.MetafieldValueTranslationRepository;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.ExperienceOwnershipQuery;
 import com.vointika.shared.port.PageOwnershipQuery;
+import com.vointika.shared.port.OperatorLocalesQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -100,6 +106,51 @@ public class MetafieldUseCaseConfig {
         return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository,
                 metaobjectEntryRepository, metafieldOwnerAccess, metafieldValueValidator, membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpsertMetafieldTranslationsUseCase upsertMetafieldTranslationsUseCase(
+            MetafieldDefinitionRepository definitionRepository,
+            MetafieldValueRepository valueRepository,
+            MetafieldValueTranslationRepository translationRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            MetafieldValueValidator metafieldValueValidator,
+            OperatorLocalesQuery operatorLocalesQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertMetafieldTranslationsUseCase(definitionRepository, valueRepository,
+                translationRepository, metafieldOwnerAccess, metafieldValueValidator,
+                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetMetafieldTranslationsUseCase getMetafieldTranslationsUseCase(
+            MetafieldValueTranslationRepository translationRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetMetafieldTranslationsUseCase(
+                translationRepository, metafieldOwnerAccess, membershipCheck);
+    }
+
+    @Bean
+    public ListMetafieldTranslationLocalesUseCase listMetafieldTranslationLocalesUseCase(
+            MetafieldValueTranslationRepository translationRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListMetafieldTranslationLocalesUseCase(
+                translationRepository, metafieldOwnerAccess, membershipCheck);
+    }
+
+    @Bean
+    public DeleteMetafieldTranslationsUseCase deleteMetafieldTranslationsUseCase(
+            MetafieldValueTranslationRepository translationRepository,
+            MetafieldOwnerAccess metafieldOwnerAccess,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteMetafieldTranslationsUseCase(translationRepository, metafieldOwnerAccess,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean

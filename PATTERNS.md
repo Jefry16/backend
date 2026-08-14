@@ -115,6 +115,16 @@ port or an event (never a direct import).
 >   strip. Each route names its own `pageType` at the `from` overload that builds
 >   it; inferring it from "which objects are present" makes any future
 >   object-less route the index by accident.
+> - **Metafield values carry per-locale overlays** (2026-08-13). Text types only
+>   (`single_line_text`, `multi_line_text`): a translated `true` is `true`, and a
+>   `metaobject_reference` pointing elsewhere per locale is content *selection*,
+>   not translation. **The overlay is row-shaped, not column-shaped** — every
+>   other translation table here is nullable columns falling back per field,
+>   while a metafield value is one row with one value, so the translation row's
+>   `value` is NOT NULL and "no row" is the fallback. The storefront reads
+>   through its own query (`listForOwnerLocalized`), never the admin's:
+>   overlaying in the editor would make a translated field look canonical and the
+>   next save would write it back over the original.
 > - **A metafield's `value` carries its type** (2026-08-13). `boolean` is a JSON
 >   boolean and `json` is the parsed value; everything else stays a string.
 >   Liquid's model — their docs say the format "depends on the type". **The

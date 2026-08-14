@@ -18,6 +18,13 @@ public interface MetafieldValueRepository {
     List<MetafieldValueWithDefinition> listForOwner(
             UUID tourOperatorId, MetafieldOwnerType ownerType, UUID ownerId);
 
+    /**
+     * The same, with one locale's translations overlaid — the storefront's read.
+     * A value with no translation in that locale falls back to the canonical one.
+     */
+    List<MetafieldValueWithDefinition> listForOwnerLocalized(
+            UUID tourOperatorId, MetafieldOwnerType ownerType, UUID ownerId, String locale);
+
     void delete(UUID valueId);
 
     /** Clears every metaobject_reference value pointing at a deleted entry. */
