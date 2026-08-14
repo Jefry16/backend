@@ -53,7 +53,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -116,7 +115,7 @@ class MetaobjectControllerDocumentationTest {
         authenticated();
         when(createUseCase.execute(any())).thenReturn(UUID.fromString(ENTRY));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/metaobjects", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/metaobjects", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"definitionId\":\"" + DEF + "\",\"handle\":\"beginner-chart\","
@@ -193,7 +192,6 @@ class MetaobjectControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(patch("/api/tour-operators/{id}/metaobjects/{metaobjectId}", OP, ENTRY)
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Starter chart\",\"values\":{\"rows\":null}}"))
@@ -211,7 +209,6 @@ class MetaobjectControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobjects/{metaobjectId}/publish", OP, ENTRY)
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobjects/publish",
@@ -225,7 +222,6 @@ class MetaobjectControllerDocumentationTest {
                 .when(publishUseCase).execute(any(), any(), any());
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobjects/{metaobjectId}/publish", OP, ENTRY)
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isConflict());
     }
@@ -235,7 +231,6 @@ class MetaobjectControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobjects/{metaobjectId}/unpublish", OP, ENTRY)
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobjects/unpublish",
@@ -247,7 +242,6 @@ class MetaobjectControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(delete("/api/tour-operators/{id}/metaobjects/{metaobjectId}", OP, ENTRY)
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobjects/delete",

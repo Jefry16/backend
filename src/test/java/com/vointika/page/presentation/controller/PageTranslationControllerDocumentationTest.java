@@ -44,7 +44,6 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -131,7 +130,6 @@ class PageTranslationControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(put("/api/tour-operators/{id}/pages/{pageId}/translations/{locale}", OP, PAGE, "es")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Sobre nosotros\",\"body\":\"<p>Hola</p>\",\"handle\":\"sobre-nosotros\"}"))
@@ -151,7 +149,6 @@ class PageTranslationControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(delete("/api/tour-operators/{id}/pages/{pageId}/translations/{locale}", OP, PAGE, "es")
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("page-translations/delete",

@@ -57,7 +57,6 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -131,7 +130,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
         authenticated();
         when(createUseCase.execute(any())).thenReturn(UUID.fromString(DEF));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isCreated())
@@ -154,7 +153,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
         when(createUseCase.execute(any())).thenThrow(
                 new ResourceAlreadyExistsException("A metaobject definition with this type already exists"));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isConflict());
@@ -215,7 +214,6 @@ class MetaobjectDefinitionControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(put("/api/tour-operators/{id}/metaobject-definitions/{definitionId}", OP, DEF)
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Sizing chart\",\"description\":null}"))
@@ -232,7 +230,6 @@ class MetaobjectDefinitionControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(delete("/api/tour-operators/{id}/metaobject-definitions/{definitionId}", OP, DEF)
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/delete",
@@ -244,7 +241,6 @@ class MetaobjectDefinitionControllerDocumentationTest {
         authenticated();
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions/{definitionId}/fields", OP, DEF)
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"key\":\"note\",\"type\":\"multi_line_text\",\"name\":\"Note\"}"))
@@ -263,7 +259,6 @@ class MetaobjectDefinitionControllerDocumentationTest {
 
         mockMvc.perform(patch("/api/tour-operators/{id}/metaobject-definitions/{definitionId}/fields/{key}",
                         OP, DEF, "heading")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Header\"}"))
@@ -280,7 +275,6 @@ class MetaobjectDefinitionControllerDocumentationTest {
 
         mockMvc.perform(delete("/api/tour-operators/{id}/metaobject-definitions/{definitionId}/fields/{key}",
                         OP, DEF, "rows")
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/remove-field",

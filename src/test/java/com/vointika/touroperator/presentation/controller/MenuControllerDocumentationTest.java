@@ -55,7 +55,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -120,7 +119,7 @@ class MenuControllerDocumentationTest {
         authenticated();
         when(createUseCase.execute(any())).thenReturn(UUID.fromString(MENU));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/menus", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/menus", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"handle\":\"main-menu\",\"title\":\"Main menu\"}"))
@@ -139,7 +138,7 @@ class MenuControllerDocumentationTest {
         Mockito.doThrow(new ResourceAlreadyExistsException("A menu with this handle already exists"))
                 .when(createUseCase).execute(any());
 
-        mockMvc.perform(post("/api/tour-operators/{id}/menus", OP).with(csrf())
+        mockMvc.perform(post("/api/tour-operators/{id}/menus", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"handle\":\"main-menu\",\"title\":\"Again\"}"))
@@ -192,7 +191,7 @@ class MenuControllerDocumentationTest {
     void rename() throws Exception {
         authenticated();
 
-        mockMvc.perform(patch("/api/tour-operators/{id}/menus/{menuId}", OP, MENU).with(csrf())
+        mockMvc.perform(patch("/api/tour-operators/{id}/menus/{menuId}", OP, MENU)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Primary navigation\"}"))
@@ -207,7 +206,7 @@ class MenuControllerDocumentationTest {
     void replaceItems() throws Exception {
         authenticated();
 
-        mockMvc.perform(put("/api/tour-operators/{id}/menus/{menuId}/items", OP, MENU).with(csrf())
+        mockMvc.perform(put("/api/tour-operators/{id}/menus/{menuId}/items", OP, MENU)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"items\":[{\"title\":\"Home\",\"linkType\":\"HOME\","
@@ -227,7 +226,7 @@ class MenuControllerDocumentationTest {
         Mockito.doThrow(new InvalidFieldException("Menu items can be nested at most 3 levels deep"))
                 .when(replaceItemsUseCase).execute(any());
 
-        mockMvc.perform(put("/api/tour-operators/{id}/menus/{menuId}/items", OP, MENU).with(csrf())
+        mockMvc.perform(put("/api/tour-operators/{id}/menus/{menuId}/items", OP, MENU)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"items\":[]}"))
@@ -238,7 +237,7 @@ class MenuControllerDocumentationTest {
     void deleteOne() throws Exception {
         authenticated();
 
-        mockMvc.perform(delete("/api/tour-operators/{id}/menus/{menuId}", OP, MENU).with(csrf())
+        mockMvc.perform(delete("/api/tour-operators/{id}/menus/{menuId}", OP, MENU)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("menus/delete",

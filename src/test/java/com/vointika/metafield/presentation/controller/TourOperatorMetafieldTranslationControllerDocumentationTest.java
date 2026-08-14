@@ -39,7 +39,6 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -110,7 +109,6 @@ class TourOperatorMetafieldTranslationControllerDocumentationTest {
     @Test
     void upsert() throws Exception {
         mockMvc.perform(put("/api/tour-operators/{id}/metafield-translations/{locale}", OP, "en")
-                        .with(csrf())
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"values\":{\"custom.opening-hours\":\"Mon-Fri 09:00-18:00\"}}"))
@@ -123,7 +121,6 @@ class TourOperatorMetafieldTranslationControllerDocumentationTest {
     @Test
     void deleteLocale() throws Exception {
         mockMvc.perform(delete("/api/tour-operators/{id}/metafield-translations/{locale}", OP, "en")
-                        .with(csrf())
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operator-metafield-translations/delete",
