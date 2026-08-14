@@ -29,6 +29,9 @@ from the running service.
 | `204 No Content`
 | The request completed successfully with no response body.
 
+| `400 Bad Request`
+| The request could not be read: a malformed body, or a path/query value of the wrong type (a `{id}` that is not a UUID). Distinct from `422`, which means the body parsed but a field is invalid.
+
 | `401 Unauthorized`
 | Missing or invalid authentication credentials.
 
@@ -277,8 +280,10 @@ operation::tour-operators/invitations/create[]
 
 Any member may view (STAFF included) — read-only. All invitations for the
 operator, ANY status (PENDING / ACCEPTED / REVOKED), cursor-paginated and
-tenant-scoped. Filter by `status` and/or `role`; sort by `createdAt` (default,
-newest first) or `id`; page with `cursor`. Non-member → 404.
+tenant-scoped. Filter by `status`, `role`, `name`, `email`, `invitedByName`
+and/or `createdAt`; sort by `createdAt` (default, newest first), `status`,
+`role`, `name`, `email`, `invitedByName` or `id`; page with `cursor`.
+Non-member → 404.
 
 operation::tour-operators/invitations/list[]
 
@@ -327,7 +332,10 @@ operation::invitations/accept[]
 [[resources-members-list]]
 ==== List Team Members
 
-ADMIN+. The roster, owner first.
+Any member may view (STAFF included) — the roster, owner first. Non-member → 404.
+Cursor-paginated, tenant-scoped. Filter by `role`, `name`, `email` and/or
+`joinedAt`; sort by `joinedAt` (default), `name`, `email`, `role` or `id`; page
+with `cursor`.
 
 operation::tour-operators/members/list[]
 
@@ -469,8 +477,9 @@ operation::tour-operators/translations/delete[]
 [[resources-policies-list]]
 ==== List Store Policies
 
-Any member. Cursor-paginated; filter `type`/`title`/`createdAt`/`updatedAt`,
-sort `type` (default), `createdAt`, `updatedAt`, `id`.
+Any member. Cursor-paginated, tenant-scoped. Filter by `type`, `title`,
+`createdAt` and/or `updatedAt`; sort by `type` (default), `createdAt`,
+`updatedAt` or `id`; page with `cursor`.
 
 operation::tour-operators/policies/list[]
 
@@ -531,7 +540,9 @@ operation::tour-operators/policy-translations/delete[]
 [[resources-menus-list]]
 ==== List Menus
 
-Any member. Cursor-paginated.
+Any member. Cursor-paginated, tenant-scoped. Filter by `handle`, `title` and/or
+`createdAt`; sort by `id` (default, newest first), `handle`, `title` or
+`createdAt`; page with `cursor`.
 
 operation::menus/list[]
 
@@ -589,8 +600,10 @@ operation::media/upload[]
 [[resources-media-list]]
 ==== List Media
 
-Any member. Cursor-paginated, tenant-scoped. Filter by `contentType`; sort by
-`createdAt` (default, newest first) or `id`; page with `cursor`.
+Any member. Cursor-paginated, tenant-scoped. Filter by `contentType`,
+`createdByName` and/or `createdAt`; sort by `createdAt` (default, newest first),
+`contentType`, `createdByName`, `originalName`, `sizeBytes` or `id`; page with
+`cursor`.
 
 operation::media/list[]
 
@@ -626,8 +639,9 @@ publish are ADMIN+. Media ids must belong to the operator's own library
 [[resources-experiences-list]]
 ==== List Experiences
 
-Any member. Cursor-paginated, tenant-scoped. Filter by `published` and/or
-`featured`; sort by `createdAt` (default, newest first), `name`, or `id`.
+Any member. Cursor-paginated, tenant-scoped. Filter by `published`, `featured`
+and/or `createdAt`; sort by `createdAt` (default, newest first), `name` or `id`;
+page with `cursor`.
 
 operation::experiences/list[]
 
@@ -717,7 +731,10 @@ A slot is a bookable departure. Times are the operator's local wall clock.
 [[resources-slots-list]]
 ==== List Slots
 
-Any member. Soonest first.
+Any member. Cursor-paginated, tenant-scoped. Filter by `status`, `day`,
+`experienceId`, `experienceName` and/or `createdAt`; sort by `startAt` (default,
+soonest first), `day`, `status`, `experienceName`, `createdAt` or `id`; page
+with `cursor`.
 
 operation::slots/list[]
 
@@ -766,7 +783,9 @@ Pax pricing tiers (Adult, Child, …), reused across slots.
 [[resources-audiences-list]]
 ==== List Audiences
 
-Any member.
+Any member. Cursor-paginated, tenant-scoped. Filter by `name`, `paxPerUnit`
+and/or `createdAt`; sort by `createdAt` (default, newest first), `name`,
+`paxPerUnit` or `id`; page with `cursor`.
 
 operation::audiences/list[]
 
@@ -827,7 +846,9 @@ The operator's pickup catalogue. Not yet linked to slots.
 [[resources-pickup-list]]
 ==== List Pickup Locations
 
-Any member.
+Any member. Cursor-paginated, tenant-scoped. Filter by `name`, `time` and/or
+`createdAt`; sort by `createdAt` (default, newest first), `name`, `time` or
+`id`; page with `cursor`.
 
 operation::pickup-locations/list[]
 
@@ -866,7 +887,9 @@ Merchant-authored content pages.
 [[resources-pages-list]]
 ==== List Pages
 
-Any member. Cursor-paginated.
+Any member. Cursor-paginated, tenant-scoped. Filter by `handle`, `title`,
+`published` and/or `createdAt`; sort by `id` (default, newest first), `handle`,
+`title` or `createdAt`; page with `cursor`.
 
 operation::pages/list[]
 
@@ -901,11 +924,18 @@ The old URL is not redirected.
 operation::pages/rename[]
 
 [[resources-pages-publish]]
-==== Publish or Unpublish a Page
+==== Publish a Page
 
-ADMIN+ only. An invalid state flip → 409.
+ADMIN+ only. Publishing an already-published page → 409.
 
 operation::pages/publish[]
+
+[[resources-pages-unpublish]]
+==== Unpublish a Page
+
+ADMIN+ only. The page's storefront URL 404s again. Unpublishing a draft → 409.
+
+operation::pages/unpublish[]
 
 [[resources-pages-delete]]
 ==== Delete a Page
@@ -951,7 +981,9 @@ metaobjects.
 [[resources-metafield-definitions-list]]
 ==== List Metafield Definitions
 
-Any member.
+Any member. Cursor-paginated, tenant-scoped. Filter by `namespace`, `key`,
+`name`, `type`, `ownerType` and/or `createdAt`; sort by `id` (default, newest
+first), `namespace`, `name` or `createdAt`; page with `cursor`.
 
 operation::metafield-definitions/list[]
 
@@ -1197,7 +1229,9 @@ operation::metaobject-field-translations/delete[]
 [[resources-metaobject-definitions-list]]
 ==== List Metaobject Definitions
 
-Any member.
+Any member. Cursor-paginated, tenant-scoped. Filter by `type`, `name` and/or
+`createdAt`; sort by `id` (default, newest first), `type`, `name` or
+`createdAt`; page with `cursor`.
 
 operation::metaobject-definitions/list[]
 
@@ -1253,7 +1287,9 @@ operation::metaobject-definitions/delete[]
 [[resources-metaobjects-list]]
 ==== List Metaobject Entries
 
-Any member.
+Any member. Cursor-paginated, tenant-scoped. Filter by `definitionId`, `handle`,
+`name`, `published` and/or `createdAt`; sort by `id` (default, newest first),
+`handle`, `name` or `createdAt`; page with `cursor`.
 
 operation::metaobjects/list[]
 
@@ -1308,7 +1344,9 @@ yet, so today the only rows are seeded ones.
 [[resources-contact-list]]
 ==== List Contact Messages
 
-Any member. Cursor-paginated, newest first.
+Any member. Cursor-paginated, tenant-scoped. Filter by `name`, `email`,
+`summary` and/or `createdAt`; sort by `id` (default, newest first) or
+`createdAt`; page with `cursor`.
 
 operation::contact-messages/list[]
 
@@ -1334,7 +1372,9 @@ Every operator-facing mutation, append-only.
 [[resources-audit-list]]
 ==== List Audit Entries
 
-Any member. Cursor-paginated.
+Any member. Cursor-paginated, tenant-scoped. Filter by `action`, `actorId`,
+`actorName`, `actorType`, `entityId`, `entityType` and/or `createdAt`; sort by
+`id` (default, newest first) or `createdAt`; page with `cursor`.
 
 operation::audit-log/list[]
 
