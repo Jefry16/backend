@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -152,6 +153,28 @@ class StorefrontCmsPageControllerTest {
         mockMvc.perform(get("/en/pages/about-us").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/en/pages/about-us"));
+    }
+
+    /**
+     * <b>The gate covers this route too, and nothing said so until now.</b> The
+     * lock interceptor is a pattern allowlist; a page route missing from it is
+     * served ungated, so a store the operator locked hands its CMS pages to
+     * anonymous visitors. The page still answers, which is why no other test
+     * noticed.
+     *
+     * <p>The handle is deliberately one the page query would answer <b>empty</b>
+     * for: a 302 here proves nothing downstream of the gate ran, the same shape
+     * {@code aLockedStoreRedirectsEvenForALocaleItDoesNotPublish} uses.
+     */
+    @Test
+    void aLockedStoreRedirectsACmsPageBeforeLookingItUp() throws Exception {
+        when(checkStorefrontLockUseCase.execute("acme", null)).thenReturn(LockState.LOCKED);
+        when(getStorefrontCmsPageUseCase.execute("acme", null, "about-us"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "/password"));
     }
 
     /** Every miss is the same 404, so none of them says which kind it was. */

@@ -70,10 +70,7 @@ public class StorefrontHomeController {
         StorefrontGlobals globals = getStorefrontGlobals.execute(handle, pathLocale)
                 .orElseThrow(StorefrontControllers::notFound);
 
-        Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(globals);
-        Map<UUID, MediaAsset> assets = mediaIds.isEmpty()
-                ? Map.of()
-                : mediaAssetBatchQuery.findAssetsByIds(globals.tourOperator().id(), mediaIds);
+        Map<UUID, MediaAsset> assets = StorefrontControllers.assets(globals, mediaAssetBatchQuery);
 
         return StorefrontGlobalsResponse.from(globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }

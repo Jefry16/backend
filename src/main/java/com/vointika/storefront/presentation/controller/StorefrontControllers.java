@@ -1,7 +1,15 @@
 package com.vointika.storefront.presentation.controller;
 
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.storefront.application.dto.output.StorefrontGlobals;
+import com.vointika.storefront.presentation.response.StorefrontGlobalsResponse;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * The two things every storefront controller does the same way.
@@ -31,6 +39,24 @@ final class StorefrontControllers {
         int port = request.getServerPort();
         boolean defaultPort = ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
         return scheme + "://" + request.getServerName() + (defaultPort ? "" : ":" + port);
+    }
+
+    /**
+     * Every image the payload needs, in one batch.
+     *
+     * <p><b>The empty check is the part worth sharing.</b> A page whose operator
+     * has uploaded nothing would otherwise issue a batch query for an empty set on
+     * every request, and that guard is exactly what a third copy of these four
+     * lines quietly drops. {@code mediaIds()} lives beside
+     * {@code StorefrontGlobalsResponse.from} so the two cannot drift; this keeps
+     * its one caller shape in one place too.
+     */
+    static Map<UUID, MediaAsset> assets(StorefrontGlobals globals,
+                                        MediaAssetBatchQuery mediaAssetBatchQuery) {
+        Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(globals);
+        return mediaIds.isEmpty()
+                ? Map.of()
+                : mediaAssetBatchQuery.findAssetsByIds(globals.tourOperator().id(), mediaIds);
     }
 
     static ResourceNotFoundException notFound() {
