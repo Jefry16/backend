@@ -180,7 +180,6 @@ class MetafieldValueUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ---- delete ----
 
     private DeleteMetafieldValueUseCase delete() {
         return new DeleteMetafieldValueUseCase(definitionRepository, valueRepository, ownerAccess,

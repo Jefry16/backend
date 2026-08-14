@@ -198,7 +198,6 @@ class PageTranslationUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ---- get / delete ----
 
     @Test
     void getUntranslatedReturnsEmptyOverlay() {

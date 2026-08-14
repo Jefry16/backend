@@ -1,6 +1,7 @@
 package com.vointika.metafield.infrastructure.persistence.repository;
 
 import com.vointika.metafield.domain.projection.MetafieldValueWithDefinition;
+import com.vointika.metafield.domain.projection.TranslatableMetafieldValue;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.metafield.infrastructure.persistence.entity.MetafieldValueJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -71,6 +72,26 @@ public interface MetafieldValueJpaRepository extends JpaRepository<MetafieldValu
             @Param("ownerType") MetafieldOwnerType ownerType,
             @Param("ownerId") UUID ownerId,
             @Param("locale") String locale);
+
+    /**
+     * Everything a translation payload needs to resolve itself, in one query:
+     * the qualified key, the type that decides translatability, and the value id
+     * a translation row hangs off. Values only — a definition with nothing stored
+     * has nothing to translate, and the overlay joins FROM the stored value.
+     */
+    @Query("""
+            SELECT new com.vointika.metafield.domain.projection.TranslatableMetafieldValue(
+                d.namespace, d.key, d.type, v.id)
+            FROM MetafieldValueJpaEntity v
+            JOIN MetafieldDefinitionJpaEntity d ON d.id = v.definitionId
+            WHERE d.tourOperatorId = :tourOperatorId
+              AND d.ownerType = :ownerType
+              AND v.ownerId = :ownerId
+            """)
+    List<TranslatableMetafieldValue> listTranslatableForOwner(
+            @Param("tourOperatorId") UUID tourOperatorId,
+            @Param("ownerType") MetafieldOwnerType ownerType,
+            @Param("ownerId") UUID ownerId);
 
     /**
      * Deletes every metaobject_reference value pointing at one entry (runs in

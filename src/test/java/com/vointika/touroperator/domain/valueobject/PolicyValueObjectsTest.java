@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class PolicyValueObjectsTest {
 
-    // ---- title ----
 
     @Test
     void aTitleKeepsItsTextAndIsTrimmed() {
@@ -35,7 +34,6 @@ class PolicyValueObjectsTest {
         assertThrows(InvalidFieldException.class, () -> new PolicyTitle("Two\nlines"));
     }
 
-    // ---- body ----
 
     @Test
     void aBodyKeepsItsHtmlExactly() {

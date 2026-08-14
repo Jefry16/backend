@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class BrandPaletteValueObjectsTest {
 
-    // ---- hex colour ----
 
     @Test
     void aColourKeepsItsValue() {
@@ -42,7 +41,6 @@ class BrandPaletteValueObjectsTest {
         assertThrows(InvalidFieldException.class, () -> new HexColor(null));
     }
 
-    // ---- social url ----
 
     @Test
     void aSocialUrlKeepsItsValue() {

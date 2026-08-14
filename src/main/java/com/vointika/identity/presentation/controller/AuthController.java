@@ -72,13 +72,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegisterUserRequest request) {
-        registerUserUseCase.execute(new RegisterUserInput(
-                request.email(),
-                request.name(),
-                request.password(),
-                request.language()
-        ));
+    public ResponseEntity<Void> register(@RequestBody RegisterUserInput input) {
+        registerUserUseCase.execute(input);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

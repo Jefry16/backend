@@ -146,7 +146,6 @@ public class ExperienceUseCaseConfig {
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- slots ----
 
     @Bean
     public AudiencePricingResolver audiencePricingResolver(

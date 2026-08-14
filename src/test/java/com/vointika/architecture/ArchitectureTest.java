@@ -38,9 +38,7 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 @SuppressWarnings("unused") // @ArchTest fields are discovered reflectively by ArchUnit's JUnit engine
 public class ArchitectureTest {
 
-    // ------------------------------------------------------------
     // Cross-context boundaries
-    // ------------------------------------------------------------
 
     /**
      * Every bounded context is fenced from every other, derived from the package
@@ -121,9 +119,7 @@ public class ArchitectureTest {
                     .allowEmptyShould(true)
                     .because("Redis is wrapped by the shared redis rate-limiter only");
 
-    // ------------------------------------------------------------
     // Layered architecture within each bounded context
-    // ------------------------------------------------------------
 
     @ArchTest
     static final ArchRule layers_are_respected =
@@ -142,9 +138,7 @@ public class ArchitectureTest {
                             + "Domain must be pure; application may depend on domain; "
                             + "infrastructure and presentation may depend on domain and application.");
 
-    // ------------------------------------------------------------
     // Domain purity
-    // ------------------------------------------------------------
 
     @ArchTest
     static final ArchRule domain_does_not_depend_on_spring_or_jpa =

@@ -393,7 +393,6 @@ public class TourOperatorUseCaseConfig {
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- store policies ----
 
     @Bean
     public ListPoliciesUseCase listPoliciesUseCase(
@@ -473,7 +472,6 @@ public class TourOperatorUseCaseConfig {
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- brand ----
 
     @Bean
     public GetBrandUseCase getBrandUseCase(
@@ -494,7 +492,6 @@ public class TourOperatorUseCaseConfig {
                 mediaAssetBatchQuery, membershipCheck, transactionRunner, auditTrailPort);
     }
 
-    // ---- the operator's own details ----
 
     @Bean
     public GetTourOperatorUseCase getTourOperatorUseCase(

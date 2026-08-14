@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class BrandTextValueObjectsTest {
 
-    // ---- slogan ----
 
     @Test
     void aSloganKeepsItsText() {
@@ -46,7 +45,6 @@ class BrandTextValueObjectsTest {
         assertThrows(InvalidFieldException.class, () -> new BrandSlogan("Line\nbreak"));
     }
 
-    // ---- short description ----
 
     @Test
     void aShortDescriptionKeepsItsText() {

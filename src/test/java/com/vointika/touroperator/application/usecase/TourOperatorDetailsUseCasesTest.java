@@ -96,7 +96,6 @@ class TourOperatorDetailsUseCasesTest {
         return new UpdateTourOperatorInput(null, null, phone, email, null, null);
     }
 
-    // ---- read ----
 
     @Test
     void getReturnsTheOperatorsDetails() {
@@ -110,7 +109,6 @@ class TourOperatorDetailsUseCasesTest {
         assertThat(view.email()).isEqualTo("hola@acme.test");
     }
 
-    // ---- write ----
 
     @Test
     void anAbsentFieldIsUnchanged() {

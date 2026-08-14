@@ -114,7 +114,6 @@ class MenuUseCasesTest {
         return new MenuItemInput(title, linkType, resourceId, url, translations, children);
     }
 
-    // ------------------------------------------------------------------ create
 
     @Test
     void createSavesMenuAndAudits() {
@@ -154,7 +153,6 @@ class MenuUseCasesTest {
                 .isInstanceOf(InvalidFieldException.class);
     }
 
-    // ------------------------------------------------------------------ rename
 
     @Test
     void renameSavesAndAuditsWithChanges() {
@@ -194,7 +192,6 @@ class MenuUseCasesTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ------------------------------------------------------------------ delete
 
     @Test
     void deleteRemovesMenuAndAudits() {
@@ -210,7 +207,6 @@ class MenuUseCasesTest {
         assertThat(audit.getValue().action()).isEqualTo("menu.deleted");
     }
 
-    // ------------------------------------------------------------------ list / get
 
     @Test
     void listRequiresMembership() {
@@ -250,7 +246,6 @@ class MenuUseCasesTest {
         assertThat(detail.items().getFirst().children().getFirst().resourceId()).isEqualTo(EXPERIENCE);
     }
 
-    // ------------------------------------------------------------------ replace items
 
     @Test
     void replaceFlattensTreeAssigningPositionsAndDepths() {

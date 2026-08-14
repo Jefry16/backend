@@ -129,7 +129,6 @@ class SlotUseCasesTest {
                 pricingResolver, operatorTimezoneQuery, membershipCheck, transactionRunner, idGenerator, auditTrailPort);
     }
 
-    // ---- single ----
 
     @Test
     void singleCreatePersistsSlotAndReturnsId() {
@@ -159,7 +158,6 @@ class SlotUseCasesTest {
                 .isInstanceOf(InvalidFieldException.class);
     }
 
-    // ---- recurring ----
 
     @Test
     void recurringGeneratesOneSlotPerMatchingDay() {
@@ -215,7 +213,6 @@ class SlotUseCasesTest {
                 .isInstanceOf(InvalidFieldException.class);
     }
 
-    // ---- update ----
 
     private UpdateSlotUseCase update() {
         return new UpdateSlotUseCase(slotRepository, pricingRepository, membershipCheck, transactionRunner, auditTrailPort);

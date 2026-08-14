@@ -3,10 +3,8 @@ package com.vointika.metafield.application.usecase;
 import com.vointika.metafield.application.dto.input.UpsertMetafieldTranslationsInput;
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
-import com.vointika.metafield.domain.entity.MetafieldDefinition;
-import com.vointika.metafield.domain.entity.MetafieldValue;
 import com.vointika.metafield.domain.entity.MetafieldValueTranslation;
-import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
+import com.vointika.metafield.domain.projection.TranslatableMetafieldValue;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueTranslationRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
@@ -26,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * Creates or replaces one owner's metafield translations for one locale. ADMIN+.
@@ -46,7 +45,6 @@ import java.util.TreeSet;
  */
 public class UpsertMetafieldTranslationsUseCase {
 
-    private final MetafieldDefinitionRepository definitionRepository;
     private final MetafieldValueRepository valueRepository;
     private final MetafieldValueTranslationRepository translationRepository;
     private final MetafieldOwnerAccess ownerAccess;
@@ -56,8 +54,7 @@ public class UpsertMetafieldTranslationsUseCase {
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
-    public UpsertMetafieldTranslationsUseCase(MetafieldDefinitionRepository definitionRepository,
-                                              MetafieldValueRepository valueRepository,
+    public UpsertMetafieldTranslationsUseCase(MetafieldValueRepository valueRepository,
                                               MetafieldValueTranslationRepository translationRepository,
                                               MetafieldOwnerAccess ownerAccess,
                                               MetafieldValueValidator valueValidator,
@@ -65,7 +62,6 @@ public class UpsertMetafieldTranslationsUseCase {
                                               TourOperatorMembershipCheck membershipCheck,
                                               TransactionRunner transactionRunner,
                                               AuditTrailPort auditTrailPort) {
-        this.definitionRepository = definitionRepository;
         this.valueRepository = valueRepository;
         this.translationRepository = translationRepository;
         this.ownerAccess = ownerAccess;
@@ -88,21 +84,30 @@ public class UpsertMetafieldTranslationsUseCase {
 
         Map<String, String> submitted = input.values() == null ? Map.of() : input.values();
         List<MetafieldValueTranslation> toWrite = new ArrayList<>();
-        List<MetafieldValue> toClear = new ArrayList<>();
+        List<UUID> toClear = new ArrayList<>();
         // Sorted so the audit entry reads the same for the same edit, whatever
         // order the JSON object arrived in.
         var touched = new TreeSet<String>();
 
+        // One query for the whole payload rather than two per key. The metaobject
+        // twin loads its fields and values the same way, and a per-key resolve made
+        // a ten-key save cost twenty round trips.
+        Map<String, TranslatableMetafieldValue> byQualifiedKey = new LinkedHashMap<>();
+        for (TranslatableMetafieldValue v : valueRepository.listTranslatableForOwner(
+                input.tourOperatorId(), input.ownerType(), input.ownerId())) {
+            byQualifiedKey.put(v.qualifiedKey(), v);
+        }
+
         for (Map.Entry<String, String> entry : new LinkedHashMap<>(submitted).entrySet()) {
-            Target target = resolve(input, entry.getKey());
+            TranslatableMetafieldValue target = resolve(byQualifiedKey, entry.getKey());
             String raw = entry.getValue();
             touched.add(entry.getKey());
             if (raw == null || raw.isBlank()) {
-                toClear.add(target.value());
+                toClear.add(target.valueId());
                 continue;
             }
-            toWrite.add(MetafieldValueTranslation.of(target.value().getId(), locale.value(),
-                    valueValidator.validateAndNormalize(target.definition().getType(), raw),
+            toWrite.add(MetafieldValueTranslation.of(target.valueId(), locale.value(),
+                    valueValidator.validateAndNormalize(target.type(), raw),
                     input.callerUserId()));
         }
 
@@ -116,8 +121,8 @@ public class UpsertMetafieldTranslationsUseCase {
                 translationRepository.upsert(translation);
                 changed = true;
             }
-            for (MetafieldValue value : toClear) {
-                changed |= translationRepository.delete(value.getId(), locale.value());
+            for (UUID valueId : toClear) {
+                changed |= translationRepository.delete(valueId, locale.value());
             }
             if (changed) {
                 auditTrailPort.append(new NewAuditEntry(
@@ -130,40 +135,38 @@ public class UpsertMetafieldTranslationsUseCase {
     }
 
     /**
-     * {@code "custom.opening-hours"} → the value row it names.
+     * {@code "custom.opening-hours"} → the value it names, out of the map loaded
+     * above.
      *
-     * <p>Each half goes through its own value object, so a malformed namespace or
-     * key is refused with the same message the canonical write gives. The split
-     * is on the <b>first</b> dot: a key may contain one, a namespace may not.
+     * <p>The key is split on the <b>first</b> dot: a key may contain one, a
+     * namespace may not. Both halves still go through their value objects, so a
+     * malformed name is refused with the same message the canonical write gives —
+     * and refused <em>before</em> the map lookup, or a key like {@code "..."}
+     * would report "not found" rather than "not a key".
+     *
+     * <p>A key with no stored value is a 404 rather than an empty translation
+     * row: the storefront's overlay joins FROM the canonical value, so a
+     * translation of nothing is a row nothing can ever read.
      */
-    private Target resolve(UpsertMetafieldTranslationsInput input, String qualifiedKey) {
+    private static TranslatableMetafieldValue resolve(
+            Map<String, TranslatableMetafieldValue> byQualifiedKey, String qualifiedKey) {
         int dot = qualifiedKey == null ? -1 : qualifiedKey.indexOf('.');
         if (dot <= 0 || dot == qualifiedKey.length() - 1) {
             throw new InvalidFieldException(
                     "A metafield translation key must be 'namespace.key', not '" + qualifiedKey + "'");
         }
-        MetafieldNamespace namespace = new MetafieldNamespace(qualifiedKey.substring(0, dot));
-        MetafieldKey key = new MetafieldKey(qualifiedKey.substring(dot + 1));
+        String namespace = new MetafieldNamespace(qualifiedKey.substring(0, dot)).value();
+        String key = new MetafieldKey(qualifiedKey.substring(dot + 1)).value();
 
-        MetafieldDefinition definition = definitionRepository
-                .findByIdentity(input.tourOperatorId(), input.ownerType(), namespace.value(), key.value())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Metafield definition not found: " + qualifiedKey));
-
-        if (!definition.getType().isTranslatable()) {
-            throw new InvalidFieldException("A " + definition.getType().code()
+        TranslatableMetafieldValue target = byQualifiedKey.get(namespace + "." + key);
+        if (target == null) {
+            throw new ResourceNotFoundException(
+                    "Metafield has no value to translate: " + qualifiedKey);
+        }
+        if (!target.type().isTranslatable()) {
+            throw new InvalidFieldException("A " + target.type().code()
                     + " metafield cannot be translated: " + qualifiedKey);
         }
-
-        // Translating a value that was never set would leave a row the storefront
-        // can never reach — the overlay joins FROM the canonical value.
-        MetafieldValue value = valueRepository
-                .findByDefinitionIdAndOwnerId(definition.getId(), input.ownerId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Metafield has no value to translate: " + qualifiedKey));
-        return new Target(definition, value);
+        return target;
     }
-
-    /** The definition and the value it holds, resolved together because both halves are needed. */
-    private record Target(MetafieldDefinition definition, MetafieldValue value) {}
 }

@@ -6,6 +6,7 @@ import com.vointika.metafield.application.service.MetafieldValueValidator;
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.entity.MetafieldValue;
 import com.vointika.metafield.domain.entity.MetafieldValueTranslation;
+import com.vointika.metafield.domain.projection.TranslatableMetafieldValue;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueTranslationRepository;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -84,7 +86,7 @@ class UpsertMetafieldTranslationsUseCaseTest {
         }).when(transactionRunner).run(any());
 
         useCase = new UpsertMetafieldTranslationsUseCase(
-                definitionRepository, valueRepository, translationRepository, ownerAccess,
+                valueRepository, translationRepository, ownerAccess,
                 new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper())),
                 operatorLocalesQuery, mock(TourOperatorMembershipCheck.class),
                 transactionRunner, auditTrailPort);
@@ -92,7 +94,7 @@ class UpsertMetafieldTranslationsUseCaseTest {
 
     @Test
     void itWritesOneRowPerTranslatedKey() {
-        definitionExists("custom", "opening-hours", DEF_HOURS, MetafieldType.MULTI_LINE_TEXT, VAL_HOURS);
+        ownerHas(value("custom", "opening-hours", MetafieldType.MULTI_LINE_TEXT, VAL_HOURS));
 
         useCase.execute(input(Map.of("custom.opening-hours", "Mon-Fri 9-6")));
 
@@ -109,7 +111,7 @@ class UpsertMetafieldTranslationsUseCaseTest {
      */
     @Test
     void aNonTextTypeIsRefusedByName() {
-        definitionExists("custom", "accepts-groups", DEF_FLAG, MetafieldType.BOOLEAN, VAL_FLAG);
+        ownerHas(value("custom", "accepts-groups", MetafieldType.BOOLEAN, VAL_FLAG));
 
         assertThatThrownBy(() -> useCase.execute(input(Map.of("custom.accepts-groups", "sí"))))
                 .isInstanceOf(InvalidFieldException.class)
@@ -129,8 +131,8 @@ class UpsertMetafieldTranslationsUseCaseTest {
      */
     @Test
     void oneBadKeyRejectsTheWholePayload() {
-        definitionExists("custom", "opening-hours", DEF_HOURS, MetafieldType.MULTI_LINE_TEXT, VAL_HOURS);
-        definitionExists("custom", "accepts-groups", DEF_FLAG, MetafieldType.BOOLEAN, VAL_FLAG);
+        ownerHas(value("custom", "opening-hours", MetafieldType.MULTI_LINE_TEXT, VAL_HOURS),
+                value("custom", "accepts-groups", MetafieldType.BOOLEAN, VAL_FLAG));
 
         Map<String, String> payload = new LinkedHashMap<>();
         payload.put("custom.opening-hours", "Mon-Fri 9-6");
@@ -161,7 +163,7 @@ class UpsertMetafieldTranslationsUseCaseTest {
      */
     @Test
     void aBlankValueClearsThatKeyOnly() {
-        definitionExists("custom", "opening-hours", DEF_HOURS, MetafieldType.MULTI_LINE_TEXT, VAL_HOURS);
+        ownerHas(value("custom", "opening-hours", MetafieldType.MULTI_LINE_TEXT, VAL_HOURS));
         when(translationRepository.delete(VAL_HOURS, "en")).thenReturn(true);
 
         Map<String, String> payload = new LinkedHashMap<>();
@@ -187,12 +189,7 @@ class UpsertMetafieldTranslationsUseCaseTest {
      */
     @Test
     void translatingAKeyWithNoValueIs404() {
-        MetafieldDefinition definition = definition(DEF_HOURS, "custom", "opening-hours",
-                MetafieldType.MULTI_LINE_TEXT);
-        when(definitionRepository.findByIdentity(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR,
-                "custom", "opening-hours")).thenReturn(Optional.of(definition));
-        when(valueRepository.findByDefinitionIdAndOwnerId(DEF_HOURS, OPERATOR))
-                .thenReturn(Optional.empty());
+        ownerHas();
 
         assertThatThrownBy(() -> useCase.execute(input(Map.of("custom.opening-hours", "Mon-Fri"))))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -214,7 +211,7 @@ class UpsertMetafieldTranslationsUseCaseTest {
      */
     @Test
     void aTranslationIsValidatedLikeTheValueItOverlays() {
-        definitionExists("custom", "opening-hours", DEF_HOURS, MetafieldType.MULTI_LINE_TEXT, VAL_HOURS);
+        ownerHas(value("custom", "opening-hours", MetafieldType.MULTI_LINE_TEXT, VAL_HOURS));
 
         assertThatThrownBy(() -> useCase.execute(
                 input(Map.of("custom.opening-hours", "x".repeat(5_001)))))
@@ -226,13 +223,19 @@ class UpsertMetafieldTranslationsUseCaseTest {
                 CALLER, OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR, "en", values);
     }
 
-    private void definitionExists(String namespace, String key, UUID definitionId,
-                                  MetafieldType type, UUID valueId) {
-        when(definitionRepository.findByIdentity(OPERATOR, MetafieldOwnerType.TOUR_OPERATOR,
-                namespace, key)).thenReturn(Optional.of(definition(definitionId, namespace, key, type)));
-        when(valueRepository.findByDefinitionIdAndOwnerId(definitionId, OPERATOR))
-                .thenReturn(Optional.of(new MetafieldValue(
-                        valueId, definitionId, OPERATOR, "canonical", CALLER)));
+    /**
+     * The whole owner's values arrive in one read, so a test declares the set
+     * rather than stubbing a lookup per key — which is the point of the batching.
+     */
+    private void ownerHas(TranslatableMetafieldValue... values) {
+        when(valueRepository.listTranslatableForOwner(
+                OPERATOR, MetafieldOwnerType.TOUR_OPERATOR, OPERATOR))
+                .thenReturn(List.of(values));
+    }
+
+    private static TranslatableMetafieldValue value(String namespace, String key,
+                                                    MetafieldType type, UUID valueId) {
+        return new TranslatableMetafieldValue(namespace, key, type, valueId);
     }
 
     private static MetafieldDefinition definition(UUID id, String namespace, String key,
