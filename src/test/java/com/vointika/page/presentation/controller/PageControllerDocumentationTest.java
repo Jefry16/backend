@@ -227,7 +227,9 @@ class PageControllerDocumentationTest {
 
         mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/unpublish", OP, PAGE)
                         .header("Authorization", BEARER))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andDo(document("pages/unpublish",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
 
     @Test
