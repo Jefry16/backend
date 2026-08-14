@@ -14,10 +14,15 @@ import com.vointika.metafield.application.usecase.UpsertMetafieldTranslationsUse
 import com.vointika.metafield.application.usecase.GetMetafieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldTranslationLocalesUseCase;
 import com.vointika.metafield.application.usecase.DeleteMetafieldTranslationsUseCase;
+import com.vointika.metafield.application.usecase.UpsertMetaobjectFieldTranslationsUseCase;
+import com.vointika.metafield.application.usecase.GetMetaobjectFieldTranslationsUseCase;
+import com.vointika.metafield.application.usecase.ListMetaobjectFieldTranslationLocalesUseCase;
+import com.vointika.metafield.application.usecase.DeleteMetaobjectFieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetafieldValueTranslationRepository;
+import com.vointika.metafield.domain.repository.MetaobjectEntryValueTranslationRepository;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.shared.port.AuditTrailPort;
@@ -106,6 +111,50 @@ public class MetafieldUseCaseConfig {
         return new UpsertMetafieldValueUseCase(definitionRepository, valueRepository,
                 metaobjectEntryRepository, metafieldOwnerAccess, metafieldValueValidator, membershipCheck,
                 idGenerator, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpsertMetaobjectFieldTranslationsUseCase upsertMetaobjectFieldTranslationsUseCase(
+            MetaobjectEntryRepository entryRepository,
+            MetaobjectDefinitionRepository metaobjectDefinitionRepository,
+            MetaobjectEntryValueTranslationRepository translationRepository,
+            MetafieldValueValidator metafieldValueValidator,
+            OperatorLocalesQuery operatorLocalesQuery,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertMetaobjectFieldTranslationsUseCase(entryRepository,
+                metaobjectDefinitionRepository, translationRepository, metafieldValueValidator,
+                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetMetaobjectFieldTranslationsUseCase getMetaobjectFieldTranslationsUseCase(
+            MetaobjectEntryRepository entryRepository,
+            MetaobjectEntryValueTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetMetaobjectFieldTranslationsUseCase(
+                entryRepository, translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public ListMetaobjectFieldTranslationLocalesUseCase listMetaobjectFieldTranslationLocalesUseCase(
+            MetaobjectEntryRepository entryRepository,
+            MetaobjectEntryValueTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListMetaobjectFieldTranslationLocalesUseCase(
+                entryRepository, translationRepository, membershipCheck);
+    }
+
+    @Bean
+    public DeleteMetaobjectFieldTranslationsUseCase deleteMetaobjectFieldTranslationsUseCase(
+            MetaobjectEntryRepository entryRepository,
+            MetaobjectEntryValueTranslationRepository translationRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteMetaobjectFieldTranslationsUseCase(entryRepository, translationRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean

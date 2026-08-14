@@ -35,19 +35,28 @@ public interface MetaobjectEntryJpaRepository
      *
      * <p>Ordered by entry then field {@code position}, so a theme reading the
      * fields gets the operator's own arrangement rather than insertion order.
+     *
+     * <p><b>The locale overlay is in this query rather than beside it</b>, unlike
+     * the metafield one: this read already joins the value rows, so the LEFT JOIN
+     * is one more line here against a whole second query there. There is no admin
+     * caller to keep canonical — the admin reads an entry through its aggregate,
+     * which this is not.
      */
     @Query("""
             SELECT new com.vointika.metafield.domain.projection.PublishedMetaobjectField(
-                e.id, d.type, e.handle, e.name, f.key, f.type, v.value)
+                e.id, d.type, e.handle, e.name, f.key, f.type, COALESCE(t.value, v.value))
             FROM MetaobjectEntryValueJpaEntity v
             JOIN MetaobjectEntryJpaEntity e ON e.id = v.entryId
             JOIN MetaobjectDefinitionJpaEntity d ON d.id = e.definitionId
             JOIN MetaobjectFieldJpaEntity f ON f.id = v.fieldDefinitionId
+            LEFT JOIN MetaobjectEntryValueTranslationJpaEntity t
+                   ON t.entryValueId = v.id AND t.locale = :locale
             WHERE e.tourOperatorId = :tourOperatorId
               AND e.id IN :entryIds
               AND e.published = TRUE
             ORDER BY e.id, f.position
             """)
     List<PublishedMetaobjectField> findPublishedFields(@Param("tourOperatorId") UUID tourOperatorId,
-                                                       @Param("entryIds") Collection<UUID> entryIds);
+                                                       @Param("entryIds") Collection<UUID> entryIds,
+                                                       @Param("locale") String locale);
 }

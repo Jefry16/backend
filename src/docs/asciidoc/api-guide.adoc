@@ -1161,6 +1161,39 @@ ADMIN+ only.
 
 operation::page-metafield-translations/delete[]
 
+[[resources-metaobject-field-translations-list-locales]]
+==== List a Metaobject's Translated Locales
+
+Per-locale overlays for a metaobject entry's field values — same rules as the
+metafield ones above, except that keys are **bare field keys**: a metaobject
+field has no namespace.
+
+Any member.
+
+operation::metaobject-field-translations/list-locales[]
+
+[[resources-metaobject-field-translations-get]]
+==== Get a Metaobject's Field Translations
+
+Any member.
+
+operation::metaobject-field-translations/get[]
+
+[[resources-metaobject-field-translations-upsert]]
+==== Set a Metaobject's Field Translations
+
+ADMIN+ only. A non-text field, an unknown field key, or a locale the operator
+does not publish → 422 / 404 naming the field.
+
+operation::metaobject-field-translations/upsert[]
+
+[[resources-metaobject-field-translations-delete]]
+==== Clear a Metaobject's Field Translations
+
+ADMIN+ only.
+
+operation::metaobject-field-translations/delete[]
+
 [[resources-metaobject-definitions-list]]
 ==== List Metaobject Definitions
 
