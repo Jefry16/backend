@@ -21,10 +21,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * storefront's own pages, not about rewriting the servlet container's error
  * handling.
  *
- * <p><b>A page route added later has to be added here too</b>, which is the
- * fourth registry a storefront route costs on top of the {@code @GetMapping} and
- * the two {@code PublicRoute} entries. There is no pattern broad enough to catch
- * one for free, and that is the point: the broad pattern is the bug.
+ * <p><b>The patterns derive from {@link StorefrontRoutes#PAGE_ROUTES}</b>, so a
+ * route added to that list is gated here for free — this used to be a fourth
+ * place to remember and no longer is. What the list cannot do is notice that a
+ * new constant was never added to <em>it</em>; that is what
+ * {@code StorefrontRouteRegistriesTest} checks. Note the temptation this closes:
+ * a pattern broad enough to catch every route for free is the bug, not the fix.
  */
 @Configuration("storefrontWebConfig")
 public class StorefrontWebConfig implements WebMvcConfigurer {

@@ -395,12 +395,13 @@ second**. That makes them one namespace on the read side, so uniqueness has to b
 checked across both on every write — otherwise one silently shadows the other and
 the shadowed page becomes unreachable in that locale, with no error at any point.
 
-> **The read half is gone entirely** — twice now. The `rendering` context and its
+> **The read half was deleted twice and is back.** The `rendering` context and its
 > four `Storefront*Query` seams went on 2026-08-02; the in-process rebuild's
-> `StorefrontShopQuery` and `StorefrontExperienceQuery` went on 2026-08-11 with
-> the placeholder cutback. Nothing in this codebase resolves a handle to content
-> today. Whatever renders the public site next has to build that read path, and
-> this section describes the rule it must honour.
+> shop and experience queries went on 2026-08-11 with the placeholder cutback.
+> Both handle-resolving paths were rebuilt afterwards: `TenantHandleResolver` +
+> `GetStorefrontGlobalsUseCase` resolve a *tenant* handle, and
+> `StorefrontPageQueryImpl.findByHandle` resolves a *page* handle. The rule below
+> is what they honour — it is no longer advice for a future implementer.
 > **The write guards below were kept anyway.** They cost nothing, and dropping them
 > would let a shadowing handle be stored while nothing can observe it, surfacing as
 > an unreachable page the day a read path returns — a defect committed now and
@@ -454,23 +455,36 @@ never to an empty string. A row overlays; it does not replace. Translating a
 title and not a body is a Spanish title over an English body, which is the
 realistic partial-translation case and the one fallback bugs hide in.
 
-**Six tables do this**, not the four this section used to claim:
+**Eight tables do this**, in **two shapes**. Six are *column-shaped* — nullable
+columns falling back per field:
 
 | | owner key | content columns | overlaid by | clearing |
 |---|---|---|---|---|
-| `experience_translations` | single id | 9, nullable | **nothing (was `StorefrontExperienceQueryImpl`)** | blank → null |
-| `tour_operator_translations` | single id (the operator) | 5, nullable | **nothing (was `StorefrontShopQueryImpl`)** | blank → null |
-| `tour_operator_policy_translations` | **composite** `(operator, type)` | 2, nullable | **nothing (was `StorefrontShopQueryImpl`)** | blank → null |
-| `page_translations` | single id | 5, nullable | **nothing yet** | blank → null |
-| `audience_translations` | single id | 1, nullable | **nothing yet** | blank → **delete** |
-| `menu_item_translations` | single id | 1, **NOT NULL** | **nothing yet** | **blank → 422** |
+| `experience_translations` | single id | 9, nullable | `StorefrontExperienceQueryImpl` | blank → null |
+| `tour_operator_translations` | single id (the operator) | 5, nullable | `StorefrontTourOperatorQueryImpl` | blank → null |
+| `tour_operator_policy_translations` | **composite** `(operator, type)` | 2, nullable | `StorefrontTourOperatorQueryImpl` | blank → null |
+| `page_translations` | single id | 5, nullable | `StorefrontPageQueryImpl` | blank → null |
+| `menu_item_translations` | single id | 1, **NOT NULL** | `StorefrontMenuQueryImpl` | **blank → 422** |
+| `audience_translations` | single id | 1, nullable | **nothing** | blank → **delete** |
 
-**Half of them are never resolved to a locale**, because nothing renders them
-translated yet — there is no CMS page route, audiences are not on the storefront
-and menus are not rendered. They have full admin CRUD and no reader. That is not
-a gap to fix; it is what "the write half shipped first" looks like. The admin
-deliberately returns *every* locale rather than a resolved one — `GetMenuUseCase`
-hands back a locale→title map — which is what an editor needs.
+Two are *row-shaped*, added by the metafield translation slices (#151, #152):
+
+| | owner key | content | overlaid by | clearing |
+|---|---|---|---|---|
+| `metafield_value_translations` | **composite** `(value, locale)` | one row, **NOT NULL** | `MetafieldValueJpaRepository` (`COALESCE`) | **delete the row** |
+| `metaobject_entry_value_translations` | **composite** `(entry value, locale)` | one row, **NOT NULL** | `MetaobjectEntryJpaRepository` (`COALESCE`) | **delete the row** |
+
+**The row shape is why the split is not simply "column count".** A metafield value
+*is* one value, so there is no nullable column to fall back per field — "no row"
+is the fallback, which is why `value` is `NOT NULL` and clearing is a `DELETE`.
+It also overlays in **JPQL** (`COALESCE(t.value, v.value)` over a `LEFT JOIN`)
+rather than in Java, because the fallback is per row and the query can express it.
+
+**Only `audience_translations` is never resolved to a locale**, because audiences
+are not on the storefront — full admin CRUD, no reader. That is what "the write
+half shipped first" looks like. The admin deliberately returns *every* locale
+rather than a resolved one — `GetMenuUseCase` hands back a locale→title map —
+which is what an editor needs.
 
 Same one level down: only **3 of experience's 9** translatable columns are read
 (`handle`, `name`, `description`), because the listing card is the only consumer.
@@ -503,20 +517,26 @@ endpoints of their own, and are cleared by being left out. It is also the only
 one without a `tour_operator_id`; items are always reached through their menu, so
 adding one would be a migration for a join nobody needs.
 
-**Still not generalising, and now nothing overlays at all.** The three adapters
-that did were deleted with the storefront cutback (2026-08-11), so every row in
-the table above is written and never resolved to a locale. This section used to
-argue the six differ on three axes. They do not: each one that overlaid did it in
-a storefront query adapter with the same two-line helper
-(`translated != null ? translated : canonical`), and clearing is uniform. Only
-the key shape still differs — policies are the lone composite, and they key on
-`type` rather than the surrogate `id` V13 gave them. What is left to share is two
-lines at three call sites, and sharing it across contexts means pushing it into
-`shared` — real coupling to remove six lines (LAW §2.4). Keep the **rule**
-identical, not the code.
+**Still not generalising, and the arithmetic is now the reason rather than the
+excuse.** The column-shaped six each overlay in their own storefront query
+adapter with the same byte-identical helper:
 
-Revisit when something renders pages, audiences or menus translated: that triples
-the overlay sites at a stroke, and *then* the duplication is worth a second look.
+```java
+private static String overlay(String translated, String canonical) {
+    return translated != null ? translated : canonical;
+}
+```
+
+**Four copies of it exist** — `StorefrontExperienceQueryImpl`,
+`StorefrontTourOperatorQueryImpl`, `StorefrontPageQueryImpl`,
+`StorefrontMenuQueryImpl` — called at 16 sites. Sharing it means pushing two
+lines into `shared` and coupling four contexts to it, to remove six (LAW §2.4).
+The row-shaped two cannot use it at all: their overlay is `COALESCE` in the
+query. Keep the **rule** identical, not the code.
+
+Revisit if the helper ever grows a second statement, or if audiences gain a
+storefront reader and the count moves again. A fifth byte-identical copy is still
+cheaper than the coupling; a copy that starts *differing* is the signal.
 
 ## 5. Read-time URL resolution (never store URLs)
 

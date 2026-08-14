@@ -67,23 +67,23 @@ public class RegisterUserUseCase {
         UserName name = new UserName(input.name());
         Password password = new Password(input.password());
 
-        // 2. Anti-enumeration (§7.6): an already-registered email gets the SAME
+        // 2. Anti-enumeration: an already-registered email gets the SAME
         //    generic 201 as a fresh one — the truthful answer goes only to the
         //    mailbox owner, by email. The hash below still runs first so the
-        //    two paths cost the same (§7.5 timing parity; BCrypt dominates).
+        //    two paths cost the same (timing parity; BCrypt dominates).
         Optional<User> existing = userRepository.findByEmail(email);
 
         // 3. Hash password (both paths — see timing note above)
         String hashedPassword = passwordHasher.hash(password.value());
 
-        // 3a. Per-email cooldown (§7.9): at most 3 "account already registered"
+        // 3a. Per-email cooldown (PATTERNS §8a): at most 3 "account already registered"
         //     notices/hour/mailbox — the same anti-bombing ceiling as
         //     resend-verification and request-password-reset (the per-IP filter
         //     alone doesn't protect the mailbox: the attacker picks the IPs,
         //     the victim's address is fixed). Acquired on BOTH paths so
-        //     duplicate and fresh registrations stay indistinguishable (§7.5);
+        //     duplicate and fresh registrations stay indistinguishable (timing parity);
         //     over the limit the notice is dropped silently — the generic 201
-        //     stays (§7.6).
+        //     stays.
         boolean notifyOwnerAllowed = rateLimiter.tryAcquire(
                 "rl:register:email:" + email.value(), 3, Duration.ofHours(1));
 
@@ -113,7 +113,7 @@ public class RegisterUserUseCase {
         } catch (UniqueConstraintViolationException e) {
             // Race with a concurrent registration of the same email: the DB
             // unique constraint won. Same anti-enumeration outcome as the
-            // fast path — notify the mailbox owner (within the §7.9 cooldown),
+            // fast path — notify the mailbox owner (within the PATTERNS §8a cooldown),
             // respond generically.
             if (notifyOwnerAllowed) {
                 userRepository.findByEmail(email).ifPresent(winner ->

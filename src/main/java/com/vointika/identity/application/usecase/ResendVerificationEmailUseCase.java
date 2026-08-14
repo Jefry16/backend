@@ -53,14 +53,14 @@ public class ResendVerificationEmailUseCase {
         // 1. Validate email format
         Email email = new Email(input.email());
 
-        // Per-email cooldown (§7.9): 3 sends/hour. Dropping silently keeps the
+        // Per-email cooldown (PATTERNS §8a): 3 sends/hour. Dropping silently keeps the
         // endpoint's unconditional 204 — no enumeration, no bombing, no SES burn.
         if (!rateLimiter.tryAcquire("rl:resend:email:" + email.value(), 3, Duration.ofHours(1))) {
             return;
         }
 
         // 2. Silently no-op if user doesn't exist or is already verified
-        //    (prevents account enumeration). §7.5: both no-op paths first do
+        //    (prevents account enumeration). Timing parity: both no-op paths first do
         //    the same token work + a DB round-trip as the real path, so
         //    response timing doesn't reveal which case was hit.
         Optional<User> maybeUser = userRepository.findByEmail(email);

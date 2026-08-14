@@ -27,7 +27,7 @@ import java.util.UUID;
  * the page. Invitee email/name AND the inviter's name are all carried on the
  * invitation row (the inviter name is a snapshot from invite time), so there is
  * no post-pagination identity enrichment — which is exactly what makes every
- * column sortable/filterable off the single root (§3.5 forbids the alternative
+ * column sortable/filterable off the single root (PATTERNS §6 forbids the alternative
  * join).
  */
 public class ListInvitationsUseCase {

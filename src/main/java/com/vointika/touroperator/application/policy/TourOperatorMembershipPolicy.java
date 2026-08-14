@@ -12,7 +12,7 @@ import java.util.UUID;
  * The {@code touroperator} adapter for the shared membership port — the one place
  * role tiers are mapped. The shared port exposes only capability checks; this
  * resolves the caller's {@link MemberRole} and compares tiers, so {@code MemberRole}
- * never leaks into {@code shared} (§4.2).
+ * never leaks into {@code shared} (PATTERNS §6).
  */
 public class TourOperatorMembershipPolicy implements TourOperatorMembershipCheck {
 

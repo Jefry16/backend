@@ -3,21 +3,23 @@ package com.vointika.storefront.application.policy;
 import java.util.List;
 
 /**
- * Every address the storefront answers on, defined once because <b>two
- * registries have to agree on each of them</b>: the {@code @GetMapping} and the
- * {@code PublicRoute} entries. Miss the second and the page is a 401, and
- * nothing fails on its own to say so. (It was three registries until the
- * password gate's interceptor patterns went with the gate.)
+ * Every address the storefront answers on, defined once because <b>three
+ * registries have to agree on each of them</b>: the {@code @GetMapping}, the
+ * {@code PublicRoute} entries (GET <em>and</em> HEAD), and the lock
+ * interceptor's patterns. Miss one and nothing fails on its own to say so — a
+ * missing {@code PublicRoute} is a 401, a missing interceptor pattern serves the
+ * page ungated on a locked store.
  *
  * <p>It lives in {@code application} because {@code presentation} and
  * {@code infrastructure} may not see each other and both consumers sit in one of
  * the two (PATTERNS §1).
  *
- * <p><b>The routes outlived the pages they used to serve.</b> While the
- * storefront is a placeholder every one of these renders the same page — but the
- * addresses are the part that is expensive to get back right (four registries'
- * worth of lessons are recorded in {@code StorefrontPublicRoutes}), and they are
- * what the real pages will hang off.
+ * <p><b>These addresses no longer all serve the same thing.</b> {@link #HOME} and
+ * {@link #LOCALE} serve the globals contract; {@link #PAGE} and
+ * {@link #LOCALIZED_PAGE} serve a CMS page; only the experiences and policies
+ * routes still answer the {@code {handle,status}} placeholder. The addresses were
+ * always the expensive part to get right — the lessons are recorded in
+ * {@code StorefrontPublicRoutes} — and they are what the remaining pages hang off.
  */
 public final class StorefrontRoutes {
 
@@ -48,10 +50,9 @@ public final class StorefrontRoutes {
     public static final String EXPERIENCES = "/experiences";
 
     /**
-     * Where a CMS page lives. <b>There is no route on it yet</b> — the page type
-     * is unbuilt — but a menu item can already point at a page, and the link it
-     * becomes has to be the address that page will have. Same known gap as an
-     * experience card's link.
+     * The namespace a CMS page lives under. There is no index at {@code /pages}
+     * itself — {@link #PAGE} is the route, and it is built from this — so nothing
+     * registers this constant on its own.
      */
     public static final String PAGES = "/pages";
 

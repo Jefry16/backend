@@ -3,7 +3,6 @@ package com.vointika.touroperator.infrastructure.persistence.repository;
 import com.vointika.touroperator.domain.enums.PolicyType;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorPolicyJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,17 +22,8 @@ public interface TourOperatorPolicyJpaRepository
      */
     List<TourOperatorPolicyJpaEntity> findByTourOperatorIdOrderByTypeAsc(UUID tourOperatorId);
 
-    Optional<TourOperatorPolicyJpaEntity> findByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type);
-
     /** Tenant-scoped by construction: an id alone is never enough to read a policy. */
     Optional<TourOperatorPolicyJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
     boolean existsByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type);
-
-    /**
-     * Derived delete — needs its own transaction from the caller, which the use
-     * case supplies through {@code TransactionRunner}. Returns the row count so
-     * the domain port can answer "did one exist".
-     */
-
 }

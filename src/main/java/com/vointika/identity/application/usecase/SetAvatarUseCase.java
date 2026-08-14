@@ -20,7 +20,7 @@ public class SetAvatarUseCase {
     private static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
 
     // Raster images only — SVG is excluded for the same script-injection
-    // reason the media library excludes it (§7.8).
+    // reason the media library excludes it.
     private static final Map<String, String> EXTENSION_BY_CONTENT_TYPE = Map.of(
             "image/jpeg", "jpg",
             "image/png", "png",

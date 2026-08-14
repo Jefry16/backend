@@ -4,7 +4,6 @@ import com.vointika.metafield.application.dto.input.UpsertMetafieldTranslationsI
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
-import com.vointika.metafield.domain.entity.MetafieldValue;
 import com.vointika.metafield.domain.entity.MetafieldValueTranslation;
 import com.vointika.metafield.domain.projection.TranslatableMetafieldValue;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
@@ -29,11 +28,9 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;

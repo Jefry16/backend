@@ -23,7 +23,6 @@ import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Creates or replaces a page's translation for one locale — the experience

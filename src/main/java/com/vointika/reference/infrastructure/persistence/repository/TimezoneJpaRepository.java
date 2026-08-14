@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public interface TimezoneJpaRepository extends JpaRepository<TimezoneJpaEntity, UUID> {
 
-    // JOIN FETCH the country so the list is one query, not N+1 (§3.5 / the batch principle).
+    // JOIN FETCH the country so the list is one query, not N+1 (PATTERNS §6 / the batch principle).
     @Query("SELECT t FROM TimezoneJpaEntity t JOIN FETCH t.country ORDER BY t.name")
     List<TimezoneJpaEntity> findAllWithCountryOrderByName();
 

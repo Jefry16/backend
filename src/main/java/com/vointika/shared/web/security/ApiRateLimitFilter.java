@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Coarse per-user safety cap on the authenticated admin API (§7.9, third
+ * Coarse per-user safety cap on the authenticated admin API (PATTERNS §8a, third
  * layer). Not an abuse defense — callers here are authenticated members —
  * but a backstop against runaway scripts and buggy client loops. The limit
  * is far above any human/SPA usage; hitting it means something is wrong

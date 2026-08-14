@@ -1,6 +1,5 @@
 package com.vointika.experience.application.dto.input;
 
-import java.util.List;
 
 /**
  * The translatable fields of an experience for one locale. Every field is

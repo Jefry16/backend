@@ -8,7 +8,7 @@ package com.vointika.shared.exception;
  * first layer-B throttle that has to REFUSE — the existing ones degrade instead
  * (registration still succeeds, it just stops emailing).
  */
-public class TooManyRequestsException extends RuntimeException {
+public class TooManyRequestsException extends DomainException {
 
     public TooManyRequestsException(String message) {
         super(message);

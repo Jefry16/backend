@@ -26,7 +26,7 @@ public class LoginUserUseCase {
     private static final String SENTINEL_HASH =
             "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
-    // Per-account throttle (§7.9): all attempts for one email, successes
+    // Per-account throttle (PATTERNS §8a): all attempts for one email, successes
     // included — 20/15min is unreachable for a human, fatal for a script
     // doing distributed-IP credential guessing against one account.
     private static final int MAX_ATTEMPTS_PER_EMAIL = 20;
