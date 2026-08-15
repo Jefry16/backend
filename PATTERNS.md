@@ -554,7 +554,7 @@ guards exist to prevent. The window is small and both `page` and `experience` ca
 Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
 making the invariant true.
 
-## 4e. The translation-overlay table (six of them, in two shapes)
+## 4e. The translation-overlay table (eight of them, in two shapes)
 
 A translatable aggregate gets a sibling table keyed on
 `(<owner keys…>, locale)`, and the read overlays it
@@ -789,7 +789,8 @@ library in a use case means a port is missing.
 fails the build exactly like a third-party jar would. The storefront's unlock cookie was
 written as an `application/policy` class on the assumption that "pure JDK" was enough —
 `UnlockTokenPort` + `HmacUnlockToken` in `infrastructure/security` is what it became.
-(Both went with the placeholder cutback; the lesson is why this paragraph stays.)
+Both are live: the gate returned in #138, so this is a description and not only a
+lesson.
 Reading the rule says this; only running it proves it, which is the point.
 
 **Logging follows the same rule.** If a *side effect* fails and the caller does not
@@ -988,9 +989,9 @@ purpose: if every owner has every optional field set, nothing shows you what
 - **A storefront page route is registered in more than one place, and only the
   route itself fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
   needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method
-  (miss either and it is a 401 in the JSON error shape). It was **four** places
-  while the password gate existed — its interceptor needed every page pattern too,
-  or a locked store served the page — and it goes back to four when the gate does.
+  (miss either and it is a 401 in the JSON error shape). **It is four registrations
+  across three registries today**, because the password gate is live: its interceptor
+  needs every page pattern too, or a locked store serves the page to anyone.
   So define the pattern **once**, in `application/policy` where both layers can
   see it (`StorefrontRoutes`, with `LOCALIZED_*` built from `LOCALE` rather than
   retyping the regex), and pin the rest: `servesHeadAsWellAsGet` per route.
@@ -1020,7 +1021,8 @@ purpose: if every owner has every optional field set, nothing shows you what
   resolved per request, or every controller test in the codebase fails to construct
   the config. `WebConfig` (touroperator) does this, and its path patterns are what
   keep the resolution from ever happening on a foreign route. `StorefrontWebConfig`
-  was the second example until the password gate it registered was deleted.
+  is the second example — it registers the storefront lock interceptor, which is
+  live again since #138.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
   table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
   Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space
