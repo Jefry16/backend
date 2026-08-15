@@ -74,9 +74,9 @@ public class MetaobjectController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody CreateMetaobjectRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createUseCase.execute(new CreateMetaobjectEntryInput(
-                UUID.fromString(callerUserId), tourOperatorId,
+                callerUserId, tourOperatorId,
                 body.definitionId(), body.handle(), body.name(), body.values()));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId
@@ -88,12 +88,12 @@ public class MetaobjectController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<MetaobjectListItemResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(
                 request, ListMetaobjectEntriesUseCase.SCHEMA, tourOperatorId);
         CursorPage<MetaobjectEntryListItem> page =
-                listUseCase.execute(query, UUID.fromString(callerUserId));
+                listUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(
                 CursorPageResponse.of(page, MetaobjectListItemResponse::from));
     }
@@ -103,9 +103,9 @@ public class MetaobjectController {
     public ResponseEntity<MetaobjectResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(MetaobjectResponse.from(
-                getUseCase.execute(tourOperatorId, metaobjectId, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, metaobjectId, callerUserId)));
     }
 
     /** PATCHes name/handle and/or any subset of field values. ADMIN+. */
@@ -114,9 +114,9 @@ public class MetaobjectController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
             @RequestBody UpdateMetaobjectRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updateUseCase.execute(new UpdateMetaobjectEntryInput(
-                UUID.fromString(callerUserId), tourOperatorId, metaobjectId,
+                callerUserId, tourOperatorId, metaobjectId,
                 body.name(), body.handle(), body.values()));
         return ResponseEntity.noContent().build();
     }
@@ -126,8 +126,8 @@ public class MetaobjectController {
     public ResponseEntity<Void> publish(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
-            @AuthenticationPrincipal String callerUserId) {
-        publishUseCase.execute(tourOperatorId, metaobjectId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        publishUseCase.execute(tourOperatorId, metaobjectId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -136,8 +136,8 @@ public class MetaobjectController {
     public ResponseEntity<Void> unpublish(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
-            @AuthenticationPrincipal String callerUserId) {
-        unpublishUseCase.execute(tourOperatorId, metaobjectId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        unpublishUseCase.execute(tourOperatorId, metaobjectId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -146,8 +146,8 @@ public class MetaobjectController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, metaobjectId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, metaobjectId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -58,9 +58,9 @@ public class MetaobjectFieldTranslationController {
     public ResponseEntity<List<String>> listLocales(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(listLocalesUseCase.execute(
-                UUID.fromString(callerUserId), tourOperatorId, metaobjectId));
+                callerUserId, tourOperatorId, metaobjectId));
     }
 
     /** One locale's overlay, keyed by field key. Empty object when untranslated. */
@@ -69,9 +69,9 @@ public class MetaobjectFieldTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(getUseCase.execute(
-                UUID.fromString(callerUserId), tourOperatorId, metaobjectId, locale));
+                callerUserId, tourOperatorId, metaobjectId, locale));
     }
 
     /** Replaces the whole locale in one write. ADMIN+. 204. */
@@ -81,9 +81,9 @@ public class MetaobjectFieldTranslationController {
             @PathVariable UUID metaobjectId,
             @PathVariable String locale,
             @RequestBody UpsertMetafieldTranslationsRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         upsertUseCase.execute(new UpsertMetaobjectFieldTranslationsInput(
-                UUID.fromString(callerUserId), tourOperatorId, metaobjectId,
+                callerUserId, tourOperatorId, metaobjectId,
                 locale, body.values()));
         return ResponseEntity.noContent().build();
     }
@@ -94,9 +94,9 @@ public class MetaobjectFieldTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID metaobjectId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         deleteUseCase.execute(
-                UUID.fromString(callerUserId), tourOperatorId, metaobjectId, locale);
+                callerUserId, tourOperatorId, metaobjectId, locale);
         return ResponseEntity.noContent().build();
     }
 }

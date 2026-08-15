@@ -20,7 +20,7 @@ public class LogoutUserUseCase {
     }
 
     public void execute(LogoutUserInput input) {
-        UUID userId = UUID.fromString(input.userId());
+        UUID userId = input.userId();
 
         RefreshToken refreshToken = refreshTokenRepository
                 .findByTokenHash(tokenHasher.hash(input.refreshToken()))

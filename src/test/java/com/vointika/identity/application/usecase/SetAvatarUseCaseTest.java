@@ -146,7 +146,7 @@ class SetAvatarUseCaseTest {
     }
 
     private SetAvatarInput input(String contentType, long sizeBytes, InputStream body) {
-        return new SetAvatarInput(userId.toString(), contentType, sizeBytes, body);
+        return new SetAvatarInput(userId, contentType, sizeBytes, body);
     }
 
     private User userWithAvatar(String avatarKey) {

@@ -52,8 +52,8 @@ public class InvitationAcceptController {
     public ResponseEntity<AcceptInvitationResponse> accept(
             @PathVariable String token,
             @RequestBody(required = false) AcceptInvitationRequest body,
-            @AuthenticationPrincipal String userIdStr) {
-        UUID authenticatedUserId = parseAuthenticatedUser(userIdStr);
+            @AuthenticationPrincipal Object principal) {
+        UUID authenticatedUserId = authenticatedUser(principal);
         AcceptInvitationUseCase.Result result = acceptInvitationUseCase.execute(
                 token,
                 authenticatedUserId,
@@ -77,17 +77,15 @@ public class InvitationAcceptController {
     /**
      * On the PUBLIC accept route an unauthenticated request reaches the controller
      * with Spring's anonymous principal ({@code "anonymousUser"}, a plain string)
-     * rather than null. The JWT filter only ever sets UUID-string principals, so
-     * anything non-UUID means "no session".
+     * rather than null — which is why this takes {@code Object} and not
+     * {@code UUID}. {@code @AuthenticationPrincipal UUID} would bind the anonymous
+     * principal to <b>null</b> silently (Spring's default is
+     * {@code errorOnInvalidType = false}), which reads the same as "no session"
+     * here but only by luck, and hides the type mismatch everywhere else.
+     * {@code JwtAuthenticationFilter} sets a UUID principal, so anything else
+     * means "no session".
      */
-    private static UUID parseAuthenticatedUser(String principal) {
-        if (principal == null) {
-            return null;
-        }
-        try {
-            return UUID.fromString(principal);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+    private static UUID authenticatedUser(Object principal) {
+        return principal instanceof UUID userId ? userId : null;
     }
 }

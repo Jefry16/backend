@@ -50,9 +50,9 @@ public class TourOperatorController {
     @GetMapping("/{tourOperatorId}")
     public ResponseEntity<TourOperatorDetailsResponse> get(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(TourOperatorDetailsResponse.from(
-                getUseCase.execute(tourOperatorId, UUID.fromString(userIdStr))));
+                getUseCase.execute(tourOperatorId, userId)));
     }
 
     /**
@@ -67,15 +67,15 @@ public class TourOperatorController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @RequestBody UpdateTourOperatorInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        updateUseCase.execute(tourOperatorId, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        updateUseCase.execute(tourOperatorId, body, userId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping
     public ResponseEntity<Void> create(
             @RequestBody CreateTourOperatorRequest request,
-            @AuthenticationPrincipal String userId) {
+            @AuthenticationPrincipal UUID userId) {
         CreateTourOperatorOutput output = createTourOperatorUseCase.execute(
                 new CreateTourOperatorInput(
                         userId,

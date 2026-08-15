@@ -79,10 +79,10 @@ public class PageController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<PageListItemResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListPagesUseCase.SCHEMA, tourOperatorId);
-        CursorPage<PageListItem> page = listPagesUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<PageListItem> page = listPagesUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, PageListItemResponse::from));
     }
 
@@ -91,9 +91,9 @@ public class PageController {
     public ResponseEntity<PageResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(PageResponse.from(
-                getPageUseCase.execute(tourOperatorId, pageId, UUID.fromString(callerUserId))));
+                getPageUseCase.execute(tourOperatorId, pageId, callerUserId)));
     }
 
     /** Creates a DRAFT page. ADMIN+. 201 + Location; duplicate handle → 409. */
@@ -101,9 +101,9 @@ public class PageController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody CreatePageRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createPageUseCase.execute(new CreatePageInput(
-                UUID.fromString(callerUserId), tourOperatorId,
+                callerUserId, tourOperatorId,
                 body.title(), body.handle(), body.body(),
                 body.seoTitle(), body.seoDescription()));
         return ResponseEntity
@@ -117,9 +117,9 @@ public class PageController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
             @RequestBody UpdatePageRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updatePageUseCase.execute(new UpdatePageInput(
-                UUID.fromString(callerUserId), tourOperatorId, pageId,
+                callerUserId, tourOperatorId, pageId,
                 body.title(), body.body(), body.seoTitle(), body.seoDescription()));
         return ResponseEntity.noContent().build();
     }
@@ -129,8 +129,8 @@ public class PageController {
     public ResponseEntity<Void> publish(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
-            @AuthenticationPrincipal String callerUserId) {
-        publishPageUseCase.execute(tourOperatorId, pageId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        publishPageUseCase.execute(tourOperatorId, pageId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -139,8 +139,8 @@ public class PageController {
     public ResponseEntity<Void> unpublish(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
-            @AuthenticationPrincipal String callerUserId) {
-        unpublishPageUseCase.execute(tourOperatorId, pageId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        unpublishPageUseCase.execute(tourOperatorId, pageId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -154,9 +154,9 @@ public class PageController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
             @RequestBody RenamePageRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         renamePageUseCase.execute(tourOperatorId, pageId, body.handle(),
-                UUID.fromString(callerUserId));
+                callerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -165,8 +165,8 @@ public class PageController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
-            @AuthenticationPrincipal String callerUserId) {
-        deletePageUseCase.execute(tourOperatorId, pageId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deletePageUseCase.execute(tourOperatorId, pageId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

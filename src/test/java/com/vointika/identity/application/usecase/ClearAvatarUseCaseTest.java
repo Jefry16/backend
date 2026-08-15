@@ -48,7 +48,7 @@ class ClearAvatarUseCaseTest {
         User user = userWithAvatar("users/" + userId + "/abc-avatar.png");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        useCase.execute(new ClearAvatarInput(userId.toString()));
+        useCase.execute(new ClearAvatarInput(userId));
 
         assertNull(user.getAvatarKey());
         InOrder inOrder = inOrder(userRepository, avatarStoragePort);
@@ -61,7 +61,7 @@ class ClearAvatarUseCaseTest {
         User user = userWithAvatar(null);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        useCase.execute(new ClearAvatarInput(userId.toString()));
+        useCase.execute(new ClearAvatarInput(userId));
 
         verify(userRepository, never()).save(user);
         verifyNoInteractions(avatarStoragePort);
@@ -75,7 +75,7 @@ class ClearAvatarUseCaseTest {
         User user = userWithAvatar(key);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        useCase.execute(new ClearAvatarInput(userId.toString()));
+        useCase.execute(new ClearAvatarInput(userId));
 
         assertNull(user.getAvatarKey());
         verify(userRepository).save(user);
@@ -87,7 +87,7 @@ class ClearAvatarUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UnauthorizedException.class,
-                () -> useCase.execute(new ClearAvatarInput(userId.toString())));
+                () -> useCase.execute(new ClearAvatarInput(userId)));
         verifyNoInteractions(avatarStoragePort);
     }
 

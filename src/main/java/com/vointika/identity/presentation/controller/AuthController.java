@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -110,7 +111,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @CookieValue(name = "${app.security.refresh-cookie.name}") String refreshToken,
-            @AuthenticationPrincipal String userId
+            @AuthenticationPrincipal UUID userId
     ) {
         logoutUserUseCase.execute(new LogoutUserInput(userId, refreshToken));
         return ResponseEntity.noContent()
@@ -121,7 +122,7 @@ public class AuthController {
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(
             @RequestBody ChangePasswordRequest request,
-            @AuthenticationPrincipal String userId
+            @AuthenticationPrincipal UUID userId
     ) {
         changePasswordUseCase.execute(new ChangePasswordInput(
                 userId,
@@ -144,7 +145,7 @@ public class AuthController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal String userId) {
+    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal UUID userId) {
         var output = getProfileUseCase.execute(new GetProfileInput(userId));
         // The membership view already carries the resolved logo URL (resolved in
         // the query, per-operator) — pass it straight through.
@@ -161,7 +162,7 @@ public class AuthController {
     @PostMapping(value = "/profile/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SetAvatarResponse> setAvatar(
             @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal String userId
+            @AuthenticationPrincipal UUID userId
     ) {
         try {
             var output = setAvatarUseCase.execute(new SetAvatarInput(
@@ -179,14 +180,14 @@ public class AuthController {
     @PostMapping("/profile/language")
     public ResponseEntity<Void> changeLanguage(
             @RequestBody ChangeLanguageRequest request,
-            @AuthenticationPrincipal String userId
+            @AuthenticationPrincipal UUID userId
     ) {
         changeLanguageUseCase.execute(new ChangeLanguageInput(userId, request.language()));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/profile/avatar")
-    public ResponseEntity<Void> clearAvatar(@AuthenticationPrincipal String userId) {
+    public ResponseEntity<Void> clearAvatar(@AuthenticationPrincipal UUID userId) {
         clearAvatarUseCase.execute(new ClearAvatarInput(userId));
         return ResponseEntity.noContent().build();
     }

@@ -59,9 +59,9 @@ public class TourOperatorMetafieldTranslationController {
     @GetMapping
     public ResponseEntity<List<String>> listLocales(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(listLocalesUseCase.execute(
-                UUID.fromString(callerUserId), tourOperatorId, OWNER, tourOperatorId));
+                callerUserId, tourOperatorId, OWNER, tourOperatorId));
     }
 
     /** One locale's overlay, keyed {@code namespace.key}. Empty map when untranslated. */
@@ -69,9 +69,9 @@ public class TourOperatorMetafieldTranslationController {
     public ResponseEntity<Map<String, String>> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(getUseCase.execute(
-                UUID.fromString(callerUserId), tourOperatorId, OWNER, tourOperatorId, locale));
+                callerUserId, tourOperatorId, OWNER, tourOperatorId, locale));
     }
 
     /** Replaces the whole locale in one write. ADMIN+. 204. */
@@ -80,9 +80,9 @@ public class TourOperatorMetafieldTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable String locale,
             @RequestBody UpsertMetafieldTranslationsRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         upsertUseCase.execute(new UpsertMetafieldTranslationsInput(
-                UUID.fromString(callerUserId), tourOperatorId, OWNER, tourOperatorId,
+                callerUserId, tourOperatorId, OWNER, tourOperatorId,
                 locale, body.values()));
         return ResponseEntity.noContent().build();
     }
@@ -92,9 +92,9 @@ public class TourOperatorMetafieldTranslationController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         deleteUseCase.execute(
-                UUID.fromString(callerUserId), tourOperatorId, OWNER, tourOperatorId, locale);
+                callerUserId, tourOperatorId, OWNER, tourOperatorId, locale);
         return ResponseEntity.noContent().build();
     }
 }

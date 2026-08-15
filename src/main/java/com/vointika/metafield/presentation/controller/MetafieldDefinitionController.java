@@ -65,9 +65,9 @@ public class MetafieldDefinitionController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody CreateMetafieldDefinitionRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createUseCase.execute(new CreateMetafieldDefinitionInput(
-                UUID.fromString(callerUserId), tourOperatorId,
+                callerUserId, tourOperatorId,
                 body.ownerType(), body.namespace(), body.key(), body.type(),
                 body.metaobjectDefinitionId(), body.name(), body.description()));
         return ResponseEntity
@@ -80,12 +80,12 @@ public class MetafieldDefinitionController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<MetafieldDefinitionListItemResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(
                 request, ListMetafieldDefinitionsUseCase.SCHEMA, tourOperatorId);
         CursorPage<MetafieldDefinitionListItem> page =
-                listUseCase.execute(query, UUID.fromString(callerUserId));
+                listUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(
                 CursorPageResponse.of(page, MetafieldDefinitionListItemResponse::from));
     }
@@ -95,9 +95,9 @@ public class MetafieldDefinitionController {
     public ResponseEntity<MetafieldDefinitionResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(MetafieldDefinitionResponse.from(
-                getUseCase.execute(tourOperatorId, definitionId, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, definitionId, callerUserId)));
     }
 
     /** Updates name/description (the identity fields are immutable). ADMIN+. */
@@ -106,9 +106,9 @@ public class MetafieldDefinitionController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
             @RequestBody UpdateMetafieldDefinitionRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updateUseCase.execute(new UpdateMetafieldDefinitionInput(
-                UUID.fromString(callerUserId), tourOperatorId, definitionId,
+                callerUserId, tourOperatorId, definitionId,
                 body.name(), body.description()));
         return ResponseEntity.noContent().build();
     }
@@ -118,8 +118,8 @@ public class MetafieldDefinitionController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID definitionId,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, definitionId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, definitionId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

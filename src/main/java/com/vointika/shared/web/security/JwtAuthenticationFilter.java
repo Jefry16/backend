@@ -47,16 +47,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Reject tokens whose subject isn't a UUID — caller will be unauthenticated,
         // the AuthenticationEntryPoint returns 401.
+        UUID callerId;
         try {
-            UUID.fromString(userId);
+            callerId = UUID.fromString(userId);
         } catch (IllegalArgumentException e) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        // The principal is the UUID, not its text. Parsing here and storing the
+        // String meant every controller re-parsed it — 134 copies of
+        // UUID.fromString across 33 controllers, each able to throw on input this
+        // filter had already proven valid.
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        userId,
+                        callerId,
                         null,
                         Collections.emptyList()
                 );

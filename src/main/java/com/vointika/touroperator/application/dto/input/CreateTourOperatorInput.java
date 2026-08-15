@@ -3,7 +3,7 @@ package com.vointika.touroperator.application.dto.input;
 import java.util.UUID;
 
 public record CreateTourOperatorInput(
-        String userId,
+        UUID userId,
         String name,
         AddressInput address,
         UUID timezoneId,

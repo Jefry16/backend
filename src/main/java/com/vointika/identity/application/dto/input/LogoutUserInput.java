@@ -1,3 +1,5 @@
 package com.vointika.identity.application.dto.input;
 
-public record LogoutUserInput(String userId, String refreshToken) {}
+import java.util.UUID;
+
+public record LogoutUserInput(UUID userId, String refreshToken) {}

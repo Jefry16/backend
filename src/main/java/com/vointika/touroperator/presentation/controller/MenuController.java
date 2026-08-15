@@ -73,9 +73,9 @@ public class MenuController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody CreateMenuRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createUseCase.execute(new CreateMenuInput(
-                UUID.fromString(callerUserId), tourOperatorId, body.handle(), body.title()));
+                callerUserId, tourOperatorId, body.handle(), body.title()));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/menus/" + id))
                 .build();
@@ -85,10 +85,10 @@ public class MenuController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<MenuListItemResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListMenusUseCase.SCHEMA, tourOperatorId);
-        CursorPage<Menu> page = listUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<Menu> page = listUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, MenuListItemResponse::from));
     }
 
@@ -97,9 +97,9 @@ public class MenuController {
     public ResponseEntity<MenuDetailResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID menuId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(MenuDetailResponse.from(
-                getUseCase.execute(tourOperatorId, menuId, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, menuId, callerUserId)));
     }
 
     /** Renames a menu (title only — the handle is immutable). ADMIN+. */
@@ -108,9 +108,9 @@ public class MenuController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID menuId,
             @RequestBody RenameMenuRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         renameUseCase.execute(new RenameMenuInput(
-                UUID.fromString(callerUserId), tourOperatorId, menuId, body.title()));
+                callerUserId, tourOperatorId, menuId, body.title()));
         return ResponseEntity.noContent().build();
     }
 
@@ -124,9 +124,9 @@ public class MenuController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID menuId,
             @RequestBody ReplaceMenuItemsRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         replaceItemsUseCase.execute(new ReplaceMenuItemsInput(
-                UUID.fromString(callerUserId), tourOperatorId, menuId, body.items()));
+                callerUserId, tourOperatorId, menuId, body.items()));
         return ResponseEntity.noContent().build();
     }
 
@@ -135,8 +135,8 @@ public class MenuController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID menuId,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, menuId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, menuId, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

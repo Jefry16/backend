@@ -45,11 +45,11 @@ public class AuditLogController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<AuditLogEntryResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListAuditLogUseCase.SCHEMA, tourOperatorId);
         CursorPage<AuditLogListItem> page =
-                listAuditLogUseCase.execute(query, UUID.fromString(callerUserId));
+                listAuditLogUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, AuditLogEntryResponse::from));
     }
 
@@ -58,8 +58,8 @@ public class AuditLogController {
     public ResponseEntity<AuditLogEntryResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID entryId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(AuditLogEntryResponse.from(
-                getAuditLogEntryUseCase.execute(tourOperatorId, entryId, UUID.fromString(callerUserId))));
+                getAuditLogEntryUseCase.execute(tourOperatorId, entryId, callerUserId)));
     }
 }

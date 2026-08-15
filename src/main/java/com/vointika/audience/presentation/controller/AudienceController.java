@@ -56,10 +56,10 @@ public class AudienceController {
     @GetMapping
     public ResponseEntity<CursorPageResponse<AudienceResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListAudiencesUseCase.SCHEMA, tourOperatorId);
-        CursorPage<Audience> page = listAudiencesUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<Audience> page = listAudiencesUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, AudienceResponse::from));
     }
 
@@ -68,8 +68,8 @@ public class AudienceController {
     public ResponseEntity<AudienceResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID audienceId,
-            @AuthenticationPrincipal String callerUserId) {
-        Audience audience = getAudienceUseCase.execute(tourOperatorId, audienceId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        Audience audience = getAudienceUseCase.execute(tourOperatorId, audienceId, callerUserId);
         return ResponseEntity.ok(AudienceResponse.from(audience));
     }
 
@@ -78,9 +78,9 @@ public class AudienceController {
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
             @RequestBody AudienceInput body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createAudienceUseCase.execute(
-                tourOperatorId, UUID.fromString(callerUserId), body);
+                tourOperatorId, callerUserId, body);
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/audiences/" + id))
                 .build();
@@ -92,9 +92,9 @@ public class AudienceController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID audienceId,
             @RequestBody AudienceInput body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         updateAudienceUseCase.execute(
-                tourOperatorId, audienceId, UUID.fromString(callerUserId), body);
+                tourOperatorId, audienceId, callerUserId, body);
         return ResponseEntity.noContent().build();
     }
 }

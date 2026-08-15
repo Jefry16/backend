@@ -113,7 +113,7 @@ class CreateTourOperatorUseCaseTest {
     }
 
     private CreateTourOperatorInput input() {
-        return new CreateTourOperatorInput(userId.toString(), "Acme Tours", ADDRESS, timezoneId, currencyId);
+        return new CreateTourOperatorInput(userId, "Acme Tours", ADDRESS, timezoneId, currencyId);
     }
 
     /**
@@ -148,7 +148,7 @@ class CreateTourOperatorUseCaseTest {
     @Test
     void anOperatorNamedAfterInfrastructureDoesNotClaimThatHost() {
         CreateTourOperatorInput reserved = new CreateTourOperatorInput(
-                userId.toString(), "API", ADDRESS, timezoneId, currencyId);
+                userId, "API", ADDRESS, timezoneId, currencyId);
 
         useCase.execute(reserved);
 
@@ -274,9 +274,9 @@ class CreateTourOperatorUseCaseTest {
     }
 
     @Test
-    void invalidAuthenticatedUserThrowsUnauthorized() {
+    void aMissingAuthenticatedUserThrowsUnauthorized() {
         CreateTourOperatorInput bad = new CreateTourOperatorInput(
-                "not-a-uuid", "Acme Tours", ADDRESS, timezoneId, currencyId);
+                null, "Acme Tours", ADDRESS, timezoneId, currencyId);
         assertThrows(UnauthorizedException.class, () -> useCase.execute(bad));
     }
 
@@ -309,7 +309,7 @@ class CreateTourOperatorUseCaseTest {
     @Test
     void missingAddressThrowsInvalidField() {
         CreateTourOperatorInput noAddress = new CreateTourOperatorInput(
-                userId.toString(), "Acme Tours", null, timezoneId, currencyId);
+                userId, "Acme Tours", null, timezoneId, currencyId);
 
         assertThrows(InvalidFieldException.class, () -> useCase.execute(noAddress));
     }

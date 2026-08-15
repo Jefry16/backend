@@ -1,3 +1,5 @@
 package com.vointika.identity.application.dto.input;
 
-public record ClearAvatarInput(String userId) {}
+import java.util.UUID;
+
+public record ClearAvatarInput(UUID userId) {}

@@ -1,3 +1,5 @@
 package com.vointika.identity.application.dto.input;
 
-public record GetProfileInput(String userId) {}
+import java.util.UUID;
+
+public record GetProfileInput(UUID userId) {}

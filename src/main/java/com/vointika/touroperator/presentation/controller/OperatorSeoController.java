@@ -42,9 +42,9 @@ public class OperatorSeoController {
     @GetMapping
     public ResponseEntity<OperatorSeoResponse> get(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(OperatorSeoResponse.from(
-                getUseCase.execute(tourOperatorId, UUID.fromString(userIdStr))));
+                getUseCase.execute(tourOperatorId, userId)));
     }
 
     /**
@@ -55,9 +55,9 @@ public class OperatorSeoController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @RequestBody UpdateOperatorSeoRequest body,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         updateUseCase.execute(tourOperatorId, body.seoTitle(), body.seoDescription(),
-                body.ogImageMediaId(), UUID.fromString(userIdStr));
+                body.ogImageMediaId(), userId);
         return ResponseEntity.noContent().build();
     }
 }

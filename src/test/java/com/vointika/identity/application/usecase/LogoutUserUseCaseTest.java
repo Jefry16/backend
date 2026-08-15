@@ -38,7 +38,7 @@ class LogoutUserUseCaseTest {
         when(tokenHasher.hash("raw")).thenReturn("hash");
         when(refreshTokenRepository.findByTokenHash("hash")).thenReturn(Optional.of(token));
 
-        useCase.execute(new LogoutUserInput(userId.toString(), "raw"));
+        useCase.execute(new LogoutUserInput(userId, "raw"));
 
         verify(refreshTokenRepository).revokeAllByFamilyId(token.getFamilyId());
     }
@@ -49,7 +49,7 @@ class LogoutUserUseCaseTest {
         when(refreshTokenRepository.findByTokenHash("bad-hash")).thenReturn(Optional.empty());
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
-                () -> useCase.execute(new LogoutUserInput(UUID.randomUUID().toString(), "bad")));
+                () -> useCase.execute(new LogoutUserInput(UUID.randomUUID(), "bad")));
         assertEquals("Invalid refresh token", ex.getMessage());
     }
 
@@ -62,7 +62,7 @@ class LogoutUserUseCaseTest {
         when(refreshTokenRepository.findByTokenHash("hash")).thenReturn(Optional.of(token));
 
         assertThrows(ForbiddenException.class,
-                () -> useCase.execute(new LogoutUserInput(differentUser.toString(), "raw")));
+                () -> useCase.execute(new LogoutUserInput(differentUser, "raw")));
         verify(refreshTokenRepository, never()).revokeAllByFamilyId(any());
     }
 

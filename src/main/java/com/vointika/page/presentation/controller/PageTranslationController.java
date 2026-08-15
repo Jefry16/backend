@@ -48,9 +48,9 @@ public class PageTranslationController {
     public ResponseEntity<List<PageTranslationResponse>> list(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(listUseCase
-                .execute(tourOperatorId, pageId, UUID.fromString(callerUserId)).stream()
+                .execute(tourOperatorId, pageId, callerUserId).stream()
                 .map(PageTranslationResponse::from)
                 .toList());
     }
@@ -60,9 +60,9 @@ public class PageTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         return ResponseEntity.ok(PageTranslationResponse.from(
-                getUseCase.execute(tourOperatorId, pageId, locale, UUID.fromString(callerUserId))));
+                getUseCase.execute(tourOperatorId, pageId, locale, callerUserId)));
     }
 
     @PutMapping("/{locale}")
@@ -71,9 +71,9 @@ public class PageTranslationController {
             @PathVariable UUID pageId,
             @PathVariable String locale,
             @RequestBody UpsertPageTranslationRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         upsertUseCase.execute(new UpsertPageTranslationInput(
-                UUID.fromString(callerUserId), tourOperatorId, pageId, locale,
+                callerUserId, tourOperatorId, pageId, locale,
                 body.title(), body.body(), body.seoTitle(), body.seoDescription(), body.handle()));
         return ResponseEntity.noContent().build();
     }
@@ -83,8 +83,8 @@ public class PageTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID pageId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String callerUserId) {
-        deleteUseCase.execute(tourOperatorId, pageId, locale, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        deleteUseCase.execute(tourOperatorId, pageId, locale, callerUserId);
         return ResponseEntity.noContent().build();
     }
 }

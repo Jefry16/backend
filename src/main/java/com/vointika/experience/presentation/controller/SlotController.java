@@ -67,10 +67,10 @@ public class SlotController {
     @GetMapping("/api/tour-operators/{tourOperatorId}/slots")
     public ResponseEntity<CursorPageResponse<SlotResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String callerUserId,
+            @AuthenticationPrincipal UUID callerUserId,
             HttpServletRequest request) {
         ListQuery query = listQueryParser.parse(request, ListSlotsUseCase.SCHEMA, tourOperatorId);
-        CursorPage<SlotView> page = listSlotsUseCase.execute(query, UUID.fromString(callerUserId));
+        CursorPage<SlotView> page = listSlotsUseCase.execute(query, callerUserId);
         return ResponseEntity.ok(CursorPageResponse.of(page, SlotResponse::from));
     }
 
@@ -79,8 +79,8 @@ public class SlotController {
     public ResponseEntity<SlotResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID slotId,
-            @AuthenticationPrincipal String callerUserId) {
-        SlotView view = getSlotUseCase.execute(tourOperatorId, slotId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        SlotView view = getSlotUseCase.execute(tourOperatorId, slotId, callerUserId);
         return ResponseEntity.ok(SlotResponse.from(view));
     }
 
@@ -93,9 +93,9 @@ public class SlotController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
             @RequestBody CreateSlotsRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         createSlotsUseCase.execute(new CreateSlotsInput(
-                UUID.fromString(callerUserId), tourOperatorId, experienceId,
+                callerUserId, tourOperatorId, experienceId,
                 body.days(), body.startTime(), body.endTime(),
                 body.validFrom(), body.validTo(), body.audiencePrices()));
         return ResponseEntity.status(201).build();
@@ -107,9 +107,9 @@ public class SlotController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
             @RequestBody CreateSlotRequest body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         UUID id = createSlotUseCase.execute(new CreateSlotInput(
-                UUID.fromString(callerUserId), tourOperatorId, experienceId,
+                callerUserId, tourOperatorId, experienceId,
                 body.startAt(), body.endAt(), body.audiencePrices()));
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/slots/" + id))
@@ -121,8 +121,8 @@ public class SlotController {
     public ResponseEntity<SlotResponse> cancel(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID slotId,
-            @AuthenticationPrincipal String callerUserId) {
-        SlotView refreshed = cancelSlotUseCase.execute(tourOperatorId, slotId, UUID.fromString(callerUserId));
+            @AuthenticationPrincipal UUID callerUserId) {
+        SlotView refreshed = cancelSlotUseCase.execute(tourOperatorId, slotId, callerUserId);
         return ResponseEntity.ok(SlotResponse.from(refreshed));
     }
 
@@ -132,11 +132,11 @@ public class SlotController {
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID slotId,
             @RequestBody(required = false) UpdateSlotInput body,
-            @AuthenticationPrincipal String callerUserId) {
+            @AuthenticationPrincipal UUID callerUserId) {
         // An omitted body is a legal no-op PATCH, so it binds as an empty edit.
         UpdateSlotInput input = body == null ? new UpdateSlotInput(null) : body;
         SlotView refreshed = updateSlotUseCase.execute(
-                tourOperatorId, slotId, UUID.fromString(callerUserId), input);
+                tourOperatorId, slotId, callerUserId, input);
         return ResponseEntity.ok(SlotResponse.from(refreshed));
     }
 }

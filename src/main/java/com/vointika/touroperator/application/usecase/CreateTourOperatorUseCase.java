@@ -101,11 +101,11 @@ public class CreateTourOperatorUseCase {
     }
 
     public CreateTourOperatorOutput execute(CreateTourOperatorInput input) {
-        // 1. Parse the authenticated user id.
-        UUID createdBy;
-        try {
-            createdBy = UUID.fromString(input.userId());
-        } catch (IllegalArgumentException | NullPointerException e) {
+        // 1. The authenticated user id. It arrives parsed — the catch that used to
+        // wrap UUID.fromString here is gone with the string. Null is the one case
+        // still reachable, and it stays a 401 rather than an NPE further down.
+        UUID createdBy = input.userId();
+        if (createdBy == null) {
             throw new UnauthorizedException("Invalid authenticated user");
         }
 

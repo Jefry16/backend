@@ -53,9 +53,9 @@ public class OperatorTranslationController {
     @GetMapping
     public ResponseEntity<List<OperatorTranslationResponse>> list(
             @PathVariable UUID tourOperatorId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         List<OperatorTranslationResponse> body = listUseCase
-                .execute(tourOperatorId, UUID.fromString(userIdStr)).stream()
+                .execute(tourOperatorId, userId).stream()
                 .map(OperatorTranslationResponse::from)
                 .toList();
         return ResponseEntity.ok(body);
@@ -66,9 +66,9 @@ public class OperatorTranslationController {
     public ResponseEntity<OperatorTranslationResponse> get(
             @PathVariable UUID tourOperatorId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(OperatorTranslationResponse.from(
-                getUseCase.execute(tourOperatorId, locale, UUID.fromString(userIdStr))));
+                getUseCase.execute(tourOperatorId, locale, userId)));
     }
 
     /** Creates or replaces a locale's overlay. ADMIN+. Unsupported locale → 422. */
@@ -77,8 +77,8 @@ public class OperatorTranslationController {
             @PathVariable UUID tourOperatorId,
             @PathVariable String locale,
             @RequestBody UpsertOperatorTranslationInput body,
-            @AuthenticationPrincipal String userIdStr) {
-        upsertUseCase.execute(tourOperatorId, locale, body, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        upsertUseCase.execute(tourOperatorId, locale, body, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -87,8 +87,8 @@ public class OperatorTranslationController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID tourOperatorId,
             @PathVariable String locale,
-            @AuthenticationPrincipal String userIdStr) {
-        deleteUseCase.execute(tourOperatorId, locale, UUID.fromString(userIdStr));
+            @AuthenticationPrincipal UUID userId) {
+        deleteUseCase.execute(tourOperatorId, locale, userId);
         return ResponseEntity.noContent().build();
     }
 }
