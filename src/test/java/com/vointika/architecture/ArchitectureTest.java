@@ -75,7 +75,7 @@ public class ArchitectureTest {
                                     .and(not(resideInAPackage("com.vointika.shared.."))))
                     .because("shared is the base module — it must not know about any context");
 
-    // contact owns the shopper inbox and imports no bounded context — the rule it
+    // contact owns the visitor inbox and imports no bounded context — the rule it
     // shipped without in #63. It reached the tenant through StorefrontOperatorQuery
     // until the storefront intake was removed on 2026-08-01; the admin side needs no
     // shared port at all now, so this rule currently has nothing to catch. Kept

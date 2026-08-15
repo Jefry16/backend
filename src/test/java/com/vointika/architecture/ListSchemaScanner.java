@@ -89,11 +89,25 @@ final class ListSchemaScanner {
      * {@code .nullable(...)} stays green having never read the real column, so
      * the PHANTOM half of the filter guard can never fire on it.
      *
-     * <p>Requiring the prefix closes the whole class rather than the members of
-     * it someone thought to list, and it costs nothing here — every mapped field
-     * in this codebase carries {@code @Column} or {@code @Id}. A mapped field
-     * with neither annotation nor modifier now reads as "not found", which both
-     * guards report as a failure; that is the loud direction.
+     * <p>Requiring the prefix closes those by rule rather than by enumeration,
+     * and it costs nothing here — every mapped field in this codebase carries
+     * {@code @Column} or {@code @Id}. A mapped field with neither annotation nor
+     * modifier now reads as "not found", which both guards report as a failure;
+     * that is the loud direction.
+     *
+     * <p><b>One case survives, stated rather than implied.</b> An <em>annotated</em>
+     * local satisfies the prefix through the {@code @} branch:
+     *
+     * <pre>
+     * &#64;SuppressWarnings("x") String name = q();  -&gt;  matches, ann=[@SuppressWarnings("x")]
+     * </pre>
+     *
+     * <p>Reaching it needs an annotated local named exactly after a filterable or
+     * sortable field, in a method declared above the fields, on a JPA entity. No
+     * entity is near that today. It is left alone deliberately: chasing it with
+     * more pattern costs more than it protects, and each tightening is itself a
+     * chance to stop resolving real fields — which would leave both guards green
+     * while checking less.
      */
     private static final String DECLARATION_PREFIX = "(?=@|private\\s|protected\\s|public\\s)";
 
