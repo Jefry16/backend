@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Read these first
 
-Four of the five governing documents are **not linked from anywhere in this repo** — load them yourself:
+**Nothing in the code points at any of these** — no import, no reference, no path. Load them yourself:
 
 | Document | Location | What it is |
 |---|---|---|
