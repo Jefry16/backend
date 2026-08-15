@@ -1210,7 +1210,7 @@ VALUES
      'Group booking for 15 people',
      'Hello, I am organising a company outing in September for about 15 people. Can we book a private departure, and is there a group rate?',
      NOW() - INTERVAL '21 days'),
-    (:'cm_gift_id', :'operator_id', NULL, 'ana@example.net',
+    (:'cm_gift_id', :'operator_id', 'Ana Ruiz', 'ana@example.net',
      'Gift voucher?',
      'Do you sell gift vouchers for the kayak trip? I would like to give one to my sister for her birthday.',
      NOW() - INTERVAL '14 days'),
