@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Read these first
 
-**Nothing in the code points at any of these** — no import, no reference, no path. Load them yourself:
+**Nothing loads these for you.** Four javadoc comments name `PATTERNS.md` and `STACK.md`, so the code knows they exist — but no import pulls one in and no build step reads one. Load them yourself:
 
 | Document | Location | What it is |
 |---|---|---|
