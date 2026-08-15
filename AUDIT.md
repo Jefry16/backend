@@ -18,13 +18,13 @@ Tags: **NEW** · **KNOWN-OPEN** · **REGRESSION** · **STALE-RECORD**.
 
 ## Baseline
 
-**1200 tests, 0 failures, 0 errors** — `./mvnw -o clean test -Dtest='!VointikaApplicationTests'`
-in a clean scratch copy.
+**1201 tests across 213 classes, 0 failures** — 213 matches the number of test files
+on disk, so nothing is silently skipped.
 
-`contextLoads` is excluded: it needs a live Postgres and I cannot run Docker. With it
-the suite is 1201 across 213 classes, matching 213 test files on disk. **Flyway
-ordering and `ddl-auto: validate` are unverified in this pass**; close it with
-`docker compose run --rm app ./mvnw -o test -Dtest=VointikaApplicationTests`.
+Run as `./mvnw -o clean test -Dtest='!VointikaApplicationTests'` (1200 green) in a
+clean scratch copy, then `contextLoads` separately once Postgres was available: **1
+test, 0 failures**. Flyway validated all eleven domains in order and `ddl-auto:
+validate` passed against the current entities — both previously unverified.
 
 ---
 
@@ -97,10 +97,22 @@ with `null` returns nothing).
   `audit/V1__create_audit_log.sql:16,17,29` and `contact/V1:14` confirm the columns
   are nullable in the database, not just in JPA; `AuditTrailPortImpl:60-66` for the
   `.orElse(null)`; `dev-seed.sql:1213` for the live null.
-- **Not executed.** I could not run the query — no Postgres. The SQL semantics are
-  not in doubt (they are the same ones this repo already documents for the sort
-  case), but the round trip is inference from four reads, not an observation. See
-  UNVERIFIED.
+- **Executed against the running stack. It reproduces.** Twelve seeded contact
+  messages, one with a null name:
+
+  ```
+  no filter                       -> 12   (null-name row present)
+  filter[name][neq]=Tom Baker     -> 10   (expected 11)
+  filter[name][not_contains]=zzz  -> 11   (expected 12)
+  ```
+
+  `not_contains=zzz` is the clean one: **no name contains "zzz", so the filter
+  excludes nothing — and a row still disappears.** There is no reading of that
+  result where the behaviour is intended.
+
+  The audit trail's first page has no null `actorName` today, so the effect is not
+  visible there yet. Same executor, same predicate, and `AuditTrailPortImpl:66`
+  can write the null — it is waiting for one deleted user.
 
 ## 2. `PATTERNS.md` tells the next developer this is safe
 
@@ -206,31 +218,35 @@ authorship comments, zero narration.
 
 ## UNVERIFIED
 
-- **Finding 1 has not been executed.** I read the predicate builder, the filter types,
-  the two migrations, the seed row and the actor-name resolver — but I did not run the
-  query. To settle it in one command against the dev stack:
+Two items closed against the running stack after the report was first written; what
+is left is below.
 
-  ```
-  curl -s -H "Authorization: Bearer $TOKEN" \
-    "localhost:8080/api/tour-operators/$OP/contact-messages?filter[name][neq]=Tom%20Baker" \
-    | jq '.data | length'
-  ```
-
-  Three seeded messages, one with a null name. **2 means the bug is real; 3 means I am
-  wrong.**
-- **Flyway ordering and `ddl-auto: validate`** — `contextLoads` could not run.
 - **The literal-route leak against a real locked store** — proven against the test
-  suite, not observed over HTTP.
-- **`ReplaceMenuItemsUseCase` at scale** — no item cap, verified by reading; the query
-  count needs a running Postgres.
+  suite (1200 green with a public, ungated page route), not observed over HTTP. The
+  seeded operator's gate would have to be enabled to watch it.
+- **`ReplaceMenuItemsUseCase` at scale** — no item cap, verified by reading. The
+  actual query count for a large tree is still unmeasured.
+- **`actorName`'s null case in production** — the code path is proven
+  (`AuditTrailPortImpl:66` returns `.orElse(null)`) and the filter bug is proven on
+  `contact_messages`, but no audit row in dev has a null actor name, so the two have
+  not been observed together.
+
+### Closed
+
+- **Finding 1 — executed, reproduces.** Numbers in the finding above.
+- **Flyway ordering and `ddl-auto: validate`** — `VointikaApplicationTests.contextLoads`
+  run against the live database: **1 test, 0 failures, BUILD SUCCESS.** All eleven
+  domains validated in order (2, 7, 16, 3, 4, 2, 14, 4, 8, 2 … migrations per schema),
+  and Hibernate's `validate` passed against the current entities. The full suite is
+  therefore **1201 green**, not 1200 with an excluded test.
 
 ---
 
 ## Fix these five, in order
 
 1. **Finding 1 — decide what a negative filter means when the column is null.** It is
-   the only live code defect in three passes, it is one hour, and the audit trail is
-   the wrong place to under-report. Run the curl above first; it settles it either way.
+   the only live code defect in three passes, it reproduces on the running stack, and
+   it is about an hour. The audit trail is the wrong place to under-report.
 
 2. **The three stale gate sentences in `PATTERNS.md`.** Twenty minutes. First among
    the carried items because §11 is read *before* someone adds a storefront route, and
