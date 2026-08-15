@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * One shopper-submitted contact-form message. Written once by the intake
+ * One visitor-submitted contact-form message. Written once by the intake
  * (the storefront arc's internal endpoint; dev-seeded until then) and never
  * edited — the entity is immutable once written.
  *
@@ -50,8 +50,8 @@ public class ContactMessage {
      * arrives unread: the whole point of the inbox is that someone still has to
      * look at it.
      *
-     * <p>{@code name} is always a {@link ContactName}; a shopper who gave none
-     * is one whose {@code value} is null.
+     * <p>{@code name} is required — {@link ContactName} refuses a blank one, so
+     * every row names whoever wrote it.
      */
     public static ContactMessage submit(UUID id,
                                         UUID tourOperatorId,

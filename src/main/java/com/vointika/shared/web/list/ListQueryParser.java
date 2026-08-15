@@ -78,6 +78,18 @@ public class ListQueryParser {
                 throw new InvalidFieldException(
                         "Operator '" + opToken + "' is not allowed for filter '" + field + "'");
             }
+            // Refuse rather than answer wrongly. The column can be null, and a
+            // negating predicate cannot see those rows: NOT (NULL LIKE 'x') is
+            // UNKNOWN, and WHERE keeps only true rows, so every row with no value
+            // would be dropped from a result that should contain it. Answering
+            // 422 is the honest version of "this filter cannot be expressed";
+            // the alternative is a list that is quietly short and looks fine.
+            if (op.isNegating() && schema.nullableFilters().contains(field)) {
+                throw new InvalidFieldException(
+                        "Operator '" + opToken + "' is not available for filter '" + field
+                                + "' because it may have no value. Rows without one cannot be "
+                                + "matched by a negative filter; use a positive operator instead.");
+            }
             if (value == null) {
                 throw new InvalidFieldException("Filter '" + field + "' requires a value");
             }

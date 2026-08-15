@@ -23,7 +23,7 @@ public class ContactMessageJpaEntity {
     @Column(nullable = false, updatable = false)
     private UUID tourOperatorId;
 
-    @Column(updatable = false, length = 120)
+    @Column(nullable = false, updatable = false, length = 120)
     private String name;
 
     @Column(nullable = false, updatable = false, length = 320)

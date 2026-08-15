@@ -107,7 +107,7 @@ class ContactMessageUseCasesTest {
         ArgumentCaptor<NewAuditEntry> audit = ArgumentCaptor.forClass(NewAuditEntry.class);
         verify(auditTrailPort).append(audit.capture());
         assertThat(audit.getValue().action()).isEqualTo("contact_message.deleted");
-        // The shopper's email must stay out of the trail.
+        // The sender's email must stay out of the trail.
         assertThat(audit.getValue().details()).containsOnlyKeys("summary");
     }
 
