@@ -116,8 +116,15 @@ The page size is fixed and identical for every list; there is no parameter to
 change it.
 
 Anything else is `422` — including a misspelled parameter name. So is an unknown
-filter field, an operator a field does not allow, and a sort field that is not
-sortable. A list never silently ignores part of a request.
+filter field, an operator a field does not allow, a sort field that is not
+sortable, and a negating operator (`neq`, `not_contains`, `not_in`) on a field
+that may have no value. A list never silently ignores part of a request.
+
+That last one is a refusal rather than a limitation of the parser. A row with no
+value cannot be matched by a negative filter — in SQL it is neither equal nor
+unequal to anything — so answering would mean returning a list that is quietly
+short. Endpoints below name the fields this applies to; the positive operators
+work on them as normal.
 
 [[overview-authentication]]
 === Authentication
@@ -1379,6 +1386,11 @@ Every operator-facing mutation, append-only.
 Any member. Cursor-paginated, tenant-scoped. Filter by `action`, `actorId`,
 `actorName`, `actorType`, `entityId`, `entityType` and/or `createdAt`; sort by
 `id` (default, newest first) or `createdAt`; page with `cursor`.
+
+`actorId` and `actorName` may have no value — a `SYSTEM` entry has no user
+behind it, and a deleted account no longer resolves to a name. The negating
+operators are therefore unavailable on those two fields and answer `422`:
+`not_in` on `actorId`, `neq` and `not_contains` on `actorName`.
 
 operation::audit-log/list[]
 

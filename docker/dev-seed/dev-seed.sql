@@ -1197,8 +1197,9 @@ ON CONFLICT (entry_value_id, locale) DO UPDATE SET
 
 -- 15. Contact-inbox messages. Twelve of them, so the inbox pages. created_at
 -- ASCENDS with the fixed ids (070 oldest) so the inbox's -id default order
--- matches recency, like real UUIDv7 intake rows will. One message has a NULL
--- name — the form allows it, so the list has to render it.
+-- matches recency, like real UUIDv7 intake rows will. Every message names its
+-- sender: `name` is NOT NULL since contact/V3, and a nameless row here would
+-- abort the whole seed under ON_ERROR_STOP=1.
 INSERT INTO contact.contact_messages
     (id, tour_operator_id, name, email, summary, content, created_at)
 VALUES

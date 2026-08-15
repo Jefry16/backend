@@ -374,10 +374,37 @@ that way once and it was the recorded mistake this fixes). The recipe:
    keyset on that column, and in SQL a `NULL` comparison is *unknown* rather than
    false — so a row with a null sort value matches neither the `>`/`<` nor the
    `id` tie-break, and **disappears after page one**: no error, no log line, just
-   a list that is quietly short. A nullable column is fine to *filter* on (not
-   matching is the expected answer there); it is only sorting that breaks.
-   `SortableColumnsAreNeverNullableTest` fails the build on it, deriving the
-   endpoint→entity pairing from the `listExecutor.list(...)` call itself.
+   a list that is quietly short.
+
+   **A nullable column may be filtered, but only with a positive operator, and
+   the schema has to say it is nullable.** The same three-valued logic bites one
+   step along: `neq`, `not_contains` and `not_in` are built as a negation, and
+   `NOT (NULL LIKE 'x')` is unknown, so every row with no value is dropped from a
+   result it belongs in. Measured before the rule existed — 12 contact messages,
+   one nameless, and `not_contains=zzz` returned 11: a filter that excludes
+   nothing still lost a row. Mark the field `.nullable("actorName")` and
+   `ListQueryParser` answers **422** for those three operators rather than a short
+   list; `contains`, `eq` and `starts_with` keep working, which is why this is a
+   per-operator refusal and not a ban.
+
+   *Refuse rather than repair, by decision.* `cb.or(cb.isNull(path), …)` would
+   also work, but it makes `neq` stop being the complement of `eq` and picks a
+   semantic on the caller's behalf. A 422 is honest about a limit and can become a
+   repair later without breaking anyone.
+
+   *Which columns can stay nullable.* Make it `NOT NULL` where the value is really
+   required — `contact_messages.name` was nullable by mistake and is not any more
+   (contact/V3). Where a null is the truth, keep it and declare it:
+   `audit_log.actor_id`/`actor_name` are null for a `SYSTEM` entry, which has no
+   user behind it to name.
+
+   Two guards, both deriving the endpoint→entity pairing from the
+   `listExecutor.list(...)` call so a new list endpoint is covered the day it is
+   written: `SortableColumnsAreNeverNullableTest` (sorting is forbidden outright)
+   and `FilterableNullableColumnsAreDeclaredTest` (the declaration must match the
+   entity **both** ways — an undeclared nullable column is the live bug, a
+   declared `NOT NULL` one needlessly 422s a working filter). They share
+   `ListSchemaScanner`; fixing a blind spot in one must not leave the other blind.
 2. **Repository** — `CursorPage<Foo> list(ListQuery query)`, delegating to the
    shared `CriteriaListExecutor.list(FooJpaEntity.class, SCHEMA, query, Mapper::toDomain)`.
    The executor does keyset cursor pagination (page size 20, tie-broken on `id`),

@@ -100,8 +100,8 @@ class ContactMessageControllerDocumentationTest {
                         responseFields(
                                 fieldWithPath("data[].id").description("The message id"),
                                 fieldWithPath("data[].context").description("\"contact-messages\""),
-                                fieldWithPath("data[].name").type("String").description("The shopper's name, or null").optional(),
-                                fieldWithPath("data[].email").description("The shopper's reply address"),
+                                fieldWithPath("data[].name").description("Who wrote the message. Always present"),
+                                fieldWithPath("data[].email").description("The sender's reply address"),
                                 fieldWithPath("data[].summary").description("One-line subject"),
                                 fieldWithPath("data[].createdAt").description("When submitted"),
                                 fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
@@ -122,8 +122,8 @@ class ContactMessageControllerDocumentationTest {
                         responseFields(
                                 fieldWithPath("id").description("The message id"),
                                 fieldWithPath("context").description("\"contact-messages\""),
-                                fieldWithPath("name").type("String").description("The shopper's name, or null").optional(),
-                                fieldWithPath("email").description("The shopper's reply address"),
+                                fieldWithPath("name").description("Who wrote the message. Always present"),
+                                fieldWithPath("email").description("The sender's reply address"),
                                 fieldWithPath("summary").description("One-line subject"),
                                 fieldWithPath("content").description("The raw message body, verbatim"),
                                 fieldWithPath("createdAt").description("When submitted"))));

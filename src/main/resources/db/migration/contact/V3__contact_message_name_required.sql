@@ -22,8 +22,18 @@
 -- intake endpoint has never shipped — every existing row is dev-seeded — so
 -- this touches fixtures only, and a derived value beats inventing 'Anonymous'
 -- for rows we can still describe honestly.
+--
+-- Both guards below are for rows this database does not have, and that is the
+-- point: a migration aborts mid-deploy on the one row nobody predicted.
+--   * `left(…, 120)` — email is VARCHAR(320) and carries no limit on its local
+--     part, so an address with a 200-character local part would fail on
+--     "value too long for type character varying(120)".
+--   * NULLIF/COALESCE — an address beginning with '@' yields an empty local
+--     part, which satisfies SET NOT NULL while breaking the invariant
+--     ContactName enforces above it (blank means absent). 'Unknown' is honest
+--     about a row we genuinely cannot name.
 UPDATE contact.contact_messages
-SET name = split_part(email, '@', 1)
+SET name = COALESCE(NULLIF(btrim(left(split_part(email, '@', 1), 120)), ''), 'Unknown')
 WHERE name IS NULL OR btrim(name) = '';
 
 ALTER TABLE contact.contact_messages
