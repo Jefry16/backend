@@ -298,6 +298,78 @@ path.
 **Renaming a component here is a breaking change** once operators author themes.
 Decide the shape while there are four records to change, not forty templates.
 
+## 2b. The render path (decided 2026-08-02)
+
+**Rendering runs in Spring, in-process, with Mustache** —
+`spring-boot-starter-mustache` → `spring-boot-mustache` → `com.samskivert:jmustache`
+1.16, confirmed from the published POMs.
+
+**Nothing renders a template today, and the decision is unchanged.** The storefront
+was cut back to a placeholder on 2026-08-11 and answers JSON, so the dependency and
+`StorefrontMustacheConfig`'s compiler sit ready with no caller. They are kept rather
+than removed and reinstated because every setting on that compiler is a *finding* —
+each arrived at by reverting it and watching the failure — and those stay true only
+while something exercises them. **The mechanics live in `STACK.md`'s gotchas**, not
+here: null and missing variables, the `DefaultCollector(false)` trade, template
+inheritance, standalone section tags, and why `MustacheView` cannot be used.
+
+**Untrusted templates are the constraint, and it is a day-one one.** Shopify built
+Liquid in 2006 *because ERB executes arbitrary Ruby* — it is a sandbox, not a
+convenience. Year one we author every theme; the door has to stay open for operators
+authoring their own. That makes the engine a **format** decision rather than a
+library one: a year of themes in a non-sandboxed language cannot be opened up later
+without rewriting the corpus or running two engines forever.
+
+**Of Spring Boot's four, only Mustache can safely run a template we did not write.**
+Thymeleaf evaluates SpEL (`${T(java.lang.Runtime)…}`); Groovy is arbitrary code;
+FreeMarker's own FAQ advises against untrusted authors. **Performance does not
+discriminate** — every interpreted engine lands in one band (FreeMarker 14.7s,
+Mustache 15.8s, Thymeleaf 18.3s per 25k renders) and render time is dwarfed by the
+framework and Postgres. Only compiling engines are meaningfully faster, and they
+compile to Java, which disqualifies them for the same reason.
+
+**Liqp was the alternative and was rejected.** Liquid is nicer to author in and has
+Drops, but `nl.big-o:liqp` is 178 stars and one maintainer, and a third-party fork
+already exists — evidence both that the abandonment risk is real and that vendoring
+is the escape. Neither engine ships Shopify's storefront filters and tags (`money`,
+`asset_url`, `{% section %}`, `{% paginate %}`); those are ours to write in any
+language, so they do not discriminate either.
+
+**The cost we accepted, so nobody rediscovers it as a surprise.** Mustache is
+logic-less: `{{price}}`, never `{{price | money}}`. Every formatting need is a Java
+change or an exposed lambda, and a theme author who cannot touch Java is blocked
+until one exists. Plan that helper set as real work. It is *smaller* than Liquid's
+filter list, though — `Mustache.Formatter` does type-directed formatting with no
+helper at all, which covers the largest family (money, dates, numbers).
+
+**Custom tags are impossible, verified in the source.** `Mustache.java` parses tags
+with a hardcoded `switch (tag.charAt(0))` over `# > < $ ^ / ! &` plus a default for
+plain variables. No registry, no extension point. One consequence is forced rather
+than chosen: **a section's schema cannot live inside its template** the way
+Shopify's `{% schema %}` does.
+
+**Push vs pull follows from where rendering runs.** A separate renderer has no
+database, so the backend must resolve every typed reference *before* answering — a
+template-JSON store, a setting-type registry, a resolver pass, and a one-call-per-page
+rule to protect. Rendering in-process lets the template ask mid-render, which makes
+merchant-composable sections cheap instead of a subsystem. (Shopify caps
+`all_products` at 20 handles per page because they hit the same fan-out.)
+
+**Three decisions came back the same shape after the rewrite**, which is the evidence
+they were about the problem and not the renderer: tenant resolution from the Host
+header rejecting the apex and multi-label subdomains (#88/#90), the strict locale
+rule, and **the password gate running before the locale check** (#91). The deleted
+Worker had reached all three independently.
+
+**Still open under this decision:** the section/theme model — how a merchant composes
+a page, where a section's schema lives given the constraint above, and what OS 2.0
+scope we match. **Real pages force that model; it is not designed abstractly.** Also
+unsettled and worth starting early: **domains**. Shopify's `{handle}.myshopify.com`
+split exists for **cookie isolation**, not branding — storefronts under the admin's
+domain could set cookies on the shared parent. Candidate mapping is `vointika.com`
+for marketing and the admin SPA, `{handle}.myvointika.com` for storefronts, custom
+domains later; getting a domain onto the Public Suffix List takes time.
+
 ## 3. Persistence per aggregate — the 6-file recipe
 
 For an aggregate `Foo`:
