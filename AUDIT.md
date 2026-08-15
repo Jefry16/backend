@@ -61,14 +61,8 @@ guard uses:
 | `ListAuditLogUseCase` | `actorId` | SET | `not_in` | Latent |
 
 **The contact one reproduces on any dev database**, because the seed puts a null in
-it (`dev-seed.sql:1213` — `(:'cm_gift_id', :'operator_id', NULL, 'ana@example.net', …)`):
-
-```
-GET /api/tour-operators/{id}/contact-messages?filter[name][neq]=Tom Baker
-```
-
-returns two of the three seeded messages. The third is not named Tom Baker and
-should be there.
+it (`dev-seed.sql:1213` — `(:'cm_gift_id', :'operator_id', NULL, 'ana@example.net', …)`).
+Measured numbers are below.
 
 **The audit one is reachable and matters more.** `AuditTrailPortImpl:60-66` resolves
 the actor's display name and ends `.orElse(null)`, so any USER actor whose account
