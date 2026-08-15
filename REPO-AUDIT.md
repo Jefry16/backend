@@ -31,10 +31,16 @@ multi-tenant storefront resolved from the request host.
 
 ## Prior art — read this before writing a single finding
 
-**This repo was fully audited on 2026-08-14** and the resulting report is the
-current untracked `AUDIT.md`. Eight consecutive passes have found dead code, bad
-practices and doc drift empty or near-empty. A report that re-lists closed findings
-is worse than a short one, because it makes the open items harder to see.
+**`AUDIT.md` is the previous pass, and it is tracked** — read it at whatever date
+it carries rather than assuming one. Nine consecutive passes have found dead code,
+bad practices and doc drift empty or near-empty. A report that re-lists closed
+findings is worse than a short one, because it makes the open items harder to see.
+
+*This paragraph named a fixed date and called the report untracked until
+2026-08-15, while the same file's Output section already said reports are tracked.
+Exactly the survivor case category 5 below tells you to hunt: a rule changes and
+the old wording lives on somewhere nobody swept. Left as a note rather than
+silently corrected, because the file asks auditors to report that pattern.*
 
 So, before reporting anything:
 

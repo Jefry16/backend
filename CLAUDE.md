@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Read these first
 
-Three of the four governing documents are **not linked from anywhere in this repo** — load them yourself:
+Four of the five governing documents are **not linked from anywhere in this repo** — load them yourself:
 
 | Document | Location | What it is |
 |---|---|---|
@@ -13,6 +13,7 @@ Three of the four governing documents are **not linked from anywhere in this rep
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
 | **CONTEXT-AUDIT** | `CONTEXT-AUDIT.md` (in repo) | The playbook for auditing one bounded context — dead code, over-engineering, coupling. Invoke with just a context name. |
+| **REPO-AUDIT** | `REPO-AUDIT.md` (in repo) | The playbook for auditing the **whole** backend — the six categories, the four contradiction sweeps, the invariants to mutation-check, and the measurement traps. Its output is `AUDIT.md`, which is tracked and dated. |
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
 

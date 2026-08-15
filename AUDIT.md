@@ -30,17 +30,27 @@ validate` passed against the current entities — both previously unverified.
 
 ## 1. A "not equal" filter silently hides every row where the column is null
 
-- **Files**: `shared/infrastructure/list/CriteriaListExecutor.java:129, 131, 142`
+- **Files**: `shared/infrastructure/list/CriteriaListExecutor.java:117, 129, 131, 142, 155`
 - **Severity**: **medium**, and it is the kind that gets found by a customer, not a test
 - **Tag**: **NEW**
 
-Three filter operators are built as a plain negation:
+The three negating operators are built as a plain negation, in **five places
+across four predicate builders** — `NEQ` is allowed on TEXT, NUMBER, TIME,
+INSTANT *and* BOOLEAN, so it is written out once per type:
 
 ```java
-case NEQ          -> cb.notLike(lowerCol, escaped, '\\');            // :129
-case NOT_CONTAINS -> cb.notLike(lowerCol, "%" + escaped + "%", '\\'); // :131
-return f.op() == FilterOp.NOT_IN ? cb.not(inPredicate) : inPredicate; // :142
+case NEQ          -> cb.notEqual(path, value);                        // :117  boolean
+case NEQ          -> cb.notLike(lowerCol, escaped, '\\');             // :129  text
+case NOT_CONTAINS -> cb.notLike(lowerCol, "%" + escaped + "%", '\\'); // :131  text
+return f.op() == FilterOp.NOT_IN ? cb.not(inPredicate) : inPredicate; // :142  set
+case NEQ          -> cb.notEqual(path, value);                        // :155  number/time/instant
 ```
+
+> **Correction (post-review).** An earlier revision of this report named only the
+> three text/set sites and prescribed a per-site fix. That would have patched
+> three of five, leaving `booleanPredicate` and `numberPredicate` broken the first
+> time a nullable column is declared `.number(...)` or `.bool(...)`. The count is
+> the reason the shipped fix does not have that shape — see the Fix note below.
 
 In SQL, `NOT (NULL LIKE 'x')` is **unknown**, not true, and `WHERE` keeps only true
 rows. So a row whose column is null matches neither the filter nor its negation. Ask
@@ -79,11 +89,17 @@ list is worst.
 null column (`grep` over `src/test` for `neq|not_in|NOT_CONTAINS|notLike` combined
 with `null` returns nothing).
 
-- **Fix**: OR in an `IS NULL` for the three negative ops — `cb.or(cb.isNull(path),
-  cb.notLike(...))` and the same for `NOT_IN`. That makes "not X" mean what a caller
-  reads it to mean. Roughly an hour including tests. Decide it deliberately, though:
-  the alternative is to keep SQL's semantics and *document* them, which is defensible
-  but is not what the API currently claims anywhere.
+- **Fix**: **do not patch the predicate builders.** That was this report's first
+  prescription and it is the wrong layer: there are five negation sites across four
+  builders, so a per-site fix has to be repeated per type and is one `case` away
+  from being incomplete again.
+  **PR #165 refuses upstream instead** — `ListQueryParser` rejects a negating
+  operator on a field the schema declares `.nullable(...)`, which sits *above* the
+  type dispatch and therefore covers all five sites with no per-type code. The
+  parser is also the only layer that sees which operator the caller asked for.
+  Repairing (`cb.or(cb.isNull(path), …)`) remains possible later and would then
+  need doing once per builder; refusing first keeps that option open without
+  making `neq` stop being the complement of `eq` today.
 - **Verified by**: `CriteriaListExecutor` read end to end; `FilterType.java` confirms
   TEXT allows `NEQ`/`NOT_CONTAINS` and SET allows `NOT_IN`; a script that pairs all
   15 schemas to their entities and resolves every filterable field's nullability
