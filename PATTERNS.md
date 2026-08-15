@@ -369,6 +369,15 @@ that way once and it was the recorded mistake this fixes). The recipe:
 1. **Schema** — a `public static final ListSchema SCHEMA` on the use case:
    `.tenantScoped()` (scopes to the entity's `tourOperatorId`), `.set/text/number/
    instant(...)` for each filterable field, `.sortable(...)` + `.defaultSort(...)`.
+
+   **A `.sortable(...)` field must map to a `NOT NULL` column.** The cursor is a
+   keyset on that column, and in SQL a `NULL` comparison is *unknown* rather than
+   false — so a row with a null sort value matches neither the `>`/`<` nor the
+   `id` tie-break, and **disappears after page one**: no error, no log line, just
+   a list that is quietly short. A nullable column is fine to *filter* on (not
+   matching is the expected answer there); it is only sorting that breaks.
+   `SortableColumnsAreNeverNullableTest` fails the build on it, deriving the
+   endpoint→entity pairing from the `listExecutor.list(...)` call itself.
 2. **Repository** — `CursorPage<Foo> list(ListQuery query)`, delegating to the
    shared `CriteriaListExecutor.list(FooJpaEntity.class, SCHEMA, query, Mapper::toDomain)`.
    The executor does keyset cursor pagination (page size 20, tie-broken on `id`),
