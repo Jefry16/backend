@@ -298,6 +298,78 @@ path.
 **Renaming a component here is a breaking change** once operators author themes.
 Decide the shape while there are four records to change, not forty templates.
 
+## 2b. The render path (decided 2026-08-02)
+
+**Rendering runs in Spring, in-process, with Mustache** —
+`spring-boot-starter-mustache` → `spring-boot-mustache` → `com.samskivert:jmustache`
+1.16, confirmed from the published POMs.
+
+**Nothing renders a template today, and the decision is unchanged.** The storefront
+was cut back to a placeholder on 2026-08-11 and answers JSON, so the dependency and
+`StorefrontMustacheConfig`'s compiler sit ready with no caller. They are kept rather
+than removed and reinstated because every setting on that compiler is a *finding* —
+each arrived at by reverting it and watching the failure — and those stay true only
+while something exercises them. **The mechanics live in `STACK.md`'s gotchas**, not
+here: null and missing variables, the `DefaultCollector(false)` trade, template
+inheritance, standalone section tags, and why `MustacheView` cannot be used.
+
+**Untrusted templates are the constraint, and it is a day-one one.** Shopify built
+Liquid in 2006 *because ERB executes arbitrary Ruby* — it is a sandbox, not a
+convenience. Year one we author every theme; the door has to stay open for operators
+authoring their own. That makes the engine a **format** decision rather than a
+library one: a year of themes in a non-sandboxed language cannot be opened up later
+without rewriting the corpus or running two engines forever.
+
+**Of Spring Boot's four, only Mustache can safely run a template we did not write.**
+Thymeleaf evaluates SpEL (`${T(java.lang.Runtime)…}`); Groovy is arbitrary code;
+FreeMarker's own FAQ advises against untrusted authors. **Performance does not
+discriminate** — every interpreted engine lands in one band (FreeMarker 14.7s,
+Mustache 15.8s, Thymeleaf 18.3s per 25k renders) and render time is dwarfed by the
+framework and Postgres. Only compiling engines are meaningfully faster, and they
+compile to Java, which disqualifies them for the same reason.
+
+**Liqp was the alternative and was rejected.** Liquid is nicer to author in and has
+Drops, but `nl.big-o:liqp` is 178 stars and one maintainer, and a third-party fork
+already exists — evidence both that the abandonment risk is real and that vendoring
+is the escape. Neither engine ships Shopify's storefront filters and tags (`money`,
+`asset_url`, `{% section %}`, `{% paginate %}`); those are ours to write in any
+language, so they do not discriminate either.
+
+**The cost we accepted, so nobody rediscovers it as a surprise.** Mustache is
+logic-less: `{{price}}`, never `{{price | money}}`. Every formatting need is a Java
+change or an exposed lambda, and a theme author who cannot touch Java is blocked
+until one exists. Plan that helper set as real work. It is *smaller* than Liquid's
+filter list, though — `Mustache.Formatter` does type-directed formatting with no
+helper at all, which covers the largest family (money, dates, numbers).
+
+**Custom tags are impossible, verified in the source.** `Mustache.java` parses tags
+with a hardcoded `switch (tag.charAt(0))` over `# > < $ ^ / ! &` plus a default for
+plain variables. No registry, no extension point. One consequence is forced rather
+than chosen: **a section's schema cannot live inside its template** the way
+Shopify's `{% schema %}` does.
+
+**Push vs pull follows from where rendering runs.** A separate renderer has no
+database, so the backend must resolve every typed reference *before* answering — a
+template-JSON store, a setting-type registry, a resolver pass, and a one-call-per-page
+rule to protect. Rendering in-process lets the template ask mid-render, which makes
+merchant-composable sections cheap instead of a subsystem. (Shopify caps
+`all_products` at 20 handles per page because they hit the same fan-out.)
+
+**Three decisions came back the same shape after the rewrite**, which is the evidence
+they were about the problem and not the renderer: tenant resolution from the Host
+header rejecting the apex and multi-label subdomains (#88/#90), the strict locale
+rule, and **the password gate running before the locale check** (#91). The deleted
+Worker had reached all three independently.
+
+**Still open under this decision:** the section/theme model — how a merchant composes
+a page, where a section's schema lives given the constraint above, and what OS 2.0
+scope we match. **Real pages force that model; it is not designed abstractly.** Also
+unsettled and worth starting early: **domains**. Shopify's `{handle}.myshopify.com`
+split exists for **cookie isolation**, not branding — storefronts under the admin's
+domain could set cookies on the shared parent. Candidate mapping is `vointika.com`
+for marketing and the admin SPA, `{handle}.myvointika.com` for storefronts, custom
+domains later; getting a domain onto the Public Suffix List takes time.
+
 ## 3. Persistence per aggregate — the 6-file recipe
 
 For an aggregate `Foo`:
@@ -424,6 +496,45 @@ opaque (base64, keyset on sort-field + id); `nextCursor` is null on the last pag
 list never silently ignores part of a request (#134).
 Canonical: `ListMembersUseCase` + `GET /api/tour-operators/{id}/members`.
 
+## 4c. One DTO or two at the application boundary
+
+A use case takes an `Input` from `application/dto/input` and the controller owns a
+`Request` in `presentation/request`. Keep both **only when they differ**. In identity
+nine pairs do — the `Input` carries a `userId` from the authenticated principal, or a
+`language` the body never had — and four were byte-identical copies, since deleted.
+
+An identical copy is not a seam. Add a field to the request that the use case needs
+and both change in lockstep, so it insulates nothing while costing a file and a
+mapping step.
+
+**Check the nested records separately from the wrapper.** `ReplaceMenuItemsRequest`
+and `ReplaceMenuItemsInput` genuinely differ — the input adds the caller and the two
+path ids — but the tree node inside them was identical, so the controller carried a
+recursive copy that ran on every save. A pair can be a real seam at the top and a
+pure copy one level down; the nested type is where the cost is, because collapsing it
+deletes a mapper and not just a file.
+
+When you collapse one, **the application record is the survivor** and the controller
+binds to it:
+
+```java
+public ResponseEntity<LoginUserResponse> login(@RequestBody LoginUserInput input) {
+    var output = loginUserUseCase.execute(input);
+```
+
+Never the other way. A use case referencing a `presentation` type inverts the layer
+graph and ArchUnit fails the build.
+
+The condition, and the build enforces it: the surviving record must carry **no
+annotations**. The application layer's allowlist is `com.vointika..` + `java..`, so a
+`@JsonProperty` or a Jakarta validation annotation on it is a compile-time-legal but
+build-breaking change — and the correct answer at that point is to reintroduce a
+presentation DTO, because the shapes have genuinely diverged.
+
+Responses are the mirror image: `LoginUserOutput` carries `accessToken` *and*
+`refreshToken`, `LoginUserResponse` carries only the access token because the refresh
+token leaves in an httpOnly cookie. That pair stays.
+
 ## 4d. Two namespaces read as one must be validated as one
 
 A storefront handle resolves against **localized handles first, canonical handles
@@ -482,7 +593,7 @@ guards exist to prevent. The window is small and both `page` and `experience` ca
 Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
 making the invariant true.
 
-## 4e. The translation-overlay table (six of them, in two shapes)
+## 4e. The translation-overlay table (eight of them, in two shapes)
 
 A translatable aggregate gets a sibling table keyed on
 `(<owner keys…>, locale)`, and the read overlays it
@@ -717,7 +828,8 @@ library in a use case means a port is missing.
 fails the build exactly like a third-party jar would. The storefront's unlock cookie was
 written as an `application/policy` class on the assumption that "pure JDK" was enough —
 `UnlockTokenPort` + `HmacUnlockToken` in `infrastructure/security` is what it became.
-(Both went with the placeholder cutback; the lesson is why this paragraph stays.)
+Both are live: the gate returned in #138, so this is a description and not only a
+lesson.
 Reading the rule says this; only running it proves it, which is the point.
 
 **Logging follows the same rule.** If a *side effect* fails and the caller does not
@@ -726,45 +838,6 @@ adapter swallows and logs it, and the port documents that it never throws. Only 
 the use case itself has something to report (a security signal, a branch taken because
 config was missing) does it reach for `DiagnosticLogPort`, which takes the calling
 class so log names still point at the reporter.
-
-## 4c. One DTO or two at the application boundary
-
-A use case takes an `Input` from `application/dto/input` and the controller owns a
-`Request` in `presentation/request`. Keep both **only when they differ**. In identity
-nine pairs do — the `Input` carries a `userId` from the authenticated principal, or a
-`language` the body never had — and four were byte-identical copies, since deleted.
-
-An identical copy is not a seam. Add a field to the request that the use case needs
-and both change in lockstep, so it insulates nothing while costing a file and a
-mapping step.
-
-**Check the nested records separately from the wrapper.** `ReplaceMenuItemsRequest`
-and `ReplaceMenuItemsInput` genuinely differ — the input adds the caller and the two
-path ids — but the tree node inside them was identical, so the controller carried a
-recursive copy that ran on every save. A pair can be a real seam at the top and a
-pure copy one level down; the nested type is where the cost is, because collapsing it
-deletes a mapper and not just a file.
-
-When you collapse one, **the application record is the survivor** and the controller
-binds to it:
-
-```java
-public ResponseEntity<LoginUserResponse> login(@RequestBody LoginUserInput input) {
-    var output = loginUserUseCase.execute(input);
-```
-
-Never the other way. A use case referencing a `presentation` type inverts the layer
-graph and ArchUnit fails the build.
-
-The condition, and the build enforces it: the surviving record must carry **no
-annotations**. The application layer's allowlist is `com.vointika..` + `java..`, so a
-`@JsonProperty` or a Jakarta validation annotation on it is a compile-time-legal but
-build-breaking change — and the correct answer at that point is to reintroduce a
-presentation DTO, because the shapes have genuinely diverged.
-
-Responses are the mirror image: `LoginUserOutput` carries `accessToken` *and*
-`refreshToken`, `LoginUserResponse` carries only the access token because the refresh
-token leaves in an httpOnly cookie. That pair stays.
 
 ## 9. Testing shapes
 
@@ -916,9 +989,9 @@ purpose: if every owner has every optional field set, nothing shows you what
 - **A storefront page route is registered in more than one place, and only the
   route itself fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
   needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method
-  (miss either and it is a 401 in the JSON error shape). It was **four** places
-  while the password gate existed — its interceptor needed every page pattern too,
-  or a locked store served the page — and it goes back to four when the gate does.
+  (miss either and it is a 401 in the JSON error shape). **It is four registrations
+  across three registries today**, because the password gate is live: its interceptor
+  needs every page pattern too, or a locked store serves the page to anyone.
   So define the pattern **once**, in `application/policy` where both layers can
   see it (`StorefrontRoutes`, with `LOCALIZED_*` built from `LOCALE` rather than
   retyping the regex), and pin the rest: `servesHeadAsWellAsGet` per route.
@@ -948,7 +1021,8 @@ purpose: if every owner has every optional field set, nothing shows you what
   resolved per request, or every controller test in the codebase fails to construct
   the config. `WebConfig` (touroperator) does this, and its path patterns are what
   keep the resolution from ever happening on a foreign route. `StorefrontWebConfig`
-  was the second example until the password gate it registered was deleted.
+  is the second example — it registers the storefront lock interceptor, which is
+  live again since #138.
 - An in-tx `save(entity)` followed by a bulk `@Modifying` JPQL on a **different**
   table needs `@Modifying(clearAutomatically = true, flushAutomatically = true)`.
   Without `flushAutomatically`, Hibernate skips the auto-flush (no query-space

@@ -25,6 +25,7 @@ a version-specific gotcha.
 | Apache Kafka (broker) | `4.3.1` | https://kafka.apache.org/documentation/ |
 | MinIO (server) | `RELEASE.2025-09-07T16-13-09Z` | https://docs.min.io/ · https://github.com/minio/minio |
 | MinIO client (`mc`) | `RELEASE.2025-08-13T08-35-41Z` | https://docs.min.io/ |
+| SESv2 mock (`aws-ses-v2-local` on `node`) | `2.10.0` on `node:22.23.1-alpine` | https://github.com/domdomegg/aws-ses-v2-local — dev only; sent mail is readable at `GET localhost:8005/store` |
 
 ## Platform & framework (pom.xml)
 

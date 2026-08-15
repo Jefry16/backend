@@ -112,7 +112,6 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_JWT_SECRET: super-secret-key-change-me-in-production-must-be-at-least-32-chars
-      # Dev only: `?format=json` returns a page's theme context instead of the page.
       APP_JWT_ACCESS_TOKEN_EXPIRATION_MS: 900000
       # Dev email → the local SESv2 mock (the `ses` service). Dummy AWS creds
       # satisfy the SDK signer; the mock ignores them. Set APP_SES_ENDPOINT blank
