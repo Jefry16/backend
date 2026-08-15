@@ -80,6 +80,7 @@ final class ListSchemaScanner {
      *
      * <pre>
      * String name = compute();          -&gt; type=String  nullable=true
+     * String name;                      -&gt; type=String  nullable=true
      * var name = 1;                     -&gt; type=var     nullable=true
      * Map&lt;String, String&gt; name = q();   -&gt; type=String&gt; nullable=true
      * </pre>
