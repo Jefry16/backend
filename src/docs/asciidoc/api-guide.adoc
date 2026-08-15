@@ -736,6 +736,10 @@ Any member. Cursor-paginated, tenant-scoped. Filter by `status`, `day`,
 soonest first), `day`, `status`, `experienceName`, `createdAt` or `id`; page
 with `cursor`.
 
+`day` is the weekday the slot starts on, not a date: an integer `0`–`6`,
+Sunday-first, so `filter[day][in]=0,6` is every weekend departure. Sorting by it
+groups the week rather than ordering time.
+
 operation::slots/list[]
 
 [[resources-slots-get]]

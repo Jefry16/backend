@@ -71,6 +71,8 @@ class ApiGuideDocumentsEveryListFieldTest {
     private static final Pattern FILTER =
             Pattern.compile("\\.(?:text|set|number|time|instant|bool)\\(\\s*\"([^\"]+)\"");
     private static final Pattern SORTABLE = Pattern.compile("\\.sortable\\(\\s*\"([^\"]+)\"");
+    /** The {@code -} is direction, not part of the field name the guide prints. */
+    private static final Pattern DEFAULT_SORT = Pattern.compile("\\.defaultSort\\(\\s*\"-?([^\"]+)\"");
     /**
      * The two clauses, each ending at the {@code ;} that closes it. Parsing spans
      * rather than scanning the whole section is what makes the check
@@ -119,12 +121,13 @@ class ApiGuideDocumentsEveryListFieldTest {
         schemas.forEach((useCase, schema) -> {
             String operation = OPERATIONS.get(useCase);
             String section = sectionFor(guide, operation);
-            Set<String> claimedFilters = claimed(FILTER_CLAUSE, section, operation, "filter by");
-            Set<String> claimedSorts = claimed(SORT_CLAUSE, section, operation, "sort by");
+            String filterClause = clause(FILTER_CLAUSE, section, operation, "filter by");
+            String sortClause = clause(SORT_CLAUSE, section, operation, "sort by");
 
             Set<String> problems = new TreeSet<>();
-            difference(schema.filters(), claimedFilters, "filter", problems);
-            difference(schema.sortable(), claimedSorts, "sort", problems);
+            difference(schema.filters(), backticked(filterClause), "filter", problems);
+            difference(schema.sortable(), backticked(sortClause), "sort", problems);
+            defaultSort(schema.defaultSort(), sortClause, problems);
             if (!problems.isEmpty()) {
                 wrong.put(useCase, problems);
             }
@@ -137,24 +140,82 @@ class ApiGuideDocumentsEveryListFieldTest {
                         MISSING = the schema allows it and the guide never says so — working \
                         functionality no consumer can find.
                         PHANTOM = the guide promises it and the schema does not allow it — a \
-                        consumer who uses it gets a 422.""",
+                        consumer who uses it gets a 422.
+                        WRONG DEFAULT = the guide marks one field '(default, …)' and defaultSort \
+                        orders by another — a consumer gets a page ordered by something other \
+                        than what they were told.
+                        UNMARKED = the sort clause marks no default at all, which the Lists \
+                        overview promises every endpoint states.
+                        UNREADABLE = this test could not read the schema's defaultSort, so it is \
+                        reporting its own blind spot rather than a fault in the guide.""",
                         wrong.size(), describe(wrong))
                 .isEmpty();
     }
 
     /** What one list endpoint allows, kept apart because the guide states them apart. */
-    private record Schema(Set<String> filters, Set<String> sortable) {}
+    private record Schema(Set<String> filters, Set<String> sortable, String defaultSort) {}
 
-    /** The fields a section claims in one clause. Absent clause = a failure, never an empty set. */
-    private static Set<String> claimed(Pattern clause, String section, String operation, String label) {
-        Matcher m = clause.matcher(section);
+    /**
+     * The field the section marks {@code (default …)} must be the one
+     * {@code defaultSort} actually orders by.
+     *
+     * <p><b>Comparing the sortable sets does not cover this.</b> The default is a
+     * member of that set either way, so moving the marker onto the wrong field
+     * changes nothing the set comparison can see — verified by mutation: claiming
+     * {@code `name` (default, A-Z)} on List Audiences against
+     * {@code defaultSort("-createdAt")} left this test green before this check
+     * existed. It is also the worse failure of the two. A field the guide omits is
+     * functionality a consumer cannot find; a default the guide gets wrong is a
+     * statement they will act on, and the page they get back is ordered by
+     * something else.
+     *
+     * <p>The marker is read as the <b>last</b> backticked name before
+     * {@code (default}, which is the phrasing every section uses: the default
+     * leads the sort clause and carries the parenthetical.
+     */
+    private static void defaultSort(String schemaDefault, String sortClause, Set<String> into) {
+        // A default the scan could not read is not a guide error, and must not be
+        // reported as one: `.defaultSort(NEWEST_FIRST)` compiles and behaves
+        // identically to the literal, and blaming the section sends whoever reads
+        // this to rewrite prose that was already right.
+        if (schemaDefault == null) {
+            into.add("UNREADABLE defaultSort — the scan found no string literal in "
+                    + ".defaultSort(...); the section may well be correct");
+            return;
+        }
+        int marker = sortClause.indexOf("(default");
+        if (marker < 0) {
+            into.add("UNMARKED default — the schema orders by " + schemaDefault
+                    + " and the sort clause marks no field '(default, …)'");
+            return;
+        }
+        List<String> before = allMatches(BACKTICKED, sortClause.substring(0, marker));
+        if (before.isEmpty()) {
+            into.add("UNMARKED default — '(default' is not preceded by a `field`");
+            return;
+        }
+        String claimed = before.getLast();
+        if (!claimed.equals(schemaDefault)) {
+            into.add("WRONG DEFAULT — the guide marks " + claimed
+                    + " and defaultSort orders by " + schemaDefault);
+        }
+    }
+
+    /** One clause's text. Absent clause = a failure, never an empty string. */
+    private static String clause(Pattern pattern, String section, String operation, String label) {
+        Matcher m = pattern.matcher(section);
         assertThat(m.find())
                 .withFailMessage("The section for `%s` has no \"%s `field`, …\" clause. Every list "
                         + "section states both, in that phrasing, so the two can be compared against "
                         + "the schema apart. Without it this check cannot run at all — which is worse "
                         + "than failing, because it would pass.", operation, label)
                 .isTrue();
-        return new TreeSet<>(allMatches(BACKTICKED, m.group(1)));
+        return m.group(1);
+    }
+
+    /** The field names a clause claims. */
+    private static Set<String> backticked(String clause) {
+        return new TreeSet<>(allMatches(BACKTICKED, clause));
     }
 
     /** Both directions: what the schema allows and the guide omits, and the reverse. */
@@ -175,9 +236,11 @@ class ApiGuideDocumentsEveryListFieldTest {
                 Matcher block = SCHEMA_BLOCK.matcher(source);
                 while (block.find()) {
                     String name = file.getFileName().toString().replace(".java", "");
+                    List<String> declaredDefault = allMatches(DEFAULT_SORT, block.group(1));
                     found.put(name, new Schema(
                             new TreeSet<>(allMatches(FILTER, block.group(1))),
-                            new TreeSet<>(allMatches(SORTABLE, block.group(1)))));
+                            new TreeSet<>(allMatches(SORTABLE, block.group(1))),
+                            declaredDefault.isEmpty() ? null : declaredDefault.getFirst()));
                 }
             }
         }
