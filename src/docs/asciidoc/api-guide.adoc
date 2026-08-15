@@ -1349,7 +1349,7 @@ operation::metaobjects/delete[]
 
 === Contact Messages
 
-The shopper contact inbox. The storefront intake that fills it does not exist
+The visitor contact inbox. The storefront intake that fills it does not exist
 yet, so today the only rows are seeded ones.
 
 [[resources-contact-list]]
@@ -1371,7 +1371,7 @@ operation::contact-messages/get[]
 [[resources-contact-delete]]
 ==== Delete a Contact Message
 
-ADMIN+ only. Audited with the summary only — the shopper's email never enters the
+ADMIN+ only. Audited with the summary only — the sender's email never enters the
 trail.
 
 operation::contact-messages/delete[]

@@ -88,6 +88,63 @@ class ListSchemaScannerTest {
                 .isFalse();
     }
 
+    /**
+     * The sibling of the case above, and the one a keyword exclusion cannot
+     * reach: a local variable declaration is not a keyword. Each of these
+     * false-matched to a type with no annotations, which reads as nullable —
+     * so a field already declared {@code .nullable(...)} would stay green
+     * having never read the real column.
+     */
+    @Test
+    void doesNotReadALocalVariableAsAFieldDeclaration() {
+        String[] locals = {
+                "String name = compute();",
+                "String name;",
+                "var name = 1;",
+                "Map<String, String> name = q();",
+        };
+
+        for (String local : locals) {
+            Map<String, String> sources = Map.of("Foo", """
+                    class Foo {
+                        public String build() {
+                            %s
+                            return "x";
+                        }
+
+                        @Column(nullable = false)
+                        private Instant name;
+                    }
+                    """.formatted(local));
+
+            ListSchemaScanner.FieldDecl decl =
+                    ListSchemaScanner.declaration(sources, "Foo", "name").orElseThrow();
+
+            assertThat(decl.javaType())
+                    .withFailMessage("`%s` matched instead of the real field declaration", local)
+                    .isEqualTo("Instant");
+            assertThat(ListSchemaScanner.isNullable(decl))
+                    .withFailMessage("`%s` false-matched and, carrying no annotations, read as nullable", local)
+                    .isFalse();
+        }
+    }
+
+    /**
+     * The rule that closes both cases above, stated directly: a declaration has
+     * to begin with an annotation or an access modifier. A mapped field with
+     * neither reads as "not found", which both guards report as a failure —
+     * the loud direction, and preferable to a silent false match.
+     */
+    @Test
+    void requiresAnAnnotationOrAnAccessModifier() {
+        Map<String, String> bare = Map.of("Foo", "class Foo {\n    String name;\n}\n");
+
+        assertThat(ListSchemaScanner.declaration(bare, "Foo", "name")).isEmpty();
+
+        Map<String, String> annotated = Map.of("Foo", "class Foo {\n    @Column String name;\n}\n");
+        assertThat(ListSchemaScanner.declaration(annotated, "Foo", "name")).isPresent();
+    }
+
     @Test
     void followsExtendsToASuperclass() {
         Map<String, String> sources = Map.of(

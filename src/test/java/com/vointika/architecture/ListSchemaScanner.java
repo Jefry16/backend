@@ -67,26 +67,35 @@ final class ListSchemaScanner {
     private static final String ANNOTATION = "@[\\w.]+(?:\\((?:[^()]|\\([^()]*\\))*\\))?\\s*";
 
     /**
-     * Keywords that must never be read as a field's type.
+     * A field declaration has to <b>begin</b> with an annotation or an access
+     * modifier. That one requirement is what separates it from a line inside a
+     * method body.
      *
-     * <p>Making the access modifier optional — needed so a {@code protected} or
-     * package-private mapped field resolves — also let {@code TYPE name;} match
-     * <em>anywhere</em>, including inside a method body. {@code return name;} in a
-     * getter declared above the field then parsed as a declaration of type
-     * {@code return} with no annotations, which reads as nullable.
+     * <p>Making the modifier optional — needed so a {@code protected} or
+     * package-private mapped field resolves — let {@code TYPE name;} match
+     * <em>anywhere</em>. The first attempt at closing that excluded a list of
+     * statement keywords, which was the wrong shape: it stopped
+     * {@code return name;} and nothing else, because a local variable
+     * declaration is not a keyword.
      *
-     * <p>It mostly fails loud: empty annotations mean "nullable", so a
-     * {@code NOT NULL} column would be reported as an undeclared nullable one.
-     * The quiet case is the one that matters — a field already declared
-     * {@code .nullable(...)} false-matches to nullable and stays green having
-     * never read the real column, so PHANTOM can no longer fire on it.
+     * <pre>
+     * String name = compute();          -&gt; type=String  nullable=true
+     * var name = 1;                     -&gt; type=var     nullable=true
+     * Map&lt;String, String&gt; name = q();   -&gt; type=String&gt; nullable=true
+     * </pre>
      *
-     * <p>No entity triggers it today (every one declares its fields above its
-     * methods), which is what makes it worth closing now rather than after it
-     * bites.
+     * <p>All four read as nullable, because a false match carries no
+     * annotations. That is the quiet failure: a field already declared
+     * {@code .nullable(...)} stays green having never read the real column, so
+     * the PHANTOM half of the filter guard can never fire on it.
+     *
+     * <p>Requiring the prefix closes the whole class rather than the members of
+     * it someone thought to list, and it costs nothing here — every mapped field
+     * in this codebase carries {@code @Column} or {@code @Id}. A mapped field
+     * with neither annotation nor modifier now reads as "not found", which both
+     * guards report as a failure; that is the loud direction.
      */
-    private static final String STATEMENT_KEYWORDS =
-            "(?:return|throw|new|else|yield|assert|break|continue|case)";
+    private static final String DECLARATION_PREFIX = "(?=@|private\\s|protected\\s|public\\s)";
 
     private static final Set<String> PRIMITIVES =
             Set.of("int", "long", "boolean", "double", "float", "short", "byte", "char");
@@ -185,13 +194,9 @@ final class ListSchemaScanner {
                 return Optional.empty();
             }
             Matcher m = Pattern.compile(
-                    "((?:" + ANNOTATION + ")*)"
+                    DECLARATION_PREFIX
+                            + "((?:" + ANNOTATION + ")*)"
                             + "(?:private|protected|public)?\\s*(?:final\\s+)?(?:transient\\s+)?"
-                            // The lookbehind is load-bearing, not belt-and-braces: without
-                            // it the engine simply starts one character later and matches
-                            // `eturn name;`, so the keyword exclusion never fires. Pinned
-                            // by ListSchemaScannerTest.doesNotReadAStatementAsAFieldDeclaration.
-                            + "(?<![\\w$.])(?!" + STATEMENT_KEYWORDS + "\\b)"
                             + "([\\w<>\\[\\].]+)\\s+" + Pattern.quote(field) + "\\s*[;=]").matcher(source);
             if (m.find()) {
                 return Optional.of(new FieldDecl(m.group(1), m.group(2)));
