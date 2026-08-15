@@ -31,6 +31,12 @@ public class ListAuditLogUseCase {
             .set("actorType", AuditActorType.class)
             .set("actorId", UUID.class)
             .text("actorName")
+            // Both are null for SYSTEM actors, and actorName is null again for a
+            // USER whose account no longer resolves to a name. Neither can be made
+            // NOT NULL — there is no user behind a SYSTEM row to invent one from —
+            // so the negating operators are refused on them instead.
+            .nullable("actorId")
+            .nullable("actorName")
             .instant("createdAt")
             .sortable("id")
             .sortable("createdAt")
