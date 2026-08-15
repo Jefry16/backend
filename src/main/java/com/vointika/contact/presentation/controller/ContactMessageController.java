@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * The operator's contact inbox — shopper-submitted messages, read-only.
+ * The operator's contact inbox — visitor-submitted messages, read-only.
  * Reads any member (STAFF answers inquiries); delete ADMIN+. The write path is
  * the storefront arc's intake endpoint; rows are dev-seeded until it lands.
  */

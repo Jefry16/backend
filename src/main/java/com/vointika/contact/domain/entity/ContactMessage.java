@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * One shopper-submitted contact-form message. Written once by the intake
+ * One visitor-submitted contact-form message. Written once by the intake
  * (the storefront arc's internal endpoint; dev-seeded until then) and never
  * edited — the entity is immutable once written.
  *

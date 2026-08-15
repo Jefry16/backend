@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * Hard-deletes a message (spam, handled inquiries). ADMIN+ only. Audited
- * with the summary only — the shopper's email stays out of the trail (the
+ * with the summary only — the sender's email stays out of the trail (the
  * row was the record; once deleted, the trail shouldn't preserve PII the
  * delete was meant to remove).
  */

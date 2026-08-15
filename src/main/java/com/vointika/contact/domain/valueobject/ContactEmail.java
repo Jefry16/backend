@@ -3,7 +3,7 @@ package com.vointika.contact.domain.valueobject;
 import com.vointika.shared.exception.InvalidFieldException;
 
 /**
- * The shopper's reply address — the one field the operator actually needs, since
+ * The sender's reply address — the one field the operator actually needs, since
  * an inbox message they cannot answer is worthless.
  *
  * <p>Shape-checked only, and deliberately loosely: this is a stranger typing on

@@ -66,6 +66,28 @@ final class ListSchemaScanner {
      */
     private static final String ANNOTATION = "@[\\w.]+(?:\\((?:[^()]|\\([^()]*\\))*\\))?\\s*";
 
+    /**
+     * Keywords that must never be read as a field's type.
+     *
+     * <p>Making the access modifier optional — needed so a {@code protected} or
+     * package-private mapped field resolves — also let {@code TYPE name;} match
+     * <em>anywhere</em>, including inside a method body. {@code return name;} in a
+     * getter declared above the field then parsed as a declaration of type
+     * {@code return} with no annotations, which reads as nullable.
+     *
+     * <p>It mostly fails loud: empty annotations mean "nullable", so a
+     * {@code NOT NULL} column would be reported as an undeclared nullable one.
+     * The quiet case is the one that matters — a field already declared
+     * {@code .nullable(...)} false-matches to nullable and stays green having
+     * never read the real column, so PHANTOM can no longer fire on it.
+     *
+     * <p>No entity triggers it today (every one declares its fields above its
+     * methods), which is what makes it worth closing now rather than after it
+     * bites.
+     */
+    private static final String STATEMENT_KEYWORDS =
+            "(?:return|throw|new|else|yield|assert|break|continue|case)";
+
     private static final Set<String> PRIMITIVES =
             Set.of("int", "long", "boolean", "double", "float", "short", "byte", "char");
 
@@ -165,6 +187,11 @@ final class ListSchemaScanner {
             Matcher m = Pattern.compile(
                     "((?:" + ANNOTATION + ")*)"
                             + "(?:private|protected|public)?\\s*(?:final\\s+)?(?:transient\\s+)?"
+                            // The lookbehind is load-bearing, not belt-and-braces: without
+                            // it the engine simply starts one character later and matches
+                            // `eturn name;`, so the keyword exclusion never fires. Pinned
+                            // by ListSchemaScannerTest.doesNotReadAStatementAsAFieldDeclaration.
+                            + "(?<![\\w$.])(?!" + STATEMENT_KEYWORDS + "\\b)"
                             + "([\\w<>\\[\\].]+)\\s+" + Pattern.quote(field) + "\\s*[;=]").matcher(source);
             if (m.find()) {
                 return Optional.of(new FieldDecl(m.group(1), m.group(2)));
