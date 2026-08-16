@@ -1,19 +1,126 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit` (2026-08-16).** Eleven to go; `storefront` is last.
+**Contexts done: `audit`, `contact` (2026-08-16).** Ten to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
-**Sections A–H below are what the audit found, before anything was changed.** The
-audit pass itself changes nothing — that is the playbook's rule. The fixes came after
-it, in the same PR, and they are listed under "What was fixed" at the foot. Read the
-two together: the findings say what was wrong, and that section says what is true now.
+**One section per context, newest first.** Within each, findings A–H are what the
+audit found *before* anything changed — the audit pass itself changes nothing, which
+is the playbook's rule — and "What was fixed" says what is true now. Read the two
+together.
 
-**All three of this pass's findings are fixed.**
+**Every finding raised so far is fixed.**
 
-Two categories came back empty repo-wide, which is the useful result for the eleven
-contexts still to come.
+Three results hold repo-wide and save every later pass the work:
+
+- **No `relaxed*` documentation exists anywhere.** That is the whole of finding E,
+  and it is closed for every context.
+  **It does not mean every response is checked.** An operation that passes no
+  `responseFields(...)` at all has no strict check either, and 19 of them publish a
+  body with no field table — listed at the foot of this report. **Check field-table
+  coverage in your context; only the `relaxed*` question is settled.**
+- **Every `operation::` macro resolves and every snippet directory is pulled in**, so
+  B, C and D are clean unless a pass breaks them.
+- **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
+  no `path` field, and it is `code`, not `errorCode`. `code` is
+  `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
+  `.type(JsonFieldType.STRING)` as well as `.optional()`, or REST Docs cannot infer a
+  type and fails the build. Copy `ERROR_FIELDS` from
+  `ContactMessageControllerDocumentationTest`.
 
 ---
+
+# `contact` — 2026-08-16
+
+Three endpoints, all three documented, **no findings in A through E**. The whole gap
+was errors: not one of the three published anything but its happy path.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| GET | `/api/tour-operators/{tourOperatorId}/contact-messages` | yes | `contact-messages/list` | yes | strict | documented |
+| GET | `…/contact-messages/{messageId}` | yes | `contact-messages/get` | yes | strict | documented |
+| DELETE | `…/contact-messages/{messageId}` | yes | `contact-messages/delete` | yes | strict | documented |
+
+*No guide line numbers in these tables. Every pass that inserts a section shifts the
+ones below it, so they rot by construction and fail silently.*
+
+**A–E: none.** Three mappings, three documenting tests, three snippet directories,
+three `operation::` lines. `contact-messages/delete` has no `response-fields.adoc`
+and that is correct, not a gap — it answers 204 with no body.
+
+- **Verified by**: `ls target/generated-snippets/contact-messages/` → `delete`, `get`,
+  `list`. `grep -n "operation::contact" src/docs/asciidoc/api-guide.adoc` → 1362,
+  1369, 1377. `grep -rln "contact-messages\|ContactMessageController" src/test/java`
+  → `ContactMessageControllerDocumentationTest`.
+
+## F. Partial coverage — the whole finding
+
+**F1. A STAFF caller can read a message and be refused when deleting it, and nothing
+said so.** Reads are any-member; delete is ADMIN+ through `ensureAdmin`. A STAFF
+member therefore lists the inbox, opens a message, and gets **403** with
+`"This action requires ADMIN privileges"` on delete. That path was neither tested nor
+documented.
+
+- **Severity**: medium, and the highest-value finding in this context. It is a
+  permission boundary *inside* one resource, so a client that tested with an ADMIN
+  token will not discover it until a STAFF user does, in production.
+- **Verified by**: `TourOperatorMembershipPolicy:48-55` throws
+  `ForbiddenException`; `GlobalExceptionHandler:70-73` maps it to 403. No 403
+  assertion existed anywhere in `ContactMessageControllerDocumentationTest`.
+
+**F2. None of the three documented its 404, and there are three sites, not two.**
+Both reads answer 404 for an unknown message and for another operator's — the lookup
+is operator-scoped. **DELETE has the same 404** (`DeleteContactMessageUseCase:42`),
+and it is the ordinary concurrent case: two admins with the inbox open, one deletes,
+the other's DELETE misses. An earlier revision of this section counted two sites and
+the first fix shipped only two; caught in review.
+
+**F3. No `pathParameters` on any of the three.**
+
+## G. Prose drift — none
+
+The guide's filter and sort list matches `ListContactMessagesUseCase.SCHEMA` exactly
+(`name`, `email`, `summary`, `createdAt`; sort `id` or `createdAt`). Its note that the
+storefront intake does not exist yet is still true.
+
+## H. Description quality — two, both fixed
+
+`id` was described as "The message id" and `context` as `"contact-messages"` — the
+first restates the name, the second restates the value. Both now say something the
+field name does not.
+
+## What was fixed
+
+Three new tests, all documented, all rendering in the guide. (An earlier revision
+of this line said two and pinned a suite count; the review round that followed added
+the third and invalidated both — the same failure this section is about.)
+
+- **F1** — `contact-messages/delete-forbidden` publishes the 403, under a guide
+  heading that states the split: any member reads, ADMIN+ deletes.
+- **F2** — `contact-messages/get-not-found` and `contact-messages/delete-not-found`
+  publish both 404 sites.
+- **F3** — `pathParameters` on all six operations.
+- **H** — both weak descriptions rewritten.
+
+**A published error example must differ from its happy path.** The first fix reused
+the same operator and message ids, so `get-not-found/curl-request.adoc` came out
+byte-identical to `get/curl-request.adoc`: the guide showed one message id returning
+200 under one heading and 404 under the next, with nothing to say what changed, while
+the path-parameter description called it an id that does not exist. The 404s now use
+a `MISSING_MSG` id, and the 403 uses a **STAFF token** — because that error turns on
+who is asking, not on which message, so the URL is necessarily the same one.
+
+The error field list is a shared `ERROR_FIELDS` constant carrying the
+`.type(JsonFieldType.STRING).optional()` that an absent `code` needs. Copy it. Its
+description says `code` is absent *when the throw site supplied none*, not "as here" —
+`InvalidFieldException` and `ConflictException` both carry one, so the first pass
+documenting a 422 or 409 would otherwise publish a field table contradicting its own
+example.
+
+---
+
+# `audit` — 2026-08-16
 
 ## Baseline
 
@@ -24,9 +131,9 @@ Built from scratch, because stale snippets are how this audit lies to itself:
 ```
 
 BUILD SUCCESS. **154 snippet directories, 154 `operation::` macros, and every macro
-resolves** — the state this pass found. F2 then added `audit-log/get-not-found`, so
-both numbers are **155** as of this commit, against 154 endpoints. Counted after
-`rm -rf target`, in a scratch copy outside the repo.
+resolves** — the state this pass found, before it changed anything. Counted after
+`rm -rf target`, in a scratch copy outside the repo. For the current numbers, run the
+commands in the playbook; they have moved with every pass since.
 
 ---
 
@@ -34,8 +141,8 @@ both numbers are **155** as of this commit, against 154 endpoints. Counted after
 
 | method | path | has test | has snippet | in the guide | strict or relaxed | status |
 |---|---|---|---|---|---|---|
-| GET | `/api/tour-operators/{tourOperatorId}/audit-log` | yes | `audit-log/list` | line 1395 | strict | **documented** |
-| GET | `/api/tour-operators/{tourOperatorId}/audit-log/{entryId}` | yes | `audit-log/get` | line 1402 | strict | **no field table** |
+| GET | `/api/tour-operators/{tourOperatorId}/audit-log` | yes | `audit-log/list` | yes | strict | **documented** |
+| GET | `/api/tour-operators/{tourOperatorId}/audit-log/{entryId}` | yes | `audit-log/get` | yes | strict | **no field table** |
 
 Both paths resolved by hand from the class-level `@RequestMapping` plus the method
 annotation. There is no context path or servlet path to add.
@@ -229,12 +336,12 @@ the payload"*. It needs `.type(JsonFieldType.STRING)` as well. Every error respo
 documented from here on will hit this.
 
 **`audit-log/get-not-found` is the first documented non-2xx in the guide, and it makes
-operations outnumber endpoints.** There are now 155 operations against 154 endpoints,
-so any later pass that equates the two counts is off by one. Every one of the other 154
-operations documents only its happy path, while roughly 60 error
-assertions sit in the suite untested by any reader. Whether to spread this to the
-other contexts is a decision, not a mechanical follow-up — it is cheap per endpoint
-and it is 154 endpoints.
+operations outnumber endpoints** — permanently, and by more with every pass that
+documents an error. Do not equate the two counts; measure each with the commands in
+the playbook. Before this, every operation in the guide documented only its happy
+path, while roughly 60 error assertions sat in the suite that no reader could see.
+Spreading it further is a decision rather than a mechanical follow-up: cheap per
+endpoint, and there are a great many endpoints.
 
 ---
 
