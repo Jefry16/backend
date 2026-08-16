@@ -92,7 +92,9 @@ field name does not.
 
 ## What was fixed
 
-Suite **1227 → 1229**. Two new tests, both documented, both rendering in the guide.
+Three new tests, all documented, all rendering in the guide. (An earlier revision
+of this line said two and pinned a suite count; the review round that followed added
+the third and invalidated both — the same failure this section is about.)
 
 - **F1** — `contact-messages/delete-forbidden` publishes the 403, under a guide
   heading that states the split: any member reads, ADMIN+ deletes.
@@ -129,9 +131,9 @@ Built from scratch, because stale snippets are how this audit lies to itself:
 ```
 
 BUILD SUCCESS. **154 snippet directories, 154 `operation::` macros, and every macro
-resolves** — the state this pass found. F2 then added `audit-log/get-not-found`, so
-both numbers are **155** as of this commit, against 154 endpoints. Counted after
-`rm -rf target`, in a scratch copy outside the repo.
+resolves** — the state this pass found, before it changed anything. Counted after
+`rm -rf target`, in a scratch copy outside the repo. For the current numbers, run the
+commands in the playbook; they have moved with every pass since.
 
 ---
 
@@ -334,12 +336,12 @@ the payload"*. It needs `.type(JsonFieldType.STRING)` as well. Every error respo
 documented from here on will hit this.
 
 **`audit-log/get-not-found` is the first documented non-2xx in the guide, and it makes
-operations outnumber endpoints.** There are now 155 operations against 154 endpoints,
-so any later pass that equates the two counts is off by one. Every one of the other 154
-operations documents only its happy path, while roughly 60 error
-assertions sit in the suite untested by any reader. Whether to spread this to the
-other contexts is a decision, not a mechanical follow-up — it is cheap per endpoint
-and it is 154 endpoints.
+operations outnumber endpoints** — permanently, and by more with every pass that
+documents an error. Do not equate the two counts; measure each with the commands in
+the playbook. Before this, every operation in the guide documented only its happy
+path, while roughly 60 error assertions sat in the suite that no reader could see.
+Spreading it further is a decision rather than a mechanical follow-up: cheap per
+endpoint, and there are a great many endpoints.
 
 ---
 
