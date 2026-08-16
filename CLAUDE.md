@@ -57,12 +57,18 @@ That second line matters: `rsync -a` preserves mtimes, so a stale compiled class
 
 A modular monolith: `com.vointika.<context>`, one package per bounded context, each **fully hexagonal** with the layer DAG `domain ← application ← {infrastructure, presentation}`. `domain` is pure — no Spring, JPA, or Jackson. A context that owns no entities has no `domain` (`notification`, `storefront` — PATTERNS §1); the DAG is unchanged, and in those contexts it bites harder, because `presentation` and `infrastructure` still may not reach each other.
 
-**ArchUnit enforces the boundaries** (`src/test/java/com/vointika/architecture/ArchitectureTest.java`), so a violation is a failing test, not a review comment. Context isolation is **derived from the package structure** — a new context is fenced the day its package appears, with no rule to remember to add. (It used to be one hand-written rule per context; seven contexts landed without one, and the rules that existed only named the original four.)
+**ArchUnit enforces the boundaries** (`src/test/java/com/vointika/architecture/ArchitectureTest.java`), so a violation is a failing test, not a review comment. Context isolation is **derived from the package structure**, so a new context is fenced the day its package appears. There is no rule to remember to add. It used to be one hand-written rule per context. Seven contexts then landed without one, and the rules that did exist only named the original four.
 
 ### The rules that shape every change
 
 - **A context never imports another context.** Two channels only: a **shared query port** (`shared.port.<Noun>Query` + a `<Noun>View` of primitives, implemented by the owning context in its `infrastructure/query`) or a **Kafka event**. `shared` and `reference` are the shared kernels everyone may import.
-- **Use cases are plain POJOs** — no Spring annotations — hand-wired as `@Bean`s in each context's `infrastructure/config/<Ctx>UseCaseConfig`. **ArchUnit enforces an allowlist**: the application layer may depend on `com.vointika..` and `java..` and **nothing else** — no third-party library at all, not even a logging facade. Reaching for one is the signal that a port is missing. **`java..` does not cover `javax..`**: `javax.crypto` fails the rule exactly like a third-party jar, which is why the storefront's unlock-cookie HMAC is `UnlockTokenPort` + an adapter rather than a policy class (PATTERNS §8d). Best-effort side effects (a storage delete, a broker publish) log in the adapter that fails; a use case with something of its own to report uses `DiagnosticLogPort`.
+- **Use cases are plain POJOs**, with no Spring annotations. Each is hand-wired as a `@Bean` in its context's `infrastructure/config/<Ctx>UseCaseConfig`.
+
+  **ArchUnit enforces an allowlist.** The application layer may depend on `com.vointika..` and `java..` and **nothing else** — no third-party library at all, not even a logging facade. Reaching for one means a port is missing.
+
+  **`java..` does not cover `javax..`.** `javax.crypto` fails the rule exactly like a third-party jar. That is why the storefront's unlock-cookie HMAC is `UnlockTokenPort` plus an adapter, not a policy class (PATTERNS §8d).
+
+  A best-effort side effect — a storage delete, a broker publish — logs in the adapter that fails. A use case with something of its own to report uses `DiagnosticLogPort`.
 - **Every operator-facing mutation appends to the audit trail inside the same transaction** as the mutation (PATTERNS §8b). No unaudited mutation.
 - **Any list over tenant or growable data uses the shared list framework** — keyset cursor, typed filters, `ListSchema` (PATTERNS §4b). Never return an unbounded array; that mistake has already been made and fixed once.
 - **URLs are never stored.** Store a storage key, resolve to a URL at read time.
@@ -72,17 +78,43 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 
 **The admin/operator API** — JWT bearer tokens. There is no `/api/storefront/**` surface and **no shared secret anywhere**: the storefront does not call in over HTTP, it renders in-process. Tenant-scoped routes live under `/api/tour-operators/{tourOperatorId}/**` and are gated in **two layers**: a membership interceptor (non-member → **404**, byte-identical to a missing operator) plus per-use-case role gates (`ensureAdmin`/`ensureOwner`) through the `TourOperatorMembershipCheck` port. Authorization belongs in the use case, not only the router — the router's matching is looser than the id binder, which is how an IDOR got in once.
 
-**The storefront serves its globals as JSON, and nothing about it is authenticated — a locked store is gated by the storefront password, which is an interceptor and not a login.** **The contract itself is `PATTERNS.md` §2a and the render path is §2b — that is the whole record, and nowhere else carries a copy.** What belongs here is the shape of the code: `storefront` resolves the tenant from the host and owns **eight addresses** — `/`, `/{locale}`, `/experiences`, `/{locale}/experiences`, `/policies/{type}`, `/{locale}/policies/{type}`, `/pages/{handle}`, `/{locale}/pages/{handle}` — of which `/`, `/{locale}` and both `/pages/{handle}` forms serve real data and the other four answer `{"handle","status"}`. There are **four controllers** (`StorefrontHomeController`, `StorefrontCmsPageController`, `StorefrontPlaceholderController`, `PasswordPageController`), the tenant seam is `TenantHandleResolver` + `StorefrontTourOperatorQuery` (there is no `StorefrontTenantQuery`; it was never rebuilt under that name), and the password gate is back in full. An unknown handle, and a locale the operator does not publish, are both a 404 in the application's usual error shape — deliberately indistinguishable. **It answers JSON, not HTML, on purpose**: the point of the placeholder period is getting the *data* right before themes exist, and markup nobody reads hides a wrong field. Mustache itself stays — the dependency and `StorefrontMustacheConfig`'s compiler are the render-path decision waiting for the themes, and its settings test is what keeps the traps in `STACK.md` true meanwhile. Routes stay unauthenticated through the same `PublicRouteRegistrar` every other public route uses, not a host-matched `SecurityFilterChain` — nothing needs storefront requests to have *different* security, only *no* authentication.
+**The storefront serves its globals as JSON, and nothing about it is authenticated.** A locked store is gated by the storefront password, which is an interceptor and not a login.
 
-**The password gate is back, and a new store is private by default.** `CreateTourOperatorUseCase` generates a storefront password and sets `password_enabled` at creation, so an operator's store exists at its address and answers the gate rather than the shop — Shopify's model, where a new store is password-protected until the merchant is ready. Existing operators were left open. The operator reads the password back through `GET /api/tour-operators/{id}/storefront-password` and disables the gate when it wants to sell.
+**The contract is `PATTERNS.md` §2a and the render path is §2b. That is the whole record; nowhere else carries a copy.** What belongs here is the shape of the code.
 
-**The rule that cost the most to learn is pinned again: the gate runs before locale resolution.** Resolve the locale first and a locked store 404s an unpublished locale while redirecting a published one, telling an anonymous visitor the store exists and which locales it has. `StorefrontHomeControllerTest.aLockedStoreRedirectsEvenForALocaleItDoesNotPublish` is the guard, and it is why the gate landed *after* the index slice — it needs `LocaleRule` to order against. A gated store still answers on its address with the gate page (Shopify leaks existence the same way); it is not a 404. The unlock cookie is `HMAC-SHA256(key = storefront_password, message = operatorId)`, so rotating the password invalidates every outstanding cookie for free.
+`storefront` resolves the tenant from the host and owns **eight addresses**: `/`, `/{locale}`, `/experiences`, `/{locale}/experiences`, `/policies/{type}`, `/{locale}/policies/{type}`, `/pages/{handle}`, `/{locale}/pages/{handle}`. Four of them serve real data — `/`, `/{locale}` and both `/pages/{handle}` forms. The other four answer `{"handle","status"}`.
+
+There are **four controllers**: `StorefrontHomeController`, `StorefrontCmsPageController`, `StorefrontPlaceholderController`, `PasswordPageController`. The tenant seam is `TenantHandleResolver` plus `StorefrontTourOperatorQuery`. There is no `StorefrontTenantQuery` — it was never rebuilt under that name. The password gate is back in full.
+
+An unknown handle and an unpublished locale both answer 404 in the application's usual error shape. They are deliberately indistinguishable.
+
+**It answers JSON, not HTML, on purpose.** The placeholder period is for getting the *data* right before themes exist, and markup nobody reads hides a wrong field. Mustache stays for the same reason: the dependency and `StorefrontMustacheConfig`'s compiler are the render-path decision waiting for themes, and its settings test keeps the traps in `STACK.md` true meanwhile.
+
+Routes stay unauthenticated through the same `PublicRouteRegistrar` every other public route uses, not a host-matched `SecurityFilterChain`. Nothing needs storefront requests to have *different* security, only *no* authentication.
+
+**A new store is private by default.** `CreateTourOperatorUseCase` generates a storefront password and sets `password_enabled` at creation. So a new operator's store exists at its address and answers the gate rather than the shop. That is Shopify's model: a new store stays password-protected until the merchant is ready. Existing operators were left open. The operator reads the password back through `GET /api/tour-operators/{id}/storefront-password`, and disables the gate when it wants to sell.
+
+**The gate runs before locale resolution.** This is the rule that cost the most to learn.
+
+Resolve the locale first and a locked store 404s an unpublished locale while redirecting a published one. That tells an anonymous visitor the store exists and which locales it has. The guard is `StorefrontHomeControllerTest.aLockedStoreRedirectsEvenForALocaleItDoesNotPublish`. It is also why the gate landed *after* the index slice: it needs `LocaleRule` to order against.
+
+A gated store still answers on its address, with the gate page. It is not a 404 — Shopify leaks existence the same way.
+
+The unlock cookie is `HMAC-SHA256(key = storefront_password, message = operatorId)`. Rotating the password therefore invalidates every outstanding cookie for free.
 
 Public (unauthenticated) routes are opt-in per context via the `PublicRouteRegistrar` SPI; rate-limit rules likewise via `RateLimitRuleRegistrar`. Never add either to a central hardcoded map.
 
-**A `PublicRoute` pattern is a security pattern before it is a route, so an unconstrained path variable is a hole.** `/{locale}` reads like one page route and `permitAll`s **every single-segment path in the application** — `/error` today, whatever `/health` or `/metrics` lands later, silently. Constrain the variable and define the pattern **once** for the mapping, the `PublicRoute` entries and any interceptor patterns (`StorefrontRoutes.LOCALE`). The group must be non-capturing — `PathPatternParser` rejects capture groups outright (PATTERNS §11).
+**A `PublicRoute` pattern is a security pattern before it is a route, so an unconstrained path variable is a hole.** `/{locale}` reads like one page route. It actually `permitAll`s **every single-segment path in the application** — `/error` today, and whatever `/health` or `/metrics` lands later, silently.
 
-**A `PublicRoute` matches one HTTP method, so a page route needs `GET` *and* `HEAD`.** Spring MVC serves HEAD from a `@GetMapping` for free; Spring Security does not — a GET-only entry rejects HEAD at the filter chain as a **401 in the JSON error shape**, never reaching MVC. Harmless on a JSON API nobody HEADs, wrong on a public page: crawlers, link checkers, uptime monitors and CDNs all send HEAD. `storefront` shipped without it because every test and curl used GET; it took a request against the built stack to find. Pinned by `servesHeadAsWellAsGet` in `StorefrontPlaceholderControllerTest`, which walks every address, because the entry is per route as well as per method. Counting the `@GetMapping`, **a page route is registered in three places** — four while the password gate exists, since its interceptor needs every page pattern too; define its pattern once in `application/policy` (PATTERNS §11).
+Constrain the variable, and define the pattern **once** (`StorefrontRoutes.LOCALE`) for the mapping, the `PublicRoute` entries and any interceptor patterns. The group must be non-capturing: `PathPatternParser` rejects capture groups outright (PATTERNS §11).
+
+**A `PublicRoute` matches one HTTP method, so a page route needs `GET` *and* `HEAD`.** Spring MVC serves HEAD from a `@GetMapping` for free. Spring Security does not. A GET-only entry rejects HEAD at the filter chain as a **401 in the JSON error shape**, never reaching MVC.
+
+That is harmless on a JSON API nobody HEADs and wrong on a public page: crawlers, link checkers, uptime monitors and CDNs all send HEAD. `storefront` shipped without it because every test and curl used GET. It took a request against the built stack to find.
+
+`servesHeadAsWellAsGet` in `StorefrontPlaceholderControllerTest` pins it, and walks every address, because the entry is per route as well as per method.
+
+Counting the `@GetMapping`, **a page route is registered in three places** — four while the password gate exists, since its interceptor needs every page pattern too. Define the pattern once in `application/policy` (PATTERNS §11).
 
 ### Migrations
 
@@ -92,14 +124,19 @@ Renames must sweep beyond `src/` — the dev seed and docs reference table and c
 
 ### Tests
 
-Unit tests (JUnit 5 + Mockito, no Spring) for value objects, entity behavior, and use cases. Controller tests are **RestDocs documentation tests** — `@WebMvcTest` + `@Import(SecurityConfig.class)`, asserting behavior *and* emitting the snippets that build the API guide. Three recurring traps: a `@WebMvcTest` whose context loads `WebConfig` needs a `@MockitoBean TourOperatorMembershipCheck` or every request 500s; **any storefront `@WebMvcTest` needs a `@MockitoBean CheckStorefrontLockUseCase`** for the same reason, because `StorefrontWebConfig` is a `WebMvcConfigurer` and every slice therefore registers the gate's interceptor, which resolves that use case per request; and a public-route test that omits its `PublicRouteRegistrar` 401s everything, so the assertions pass without testing anything. **A fourth is Mockito's, and it has bitten three times in one day**: a test helper that stubs a mock must be called *before* the `when(...)` it feeds, never inside `thenReturn(helper())` — Mockito reads the nested `when()` as an unfinished one and fails with `UnfinishedStubbing` pointing at the helper rather than at the caller.
+Unit tests (JUnit 5 + Mockito, no Spring) for value objects, entity behavior, and use cases. Controller tests are **RestDocs documentation tests** — `@WebMvcTest` + `@Import(SecurityConfig.class)`, asserting behavior *and* emitting the snippets that build the API guide. Four recurring traps:
+
+1. A `@WebMvcTest` whose context loads `WebConfig` needs a `@MockitoBean TourOperatorMembershipCheck`, or every request 500s.
+2. **Any storefront `@WebMvcTest` needs a `@MockitoBean CheckStorefrontLockUseCase`**, for the same reason. `StorefrontWebConfig` is a `WebMvcConfigurer`, so every slice registers the gate's interceptor, which resolves that use case per request.
+3. A public-route test that omits its `PublicRouteRegistrar` 401s everything. The assertions then pass without testing anything.
+4. Mockito's, and it bit three times in one day: a test helper that stubs a mock must be called *before* the `when(...)` it feeds, never inside `thenReturn(helper())`. Mockito reads the nested `when()` as unfinished and fails with `UnfinishedStubbing`, pointing at the helper rather than at the caller.
 
 ## Conventions
 
 The working rules are LAW: §2.4 never over-engineer · §3 the landing ritual · §4 never assume · §6 craft (comments, commits, dead code). Only the calibration for this repo lives here.
 
-- **Javadoc runs heavier than LAW §6.1's default, deliberately.** A hexagonal context has real seams, and the Javadoc on a port, a security filter or a migration is often the only place a decision is recorded — `EndpointRateLimitFilter`'s note on why the counter keys on the matched *pattern* and not the concrete URI is load-bearing. The rule still bites: `/** Returns the user. */` over `getUser()` is noise. Keep the why, the trap and the rejected alternative; delete the restatement.
-- **Dead code has no mechanical gate here.** Java offers no `noUnusedLocals` equivalent, so LAW §6.3 is a look — plus **ArchUnit**, which already fences the §2 boundaries and is the right home for anything automatable (a port nobody implements, a use case no `@Bean` wires).
+- **Javadoc runs heavier than LAW §6.1's default, deliberately.** A hexagonal context has real seams. The Javadoc on a port, a security filter or a migration is often the only place a decision is recorded — `EndpointRateLimitFilter`'s note on why the counter keys on the matched *pattern* rather than the concrete URI is load-bearing. The rule still bites, though: `/** Returns the user. */` over `getUser()` is noise. Keep the why, the trap and the rejected alternative. Delete the restatement.
+- **Dead code has no mechanical gate here.** Java offers no `noUnusedLocals` equivalent, so LAW §6.3 is a look. **ArchUnit** takes whatever is automatable — it already fences the §2 boundaries, and it is the right home for a port nobody implements or a use case no `@Bean` wires.
 - **A commit body is rarer than it looks** (LAW §6.2). The durable *why* belongs in `MAP.md`; the reviewer's context belongs in the PR description; the diff belongs in git. A message that repeats all three is paying three times.
 
 ## Working rhythm
