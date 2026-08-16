@@ -12,8 +12,12 @@ together.
 
 Three results hold repo-wide and save every later pass the work:
 
-- **No `relaxed*` documentation exists anywhere**, so finding E is closed for all
-  contexts. The strict field check is live on every documented response.
+- **No `relaxed*` documentation exists anywhere.** That is the whole of finding E,
+  and it is closed for every context.
+  **It does not mean every response is checked.** An operation that passes no
+  `responseFields(...)` at all has no strict check either, and 19 of them publish a
+  body with no field table — listed at the foot of this report. **Check field-table
+  coverage in your context; only the `relaxed*` question is settled.**
 - **Every `operation::` macro resolves and every snippet directory is pulled in**, so
   B, C and D are clean unless a pass breaks them.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
@@ -34,9 +38,12 @@ was errors: not one of the three published anything but its happy path.
 
 | method | path | has test | has snippet | in the guide | strict or relaxed | status |
 |---|---|---|---|---|---|---|
-| GET | `/api/tour-operators/{tourOperatorId}/contact-messages` | yes | `contact-messages/list` | line 1362 | strict | documented |
-| GET | `…/contact-messages/{messageId}` | yes | `contact-messages/get` | line 1369 | strict | documented |
-| DELETE | `…/contact-messages/{messageId}` | yes | `contact-messages/delete` | line 1377 | strict | documented |
+| GET | `/api/tour-operators/{tourOperatorId}/contact-messages` | yes | `contact-messages/list` | yes | strict | documented |
+| GET | `…/contact-messages/{messageId}` | yes | `contact-messages/get` | yes | strict | documented |
+| DELETE | `…/contact-messages/{messageId}` | yes | `contact-messages/delete` | yes | strict | documented |
+
+*No guide line numbers in these tables. Every pass that inserts a section shifts the
+ones below it, so they rot by construction and fail silently.*
 
 **A–E: none.** Three mappings, three documenting tests, three snippet directories,
 three `operation::` lines. `contact-messages/delete` has no `response-fields.adoc`
@@ -62,8 +69,12 @@ documented.
   `ForbiddenException`; `GlobalExceptionHandler:70-73` maps it to 403. No 403
   assertion existed anywhere in `ContactMessageControllerDocumentationTest`.
 
-**F2. Neither read documented its 404.** Unknown message, and another operator's
-message, both answer 404 — the lookup is operator-scoped.
+**F2. None of the three documented its 404, and there are three sites, not two.**
+Both reads answer 404 for an unknown message and for another operator's — the lookup
+is operator-scoped. **DELETE has the same 404** (`DeleteContactMessageUseCase:42`),
+and it is the ordinary concurrent case: two admins with the inbox open, one deletes,
+the other's DELETE misses. An earlier revision of this section counted two sites and
+the first fix shipped only two; caught in review.
 
 **F3. No `pathParameters` on any of the three.**
 
@@ -85,16 +96,25 @@ Suite **1227 → 1229**. Two new tests, both documented, both rendering in the g
 
 - **F1** — `contact-messages/delete-forbidden` publishes the 403, under a guide
   heading that states the split: any member reads, ADMIN+ deletes.
-- **F2** — `contact-messages/get-not-found` publishes the 404.
-- **F3** — `pathParameters` on all five operations.
+- **F2** — `contact-messages/get-not-found` and `contact-messages/delete-not-found`
+  publish both 404 sites.
+- **F3** — `pathParameters` on all six operations.
 - **H** — both weak descriptions rewritten.
 
-The error field list is now a shared `ERROR_FIELDS` constant in the test, carrying the
-`.type(JsonFieldType.STRING).optional()` that an absent `code` needs. That is the
-shape to copy into the next ten contexts.
+**A published error example must differ from its happy path.** The first fix reused
+the same operator and message ids, so `get-not-found/curl-request.adoc` came out
+byte-identical to `get/curl-request.adoc`: the guide showed one message id returning
+200 under one heading and 404 under the next, with nothing to say what changed, while
+the path-parameter description called it an id that does not exist. The 404s now use
+a `MISSING_MSG` id, and the 403 uses a **STAFF token** — because that error turns on
+who is asking, not on which message, so the URL is necessarily the same one.
 
-**Operations are now 157 against 154 endpoints.** Three of the 157 are error responses
-on endpoints that already had a happy path.
+The error field list is a shared `ERROR_FIELDS` constant carrying the
+`.type(JsonFieldType.STRING).optional()` that an absent `code` needs. Copy it. Its
+description says `code` is absent *when the throw site supplied none*, not "as here" —
+`InvalidFieldException` and `ConflictException` both carry one, so the first pass
+documenting a 422 or 409 would otherwise publish a field table contradicting its own
+example.
 
 ---
 
@@ -119,8 +139,8 @@ both numbers are **155** as of this commit, against 154 endpoints. Counted after
 
 | method | path | has test | has snippet | in the guide | strict or relaxed | status |
 |---|---|---|---|---|---|---|
-| GET | `/api/tour-operators/{tourOperatorId}/audit-log` | yes | `audit-log/list` | line 1395 | strict | **documented** |
-| GET | `/api/tour-operators/{tourOperatorId}/audit-log/{entryId}` | yes | `audit-log/get` | line 1402 | strict | **no field table** |
+| GET | `/api/tour-operators/{tourOperatorId}/audit-log` | yes | `audit-log/list` | yes | strict | **documented** |
+| GET | `/api/tour-operators/{tourOperatorId}/audit-log/{entryId}` | yes | `audit-log/get` | yes | strict | **no field table** |
 
 Both paths resolved by hand from the class-level `@RequestMapping` plus the method
 annotation. There is no context path or servlet path to add.

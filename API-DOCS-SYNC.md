@@ -28,17 +28,24 @@ Verified 2026-08-16, so you do not have to rediscover it:
 - **There is exactly one Asciidoctor source: `src/docs/asciidoc/api-guide.adoc`**,
   about 1,400 lines. It renders to `target/generated-docs/api-guide.html` and is then
   copied into `static/docs`, so the packaged app serves it at `/docs/api-guide.html`.
-- **The guide uses `operation::`, not `include::`.** There are **155** `operation::`
-  macros and **zero** `include::` directives. The generic form of this audit tells you
-  to inventory `include::` lines; here that returns nothing and means nothing. An
-  `operation::name[]` macro pulls in every snippet under
-  `target/generated-snippets/name/` at once.
-- **An operation is not an endpoint, and the two counts have already diverged.** The
-  `audit` pass documented a 404 as a second operation on an existing endpoint
-  (`audit-log/get-not-found`), so there are 155 operations against 154 endpoints. Any
-  reconciliation that equates the two numbers is off by one, and by more as further
-  error responses get documented. **Count the macros against the snippet directories,
-  which do stay 1:1, and count endpoints separately from the controllers.**
+- **The guide uses `operation::`, not `include::`.** There are **zero** `include::`
+  directives. The generic form of this audit tells you to inventory them; here that
+  returns nothing and means nothing. An `operation::name[]` macro pulls in every
+  snippet under `target/generated-snippets/name/` at once.
+- **An operation is not an endpoint, and no count of either is pinned here on
+  purpose.** Every pass that documents an error response adds an operation to an
+  endpoint that already had one, so any number written down goes stale the next time
+  someone runs this. Two literals were pinned and rotted within one PR each. Measure
+  instead:
+
+  ```
+  grep -c 'operation::' src/docs/asciidoc/api-guide.adoc          # operations
+  find target/generated-snippets -name '*.adoc' | sed 's|/[^/]*$||' | sort -u | wc -l
+  ```
+
+  **The durable facts:** operations exceed endpoints and the gap widens; macros and
+  snippet directories stay 1:1, so that pair is the one worth reconciling; count
+  endpoints from the controllers, never from the guide.
 - **`target/` is gitignored, so snippets are not in version control.** That half of
   the stale-artifact question is already answered. Do not report it.
 

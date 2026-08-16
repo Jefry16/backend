@@ -1385,6 +1385,15 @@ trail.
 
 operation::contact-messages/delete[]
 
+[[resources-contact-delete-not-found]]
+==== Delete a Contact Message — Not Found
+
+The role check runs first, so this is what an ADMIN sees when the message is
+already gone. It is the ordinary concurrent case: two admins with the inbox
+open, one deletes, the other's DELETE misses.
+
+operation::contact-messages/delete-not-found[]
+
 [[resources-contact-delete-forbidden]]
 ==== Delete a Contact Message — Forbidden
 
