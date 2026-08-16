@@ -25,8 +25,6 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
-import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
-import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -54,9 +52,7 @@ class CurrencyControllerDocumentationTest {
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(prettyPrint())
-                        .and()
-                        .snippets().withDefaults(httpRequest(), httpResponse()))
+                        .withResponseDefaults(prettyPrint()))
                 .apply(springSecurity())
                 .build();
     }
@@ -92,4 +88,28 @@ class CurrencyControllerDocumentationTest {
                                 fieldWithPath("[].symbol").description("Currency symbol for UI display")
                         )));
     }
+    /**
+     * <b>The canonical 401, documented once for the whole API.</b> It is produced by
+     * {@code RestAuthenticationEntryPoint} before any controller runs, so every
+     * authenticated endpoint answers exactly this. Currencies is the simplest surface
+     * to publish it from — no path variables, no tenant, no roles.
+     *
+     * <p><b>Its shape is not {@code ApiErrorResponse}.</b> The entry point writes the
+     * JSON by hand and emits {@code status}, {@code error}, {@code message} and
+     * {@code timestamp} — there is no {@code code} field at all, not even a null one.
+     * So this response does NOT use the shared {@code ERROR_FIELDS} descriptor that
+     * the handler-produced errors use.
+     */
+    @Test
+    void withoutATokenIs401() throws Exception {
+        mockMvc.perform(get("/api/currencies"))
+                .andExpect(status().isUnauthorized())
+                .andDo(document("authentication/unauthorized",
+                        responseFields(
+                                fieldWithPath("status").description("Always 401"),
+                                fieldWithPath("error").description("Always \"Unauthorized\""),
+                                fieldWithPath("message").description("Always \"Authentication required\" — it never says which part of the credential failed"),
+                                fieldWithPath("timestamp").description("When the request was refused"))));
+    }
+
 }

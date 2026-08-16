@@ -1,6 +1,7 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit`, `contact` (2026-08-16).** Ten to go; `storefront` is last.
+**Contexts done: `audit`, `contact`, `reference` (2026-08-16).** Nine to go;
+`storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -26,6 +27,92 @@ Three results hold repo-wide and save every later pass the work:
   `.type(JsonFieldType.STRING)` as well as `.optional()`, or REST Docs cannot infer a
   type and fails the build. Copy `ERROR_FIELDS` from
   `ContactMessageControllerDocumentationTest`.
+
+---
+
+# `reference` — 2026-08-16
+
+Four endpoints, all four documented, **A through E clean**. Two findings, and the
+first one is the kind only a rendered-output check catches.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| GET | `/api/currencies` | yes | `currencies/list` | yes | strict | **no curl example** |
+| GET | `/api/countries` | yes | `countries/list` | yes | strict | documented |
+| GET | `/api/timezones` | yes | `timezones/list` | yes | strict | **no curl example** |
+| GET | `/api/languages` | yes | `languages/list` | yes | strict | **no curl example** |
+
+The first context with **no tenant scoping**: no path variables, no membership
+interceptor, no roles. Authenticated and nothing more, so the only error any of them
+can return is 401.
+
+## F1. Three of the four published no copy-pasteable example
+
+`CurrencyControllerDocumentationTest`, `TimezoneControllerDocumentationTest` and
+`LanguageControllerDocumentationTest` each called
+
+```java
+.snippets().withDefaults(httpRequest(), httpResponse())
+```
+
+`withDefaults` **replaces** the default snippet set rather than adding to it, so those
+three emitted four snippets where every other operation emits eight — losing
+`curl-request`, `httpie-request`, `request-body` and `response-body`.
+`CountryControllerDocumentationTest` never did it and got the full set.
+
+The result was visible in the published guide: **List Countries showed a `curl`
+command and the three endpoints beside it, in the same section, showed none.**
+
+- **Severity**: medium. Nothing is wrong or missing in the *contract* — the field
+  tables are complete. What is missing is the thing a reader copies.
+- **Verified by**: `ls target/generated-snippets/{countries,currencies}/list` → 8
+  files against 4. Then parsing `target/generated-docs/api-guide.html` per section:
+  `$ curl` present under `resources-countries`, absent under the other three.
+- **Why no guard caught it**: `ApiGuideDocumentsEveryEndpointTest` checks that an
+  operation is *referenced*, not what it renders. A `document(...)` call that emits
+  fewer snippets is a green build and a thinner page.
+
+## F2. The 401 was documented nowhere, and its shape is not the shared one
+
+Every endpoint in this context is authenticated, so 401 is the only error they have,
+and no operation in the guide published it.
+
+**It is also a different body from every other error.**
+`RestAuthenticationEntryPoint` writes the JSON by hand — `status`, `error`,
+`message`, `timestamp` — with **no `code` field at all**, not even a null one. The
+handler-produced errors carry `code`. So the shared `ERROR_FIELDS` descriptor does
+**not** apply to a 401.
+
+- **Verified by**: `RestAuthenticationEntryPoint:24-30` read in full;
+  `SecurityConfig:48` registers it.
+
+## G. Prose drift — none, but the section is uneven
+
+Countries, timezones and languages carry explanatory prose; **currencies has none at
+all**. Languages says "Authenticated." where the other three do not, though all four
+are. Not wrong, just inconsistent — left alone rather than widened into.
+
+## H. Description quality — none
+
+## What was fixed
+
+- **F1** — the three tests stopped overriding the snippet defaults. All four
+  endpoints now emit eight snippets and render a curl and an httpie example, matching
+  the rest of the guide.
+- **F2** — the 401 is documented **once, for the whole API**, as
+  `authentication/unauthorized` under a new *Without a Token* heading in the
+  Authentication section. It is published from the currencies test because that is
+  the simplest surface — no path variables, no tenant, no roles — but the refusal
+  happens in the filter chain before any controller, so it is every endpoint's 401.
+  The section says outright that this body is not the `@ControllerAdvice` one and has
+  no `code`.
+
+**A per-endpoint error and an API-wide one are documented differently.** `contact`'s
+403 belongs to its endpoint because the rule that produces it is that endpoint's.
+This 401 belongs to the Authentication section because one filter produces it for
+everything. Ask which before adding the next one.
 
 ---
 
