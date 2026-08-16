@@ -867,11 +867,21 @@ The operator's pickup catalogue. Not yet linked to slots.
 [[resources-pickup-list]]
 ==== List Pickup Locations
 
-Any member. Cursor-paginated, tenant-scoped. Filter by `name`, `time` and/or
+Any member; non-member → 404. Cursor-paginated, tenant-scoped. Filter by `name`, `time` and/or
 `createdAt`; sort by `createdAt` (default, newest first), `name`, `time` or
 `id`; page with `cursor`.
 
 operation::pickup-locations/list[]
+
+[[resources-pickup-list-not-found]]
+==== List Pickup Locations — Not a Member
+
+Every route under `/api/tour-operators/{id}/**` answers this way to a caller who
+is not a member of that operator. It is byte-identical to the answer for an
+operator that does not exist, which is the point — the 404 says nothing about
+whether the tenant is real.
+
+operation::pickup-locations/list-not-found[]
 
 [[resources-pickup-get]]
 ==== Get a Pickup Location
@@ -887,10 +897,28 @@ ADMIN+ only. The name is unique per operator, case-insensitively → 409.
 
 operation::pickup-locations/create[]
 
+[[resources-pickup-create-forbidden]]
+==== Create a Pickup Location — Forbidden
+
+A STAFF member can list and read pickup locations and cannot create one. The
+membership check has already passed here, so the answer is 403 rather than the
+404 a non-member gets.
+
+operation::pickup-locations/create-forbidden[]
+
+[[resources-pickup-create-conflict]]
+==== Create a Pickup Location — Name Taken
+
+The name is unique per operator, compared case-insensitively, so `Old Port` and
+`old port` collide. Update answers the same way.
+
+operation::pickup-locations/create-conflict[]
+
 [[resources-pickup-update]]
 ==== Update a Pickup Location
 
-ADMIN+ only. Partial.
+ADMIN+ only. **Partial** — a field left out keeps its current value, so sending
+only `time` does not clear the name. A name that collides is a 409, as on create.
 
 operation::pickup-locations/update[]
 

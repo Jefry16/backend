@@ -14,6 +14,7 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
@@ -29,6 +30,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.restdocs.payload.JsonFieldType;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -39,6 +41,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -104,7 +114,12 @@ class PickupLocationControllerDocumentationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
-                .andDo(document("pickup-locations/create"));
+                .andDo(document("pickup-locations/create",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestFields(
+                                fieldWithPath("name").description("Unique per operator, case-insensitively — a clash is a 409"),
+                                fieldWithPath("time").description("Local meeting time, HH:mm; the operator's timezone, not the caller's"))));
     }
 
     @Test
@@ -117,7 +132,16 @@ class PickupLocationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].context").value("pickup-locations"))
                 .andExpect(jsonPath("$.data[0].name").value("Old Port"))
-                .andDo(document("pickup-locations/list"));
+                .andDo(document("pickup-locations/list",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(
+                                fieldWithPath("data[].id").description("The pickup location id"),
+                                fieldWithPath("data[].context").description("The entity's collection: \"pickup-locations\""),
+                                fieldWithPath("data[].name").description("The location's name"),
+                                fieldWithPath("data[].time").description("Local meeting time, HH:mm"),
+                                fieldWithPath("data[].createdAt").description("When the location was created"),
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page").optional())));
     }
 
     @Test
@@ -128,7 +152,15 @@ class PickupLocationControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.context").value("pickup-locations"))
-                .andDo(document("pickup-locations/get"));
+                .andDo(document("pickup-locations/get",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pickupLocationId").description("The pickup location id")),
+                        responseFields(
+                                fieldWithPath("id").description("The pickup location id"),
+                                fieldWithPath("context").description("The entity's collection: \"pickup-locations\""),
+                                fieldWithPath("name").description("The location's name"),
+                                fieldWithPath("time").description("Local meeting time, HH:mm"),
+                                fieldWithPath("createdAt").description("When the location was created"))));
     }
 
     @Test
@@ -138,7 +170,15 @@ class PickupLocationControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNoContent())
-                .andDo(document("pickup-locations/update"));
+                .andDo(document("pickup-locations/update",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pickupLocationId").description("The pickup location id")),
+                        // PATCH is partial. `.optional()` alone publishes nothing — the
+                        // default request-fields template renders Path/Type/Description
+                        // and has no Optional column — so the rule goes in the text.
+                        requestFields(
+                                fieldWithPath("name").description("Unique per operator, case-insensitively — a clash is a 409. Omit to keep the current value").optional(),
+                                fieldWithPath("time").description("Local meeting time, HH:mm. Omit to keep the current value").optional())));
     }
 
     @Test
@@ -147,7 +187,9 @@ class PickupLocationControllerDocumentationTest {
         mockMvc.perform(delete("/api/tour-operators/{id}/pickup-locations/{pickupLocationId}", OP, PICKUP)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
-                .andDo(document("pickup-locations/delete"));
+                .andDo(document("pickup-locations/delete",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pickupLocationId").description("The pickup location id"))));
     }
 
     @Test
@@ -164,7 +206,11 @@ class PickupLocationControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andDo(document("pickup-locations/create-forbidden",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -175,7 +221,11 @@ class PickupLocationControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andDo(document("pickup-locations/create-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -185,6 +235,10 @@ class PickupLocationControllerDocumentationTest {
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", BEARER))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("pickup-locations/list-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

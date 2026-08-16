@@ -28,6 +28,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.restdocs.payload.JsonFieldType;
 
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
@@ -169,7 +171,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),
                                 fieldWithPath("data[].createdBy").description("Creator user id"),
                                 fieldWithPath("data[].createdAt").description("When created"),
-                                fieldWithPath("nextCursor").description("Opaque cursor; null on the last page"))));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page"))));
     }
 
     @Test

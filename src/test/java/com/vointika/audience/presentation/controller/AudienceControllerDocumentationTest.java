@@ -28,6 +28,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.restdocs.payload.JsonFieldType;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
@@ -133,7 +135,7 @@ class AudienceControllerDocumentationTest {
                                 fieldWithPath("data[].name").description("Tier name"),
                                 fieldWithPath("data[].paxPerUnit").description("People per unit"),
                                 fieldWithPath("data[].createdAt").description("When created"),
-                                fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page").optional())));
     }
 
     @Test

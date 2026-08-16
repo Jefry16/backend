@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit`, `contact`, `reference` (2026-08-16).** Nine to go;
-`storefront` is last.
+**Contexts done: `audit`, `contact`, `reference`, `pickup` (2026-08-16).** Eight to
+go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -28,6 +28,11 @@ Three results hold repo-wide and save every later pass the work:
   the call should not reappear. **No guard catches this** —
   `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
   what it renders, so fewer snippets is a green build and a thinner page.
+- **Type `nextCursor` explicitly: `.type(JsonFieldType.STRING)`.** A list test that
+  stubs the last page (`new CursorPage<>(rows, null)`) hands REST Docs a null, which
+  it types from the value — so the published table told readers the cursor's type is
+  **`Null`**, i.e. that the endpoint never paginates. 10 of the 14 list endpoints did
+  this. All 14 are typed now.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -37,6 +42,99 @@ Three results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `pickup` — 2026-08-16
+
+Five endpoints, all five referenced by the guide — and **all five documented
+nothing**. Every `document(...)` call passed the operation name and no snippets at
+all, so the guide published a curl and a raw body for each and not one field table,
+path variable or header. Four error assertions already sat in the test and none was
+published.
+
+This is the largest gap in the series so far, and the first context where the
+*contract* was missing rather than the examples.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| GET | `…/pickup-locations` | yes | `pickup-locations/list` | yes | **no fields** | body undocumented |
+| GET | `…/pickup-locations/{pickupLocationId}` | yes | `pickup-locations/get` | yes | **no fields** | body undocumented |
+| POST | `…/pickup-locations` | yes | `pickup-locations/create` | yes | **no fields** | **request** undocumented |
+| PATCH | `…/pickup-locations/{pickupLocationId}` | yes | `pickup-locations/update` | yes | **no fields** | **request** undocumented |
+| DELETE | `…/pickup-locations/{pickupLocationId}` | yes | `pickup-locations/delete` | yes | n/a | 204, no body |
+
+**A–E: none.** Five mappings, five tests, five snippet directories, five macros.
+
+## F1. Two request bodies were entirely undocumented
+
+`POST` and `PATCH` both take a `PickupLocationInput`, and neither published a
+`request-fields.adoc`. A client had the raw JSON example and nothing else: no field
+list, no statement that `name` is unique per operator, and **no statement that PATCH
+is partial** — which is the difference between updating a time and clearing a name.
+
+- **Severity**: high. This is the only finding in the series so far where a reader
+  cannot construct a correct request from the guide.
+- **Verified by**: `ls target/generated-snippets/pickup-locations/create` → no
+  `request-fields.adoc`; `PickupLocationInput` read in full.
+
+## F2. Both reads published no field table
+
+`list` and `get` return `PickupLocationResponse` and documented none of its five
+components. Both are on the tracked no-field-table list; fixing them takes it from 22
+to 20.
+
+## F3. Four error assertions existed and published nothing
+
+The test already asserted 401, 403, 409 and 404. Every one passed, and no reader
+could see any of them.
+
+- **403** — a STAFF member may list and read but not create. The membership check has
+  already passed, so it is 403 rather than the 404 a non-member gets.
+- **409** — the name is unique per operator, compared **case-insensitively**, so
+  `Old Port` and `old port` collide. This is the API's first documented 409.
+- **404** — a non-member on any tenant-scoped route.
+- **401** — already covered by the canonical `authentication/unauthorized`.
+
+## F4. No path parameters on any of the five
+
+## G. Prose drift — none, but two rules lived only in prose
+
+"The name is unique per operator, case-insensitively → 409" and "Partial" were
+written in the guide and nowhere a client could see them in machine-readable form.
+Both are now field descriptions as well.
+
+## H. Description quality — none (there were no descriptions)
+
+## What was fixed
+
+Suite unchanged at **1231** — no new tests, four existing ones taught to publish what
+they already asserted, which is the cheapest kind of documentation there is.
+
+- **F1** — `requestFields` on create and update, with the partial-update rule in the
+  **description text** of each field. `.optional()` alone publishes nothing: the
+  default request-fields template renders `Path | Type | Description` and has no
+  Optional column, so the create and update tables came out identical and update's
+  fields read as mandatory. Caught in review, after an earlier revision of this
+  section claimed the rule was "stated per field" when it was still only in prose.
+- **F2** — `responseFields` on both reads. The tracked list drops **22 → 20**.
+- **F3** — `create-forbidden`, `create-conflict` and `list-not-found` publish the
+  403, 409 and 404, each with its own guide section explaining when it happens. The
+  401 was deliberately **not** duplicated here: it is one filter's answer for the
+  whole API and is documented once under Authentication.
+- **F4** — `pathParameters` on all five.
+- **Repo-wide, found here** — every `nextCursor` descriptor is explicitly typed. See
+  the header block; 10 of 14 lists were publishing type `Null`, including
+  `audit-log/list` and `contact-messages/list`, which this series documented and
+  missed twice.
+
+**The rule this context settles: an error belongs where the rule that produces it
+lives.** The 404 for a non-member is the interceptor's and applies to every
+tenant-scoped route, but it is documented here rather than centrally because it is
+the first place a reader meets it — and the section says so. The 401 is the filter
+chain's and is documented once. The 403 and 409 are this endpoint's own.
 
 ---
 
@@ -399,10 +497,10 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 22 body-returning operations with no field table
+## The 20 body-returning operations with no field table
 
-Repo-wide, for the passes that follow. **MAP's Debt entry agrees at 22**, with the
-reason recorded there.
+Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
+pinning a number**, which is why this heading is the only place it is stated.
 
 **The old scan was blind to exactly the set F1 found.** Its method is: for every
 `response-body.adoc`, strip the fences, check the body is non-empty, then test for a
@@ -411,25 +509,24 @@ no `response-body.adoc` at all, so the scan never saw them. Removing that call
 repo-wide made three more visible: `experiences/get`, `experiences/translations/get`
 and `experiences/translations/list`. The two defects were one defect.
 
-`audiences/get` · `audience-translations/get` · 
-`audience-translations/list` · `experience-metafield-translations/get` · 
-`experience-metafield-translations/list-locales` · `experiences/get` · 
-`experiences/translations/get` · `experiences/translations/list` · 
-`metafield-definitions/get` · `metaobject-field-translations/get` · 
-`metaobject-field-translations/list-locales` · 
-`page-metafield-translations/get` · 
-`page-metafield-translations/list-locales` · `page-translations/get` · 
-`pickup-locations/get` · `pickup-locations/list` · `slots/cancel` · 
-`slots/get` · `slots/list` · `slots/update` · 
-`tour-operator-metafield-translations/get` · 
-`tour-operator-metafield-translations/list-locales`
+`metaobject-field-translations/get` ·
+`metaobject-field-translations/list-locales` ·
+`page-metafield-translations/list-locales` · `page-metafield-translations/get`
+· `experiences/get` · `tour-operator-metafield-translations/get` ·
+`tour-operator-metafield-translations/list-locales` · `audiences/get` ·
+`page-translations/get` · `metafield-definitions/get` ·
+`audience-translations/get` · `audience-translations/list` · `slots/get` ·
+`slots/cancel` · `slots/list` · `slots/update` ·
+`experience-metafield-translations/list-locales` ·
+`experience-metafield-translations/get` · `experiences/translations/get` ·
+`experiences/translations/list`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
 checking the body is non-empty, then testing for a sibling `response-fields.adoc` —
 re-run after the repo-wide `withDefaults` removal, without which it cannot see 61 of
-the 159 operations. Three corrections on the way to this number: a first pass returned
-71 by counting 204s with empty bodies; 20 included `audit-log/get`, fixed in the same
-PR; and 19 was blind to the restricted set.
+the 159 operations. The number moves as passes fix their own: it has read 71 (a bad scan), 20, 19 (blind
+to the restricted set), 22 (the corrected scan), and 20 again since `pickup`
+documented its two reads. Re-run the scan rather than trusting any of them.
 
 ---
 
