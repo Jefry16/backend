@@ -332,8 +332,9 @@ The list endpoint, which returns the same record, documents all fifteen paths.
 
 **This one is known.** MAP's Debt entry says 19 body-returning endpoints document no
 field table. At audit time it was **20**, because `audit-log/get` was one of them.
-F1 fixed that one, so the count is **19** again and MAP is correct as of this commit.
-The full list is at the foot of this report.
+F1 fixed that one, which took it off the list. For the current number and the full
+list, see the heading at the foot of this report — it has moved twice since and
+should be read there rather than here.
 
 **F2. The 404 is tested and not documented.** `getUnknownIs404` asserts
 `status().isNotFound()` and never calls `document(...)`, so the snippet is never
@@ -400,8 +401,8 @@ Ordered by how likely a consumer is to be misled.
 
 ## The 22 body-returning operations with no field table
 
-Repo-wide, for the passes that follow. **MAP's Debt entry says 19 and is an
-undercount** — it needs correcting to 22.
+Repo-wide, for the passes that follow. **MAP's Debt entry agrees at 22**, with the
+reason recorded there.
 
 **The old scan was blind to exactly the set F1 found.** Its method is: for every
 `response-body.adoc`, strip the fences, check the body is non-empty, then test for a

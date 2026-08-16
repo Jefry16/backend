@@ -100,8 +100,8 @@ class CurrencyControllerDocumentationTest {
      * the shared {@link ApiErrorSnippets#errorFields()}. The entry point writes the
      * JSON by hand and the handler serializes {@code ApiErrorResponse}, but with a
      * null {@code code} dropped by {@code @JsonInclude(NON_NULL)} the two are the
-     * same four keys in the same order. **No 401 can carry a {@code code} either
-     * way**: {@code UnauthorizedException} has only a message constructor.
+     * same four keys in the same order. <b>No 401 can carry a {@code code} either
+     * way</b>: {@code UnauthorizedException} has only a message constructor.
      */
     @Test
     void withoutATokenIs401() throws Exception {
