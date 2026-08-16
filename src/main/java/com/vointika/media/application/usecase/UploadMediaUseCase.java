@@ -37,8 +37,14 @@ import java.util.UUID;
  */
 public class UploadMediaUseCase {
 
-    /** Images/PDF cap. Video (a larger tier) is deferred until a consumer needs it. */
-    static final long MAX_BYTES = 25L * 1024 * 1024;
+    /**
+     * Images/PDF cap. Video (a larger tier) is deferred until a consumer needs it.
+     *
+     * <p><b>Public because two other places must agree with it and neither may
+     * restate it</b>: {@code MultipartLimitsTest} pins the container's ceiling above
+     * this, and the API guide publishes the number.
+     */
+    public static final long MAX_BYTES = 25L * 1024 * 1024;
 
     private final MediaRepository mediaRepository;
     private final MediaStoragePort mediaStoragePort;

@@ -23,7 +23,13 @@ public final class ContentType {
             "image/webp", "webp",
             "application/pdf", "pdf");
 
-    static final Set<String> ALLOWED = EXTENSION_BY_TYPE.keySet();
+    /**
+     * What the media library accepts. <b>Public because it is the answer to a
+     * question callers legitimately ask</b> — the API guide publishes this exact set,
+     * and it builds the sentence from here rather than restating it, so the two
+     * cannot drift.
+     */
+    public static final Set<String> ALLOWED = EXTENSION_BY_TYPE.keySet();
 
     private final String value;
 

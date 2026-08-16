@@ -610,7 +610,8 @@ resolved from the stored key at read time (URLs are never persisted).
 ==== Upload Media
 
 ADMIN+ only. Multipart (`file` part). Allowed: `image/jpeg`, `image/png`,
-`image/webp`, `application/pdf`, ≤ 25 MB. Bad type or oversize → 422.
+`image/webp`, `application/pdf`, ≤ 25 MB. **Three things are a 422**: a type off
+that list, a file over the cap, and a part with no bytes at all.
 
 operation::media/upload[]
 
@@ -634,9 +635,18 @@ operation::media/upload-unsupported-type[]
 [[resources-media-upload-too-large]]
 ==== Upload Media — Too Large
 
-25 MB, for any allowed type.
+25 MB, for any allowed type. **The request body in this example is elided** — a
+docs build cannot carry 26 MB of PNG.
 
 operation::media/upload-too-large[]
+
+[[resources-media-upload-empty]]
+==== Upload Media — Empty File
+
+A zero-byte part, checked before the size cap. A picker that submits nothing, or
+a truncated upload, lands here rather than on a 500.
+
+operation::media/upload-empty[]
 
 [[resources-media-list]]
 ==== List Media

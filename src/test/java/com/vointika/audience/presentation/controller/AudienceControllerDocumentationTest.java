@@ -68,6 +68,16 @@ class AudienceControllerDocumentationTest {
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
+
+    /**
+     * A STAFF member's token. A 403 turns on <em>who</em> is asking rather than what
+     * is asked for, so the request URL is necessarily the one that succeeds for an
+     * ADMIN — varying the token is what makes the published example legible.
+     * {@code PublishedExamplesAreHonestTest} fails the build without it.
+     */
+    private static final String STAFF_TOKEN = "staff-access-token";
+    private static final String STAFF_BEARER = "Bearer " + STAFF_TOKEN;
+    private static final String STAFF_USER = "550e8400-e29b-41d4-a716-4466554400ff";
     private static final String BODY = "{\"name\":\"Adults\",\"paxPerUnit\":1}";
 
     private MockMvc mockMvc;
@@ -93,6 +103,11 @@ class AudienceControllerDocumentationTest {
     private void authenticated() {
         when(accessTokenValidator.isValid(TOKEN)).thenReturn(true);
         when(accessTokenValidator.extractUserId(TOKEN)).thenReturn(USER);
+    }
+
+    private void authenticatedAsStaff() {
+        when(accessTokenValidator.isValid(STAFF_TOKEN)).thenReturn(true);
+        when(accessTokenValidator.extractUserId(STAFF_TOKEN)).thenReturn(STAFF_USER);
     }
 
     private Audience audience() {
@@ -193,10 +208,10 @@ class AudienceControllerDocumentationTest {
 
     @Test
     void staffCannotCreate() throws Exception {
-        authenticated();
+        authenticatedAsStaff();
         doThrow(new ForbiddenException("admin")).when(createAudienceUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
-                        .header("Authorization", BEARER)
+                        .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden())
                 .andDo(document("audiences/create-forbidden",
@@ -208,11 +223,13 @@ class AudienceControllerDocumentationTest {
     @Test
     void duplicateNameIsConflict() throws Exception {
         authenticated();
+        // Send the name that clashes, not the one that succeeds two sections above.
         doThrow(new ResourceAlreadyExistsException("exists"))
                 .when(createAudienceUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
-                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"adult\",\"paxPerUnit\":1}"))
                 .andExpect(status().isConflict())
                 .andDo(document("audiences/create-conflict",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -222,11 +239,11 @@ class AudienceControllerDocumentationTest {
 
     @Test
     void nonMemberGets404() throws Exception {
-        authenticated();
+        authenticatedAsStaff();
         doThrow(new ResourceNotFoundException("not found"))
-                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(OP)));
+                .when(membershipCheck).ensureMember(any(), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/audiences", OP)
-                        .header("Authorization", BEARER))
+                        .header("Authorization", STAFF_BEARER))
                 .andExpect(status().isNotFound())
                 .andDo(document("audiences/list-not-found",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),

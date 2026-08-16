@@ -46,6 +46,18 @@ These results hold repo-wide and save every later pass the work:
   same variable, checks its *shape* through `LocaleCode` and nothing else — so a
   locale the operator does not publish is a `200` with nulls, or an idempotent `204`,
   never a 422. Reserve the 422 wording for the upsert.
+- **A published error example must differ from the success it contrasts with**, and
+  `PublishedExamplesAreHonestTest` now fails the build when it does not. Vary the
+  thing the error turns on: a missing id for a 404, a **STAFF token** for a 403 (that
+  error is about who asks, so the URL has to stay the same), the clashing value for a
+  409. The guard found **10 instances across five contexts** the first time it ran,
+  including two this series had already fixed by hand in one context and then
+  reproduced in four others.
+- **Do not restate a constant from `src/main` in a description or a stubbed error.**
+  A doc test that hand-copies an allowlist or a message keeps publishing the old one
+  after the source changes, and the suite stays green because the test stubs the very
+  code it copied from. Build the sentence from the source
+  (`ContentType.ALLOWED`, `UploadMediaUseCase.MAX_BYTES`) or raise the real exception.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -97,11 +109,21 @@ the description implied was fine.
   table that contradicted it. Prose and contract disagreed, and only the contract is
   machine-readable.
 
-## F2. The two 422s that define the endpoint were neither tested nor documented
+## F2. Three 422s define the endpoint and none was documented
 
-Nothing in the suite asserted an unsupported type or an oversize file. These are the
-upload's actual contract — the allowlist and the 25 MB cap — and a client could
-discover either only by hitting it.
+The allowlist, the 25 MB cap, and a zero-byte part — checked in that order, before
+the cap.
+
+**They were already tested.** `UploadMediaUseCaseTest.rejectsDisallowedContentType`
+and `rejectsEmptyAndOversizeFiles` cover all three on `main`. An earlier revision of
+this section said "neither tested nor documented", which was a behavioural claim
+reached by reading rather than running — the one thing LAW §4 names outright. Caught
+in review.
+
+What was missing was the **published** contract, which is this series' remit. The new
+tests add no behavioural coverage: they stub the use case and assert only that
+`GlobalExceptionHandler` maps `InvalidFieldException` to 422. They do not need to,
+because the behaviour was covered.
 
 ## F3. Three error assertions existed and published nothing
 
@@ -117,11 +139,16 @@ discover either only by hitting it.
 
 Suite **1231 → 1233**. Two new tests, both for the 422s.
 
-- **F1** — the part description names the four types, with a comment recording why
-  SVG is out, and the guide gains an *Unsupported Type* section saying the same to a
-  reader.
-- **F2** — `media/upload-unsupported-type` uploads an actual SVG and
-  `media/upload-too-large` an oversize file. Both publish the error body.
+- **F1** — the part description is **generated from `ContentType.ALLOWED`** and the
+  cap from `UploadMediaUseCase.MAX_BYTES`, so adding a type updates the guide by
+  itself. The first fix hand-copied the four types, which re-created the drift class
+  F1 exists to report — the suite would have stayed green with the guide advertising
+  the old set, because the test stubs the code it copied from. The 422 example now
+  raises the refusal from the real `ContentType`, and fails loudly if SVG is ever
+  allowed.
+- **F2** — `media/upload-unsupported-type` (an actual SVG), `media/upload-too-large`
+  and `media/upload-empty` publish all three. The audit itself missed the empty-file
+  case twice before review found it.
 - **F3** — `media/upload-forbidden` and `media/list-not-found`. The 401 stays central.
 - **F4** — path parameters on both.
 

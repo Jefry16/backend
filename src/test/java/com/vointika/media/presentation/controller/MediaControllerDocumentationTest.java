@@ -7,6 +7,7 @@ import com.vointika.media.application.usecase.ListMediaUseCase;
 import com.vointika.media.application.usecase.DescribeMediaUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.media.domain.valueobject.ContentType;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
@@ -96,6 +97,20 @@ class MediaControllerDocumentationTest {
                 .thenReturn("https://media.staging.vointika.com/tour-operators/x/img.png");
     }
 
+    /**
+     * A STAFF member's token. A 403 turns on who is asking rather than what is asked
+     * for, so varying the token is what makes the published example legible —
+     * {@code PublishedExamplesAreHonestTest} fails the build without it.
+     */
+    private static final String STAFF_TOKEN = "staff-access-token";
+    private static final String STAFF_BEARER = "Bearer " + STAFF_TOKEN;
+
+    private void authenticatedAsStaff() {
+        when(accessTokenValidator.isValid(STAFF_TOKEN)).thenReturn(true);
+        when(accessTokenValidator.extractUserId(STAFF_TOKEN))
+                .thenReturn("550e8400-e29b-41d4-a716-4466554400ff");
+    }
+
     private void authenticated() {
         when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
         when(accessTokenValidator.extractUserId("test-access-token")).thenReturn(USER_ID);
@@ -125,11 +140,7 @@ class MediaControllerDocumentationTest {
                 .andDo(document("media/upload",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id")),
-                        // Not "image/*": the allowlist is exactly these four. SVG is
-                        // excluded deliberately — it can carry script — and video is
-                        // deferred until something consumes it.
-                        requestParts(partWithName("file").description(
-                                "The file to upload. `image/jpeg`, `image/png`, `image/webp` or `application/pdf` only, at most 25 MB")),
+                        requestParts(partWithName("file").description(ALLOWED_TYPES_SENTENCE)),
                         responseHeaders(headerWithName("Location").description("URI of the created media record"))));
     }
 
@@ -229,7 +240,7 @@ class MediaControllerDocumentationTest {
 
     @Test
     void staffCannotUpload() throws Exception {
-        authenticated();
+        authenticatedAsStaff();
         doThrow(new ForbiddenException("This action requires ADMIN privileges"))
                 .when(uploadMediaUseCase).execute(any(), any(), any(),
                         org.mockito.ArgumentMatchers.anyLong(), any(), any());
@@ -238,7 +249,7 @@ class MediaControllerDocumentationTest {
                 "file", "img.png", "image/png", "fake-bytes".getBytes());
         mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .file(file)
-                        .header("Authorization", "Bearer test-access-token"))
+                        .header("Authorization", STAFF_BEARER))
                 .andExpect(status().isForbidden())
                 .andDo(document("media/upload-forbidden",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -248,12 +259,12 @@ class MediaControllerDocumentationTest {
 
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
-        authenticated();
+        authenticatedAsStaff();
         doThrow(new com.vointika.shared.exception.ResourceNotFoundException("Tour operator not found"))
-                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(OPERATOR_ID)));
+                .when(membershipCheck).ensureMember(any(), eq(UUID.fromString(OPERATOR_ID)));
 
         mockMvc.perform(get("/api/tour-operators/{id}/media", OPERATOR_ID)
-                        .header("Authorization", "Bearer test-access-token"))
+                        .header("Authorization", STAFF_BEARER))
                 .andExpect(status().isNotFound())
                 .andDo(document("media/list-not-found",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -290,8 +301,7 @@ class MediaControllerDocumentationTest {
     @Test
     void anUnsupportedContentTypeIs422() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException(
-                "Unsupported content type: allowed image/jpeg, image/png, image/webp, application/pdf"))
+        doThrow(refusalFor("image/svg+xml"))
                 .when(uploadMediaUseCase).execute(any(), any(), any(),
                         org.mockito.ArgumentMatchers.anyLong(), any(), any());
 
@@ -317,12 +327,12 @@ class MediaControllerDocumentationTest {
     @Test
     void anOversizeFileIs422() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("File too large: max 25 MB"))
+        doThrow(new InvalidFieldException("File too large: max " + MAX_MB + " MB"))
                 .when(uploadMediaUseCase).execute(any(), any(), any(),
                         org.mockito.ArgumentMatchers.anyLong(), any(), any());
 
         var big = new org.springframework.mock.web.MockMultipartFile(
-                "file", "poster.png", "image/png", "pretend-this-is-26MB".getBytes());
+                "file", "poster.png", "image/png", "…26 MB of PNG, elided…".getBytes());
 
         mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .file(big)
@@ -333,6 +343,59 @@ class MediaControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestParts(partWithName("file").description("A file over the 25 MB cap")),
                         responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * The third 422, and the one an audit of this endpoint missed twice: a zero-byte
+     * part is refused before the size cap is even considered.
+     */
+    @Test
+    void anEmptyFileIs422() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException("File is empty"))
+                .when(uploadMediaUseCase).execute(any(), any(), any(),
+                        org.mockito.ArgumentMatchers.anyLong(), any(), any());
+
+        var empty = new org.springframework.mock.web.MockMultipartFile(
+                "file", "empty.png", "image/png", new byte[0]);
+
+        mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
+                        .file(empty)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("media/upload-empty",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestParts(partWithName("file").description("A part with no bytes")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /** 25, read from the cap itself so the published sentence cannot drift from it. */
+    private static final long MAX_MB = UploadMediaUseCase.MAX_BYTES / (1024 * 1024);
+
+    /**
+     * <b>Built from {@link ContentType#ALLOWED}, never restated.</b> The previous
+     * description said "image/*", which is wider than the allowlist and implied that
+     * SVG — excluded on purpose, because it can carry script — would be accepted.
+     * Generating the sentence means adding a type updates the guide by itself.
+     */
+    private static final String ALLOWED_TYPES_SENTENCE =
+            "The file to upload. " + ContentType.ALLOWED.stream().sorted()
+                    .map(t -> "`" + t + "`").collect(java.util.stream.Collectors.joining(", "))
+            + " only, at most " + MAX_MB + " MB";
+
+    /**
+     * The refusal the real {@link ContentType} raises, so the published 422 body is
+     * the application's own words. Adding a type to the allowlist fails this loudly
+     * rather than leaving the guide advertising the old set.
+     */
+    private static InvalidFieldException refusalFor(String contentType) {
+        try {
+            new ContentType(contentType);
+        } catch (InvalidFieldException expected) {
+            return expected;
+        }
+        throw new AssertionError(contentType + " is on the allowlist now — this example needs a new type");
     }
 
 }
