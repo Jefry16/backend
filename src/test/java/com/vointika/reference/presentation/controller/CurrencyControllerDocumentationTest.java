@@ -1,6 +1,7 @@
 package com.vointika.reference.presentation.controller;
 
 import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.reference.application.usecase.ListCurrenciesUseCase;
 import com.vointika.reference.domain.entity.Currency;
@@ -25,8 +26,6 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
-import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
-import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -54,9 +53,7 @@ class CurrencyControllerDocumentationTest {
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(prettyPrint())
-                        .and()
-                        .snippets().withDefaults(httpRequest(), httpResponse()))
+                        .withResponseDefaults(prettyPrint()))
                 .apply(springSecurity())
                 .build();
     }
@@ -92,4 +89,26 @@ class CurrencyControllerDocumentationTest {
                                 fieldWithPath("[].symbol").description("Currency symbol for UI display")
                         )));
     }
+    /**
+     * <b>The canonical 401, documented once for the whole API.</b> It is produced by
+     * {@code RestAuthenticationEntryPoint} inside the filter chain, before any
+     * controller runs, so every authenticated endpoint answers exactly this.
+     * Currencies is the simplest surface to publish it from — no path variables, no
+     * tenant, no roles.
+     *
+     * <p><b>It is the ordinary error body</b>, which is why it documents itself with
+     * the shared {@link ApiErrorSnippets#errorFields()}. The entry point writes the
+     * JSON by hand and the handler serializes {@code ApiErrorResponse}, but with a
+     * null {@code code} dropped by {@code @JsonInclude(NON_NULL)} the two are the
+     * same four keys in the same order. <b>No 401 can carry a {@code code} either
+     * way</b>: {@code UnauthorizedException} has only a message constructor.
+     */
+    @Test
+    void withoutATokenIs401() throws Exception {
+        mockMvc.perform(get("/api/currencies"))
+                .andExpect(status().isUnauthorized())
+                .andDo(document("authentication/unauthorized",
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
 }

@@ -141,6 +141,16 @@ Obtain one from <<resources-login>>. A short-lived access token is refreshed via
 (a non-member is indistinguishable from a missing operator — both `404`); the
 role each action needs (member / ADMIN+ / OWNER) is noted per endpoint.
 
+[[overview-unauthorized]]
+==== Without a Token
+
+Every authenticated endpoint answers the same way, because the refusal happens in
+the security filter chain before any controller runs. It is the ordinary error body,
+and **no 401 in this API carries a `code`** — whichever layer produced it. The
+message never says which part of the credential failed.
+
+operation::authentication/unauthorized[]
+
 [[overview-rate-limiting]]
 === Rate Limiting
 
