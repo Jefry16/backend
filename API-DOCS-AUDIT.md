@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit`, `contact`, `reference`, `pickup` (2026-08-16).** Eight to
-go; `storefront` is last.
+**Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`
+(2026-08-16).** Seven to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -11,14 +11,15 @@ together.
 
 **Every finding raised so far is fixed.**
 
-Three results hold repo-wide and save every later pass the work:
+These results hold repo-wide and save every later pass the work:
 
 - **No `relaxed*` documentation exists anywhere.** That is the whole of finding E,
   and it is closed for every context.
   **It does not mean every response is checked.** An operation that passes no
-  `responseFields(...)` at all has no strict check either, and 19 of them publish a
-  body with no field table — listed at the foot of this report. **Check field-table
-  coverage in your context; only the `relaxed*` question is settled.**
+  `responseFields(...)` at all has no strict check either, and a number of them
+  publish a body with no field table — the heading at the foot of this report has the
+  current count and the names. **Check field-table coverage in your context; only the
+  `relaxed*` question is settled.**
 - **Every `operation::` macro resolves and every snippet directory is pulled in**, so
   B, C and D are clean unless a pass breaks them.
 - **Every operation publishes a curl and an httpie example.** 18 test classes had
@@ -33,6 +34,18 @@ Three results hold repo-wide and save every later pass the work:
   it types from the value — so the published table told readers the cursor's type is
   **`Null`**, i.e. that the endpoint never paginates. 10 of the 14 list endpoints did
   this. All 14 are typed now.
+- **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
+  description text.** The default request-fields template renders
+  `Path | Type | Description` and has no Optional column, so a create table and its
+  PATCH table come out **byte-identical** and the PATCH's fields read as mandatory.
+  Write "Omit to keep the current value" — and check what omission actually does:
+  `audiences/update` skips null fields, so omitting `paxPerUnit` keeps the current
+  value rather than resetting it to the default the create description names.
+- **A `{locale}` path variable does not mean the locale is validated.** Only the six
+  `Upsert*` use cases consult `OperatorLocalesQuery`. A read or a delete takes the
+  same variable, checks its *shape* through `LocaleCode` and nothing else — so a
+  locale the operator does not publish is a `200` with nulls, or an idempotent `204`,
+  never a 422. Reserve the 422 wording for the upsert.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -42,6 +55,100 @@ Three results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `audience` — 2026-08-16
+
+Eight endpoints across two controllers. **A–E clean.** The two were in very different
+states: `AudienceController` was largely documented, `AudienceTranslationController`
+documented nothing at all.
+
+Eight error assertions already sat in the two tests. **None was published**, and two
+are shapes this series had not met before.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| GET | `…/audiences` | yes | `audiences/list` | yes | strict | documented |
+| GET | `…/audiences/{audienceId}` | yes | `audiences/get` | yes | **no fields** | body undocumented |
+| POST | `…/audiences` | yes | `audiences/create` | yes | strict | documented |
+| PATCH | `…/audiences/{audienceId}` | yes | `audiences/update` | yes | strict | documented |
+| GET | `…/audiences/{audienceId}/translations` | yes | `audience-translations/list` | yes | **nothing** | undocumented |
+| GET | `…/translations/{locale}` | yes | `audience-translations/get` | yes | **nothing** | undocumented |
+| PUT | `…/translations/{locale}` | yes | `audience-translations/upsert` | yes | **nothing** | undocumented |
+| DELETE | `…/translations/{locale}` | yes | `audience-translations/delete` | yes | **nothing** | undocumented |
+
+## F1. The translation controller documented nothing
+
+All four `document(...)` calls passed the operation name and no snippets — the shape
+`pickup` had. Three of the four return or accept a body and published no field table,
+and none documented the `{locale}` path variable, which is the one a caller is most
+likely to get wrong.
+
+## F2. `audiences/get` published no field table
+
+The list documented all five components of `AudienceResponse`; the single read
+documented none.
+
+## F3. Eight error assertions, none published
+
+Two are new to the series:
+
+- **422 on an unsupported locale.** The locale must be one the operator publishes in,
+  so a valid ISO code the operator has not enabled is still a 422 — a distinction no
+  reader could have drawn from the guide.
+- **400 on a missing body, raised by Spring MVC rather than by the application.**
+  `@RequestBody` is required by default, so the request is rejected before the handler
+  runs; the test records that this is why the handler's own null guard was deleted as
+  unreachable. **The response is still the standard error shape**, because
+  `GlobalExceptionHandler` extends `ResponseEntityExceptionHandler` and maps it
+  through `handleExceptionInternal`.
+
+The rest were 401, 403 twice, 409 and 404 — all published now except the 401, which
+stays central.
+
+## G. Prose drift — one, and this pass first reported none
+
+`audiences/update` published a request table **byte-identical to create's**, so a
+caller reading it expects `paxPerUnit` to reset to 1 when omitted. `UpdateAudienceUseCase`
+skips null fields, so it keeps the current value. Pre-existing on `main`, not
+introduced here — but the trap and its fix were established one commit earlier in this
+same series, on `pickup`, and this pass reported the category clean. The rule was
+sitting in `pickup`'s findings instead of in the repo-wide block where every pass
+would read it; it is in the block now.
+
+## H. Description quality — none
+
+## What was fixed
+
+Suite unchanged at **1231**. No new tests; eight existing assertions taught to publish.
+
+- **F1** — all four translation operations document headers, path variables and their
+  bodies. The upsert states that a blank name **clears** the overlay rather than
+  storing an empty one.
+- **F2** — `audiences/get` gains its field table. With the three translation reads,
+  the tracked no-field-table list drops **20 → 17**.
+- **F3** — six new operations: 403, 409 and 404 on audiences; 403, 422 and 400 on
+  translations. Each has a guide section saying when it happens.
+- Path parameters added where they were missing, on `audiences/list` and
+  `audiences/create`.
+- **The `{locale}` description promised a 422 that two of the four operations cannot
+  return.** One constant was reused across all four. Only the upsert consults
+  `OperatorLocalesQuery`; `GET` falls back to an empty translation (**200**) and
+  `DELETE` returns early (**204**), so a client branching on 422 to detect "locale not
+  enabled" would never see one. The reads say "BCP-47 locale code" now, matching the
+  precedent in `ExperienceTranslationControllerDocumentationTest`, and the guide says
+  outright that an unpublished locale is indistinguishable from an untranslated one.
+  Caught in review.
+- **`audiences/update` states its partial semantics** per field, per G above.
+
+**The 400 is worth carrying forward.** It is the first documented error the
+application does not raise — Spring MVC does, before any of our code runs. It still
+answers the standard shape, so `ApiErrorSnippets.errorFields()` covers it, and the
+guide section says where it comes from. Every context with a required request body has
+this same 400, and none of them document it.
 
 ---
 
@@ -497,7 +604,7 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 20 body-returning operations with no field table
+## The 17 body-returning operations with no field table
 
 Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
 pinning a number**, which is why this heading is the only place it is stated.
@@ -510,16 +617,14 @@ repo-wide made three more visible: `experiences/get`, `experiences/translations/
 and `experiences/translations/list`. The two defects were one defect.
 
 `metaobject-field-translations/get` ·
-`metaobject-field-translations/list-locales` ·
-`page-metafield-translations/list-locales` · `page-metafield-translations/get`
-· `experiences/get` · `tour-operator-metafield-translations/get` ·
-`tour-operator-metafield-translations/list-locales` · `audiences/get` ·
-`page-translations/get` · `metafield-definitions/get` ·
-`audience-translations/get` · `audience-translations/list` · `slots/get` ·
-`slots/cancel` · `slots/list` · `slots/update` ·
+`metaobject-field-translations/list-locales` · `slots/get` · `slots/cancel` ·
+`slots/list` · `slots/update` · `tour-operator-metafield-translations/get` ·
+`tour-operator-metafield-translations/list-locales` ·
+`metafield-definitions/get` · `page-metafield-translations/get` ·
+`page-metafield-translations/list-locales` · `page-translations/get` ·
+`experiences/get` · `experience-metafield-translations/get` ·
 `experience-metafield-translations/list-locales` ·
-`experience-metafield-translations/get` · `experiences/translations/get` ·
-`experiences/translations/list`
+`experiences/translations/get` · `experiences/translations/list`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
 checking the body is non-empty, then testing for a sibling `response-fields.adoc` —
