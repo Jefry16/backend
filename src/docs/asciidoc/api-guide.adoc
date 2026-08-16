@@ -910,7 +910,7 @@ operation::audience-translations/upsert-missing-body[]
 
 ADMIN+ only, and **idempotent** — deleting a locale with no overlay is `204`, as is
 deleting one the operator does not publish. The locale is not checked against the
-published set here either. Idempotent.
+published set here either.
 
 operation::audience-translations/delete[]
 
