@@ -4,12 +4,11 @@ First pass of the per-context series. Investigation only; no code or docs change
 
 Playbook: `API-DOCS-SYNC.md`. Order: `audit` first, `storefront` last.
 
-**Result: the `audit` context is documented, with one real gap.** `Get an Audit
-Entry` returns twelve fields and documents none of them, so the guide renders that
-section with no field table at all. Its sibling list documents all fifteen.
+**All three findings are fixed** (see "What was fixed" at the foot). The audit below
+is the state it found, kept so the next pass can see what this one looked for.
 
-Everything else in this context is clean, and two whole categories came back empty
-repo-wide.
+Two categories came back empty repo-wide, which is the useful result for the eleven
+contexts still to come.
 
 ---
 
@@ -190,6 +189,38 @@ Repo-wide, for the passes that follow. MAP's Debt says 19.
 checking the body is non-empty, then testing for a sibling `response-fields.adoc`. A
 first pass returned 71 by counting 204s with empty bodies; that number was wrong and
 is corrected here.
+
+---
+
+## What was fixed
+
+All three, in the same pass, suite **1227 green** and verified in the rendered HTML
+rather than only in the snippets.
+
+- **F1** — `audit-log/get` documents all twelve fields. Descriptions match the list's
+  word for word, since it is the same record one level up.
+- **F2** — the 404 is documented as `audit-log/get-not-found`, with a guide section
+  saying that a missing entry and another operator's entry answer identically.
+- **F3** — `pathParameters` on all three operations.
+
+**Two things the fix taught, both worth carrying into the next pass.**
+
+**The error record is `status`, `error`, `message`, `code`, `timestamp` — there is no
+`path` field.** I wrote `errorCode` and `path` from memory, then read
+`ApiErrorResponse` and corrected both. This is the exact failure the playbook's
+"read the actual DTO" rule exists to stop, and it took reading one file.
+
+**`.optional()` is not enough for a field that is absent from the payload.** `code` is
+`@JsonInclude(NON_NULL)` and `ResourceNotFoundException` supplies none, so REST Docs
+failed with *"Cannot determine the type of the field 'code' as it is not present in
+the payload"*. It needs `.type(JsonFieldType.STRING)` as well. Every error response
+documented from here on will hit this.
+
+**`audit-log/get-not-found` is the first documented non-2xx in the guide.** Every one
+of the other 154 operations documents only its happy path, while roughly 60 error
+assertions sit in the suite untested by any reader. Whether to spread this to the
+other contexts is a decision, not a mechanical follow-up — it is cheap per endpoint
+and it is 154 endpoints.
 
 ---
 

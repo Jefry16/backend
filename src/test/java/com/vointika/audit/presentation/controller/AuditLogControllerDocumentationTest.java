@@ -36,6 +36,10 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import org.springframework.restdocs.payload.JsonFieldType;
+
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -101,6 +105,7 @@ class AuditLogControllerDocumentationTest {
                 .andExpect(jsonPath("$.data[0].details.note").value("metadata"))
                 .andDo(document("audit-log/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The entry id (UUIDv7 — descending id IS the timeline)"),
                                 fieldWithPath("data[].context").description("The entity's collection: \"audit-log-entries\""),
@@ -132,9 +137,40 @@ class AuditLogControllerDocumentationTest {
                 .andExpect(jsonPath("$.id").value(ENTRY))
                 .andExpect(jsonPath("$.actorName").value("Maria Ops"))
                 .andDo(document("audit-log/get",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("entryId").description("The audit entry id")),
+                        // The same record the list returns, one level up: every path
+                        // here is a `data[].` path there. Keep the two descriptions
+                        // in step — a reader lands on whichever they need.
+                        responseFields(
+                                fieldWithPath("id").description("The entry id (UUIDv7 — descending id IS the timeline)"),
+                                fieldWithPath("context").description("The entity's collection: \"audit-log-entries\""),
+                                fieldWithPath("actorType").description("Who acted: USER or SYSTEM"),
+                                fieldWithPath("actorId").description("The acting user's id; null for SYSTEM").optional(),
+                                fieldWithPath("actorName").description("The acting user's display name, FROZEN at write time; null for SYSTEM").optional(),
+                                fieldWithPath("entityType").description("The audited entity's type, e.g. EXPERIENCE"),
+                                fieldWithPath("entityId").description("The audited entity's id"),
+                                fieldWithPath("action").description("Dot-namespaced past-tense action, e.g. experience.updated"),
+                                subsectionWithPath("details").description("Action metadata that is NOT a field change (per-action shape); null for none").optional(),
+                                fieldWithPath("changes[]").description("Field-level change history; null for pure events").optional(),
+                                fieldWithPath("changes[].field").description("The changed domain field").optional(),
+                                fieldWithPath("changes[].from").description("The value before (null = set from nothing)").optional(),
+                                fieldWithPath("changes[].to").description("The value after (null = cleared)").optional(),
+                                fieldWithPath("requestId").description("Request correlation id; null off-request").optional(),
+                                fieldWithPath("createdAt").description("When the action happened"))));
     }
 
+    /**
+     * <b>The first documented non-2xx response in the guide.</b> Every other
+     * operation documents only its happy path, so 60-odd error assertions across
+     * the suite are tested and invisible to a reader. This one publishes the
+     * error shape rather than leaving a client to discover it in production.
+     *
+     * <p>The 404 is deliberately the same answer a non-member gets, so this
+     * snippet doubles as the tenant-isolation example.
+     */
     @Test
     void getUnknownIs404() throws Exception {
         authenticated();
@@ -143,6 +179,18 @@ class AuditLogControllerDocumentationTest {
 
         mockMvc.perform(get("/api/tour-operators/{id}/audit-log/{entryId}", OP, ENTRY)
                         .header("Authorization", BEARER))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("audit-log/get-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("entryId").description("An entry id that does not exist, or belongs to another operator")),
+                        responseFields(
+                                fieldWithPath("status").description("The HTTP status code"),
+                                fieldWithPath("error").description("The status reason phrase"),
+                                fieldWithPath("message").description("Human-readable detail"),
+                                fieldWithPath("code").type(JsonFieldType.STRING)
+                                        .description("Machine-readable error code; absent when the throw site supplied none — as here").optional(),
+                                fieldWithPath("timestamp").description("When the error was produced"))));
     }
 }
