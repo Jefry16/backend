@@ -35,6 +35,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import org.springframework.restdocs.payload.JsonFieldType;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -132,7 +134,7 @@ class ContactMessageControllerDocumentationTest {
                                 fieldWithPath("data[].email").description("The sender's reply address"),
                                 fieldWithPath("data[].summary").description("One-line subject"),
                                 fieldWithPath("data[].createdAt").description("When submitted"),
-                                fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page").optional())));
     }
 
     @Test

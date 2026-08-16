@@ -28,6 +28,11 @@ Three results hold repo-wide and save every later pass the work:
   the call should not reappear. **No guard catches this** —
   `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
   what it renders, so fewer snippets is a green build and a thinner page.
+- **Type `nextCursor` explicitly: `.type(JsonFieldType.STRING)`.** A list test that
+  stubs the last page (`new CursorPage<>(rows, null)`) hands REST Docs a null, which
+  it types from the value — so the published table told readers the cursor's type is
+  **`Null`**, i.e. that the endpoint never paginates. 10 of the 14 list endpoints did
+  this. All 14 are typed now.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -108,14 +113,22 @@ Both are now field descriptions as well.
 Suite unchanged at **1231** — no new tests, four existing ones taught to publish what
 they already asserted, which is the cheapest kind of documentation there is.
 
-- **F1** — `requestFields` on create and update, with the partial-update rule stated
-  per field.
+- **F1** — `requestFields` on create and update, with the partial-update rule in the
+  **description text** of each field. `.optional()` alone publishes nothing: the
+  default request-fields template renders `Path | Type | Description` and has no
+  Optional column, so the create and update tables came out identical and update's
+  fields read as mandatory. Caught in review, after an earlier revision of this
+  section claimed the rule was "stated per field" when it was still only in prose.
 - **F2** — `responseFields` on both reads. The tracked list drops **22 → 20**.
 - **F3** — `create-forbidden`, `create-conflict` and `list-not-found` publish the
   403, 409 and 404, each with its own guide section explaining when it happens. The
   401 was deliberately **not** duplicated here: it is one filter's answer for the
   whole API and is documented once under Authentication.
 - **F4** — `pathParameters` on all five.
+- **Repo-wide, found here** — every `nextCursor` descriptor is explicitly typed. See
+  the header block; 10 of 14 lists were publishing type `Null`, including
+  `audit-log/list` and `contact-messages/list`, which this series documented and
+  missed twice.
 
 **The rule this context settles: an error belongs where the rule that produces it
 lives.** The 404 for a non-member is the interceptor's and applies to every
@@ -486,8 +499,8 @@ Ordered by how likely a consumer is to be misled.
 
 ## The 20 body-returning operations with no field table
 
-Repo-wide, for the passes that follow. **MAP's Debt entry agrees at 22**, with the
-reason recorded there.
+Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
+pinning a number**, which is why this heading is the only place it is stated.
 
 **The old scan was blind to exactly the set F1 found.** Its method is: for every
 `response-body.adoc`, strip the fences, check the body is non-empty, then test for a

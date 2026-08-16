@@ -122,7 +122,7 @@ class AuditLogControllerDocumentationTest {
                                 fieldWithPath("data[].changes[].to").description("The value after (null = cleared)").optional(),
                                 fieldWithPath("data[].requestId").description("Request correlation id; null off-request").optional(),
                                 fieldWithPath("data[].createdAt").description("When the action happened"),
-                                fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page").optional())));
     }
 
     @Test

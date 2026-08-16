@@ -41,6 +41,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import org.springframework.restdocs.payload.JsonFieldType;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -133,7 +135,7 @@ class PolicyControllerDocumentationTest {
                                         .description("Raw HTML, stored and returned verbatim"),
                                 fieldWithPath("data[].createdAt").description("When the policy was first written"),
                                 fieldWithPath("data[].updatedAt").description("When its text last changed"),
-                                fieldWithPath("nextCursor").description(
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description(
                                         "Opaque keyset cursor, null on the last page. Four policies never "
                                                 + "paginate, but the grammar is every tenant list's")
                                         .optional())));

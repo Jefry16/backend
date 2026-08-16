@@ -36,6 +36,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import org.springframework.restdocs.payload.JsonFieldType;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -106,7 +108,7 @@ class TeamMemberControllerDocumentationTest {
                                 fieldWithPath("data[].joinedAt").description("When they joined"),
                                 fieldWithPath("data[].name").description("Display name (best-effort; may be null)"),
                                 fieldWithPath("data[].email").description("Email (best-effort; may be null)"),
-                                fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor for the next page; null on the last page"))));
     }
 
     @Test

@@ -39,6 +39,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+import org.springframework.restdocs.payload.JsonFieldType;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -157,7 +159,7 @@ class MediaControllerDocumentationTest {
                                 fieldWithPath("data[].uploadedBy.id").description("The uploading user's id"),
                                 fieldWithPath("data[].uploadedBy.context").description("The entity's collection: \"users\""),
                                 fieldWithPath("data[].uploadedBy.name").description("Uploader's display name, snapshotted at upload (always present)"),
-                                fieldWithPath("nextCursor").description("Opaque cursor for the next page; null on the last page"))));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor for the next page; null on the last page"))));
     }
 
     @Test

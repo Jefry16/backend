@@ -42,6 +42,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import org.springframework.restdocs.payload.JsonFieldType;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -168,7 +170,7 @@ class MetafieldDefinitionControllerDocumentationTest {
                                 fieldWithPath("data[].metaobjectDefinitionId").type("String").description("The pinned metaobject type (metaobject_reference only), or null").optional(),
                                 fieldWithPath("data[].name").description("Display name"),
                                 fieldWithPath("data[].createdAt").description("When created"),
-                                fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page").optional())));
     }
 
     @Test

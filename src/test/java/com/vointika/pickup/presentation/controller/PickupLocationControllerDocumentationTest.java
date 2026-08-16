@@ -9,12 +9,12 @@ import com.vointika.pickup.domain.entity.PickupLocation;
 import com.vointika.pickup.domain.valueobject.PickupLocationName;
 import com.vointika.pickup.domain.valueobject.PickupLocationTime;
 import com.vointika.shared.exception.ForbiddenException;
-import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.web.list.ListQueryParser;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
@@ -47,6 +47,8 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import org.springframework.restdocs.payload.JsonFieldType;
+
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -139,7 +141,7 @@ class PickupLocationControllerDocumentationTest {
                                 fieldWithPath("data[].name").description("The location's name"),
                                 fieldWithPath("data[].time").description("Local meeting time, HH:mm"),
                                 fieldWithPath("data[].createdAt").description("When the location was created"),
-                                fieldWithPath("nextCursor").description("Opaque cursor; null on the last page").optional())));
+                                fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page").optional())));
     }
 
     @Test
@@ -171,10 +173,12 @@ class PickupLocationControllerDocumentationTest {
                 .andDo(document("pickup-locations/update",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pickupLocationId").description("The pickup location id")),
-                        // PATCH: an absent field keeps its current value, so both are optional
+                        // PATCH is partial. `.optional()` alone publishes nothing — the
+                        // default request-fields template renders Path/Type/Description
+                        // and has no Optional column — so the rule goes in the text.
                         requestFields(
-                                fieldWithPath("name").description("Unique per operator, case-insensitively — a clash is a 409").optional(),
-                                fieldWithPath("time").description("Local meeting time, HH:mm").optional())));
+                                fieldWithPath("name").description("Unique per operator, case-insensitively — a clash is a 409. Omit to keep the current value").optional(),
+                                fieldWithPath("time").description("Local meeting time, HH:mm. Omit to keep the current value").optional())));
     }
 
     @Test
