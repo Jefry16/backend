@@ -8,6 +8,8 @@ import com.vointika.media.application.usecase.DescribeMediaUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
+import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -122,7 +124,12 @@ class MediaControllerDocumentationTest {
                 .andExpect(header().exists("Location"))
                 .andDo(document("media/upload",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
-                        requestParts(partWithName("file").description("The file to upload (image/* or application/pdf, ≤ 25 MB)")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        // Not "image/*": the allowlist is exactly these four. SVG is
+                        // excluded deliberately — it can carry script — and video is
+                        // deferred until something consumes it.
+                        requestParts(partWithName("file").description(
+                                "The file to upload. `image/jpeg`, `image/png`, `image/webp` or `application/pdf` only, at most 25 MB")),
                         responseHeaders(headerWithName("Location").description("URI of the created media record"))));
     }
 
@@ -141,6 +148,7 @@ class MediaControllerDocumentationTest {
                 .andExpect(jsonPath("$.nextCursor").value("eyJ2MSI6Im5leHQifQ"))
                 .andDo(document("media/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The media id"),
                                 fieldWithPath("data[].context").description("The entity's collection: \"media\""),
@@ -231,7 +239,11 @@ class MediaControllerDocumentationTest {
         mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .file(file)
                         .header("Authorization", "Bearer test-access-token"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andDo(document("media/upload-forbidden",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -242,7 +254,11 @@ class MediaControllerDocumentationTest {
 
         mockMvc.perform(get("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("media/list-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -266,4 +282,57 @@ class MediaControllerDocumentationTest {
                                                 + "height are measured at upload and are not settable here")
                                         .optional())));
     }
+    /**
+     * <b>The allowlist, published rather than described.</b> `image/gif` and
+     * `image/svg+xml` both match the "image/*" the old part description advertised
+     * and both are refused — SVG deliberately, because it can carry script.
+     */
+    @Test
+    void anUnsupportedContentTypeIs422() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException(
+                "Unsupported content type: allowed image/jpeg, image/png, image/webp, application/pdf"))
+                .when(uploadMediaUseCase).execute(any(), any(), any(),
+                        org.mockito.ArgumentMatchers.anyLong(), any(), any());
+
+        var svg = new org.springframework.mock.web.MockMultipartFile(
+                "file", "logo.svg", "image/svg+xml", "<svg/>".getBytes());
+
+        mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
+                        .file(svg)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("media/upload-unsupported-type",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestParts(partWithName("file").description("A file whose content type is not on the allowlist")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * The 25 MB cap. The container spools the whole part before any handler runs, so
+     * a marginally oversize file still reaches the use case and gets this 422 rather
+     * than the container's own error — see the multipart note in application.yml.
+     */
+    @Test
+    void anOversizeFileIs422() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException("File too large: max 25 MB"))
+                .when(uploadMediaUseCase).execute(any(), any(), any(),
+                        org.mockito.ArgumentMatchers.anyLong(), any(), any());
+
+        var big = new org.springframework.mock.web.MockMultipartFile(
+                "file", "poster.png", "image/png", "pretend-this-is-26MB".getBytes());
+
+        mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
+                        .file(big)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("media/upload-too-large",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestParts(partWithName("file").description("A file over the 25 MB cap")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
 }

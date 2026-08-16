@@ -614,6 +614,30 @@ ADMIN+ only. Multipart (`file` part). Allowed: `image/jpeg`, `image/png`,
 
 operation::media/upload[]
 
+[[resources-media-upload-forbidden]]
+==== Upload Media — Forbidden
+
+Any member may browse and read the library; only ADMIN+ may add to it.
+
+operation::media/upload-forbidden[]
+
+[[resources-media-upload-unsupported-type]]
+==== Upload Media — Unsupported Type
+
+The allowlist is exactly four types. **`image/*` is not the rule** — `image/gif`
+and `image/svg+xml` are both refused, SVG deliberately, because an SVG can carry
+script and these files are served from a public bucket. Video is deferred until
+something consumes it.
+
+operation::media/upload-unsupported-type[]
+
+[[resources-media-upload-too-large]]
+==== Upload Media — Too Large
+
+25 MB, for any allowed type.
+
+operation::media/upload-too-large[]
+
 [[resources-media-list]]
 ==== List Media
 
@@ -623,6 +647,13 @@ Any member. Cursor-paginated, tenant-scoped. Filter by `contentType`,
 `cursor`.
 
 operation::media/list[]
+
+[[resources-media-list-not-found]]
+==== List Media — Not a Member
+
+The tenant 404, identical to the answer for an operator that does not exist.
+
+operation::media/list-not-found[]
 
 [[resources-media-get]]
 ==== Get Media

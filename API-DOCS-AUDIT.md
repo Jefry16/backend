@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`
-(2026-08-16).** Seven to go; `storefront` is last.
+**Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
+(2026-08-16).** Six to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -55,6 +55,80 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `media` — 2026-08-16
+
+Five endpoints, and **the best-documented context in the series so far** — every
+operation already had its headers, and four of the five had their field tables. The
+findings are about what the documentation *said*, not what it omitted.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| POST | `…/media` | yes | `media/upload` | yes | strict | **part described wrongly** |
+| GET | `…/media` | yes | `media/list` | yes | strict | documented |
+| GET | `…/media/{mediaId}` | yes | `media/get` | yes | strict | documented |
+| PATCH | `…/media/{mediaId}` | yes | `media/describe` | yes | strict | documented |
+| DELETE | `…/media/{mediaId}` | yes | `media/delete` | yes | n/a | 204, no body |
+
+**A–E: none.** This is also the first context using `requestParts` and
+`responseHeaders`, both already correct.
+
+## F1. The upload part advertised a wider allowlist than the code accepts
+
+The published part description read **"image/* or application/pdf, ≤ 25 MB"**. The
+allowlist is exactly four types — `image/jpeg`, `image/png`, `image/webp`,
+`application/pdf`.
+
+**`image/gif` and `image/svg+xml` both match `image/*` and are both refused**, and
+SVG is refused *deliberately*: an SVG can carry script and these files are served
+from a public bucket. So the one type a reader most needs warning about was the one
+the description implied was fine.
+
+- **Severity**: medium, with a security edge. A client following the guide uploads an
+  SVG, gets a 422, and has no way to know the refusal is intentional rather than a
+  bug.
+- **Verified by**: `ContentType.java:21-24` for the map, `:38` for the message, and
+  the generated `media/upload/request-parts.adoc` for what was published.
+- **The guide's own prose was right** — it lists all four types two lines above the
+  table that contradicted it. Prose and contract disagreed, and only the contract is
+  machine-readable.
+
+## F2. The two 422s that define the endpoint were neither tested nor documented
+
+Nothing in the suite asserted an unsupported type or an oversize file. These are the
+upload's actual contract — the allowlist and the 25 MB cap — and a client could
+discover either only by hitting it.
+
+## F3. Three error assertions existed and published nothing
+
+401, 403 and the tenant 404.
+
+## F4. No path parameters on upload or list
+
+## G. Prose drift — see F1
+
+## H. Description quality — none
+
+## What was fixed
+
+Suite **1231 → 1233**. Two new tests, both for the 422s.
+
+- **F1** — the part description names the four types, with a comment recording why
+  SVG is out, and the guide gains an *Unsupported Type* section saying the same to a
+  reader.
+- **F2** — `media/upload-unsupported-type` uploads an actual SVG and
+  `media/upload-too-large` an oversize file. Both publish the error body.
+- **F3** — `media/upload-forbidden` and `media/list-not-found`. The 401 stays central.
+- **F4** — path parameters on both.
+
+**The lesson is that a documented context is not a correct one.** Every previous pass
+found things missing; this one found a field table that was complete, published, and
+wrong in the direction a reader would act on. The categories that scan for absence —
+A through E — were clean here.
 
 ---
 
