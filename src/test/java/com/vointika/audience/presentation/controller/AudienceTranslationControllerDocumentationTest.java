@@ -121,7 +121,7 @@ class AudienceTranslationControllerDocumentationTest {
                 .andExpect(jsonPath("$.locale").value("es"))
                 .andDo(document("audience-translations/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
-                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("BCP-47 locale code")),
                         responseFields(
                                 fieldWithPath("locale").description("The content locale this row translates into"),
                                 fieldWithPath("name").description("The translated tier name; null where the canonical value still serves").optional())));
@@ -151,7 +151,7 @@ class AudienceTranslationControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("audience-translations/delete",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
-                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422"))));
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("BCP-47 locale code"))));
     }
 
     @Test

@@ -174,9 +174,13 @@ class AudienceControllerDocumentationTest {
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("audienceId").description("The audience id")),
+                        // PATCH is partial: UpdateAudienceUseCase skips a null field, so an
+                        // omitted paxPerUnit keeps its current value rather than resetting to
+                        // 1. `.optional()` publishes nothing — the table has no such column —
+                        // so both rules go in the text.
                         requestFields(
-                                fieldWithPath("name").description("Tier name (1–80, unique per operator)"),
-                                fieldWithPath("paxPerUnit").description("People per unit (positive; defaults to 1)").optional())));
+                                fieldWithPath("name").description("Tier name (1–80, unique per operator). Omit to keep the current value").optional(),
+                                fieldWithPath("paxPerUnit").description("People per unit (positive). Omit to keep the current value — it is not reset to 1").optional())));
     }
 
 

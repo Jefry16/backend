@@ -11,14 +11,15 @@ together.
 
 **Every finding raised so far is fixed.**
 
-Three results hold repo-wide and save every later pass the work:
+These results hold repo-wide and save every later pass the work:
 
 - **No `relaxed*` documentation exists anywhere.** That is the whole of finding E,
   and it is closed for every context.
   **It does not mean every response is checked.** An operation that passes no
-  `responseFields(...)` at all has no strict check either, and 19 of them publish a
-  body with no field table — listed at the foot of this report. **Check field-table
-  coverage in your context; only the `relaxed*` question is settled.**
+  `responseFields(...)` at all has no strict check either, and a number of them
+  publish a body with no field table — the heading at the foot of this report has the
+  current count and the names. **Check field-table coverage in your context; only the
+  `relaxed*` question is settled.**
 - **Every `operation::` macro resolves and every snippet directory is pulled in**, so
   B, C and D are clean unless a pass breaks them.
 - **Every operation publishes a curl and an httpie example.** 18 test classes had
@@ -33,6 +34,18 @@ Three results hold repo-wide and save every later pass the work:
   it types from the value — so the published table told readers the cursor's type is
   **`Null`**, i.e. that the endpoint never paginates. 10 of the 14 list endpoints did
   this. All 14 are typed now.
+- **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
+  description text.** The default request-fields template renders
+  `Path | Type | Description` and has no Optional column, so a create table and its
+  PATCH table come out **byte-identical** and the PATCH's fields read as mandatory.
+  Write "Omit to keep the current value" — and check what omission actually does:
+  `audiences/update` skips null fields, so omitting `paxPerUnit` keeps the current
+  value rather than resetting it to the default the create description names.
+- **A `{locale}` path variable does not mean the locale is validated.** Only the six
+  `Upsert*` use cases consult `OperatorLocalesQuery`. A read or a delete takes the
+  same variable, checks its *shape* through `LocaleCode` and nothing else — so a
+  locale the operator does not publish is a `200` with nulls, or an idempotent `204`,
+  never a 422. Reserve the 422 wording for the upsert.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -96,7 +109,15 @@ Two are new to the series:
 The rest were 401, 403 twice, 409 and 404 — all published now except the 401, which
 stays central.
 
-## G. Prose drift — none
+## G. Prose drift — one, and this pass first reported none
+
+`audiences/update` published a request table **byte-identical to create's**, so a
+caller reading it expects `paxPerUnit` to reset to 1 when omitted. `UpdateAudienceUseCase`
+skips null fields, so it keeps the current value. Pre-existing on `main`, not
+introduced here — but the trap and its fix were established one commit earlier in this
+same series, on `pickup`, and this pass reported the category clean. The rule was
+sitting in `pickup`'s findings instead of in the repo-wide block where every pass
+would read it; it is in the block now.
 
 ## H. Description quality — none
 
@@ -113,6 +134,15 @@ Suite unchanged at **1231**. No new tests; eight existing assertions taught to p
   translations. Each has a guide section saying when it happens.
 - Path parameters added where they were missing, on `audiences/list` and
   `audiences/create`.
+- **The `{locale}` description promised a 422 that two of the four operations cannot
+  return.** One constant was reused across all four. Only the upsert consults
+  `OperatorLocalesQuery`; `GET` falls back to an empty translation (**200**) and
+  `DELETE` returns early (**204**), so a client branching on 422 to detect "locale not
+  enabled" would never see one. The reads say "BCP-47 locale code" now, matching the
+  precedent in `ExperienceTranslationControllerDocumentationTest`, and the guide says
+  outright that an unpublished locale is indistinguishable from an untranslated one.
+  Caught in review.
+- **`audiences/update` states its partial semantics** per field, per G above.
 
 **The 400 is worth carrying forward.** It is the first documented error the
 application does not raise — Spring MVC does, before any of our code runs. It still
