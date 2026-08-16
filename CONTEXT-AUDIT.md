@@ -125,9 +125,8 @@ was, and nothing re-checked it when the roster went denormalized instead. Grep t
 named caller before believing the sentence — this is cheap and it is how a whole
 orphaned branch stays plausible for months.
 
-Every context audited so far — `identity`, `touroperator`, `experience`,
-`metafield`, `shared`, `audience`, `audit` — came back with **zero** genuinely dead
-members.
+Fourteen passes have run, covering every context and `shared`, and **every one came
+back with zero genuinely dead members.**
 That is the expected result, and it is only worth anything if the examined counts
 are printed beside it. The subtractions that did land came from §3 and §5, not here:
 duplicate DTOs, an unreachable guard, a port method with no caller.
@@ -202,13 +201,12 @@ Grep the removed feature's nouns across the whole repo, not just the context, an
 what the hits are asserting.
 
 **Check the `ListSchema` against what the screen is for.** A list can use the shared
-framework correctly and still be unusable: the contact inbox is cursor-paginated,
-tenant-scoped and filterable by name/email/subject — and not by **unread**, the one
-axis an inbox is read along. `read_at IS NULL` is not expressible because `FilterOp`
-has no null operator. Client-side filtering of the current page looks like a
-workaround and is not one, because the rest is behind the cursor. For each list, name
-the first filter its screen would offer and check the schema can express it; `slots`
-failed the same test on a date range.
+framework correctly and still be unusable. `ListSlotsUseCase` makes `startAt`
+sortable and **not filterable**, and `ListSchema` has no `LocalDateTime` builder — so
+"slots in August" cannot be asked for, which is the single most obvious filter on a
+departures list. Client-side filtering of the current page looks like a workaround
+and is not one, because the rest is behind the cursor. For each list, name the first
+filter its screen would offer and check the schema can express it.
 
 ### Auditing a worker module (`notification`)
 
@@ -379,8 +377,11 @@ Nothing referenced it, so nothing failed; the next reader would simply have beli
 Gates: `./mvnw -o test` green, count explained against the baseline. **Every
 API-visible change gets a line in the PR body and a test in the diff** — a status
 code that moved, a body that is now rejected, a field that stopped being optional.
-The api-guide does not document every endpoint (MAP Debt), so the test is the only
-place a client's assumption is recorded.
+`ApiGuideDocumentsEveryEndpointTest` and `ApiGuideDocumentsEveryListFieldTest` both
+fail the build on an undocumented endpoint or list field, so the guide is a gate
+rather than a hope — but neither can see a *field table*, and 19 body-returning
+endpoints still have none. Where a client's assumption is not in the guide, the test
+is the only place it is recorded.
 
 Then, in the same pass (LAW §3): `CLAUDE.md` if a claim it makes changed,
 `PATTERNS.md` if a shape repeated twice, `../MAP.md` ledger and Debt, and delete any
@@ -394,9 +395,9 @@ show. Merge `--no-ff` (this repo is 30/30 merge commits), delete the branch, pus
 - `grep -m` is unsupported here; `(public |)` is an invalid empty alternation.
 - Paths beginning `-` are eaten as flags by `tar`, `ls`, `grep` — prefix with `./`.
 - `git checkout <file>` silently discards **uncommitted** edits to that file.
-- A stale `target/` after switching branches can produce a **`BUILD FAILURE` with no
-  failing test in the output**. Re-run before reporting it; it has already cost one
-  false alarm on a branch that was green.
+- A stale `target/` produces false failures *and* false counts — the full trap and
+  the scratch-copy recipe are in `CLAUDE.md`, which every session reads. The
+  branch-switch symptom is a **`BUILD FAILURE` with no failing test in the output**.
 - **Never probe by writing into `src/main/resources/db/migration/`.** `contextLoads`
   boots the real application, so Flyway **applies** whatever is sitting there to the dev
   database — a throwaway migration becomes a permanent row in

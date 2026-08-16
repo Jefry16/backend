@@ -1019,6 +1019,14 @@ purpose: if every owner has every optional field set, nothing shows you what
   against a database allowlist creates a two-lists-must-agree coupling — pin it
   (`LocalePathTemplateTest`), or the day a wider code is seeded it is a 404 on a
   page the operator published and nothing says why.
+- **`@AuthenticationPrincipal UUID` binds to null on a public route, silently.**
+  `JwtAuthenticationFilter` stores the parsed `UUID`, so 141 controller parameters
+  take one directly rather than re-parsing a String. On a **public** route an
+  unauthenticated request arrives with Spring's anonymous principal, and
+  `@AuthenticationPrincipal` defaults to `errorOnInvalidType = false` — so the
+  wrong-typed principal becomes `null` with no error. That reads as "no session" by
+  luck. `InvitationAcceptController` takes `@AuthenticationPrincipal Object` to say
+  so in the type; do not "tidy" it to `UUID`.
 - **Two classes with one simple name are one bean name, and the context refuses.**
   Component scanning derives the bean name from the simple name regardless of
   package, so `storefront.…StorefrontPasswordController` beside
