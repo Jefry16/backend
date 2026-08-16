@@ -12,8 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **MAP** | `../MAP.md` (same place) | The living state: what exists, what each context owns, what is decided, what is still open. The only artifact that crosses session boundaries. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
-| **CONTEXT-AUDIT** | `CONTEXT-AUDIT.md` (in repo) | The playbook for auditing one bounded context — dead code, over-engineering, coupling. Invoke with just a context name. |
-| **REPO-AUDIT** | `REPO-AUDIT.md` (in repo) | The playbook for auditing the **whole** backend — the six categories, the four contradiction sweeps, the invariants to mutation-check, and the measurement traps. Its output is `AUDIT.md`, which is tracked and dated. |
+| **API-DOCS-SYNC** | `API-DOCS-SYNC.md` (in repo) | The playbook for checking one context's API against the REST Docs guide. Invoke with a context name; `storefront` goes last. Its output is `API-DOCS-AUDIT.md`, which is tracked. |
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
 
@@ -137,6 +136,19 @@ The working rules are LAW: §2.4 never over-engineer · §3 the landing ritual �
 
 - **Javadoc runs heavier than LAW §6.1's default, deliberately.** A hexagonal context has real seams. The Javadoc on a port, a security filter or a migration is often the only place a decision is recorded — `EndpointRateLimitFilter`'s note on why the counter keys on the matched *pattern* rather than the concrete URI is load-bearing. The rule still bites, though: `/** Returns the user. */` over `getUser()` is noise. Keep the why, the trap and the rejected alternative. Delete the restatement.
 - **Dead code has no mechanical gate here.** Java offers no `noUnusedLocals` equivalent, so LAW §6.3 is a look. **ArchUnit** takes whatever is automatable — it already fences the §2 boundaries, and it is the right home for a port nobody implements or a use case no `@Bean` wires.
+- **Probing has two traps that cost real time.** **Never probe by writing into
+  `src/main/resources/db/migration/`** — `contextLoads` boots the real application, so
+  Flyway *applies* whatever is sitting there to the dev database. A throwaway migration
+  becomes a permanent `flyway_schema_history` row and its DDL really runs; it surfaces
+  later as a checksum mismatch. Probe against a scratch copy instead. And **deleting a
+  file under `src/main/resources` does not remove it from the build** — Maven copies
+  resources into `target/classes` and never prunes, so Flyway and every other classpath
+  reader still see the stale copy.
+- **Confirm a mutation landed before believing the result.** A `sed` that matches
+  nothing leaves the file untouched and the suite green, and the conclusion is "the rule
+  has a hole" or "that test is fake". Both are wrong, drawn from a command that silently
+  did nothing. One `grep -c` between the edit and the run removes the whole class of
+  error. A guard that passes vacuously is worse than no guard.
 - **A commit body is rarer than it looks** (LAW §6.2). The durable *why* belongs in `MAP.md`; the reviewer's context belongs in the PR description; the diff belongs in git. A message that repeats all three is paying three times.
 
 ## Working rhythm

@@ -1383,7 +1383,7 @@ Every operator-facing mutation, append-only.
 [[resources-audit-list]]
 ==== List Audit Entries
 
-Any member. Cursor-paginated, tenant-scoped. Filter by `action`, `actorId`,
+Any member; non-member → 404. Cursor-paginated, tenant-scoped. Filter by `action`, `actorId`,
 `actorName`, `actorType`, `entityId`, `entityType` and/or `createdAt`; sort by
 `id` (default, newest first) or `createdAt`; page with `cursor`.
 
@@ -1397,6 +1397,15 @@ operation::audit-log/list[]
 [[resources-audit-get]]
 ==== Get an Audit Entry
 
-Any member.
+Any member. Non-member → 404.
 
 operation::audit-log/get[]
+
+[[resources-audit-get-not-found]]
+==== Get an Audit Entry — Not Found
+
+An entry id that does not exist, and one belonging to another operator, answer
+identically. That is deliberate: a 404 that varied would tell a caller which ids
+exist elsewhere. This is the application's error shape, the same on every endpoint.
+
+operation::audit-log/get-not-found[]
