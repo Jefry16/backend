@@ -24,9 +24,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * test and changing the stub, so the two end up issuing byte-identical requests. The
  * guide then shows one call under "Get a Contact Message" returning 200 and the same
  * call under "— Not Found" returning 404, with nothing to say what differs — while
- * the path-parameter description claims the id does not exist. On its first run this
- * found <b>ten</b> such pairs across five contexts, including two that had been fixed
- * by hand in one context and then reproduced in four others. Neither the suite nor
+ * the path-parameter description claims the id does not exist.
+ *
+ * <p><b>Against {@code main} at a3e004f it finds eight pairs across four contexts</b>
+ * — {@code audiences} ×3, {@code audience-translations}, {@code audit-log},
+ * {@code pickup-locations} ×3 — and two more had already been fixed by hand in
+ * {@code contact} before it existed. (Its first run reported ten, because the working
+ * tree it ran against already carried two {@code media} error operations this same PR
+ * had just added. The number is only meaningful with the baseline named.) Neither the suite nor
  * {@link ApiGuideDocumentsEveryEndpointTest} can see it: both requests are valid and
  * both operations are referenced.
  *

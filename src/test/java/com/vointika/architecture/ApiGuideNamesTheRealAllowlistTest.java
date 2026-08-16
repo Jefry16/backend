@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,8 +34,20 @@ class ApiGuideNamesTheRealAllowlistTest {
 
     private static final Path GUIDE = Path.of("src", "docs", "asciidoc", "api-guide.adoc");
 
-    /** Any MIME type the prose mentions, in the section that describes uploads. */
-    private static final Pattern MIME = Pattern.compile("`(image/[a-z0-9.+-]+|application/pdf)`");
+    /**
+     * Any quoted MIME type, whatever its family.
+     *
+     * <p><b>Not a list of families.</b> An earlier version matched
+     * {@code image/…|application/pdf}, which fails wrongly the day the allowlist grows
+     * a kind it does not know: adding {@code video/mp4} <em>and</em> documenting it
+     * correctly still reported the prose as missing a type it named, with a failure
+     * message telling the reader to do what they had just done. Video is not
+     * hypothetical — {@code UploadMediaUseCase.MAX_BYTES} says it is deferred until a
+     * consumer needs it, so the guard would have broken exactly when that landed. A
+     * hand-kept vocabulary of what counts is the restatement these tests exist to
+     * remove.
+     */
+    private static final Pattern MIME = Pattern.compile("`([a-z]+/[a-z0-9.+-]+)`");
 
     @Test
     @DisplayName("the guide's upload prose names exactly ContentType.ALLOWED")
