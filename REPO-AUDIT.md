@@ -31,20 +31,16 @@ multi-tenant storefront resolved from the request host.
 
 ## Prior art — read this before writing a single finding
 
-**`AUDIT.md` is the previous pass, and it is tracked** — read it at whatever date
-it carries rather than assuming one. Nine consecutive passes have found dead code,
-bad practices and doc drift empty or near-empty. A report that re-lists closed
+**If `AUDIT.md` exists it is the previous pass, and it is tracked** — read it at
+whatever date it carries rather than assuming one. It is deleted once its findings
+have shipped, so its absence means the last pass is closed, not that none ran; `git
+log -- AUDIT.md` has every earlier one. Nine consecutive passes have found dead
+code, bad practices and doc drift empty or near-empty. A report that re-lists closed
 findings is worse than a short one, because it makes the open items harder to see.
-
-*This paragraph named a fixed date and called the report untracked until
-2026-08-15, while the same file's Output section already said reports are tracked.
-Exactly the survivor case category 5 below tells you to hunt: a rule changes and
-the old wording lives on somewhere nobody swept. Left as a note rather than
-silently corrected, because the file asks auditors to report that pattern.*
 
 So, before reporting anything:
 
-1. Read the existing `AUDIT.md` end to end. It is the previous pass.
+1. Read `AUDIT.md` end to end if it is there. It is the previous pass.
 2. Read MAP's **Debt**, **Backlog**, **Decided** and **Open decisions** sections.
 3. Tag every finding with one of:
    - **NEW** — not in either place.
@@ -55,14 +51,9 @@ So, before reporting anything:
    - **STALE-RECORD** — recorded as open, but is actually fixed or no longer
      applies. Also valuable: it means MAP is lying to the next session.
 
-Known-open at the time of writing, so expect these and do not present them as
-discoveries: the unbounded menu fan-out in `ReplaceMenuItemsUseCase`; the untested
-production registration of three security filters; the unreachable
-`@ExceptionHandler(IllegalArgumentException.class)`; the four Debt entries in MAP;
-and five open review findings on `ApiGuideDocumentsEveryListFieldTest` recorded only
-in PR #163's description (filter operators undocumented, `sectionFor`'s
-`start < 0 ? 0` fallback, the missing-clause assertion throwing inside `forEach`,
-`SCHEMA_BLOCK` silently skipping an inline schema, a dead `LinkedHashMap` copy).
+**MAP's header lists what is open right now** — read it and do not present any of
+it as a discovery. Do not hardcode that list here: it goes stale between passes,
+and a stale one sends you hunting for something already fixed.
 
 ## Do not flag these — they are decisions, not defects
 

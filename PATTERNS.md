@@ -83,8 +83,8 @@ port or an event (never a direct import).
 > still deleted is everything page-specific: the experiences listing, the policy
 > page, every template, and the theme object model as a *render* context.
 >
-> Four things below are now decided differently, and the reasons are in MAP's
-> index-slice entry:
+> Four things below are now decided differently, and the reason for each is with
+> it:
 >
 > - **There is no `page` object.** Shopify's `page` is a CMS page and so is ours,
 >   so the current page's metadata is `pageTitle` / `pageDescription` /
@@ -948,6 +948,25 @@ now builds the seed's domain-shaped values with the real value objects and check
 its audit actions against the emitting code. **Add a seeded value that a value
 object validates, and add it there** — and keep the minimum-count assertions, or
 a pattern that stops matching turns the test into a no-op.
+
+**A seed insert converges or it does nothing, and the line between them is what
+the row is.** `ON CONFLICT DO NOTHING` keeps the old row while still reporting
+success, so editing a value in the file changes nothing on an existing database —
+silently. It cost three debugging rounds in two days, each time a working feature
+looking broken because the fixture behind it was stale. So: **configuration and
+authored content use `DO UPDATE`** keyed on the id or the natural key;
+**records of things that happened keep `DO NOTHING`** (`audit.audit_log` is
+append-only, and rewriting a trail entry in place would make it a lie). A row that
+is nothing but its key has no value to converge — `tour_operator_locales` needs
+`down -v`, since no conflict clause expresses a deletion. The trade is explicit:
+anything changed locally through the admin API is reset on the next `up`, which is
+right for a fixture — a seed you cannot correct is worse than one that reasserts
+itself.
+
+**A seeded reference row gets a literal, deterministic id — never
+`gen_random_uuid()`.** `reference.country` uses UUIDv3 of `country:{code}`, so dev,
+staging and prod agree on what `ES` is; random ids would make a `country_id` in an
+audit row unresolvable across environments.
 
 **What the seed is for is coverage, not plausibility.** A table with zero rows
 renders exactly like a broken query, so a thin fixture makes whole admin screens
