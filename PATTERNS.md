@@ -76,15 +76,16 @@ port or an event (never a direct import).
 
 ## 2a. The render envelope (a server-rendered page's context object)
 
-> **Half of this is live again, and the half that is has changed shape
-> (2026-08-11).** The globals — `tourOperator`, `localization`, `routes` and the page's
-> SEO — are built and served as **JSON** on `/` and `/{locale}`, because the
-> contract is being settled before anything is server-rendered again. What is
-> still deleted is everything page-specific: the experiences listing, the policy
-> page, every template, and the theme object model as a *render* context.
+> **This is the storefront's data contract, and it is live and served as JSON** —
+> the globals on `/` and `/{locale}`, and the globals plus `page` on
+> `/pages/{handle}`. JSON and not HTML on purpose: the contract is settled before
+> anything is server-rendered again, because a wrong field is visible in a body and
+> invisible under markup nobody reads yet. Four addresses still answer a placeholder
+> `{handle, status}` — the experiences listing and the policy page, each with and
+> without a locale prefix — and no template exists, so the theme object model as a
+> *render* context is the part that is still only a plan.
 >
-> Four things below are now decided differently, and the reasons are in MAP's
-> index-slice entry:
+> Each rule below carries its own reason:
 >
 > - **There is no `page` object.** Shopify's `page` is a CMS page and so is ours,
 >   so the current page's metadata is `pageTitle` / `pageDescription` /
@@ -191,9 +192,10 @@ port or an event (never a direct import).
 >   (`StorefrontMetafieldQuery`, implemented in `metafield`), because the context
 >   that owns the operator row may not read those tables.
 >
-> Everything else below is still a **specification, not a description** — the
-> contract to rebuild from, every rule in it paid for once. The code is one
-> `git show` away; the reasoning is not.
+> Below the quote, the rules that carry a live example say so by naming it. The
+> rest is a **specification**: the shape to build to, each rule paid for once. Read
+> it that way rather than assuming the code is already in that shape — it was
+> deleted and rebuilt twice, and the rebuild did not follow every line of it.
 
 A page a template renders takes **named objects, never a flat bag of scalars**,
 and the same set on every page. `storefront` was the canonical one:
@@ -235,15 +237,17 @@ keeps it — their shop object has no logo of its own. Removing it was a breakin
 change to a published contract, made deliberately while no operator theme
 existed to break (#100).
 
-It exists **twice, in key form and URL form** — `TourOperatorData`/`PageData`/
-`BrandData`/`ImageData`/`LocalizationData` under one `StorefrontPageData` in
-`application/dto/output`, and `TourOperator`/`Page`/`Brand`/`Image`/`Routes`/
-`Localization` in `presentation/view`. That is PATTERNS §5 applied to a page:
-application deals in storage keys and locale codes, presentation resolves both
-(`routes` has no application half at all — a route is a URL, and `aspectRatio`
-is derived on the same side for the same reason). Every one is a `public record`
-with a `public` enclosing type, and so is every nested one, because the compiler
-runs with access coercion off.
+**It exists twice, in key form and URL form**, which is PATTERNS §5 applied to a
+page: application deals in storage keys and locale codes, presentation resolves
+both. As rebuilt that is `StorefrontGlobals` (+ `LocalizationData`, `MenuData`) in
+`application/dto/output` against `StorefrontGlobalsResponse` and its nested
+`Image`/`Routes`/`Localization`/`Language` records in `presentation/response`.
+`routes` has no application half at all — a route is a URL — and `aspectRatio` is
+derived on the same side for the same reason. **There is no `presentation/view`
+package while the storefront answers JSON**; a template's context object is a
+different thing from a serialized response, and that package returns with the
+templates. Every record is `public` with a `public` enclosing type, nested ones
+included, because the Mustache compiler runs with access coercion off.
 
 **A collection the owning context orders is ordered by the query, and split by
 the query too.** The palette is `colors.primary[0].background`, so its order is a
@@ -268,32 +272,21 @@ field added now costs one record component. `tourOperator.timezone` is in. So ar
 contract and the data follows. A field is omitted only when no column backs it,
 or when it belongs somewhere else (theme settings, `localization`).
 
-**A contract filled in data-first needs a way to see it.** Most of `tourOperator` is
-invisible in the page, so `?format=json` (`ThemeContextDump`, off unless
-`app.storefront.context-endpoint` said otherwise) rendered the object a template
-would receive instead of the page — the diagnostic that made this rule verifiable
-against a running system rather than only against a test. **It went with the
-cutback, config key included; rebuild it with the envelope**, because a
-data-first contract with no way to see it is a contract nobody checks.
-
-**A page-specific record wraps the envelope rather than flattening it**
-(`ExperienceListPageOutput(StorefrontPageData envelope, List<ExperienceCard>
-cards)`), and a page with nothing of its own returns the envelope directly —
-the home page does.
-
-**The four top-level components are repeated across every page view, and that is
-accepted.** Records cannot extend, and nesting them would put
-`{{envelope.tourOperator.name}}` in every template. Revisit when sections make the
-render context globals-plus-a-section — likely a `Map` — which is the first real
-second consumer; do not build the map before it.
+**A page adds its object to the globals rather than wrapping them.**
+`/pages/{handle}` serves the globals plus `page`, serialized `NON_NULL` so a route
+without one simply does not carry it, and a page with nothing of its own returns
+the globals directly — the home page does. While the response is JSON this costs
+nothing; it is when templates return that repeating the globals in a wrapper per
+page would start to bite, and the answer then is likely a `Map` — do not build it
+before the sections that need it.
 
 **Where a URL that varies per page is built:** `application` says *where* a thing
-lives (a nullable `pathLocale`, null for the locale that serves bare),
-`presentation` says *what its URL is*. The language switcher needs "this page in
-that language", which differs per page, so `Localization.from` takes a
-`Function<Routes, String>` and each view passes `Routes::root` or
-`Routes::experiences` — one prefix rule, in `Routes`, and no page hard-codes a
-path.
+lives (the locale code, and whether it is the one that serves bare), `presentation`
+says *what its URL is*. **The language switcher does not do this yet, and that is a
+live gap on a shipped route.** Every `Language.url` is built as `/` or `/{code}` in
+`StorefrontGlobalsResponse`, so switching language from `/pages/about` sends the
+visitor to the home page instead of to that page in that language. It needs the
+handle in each locale, which no query answers today — see MAP's backlog.
 
 **Renaming a component here is a breaking change** once operators author themes.
 Decide the shape while there are four records to change, not forty templates.
@@ -948,6 +941,25 @@ now builds the seed's domain-shaped values with the real value objects and check
 its audit actions against the emitting code. **Add a seeded value that a value
 object validates, and add it there** — and keep the minimum-count assertions, or
 a pattern that stops matching turns the test into a no-op.
+
+**A seed insert converges or it does nothing, and the line between them is what
+the row is.** `ON CONFLICT DO NOTHING` keeps the old row while still reporting
+success, so editing a value in the file changes nothing on an existing database —
+silently. It cost three debugging rounds in two days, each time a working feature
+looking broken because the fixture behind it was stale. So: **configuration and
+authored content use `DO UPDATE`** keyed on the id or the natural key;
+**records of things that happened keep `DO NOTHING`** (`audit.audit_log` is
+append-only, and rewriting a trail entry in place would make it a lie). A row that
+is nothing but its key has no value to converge — `tour_operator_locales` needs
+`down -v`, since no conflict clause expresses a deletion. The trade is explicit:
+anything changed locally through the admin API is reset on the next `up`, which is
+right for a fixture — a seed you cannot correct is worse than one that reasserts
+itself.
+
+**A seeded reference row gets a literal, deterministic id — never
+`gen_random_uuid()`.** `reference.country` uses UUIDv3 of `country:{code}`, so dev,
+staging and prod agree on what `ES` is; random ids would make a `country_id` in an
+audit row unresolvable across environments.
 
 **What the seed is for is coverage, not plausibility.** A table with zero rows
 renders exactly like a broken query, so a thin fixture makes whole admin screens
