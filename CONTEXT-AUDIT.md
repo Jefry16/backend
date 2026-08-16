@@ -125,9 +125,8 @@ was, and nothing re-checked it when the roster went denormalized instead. Grep t
 named caller before believing the sentence — this is cheap and it is how a whole
 orphaned branch stays plausible for months.
 
-Every context audited so far — `identity`, `touroperator`, `experience`,
-`metafield`, `shared`, `audience`, `audit` — came back with **zero** genuinely dead
-members.
+Fourteen passes have run, covering every context and `shared`, and **every one came
+back with zero genuinely dead members.**
 That is the expected result, and it is only worth anything if the examined counts
 are printed beside it. The subtractions that did land came from §3 and §5, not here:
 duplicate DTOs, an unreachable guard, a port method with no caller.
@@ -149,8 +148,8 @@ ceremony survives:
   insulates nothing. Collapse per PATTERNS §4c — the **application** record survives,
   the controller binds to it, and the wire contract is diffed before deleting.
   **Compare the nested records too.** In `touroperator` the two wrappers genuinely
-  differed (the input adds the caller and the path ids) while the tree node inside
-  them was identical — so a pair-level diff passes and a recursive copy runs on
+  differed: the input adds the caller and the path ids. But the tree node inside
+  them was identical, so a pair-level diff passes while a recursive copy runs on
   every save. The nested type is where the cost is, because collapsing it deletes a
   mapper, not just a file.
 - **A guard against a state the framework prevents is dead code.** A required
@@ -160,9 +159,9 @@ ceremony survives:
   probe test in thirty seconds; reading the annotation is what gets it wrong.
 
 **Config outlives the feature it was sized for.** `spring.servlet.multipart.max-file-size`
-was 510MB, set in the first commit when the only upload was a 5 MB avatar; the largest
+was 510MB, set in the first commit when the only upload was a 5 MB avatar. The largest
 cap today is 25 MB, and the container spools the part before any handler runs. Nothing
-was wrong at the time and nothing announced that it had become wrong. For each limit,
+was wrong at the time, and nothing announced that it had become wrong. For each limit,
 timeout and pool size the context relies on, `git log -S` the value and ask what it was
 sized against — then pin it to the thing it must track, the way
 `MultipartLimitsTest` and `TemplateLocalesTrackUiLanguagesTest` do. Two numbers that
@@ -202,13 +201,12 @@ Grep the removed feature's nouns across the whole repo, not just the context, an
 what the hits are asserting.
 
 **Check the `ListSchema` against what the screen is for.** A list can use the shared
-framework correctly and still be unusable: the contact inbox is cursor-paginated,
-tenant-scoped and filterable by name/email/subject — and not by **unread**, the one
-axis an inbox is read along. `read_at IS NULL` is not expressible because `FilterOp`
-has no null operator. Client-side filtering of the current page looks like a
-workaround and is not one, because the rest is behind the cursor. For each list, name
-the first filter its screen would offer and check the schema can express it; `slots`
-failed the same test on a date range.
+framework correctly and still be unusable. `ListSlotsUseCase` makes `startAt`
+sortable and **not filterable**, and `ListSchema` has no `LocalDateTime` builder — so
+"slots in August" cannot be asked for, which is the single most obvious filter on a
+departures list. Client-side filtering of the current page looks like a workaround
+and is not one, because the rest is behind the cursor. For each list, name the first
+filter its screen would offer and check the schema can express it.
 
 ### Auditing a worker module (`notification`)
 
@@ -238,9 +236,9 @@ allowlist do not apply. Two checks replace them:
 
 - **Every port names a live caller.** For each `shared/port/*`, count
   implementations and consuming *contexts*. One implementation and ≥2 contexts is
-  the healthy shape; **one implementation and one context means the seam is not a
-  seam**, and a port method whose only caller degenerates its own signature (a
-  single-element set into a batch API) is the same finding one level down.
+  the healthy shape. **One implementation and one context means the seam is not a
+  seam.** A port method whose only caller degenerates its own signature — a
+  single-element set passed into a batch API — is the same finding one level down.
 - **Every framework extension point is a false positive.** `@Bean` factories,
   `@ExceptionHandler` methods, `doFilterInternal`, `WebMvcConfigurer` and
   `RecordInterceptor` overrides are all invoked reflectively — in `shared` they
@@ -291,34 +289,34 @@ reasoning about a hierarchy.
 
 **When a read path consults two sources in precedence order, every write that feeds
 either must check both.** `page` resolved a storefront handle against localized
-handles first and canonical ones second, but create/rename validated only against
-`pages` and the translation upsert only against `page_translations`. Each write looked
-complete in isolation; together they let one page shadow another and vanish from a
-locale. The tell is a `.or(...)` / fallback chain in a read adapter — follow it back
+handles first and canonical ones second. But create and rename validated only against
+`pages`, and the translation upsert only against `page_translations`. Each write
+looked complete in isolation. Together they let one page shadow another and vanish
+from a locale. The tell is a `.or(...)` / fallback chain in a read adapter — follow it back
 and list every writer of each branch. Recipe in PATTERNS §4d.
 
 **"Every writer" means every path that *produces* the value, not every path that
 *accepts* one.** The `page` pass predicted the same defect in `experience` and filed it
-as Debt — correctly — but sized it as one write path, reasoning that experience handles
-are immutable so there is no rename to guard. True, and beside the point: the create
-path *generated* a canonical handle while probing only its own table, so generation was a
-second door. Immutability rules out later edits; it says nothing about the write that
+as Debt, correctly. But it sized it as one write path, reasoning that experience handles
+are immutable so there is no rename to guard. True, and beside the point: the create path
+*generated* a canonical handle while probing only its own table, so generation was a
+second door. Immutability rules out later edits. It says nothing about the write that
 sets the value in the first place. When you enumerate writers, list the derivers
 alongside the setters.
 
 **A predicted defect is worth filing even when it costs a second pass.** The `page`
-audit found the twin in `experience`, verified it, and left it — in scope terms that was
-right, and the entry is what made the fix cheap two weeks later. What the entry could
-not do is be trusted as a *scope estimate*: it was written from the outside, and the
-implementing pass still had to enumerate the write paths itself. File the finding, not
+audit found the twin in `experience`, verified it, and left it. In scope terms that was
+right, and the entry is what made the fix cheap two weeks later. What the entry could not
+be trusted as is a *scope estimate*. It was written from the outside, and the implementing
+pass still had to enumerate the write paths itself. File the finding, not
 the plan.
 
 **A guard inside a state transition defends that transition and nothing else.**
 `experience` enforced "a cancelled slot is terminal" inside `Slot.changeStatus`, so
 the capacity-only `PATCH` — which never calls it — edited cancelled slots and audited
-the result. The fix is to ask the invariant **once, where the edit begins**
-(`slot.ensureEditable()` at the top of the use case), and let the transition method
-reuse it; a path added later then inherits the guard instead of having to remember it.
+the result. The fix is to ask the invariant **once, where the edit begins** —
+`slot.ensureEditable()` at the top of the use case — and let the transition method
+reuse it. A path added later then inherits the guard instead of having to remember it.
 Read every write path of an entity that has a terminal state and ask which of them
 actually reaches the check. Where a use case already asks at the top —
 `AcceptInvitationUseCase`'s status matrix — that is the shape to copy.
@@ -341,9 +339,9 @@ cp /tmp/probe.bak "$F"
 ```
 
 **Confirm the mutation applied before believing the result.** A `sed` that matches
-nothing leaves the file untouched, the suite green, and the conclusion "the rule has
-a hole" or "their test is fake" — both wrong, from a command that silently did
-nothing. It has happened on a wrong type name (`AudienceTranslationRequest` for
+nothing leaves the file untouched and the suite green. The conclusion is then "the
+rule has a hole" or "their test is fake". Both are wrong, drawn from a command that
+silently did nothing. It has happened on a wrong type name (`AudienceTranslationRequest` for
 `UpsertAudienceTranslationRequest`) and on a wrong package. One `grep -c` between
 the edit and the run costs nothing and removes the whole class of error.
 
@@ -379,8 +377,11 @@ Nothing referenced it, so nothing failed; the next reader would simply have beli
 Gates: `./mvnw -o test` green, count explained against the baseline. **Every
 API-visible change gets a line in the PR body and a test in the diff** — a status
 code that moved, a body that is now rejected, a field that stopped being optional.
-The api-guide does not document every endpoint (MAP Debt), so the test is the only
-place a client's assumption is recorded.
+`ApiGuideDocumentsEveryEndpointTest` and `ApiGuideDocumentsEveryListFieldTest` both
+fail the build on an undocumented endpoint or list field, so the guide is a gate
+rather than a hope — but neither can see a *field table*, and 19 body-returning
+endpoints still have none. Where a client's assumption is not in the guide, the test
+is the only place it is recorded.
 
 Then, in the same pass (LAW §3): `CLAUDE.md` if a claim it makes changed,
 `PATTERNS.md` if a shape repeated twice, `../MAP.md` ledger and Debt, and delete any
@@ -394,9 +395,9 @@ show. Merge `--no-ff` (this repo is 30/30 merge commits), delete the branch, pus
 - `grep -m` is unsupported here; `(public |)` is an invalid empty alternation.
 - Paths beginning `-` are eaten as flags by `tar`, `ls`, `grep` — prefix with `./`.
 - `git checkout <file>` silently discards **uncommitted** edits to that file.
-- A stale `target/` after switching branches can produce a **`BUILD FAILURE` with no
-  failing test in the output**. Re-run before reporting it; it has already cost one
-  false alarm on a branch that was green.
+- A stale `target/` produces false failures *and* false counts — the full trap and
+  the scratch-copy recipe are in `CLAUDE.md`, which every session reads. The
+  branch-switch symptom is a **`BUILD FAILURE` with no failing test in the output**.
 - **Never probe by writing into `src/main/resources/db/migration/`.** `contextLoads`
   boots the real application, so Flyway **applies** whatever is sitting there to the dev
   database — a throwaway migration becomes a permanent row in

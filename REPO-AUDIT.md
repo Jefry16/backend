@@ -83,17 +83,12 @@ evidence — not a fresh proposal.
 - **Never run `docker` or `docker compose` yourself.** If a claim needs the live
   stack, write the exact command for the user to run and put the claim in
   UNVERIFIED until they do.
-- **Always `clean`.** A stale `target/` produces false test *failures* (mtime-newer
-  stale classes) **and** false test *counts* (Surefire never deletes reports it did
-  not write, so leftovers from deleted test classes get summed in, silently and in
-  the flattering direction). The previous pass published 1298/225 for this reason;
+- **Always `clean`, and measure in a scratch copy outside the repo** — the recipe is
+  in `CLAUDE.md`. The reason it is not optional here: a stale `target/` produces
+  false test *counts* as well as false failures, because Surefire never deletes
+  reports it did not write, so leftovers from deleted test classes get summed in
+  silently and in the flattering direction. One pass published 1298/225 that way;
   the real number was 1198/210.
-- **Measure in a scratch copy outside the repo**, because `target/` is sometimes
-  left root-owned by the Docker build:
-  ```
-  rsync -a --delete --exclude target/ --exclude .git/ ./ /tmp/scratch/be/
-  rm -rf /tmp/scratch/be/target/classes /tmp/scratch/be/target/test-classes
-  ```
 - **Cross-check the count**: test classes reported must equal the number of test
   classes in `src/test/java`. If they disagree, the measurement is unsound.
 - **A "this is unused / removable" claim is produced by deleting it and running the

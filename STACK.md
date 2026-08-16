@@ -58,93 +58,111 @@ a version-specific gotcha.
 
 ## Version-specific gotchas (grows as we hit them)
 
-The whole point of this file: record every version-specific trap the moment it
-bites, so the next session reads it instead of re-discovering it.
+Record every version-specific trap the moment it bites. That is what this file is
+for: the next session reads it instead of re-discovering it.
 
 - **Spring Boot 4 modularized autoconfiguration.** The raw
   `org.springframework.kafka:spring-kafka` library has **no** autoconfiguration in
-  Boot 4 — no `KafkaTemplate` / producer / consumer factories, and `spring.kafka.*`
-  is ignored. You must depend on **`org.springframework.boot:spring-boot-starter-kafka`**
-  (brings the `spring-boot-kafka` autoconfiguration module). This is documented at
-  https://docs.spring.io/spring-boot/reference/messaging/kafka.html and tracked in
-  [spring-boot#49207](https://github.com/spring-projects/spring-boot/issues/49207) /
+  Boot 4. No `KafkaTemplate`, no producer or consumer factories, and `spring.kafka.*`
+  is ignored. Depend on **`org.springframework.boot:spring-boot-starter-kafka`**
+  instead, which brings the `spring-boot-kafka` autoconfiguration module. Documented
+  at https://docs.spring.io/spring-boot/reference/messaging/kafka.html and tracked in
+  [spring-boot#49207](https://github.com/spring-projects/spring-boot/issues/49207) and
   [spring-kafka#4278](https://github.com/spring-projects/spring-kafka/issues/4278).
-  The same modularization applies to the other starters (`spring-boot-starter-webmvc`,
-  `-data-jpa`, `-data-redis`, …) — always add the **Boot starter**, not the raw library.
+  The same applies to every other starter (`spring-boot-starter-webmvc`, `-data-jpa`,
+  `-data-redis`, …). Always add the **Boot starter**, never the raw library.
+
 - **The autoconfigured `KafkaTemplate` is typed `KafkaTemplate<?, ?>`.** A
-  `KafkaTemplate<String, Object>` injection point does not match it — inject the raw
-  `KafkaTemplate` (single candidate by raw type).
+  `KafkaTemplate<String, Object>` injection point does not match it. Inject the raw
+  `KafkaTemplate`; it is the single candidate by raw type.
+
 - **jmustache's stock compiler throws on a null or missing variable.**
-  `Mustache.compiler()` ships `nullValue=null` / `missingIsNull=false`, so
-  `{{seoTitle}}` over an operator who never filled it in is a
+  `Mustache.compiler()` ships `nullValue=null` and `missingIsNull=false`. So
+  `{{seoTitle}}` over an operator who never filled it in raises
   `MustacheException.Context` — a 500, not an empty string. `.defaultValue("")` fixes
   both. Sections are already lenient. Confirmed by reverting the setting and watching
   the test error, not by reading.
+
 - **`new DefaultCollector(false)` also removes the JavaBean-getter fallback.** Turning
   access coercion off is the fix for the collector reading *private* fields and
-  methods — but the same flag switches `getMethod` from the
+  methods. But the same flag changes two lookups: `getMethod` drops from the
   `name()`/`get<Name>()`/`is<Name>()` search to a plain `clazz.getMethod(name)`, and
-  `getField` to `clazz.getField(name)`. So a context object must expose **exactly-named
-  public accessors**: a `record` works, `getOperatorName()` for `{{operatorName}}` does not —
-  and it fails by rendering an empty page, never by throwing. **A default *interface*
-  method still resolves**, which reading the source suggests it should not:
-  `getIfaceMethod` really is dead with coercion off (it ends in `makeAccessible`,
-  which returns null), but nothing reaches it, because `clazz.getMethod` already
-  returns inherited public interface methods. Both halves pinned in
-  `StorefrontMustacheConfigTest`; the interface one was settled by running it, after
-  two readings of the same source disagreed. (The *default* collector searches all
-  three forms; that stops being true the moment coercion is off.)
-- **A view model reached reflectively must be `public`, enclosing types included.** With
-  coercion off, `Method.invoke` on a public accessor of a package-private class is an
-  `IllegalAccessException` at render time. A `public` class nested in a package-private
-  one counts as package-private for this.
-- **Boot 4 test slices are assembled per module.** `@WebMvcTest`'s autoconfiguration list
-  is not one file: each module contributes its own
+  `getField` to `clazz.getField(name)`.
+
+  So a context object must expose **exactly-named public accessors**. A `record`
+  works. `getOperatorName()` for `{{operatorName}}` does not, and it fails by
+  rendering an empty page rather than by throwing.
+
+  **A default *interface* method still resolves**, which reading the source suggests
+  it should not. `getIfaceMethod` really is dead with coercion off — it ends in
+  `makeAccessible`, which returns null. Nothing reaches it, because `clazz.getMethod`
+  already returns inherited public interface methods. Both halves are pinned in
+  `StorefrontMustacheConfigTest`. The interface half was settled by running it, after
+  two readings of the same source disagreed.
+
+- **A view model reached reflectively must be `public`, enclosing types included.**
+  With coercion off, `Method.invoke` on a public accessor of a package-private class
+  throws `IllegalAccessException` at render time. A `public` class nested in a
+  package-private one counts as package-private here.
+
+- **Boot 4 test slices are assembled per module.** `@WebMvcTest`'s autoconfiguration
+  list is not one file. Each module contributes its own
   `META-INF/spring/…AutoConfigureWebMvc.imports`, so `spring-boot-mustache` registers
   `MustacheAutoConfiguration` into the web slice from its own jar. Reading only
-  `spring-boot-webmvc-test`'s copy says the opposite. Same modularization lesson as the
-  Kafka starter above: check the module that owns the feature.
-- **jmustache template inheritance works, with two behaviours worth knowing before
-  you write a layout.** `{{<parent}} … {{$block}}…{{/block}} … {{/parent}}` is real
-  (`ParentTemplateSegment`/`BlockSegment`), the close tag repeats the parent's full
-  name (`{{/storefront/layout}}`), and it gives Dawn's `theme.liquid` +
-  `content_for_layout` shape natively. (1) **Anything inside the parent call that is
-  not a block is discarded** — `removeNonBlocks` throws it away, so a child template
-  is only its block definitions. (2) **Whitespace between a block tag and its
-  content is output**, so block tags have to hug the markup
-  (`{{$content}}    <h1>…</h1>{{/content}}`) or the page gains blank lines. The parent is loaded by the
-  *loader* on first render and pinned into the compiled `Template`, so a layout
-  needs **no bean of its own** — one compiled graph per page template.
-- **A Mustache comment cannot contain `}}`.** `{{! … }}` ends at the first `}}`,
-  so a comment mentioning `{{$content}}` renders the rest of itself into the page.
-  Found by doing it; the fix is to describe tags in words. *(Hit a second time in
-  #100, by a comment quoting `{{url}}` — this entry existed and was not re-read.
-  A whole-line `{{! … }}` **is** stripped cleanly, which is why the layout's other
-  comments cost nothing.)*
-- **A section tag is only standalone if it is alone on its line — and an
-  inline one leaves its indentation behind when falsey.** jmustache strips a line
-  that holds nothing but a tag; a line like `····{{#x}}<img …>{{/x}}` is not that,
-  so when `x` is absent the four spaces and the newline are still emitted. The
-  storefront's `{{#tourOperator.brand.logo}}` shipped a stray blank line that way. Same
-  fix as the block tags above — hug: open the section at the end of the previous
-  line (`<header>{{#tourOperator.brand.logo}}`) so nothing is left when it is skipped. The
-  footer's phone/email guards already did this; the rule is general.
-- **Flyway ignores an applied migration whose version is *ahead* of everything
-  local, and reports it the moment you add one past it.** A branch that lacks a
-  migration another branch already applied to the dev database boots and tests
-  green — the applied version is a "future" migration and validation skips it.
-  Add a higher version on top and the same row becomes a gap:
-  `Detected applied migration not resolved locally: 11`, which fails
-  `flywayInitializer` and therefore the whole context, so
-  `VointikaApplicationTests.contextLoads` is the only test that sees it. Two
-  branches numbering migrations in the same context is the setup; the failure
-  looks like the *new* migration's fault and is not. Read
-  `<schema>.flyway_schema_history` before believing either.
-- **Spring's `MustacheView` recompiles the template on every request**
-  (`renderMergedTemplateModel` → `compiler.compile(reader)`); the caching view resolver
-  above it caches the *View*, not the compiled `Template`. Fine for a few app templates,
-  wrong for multi-tenant themes — so the storefront compiled once at startup and wrote the
-  rendered string itself rather than returning a view name. **Every jmustache entry above
-  is a finding without a live renderer behind it:** the storefront answers JSON while it is
-  a placeholder, so only `StorefrontMustacheConfig` and its test survive, and these traps
-  are here for the day the themes bring templates back.
+  `spring-boot-webmvc-test`'s copy says the opposite. Same lesson as the Kafka starter
+  above: check the module that owns the feature.
+
+- **jmustache template inheritance works.**
+  `{{<parent}} … {{$block}}…{{/block}} … {{/parent}}` is real
+  (`ParentTemplateSegment` and `BlockSegment`), the close tag
+  repeats the parent's full name (`{{/storefront/layout}}`), and it gives Dawn's
+  `theme.liquid` plus `content_for_layout` shape natively. Two behaviours to know
+  before writing a layout:
+
+  1. **Anything inside the parent call that is not a block is discarded.**
+     `removeNonBlocks` throws it away, so a child template is only its block
+     definitions.
+  2. **Whitespace between a block tag and its content is output.** Block tags have to
+     hug the markup (`{{$content}}    <h1>…</h1>{{/content}}`) or the page gains blank
+     lines.
+
+  The parent is loaded by the *loader* on first render and pinned into the compiled
+  `Template`, so a layout needs **no bean of its own** — one compiled graph per page
+  template.
+
+- **A Mustache comment cannot contain `}}`.** `{{! … }}` ends at the first `}}`, so a
+  comment mentioning `{{$content}}` renders the rest of itself into the page. Found by
+  doing it. Describe tags in words instead. Hit a second time in #100, by a comment
+  quoting `{{url}}` — this entry existed and was not re-read. A whole-line `{{! … }}`
+  **is** stripped cleanly, which is why the layout's other comments cost nothing.
+
+- **A section tag is only standalone if it is alone on its line.** jmustache strips a
+  line holding nothing but a tag. A line like `····{{#x}}<img …>{{/x}}` is not that, so
+  when `x` is absent the four spaces and the newline are still emitted. The
+  storefront's `{{#tourOperator.brand.logo}}` shipped a stray blank line that way. Fix
+  it the same way as the block tags: hug. Open the section at the end of the previous
+  line (`<header>{{#tourOperator.brand.logo}}`) so nothing is left when it is skipped.
+  The footer's phone and email guards already did this; the rule is general.
+
+- **Flyway ignores an applied migration whose version is *ahead* of everything local,
+  and reports it the moment you add one past it.** A branch that lacks a migration
+  another branch already applied to the dev database boots and tests green: the
+  applied version is a "future" migration and validation skips it. Add a higher
+  version on top and the same row becomes a gap —
+  `Detected applied migration not resolved locally: 11` — which fails
+  `flywayInitializer` and therefore the whole context. So
+  `VointikaApplicationTests.contextLoads` is the only test that sees it. Two branches
+  numbering migrations in the same context is the setup. The failure looks like the
+  *new* migration's fault and is not. Read `<schema>.flyway_schema_history` before
+  believing either.
+
+- **Spring's `MustacheView` recompiles the template on every request.**
+  `renderMergedTemplateModel` calls `compiler.compile(reader)`, and the caching view
+  resolver above it caches the *View*, not the compiled `Template`. Fine for a few app
+  templates, wrong for multi-tenant themes. So the storefront compiled once at startup
+  and wrote the rendered string itself rather than returning a view name.
+
+  **Every jmustache entry above is a finding without a live renderer behind it.** The
+  storefront answers JSON while it is a placeholder, so only
+  `StorefrontMustacheConfig` and its test survive. These traps are here for the day
+  the themes bring templates back.

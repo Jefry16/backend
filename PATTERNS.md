@@ -33,21 +33,24 @@ isolation are ArchUnit-enforced; `domain` stays pure (no Spring/JPA/Jackson).
   Canonical: `storefront`.
 
 **The layer DAG bites hardest in the shape with no domain.** `presentation` and
-`infrastructure` may not reach each other, so a helper the *controller* uses and
-the *config* wires cannot live in either — put it in `application` as a plain
-POJO and `@Bean` it from the context's config. `storefront`'s
-`TenantHandleResolver` was written in `infrastructure/web` first and ArchUnit
-rejected it in three places; it takes the host as a `String` and knows nothing
-about servlets, so `application/policy` is where it belongs anyway.
+`infrastructure` may not reach each other. So a helper that the *controller* uses
+and the *config* wires cannot live in either one. Put it in `application` as a
+plain POJO and `@Bean` it from the context's config.
+
+`storefront`'s `TenantHandleResolver` was written in `infrastructure/web` first
+and ArchUnit rejected it in three places. It takes the host as a `String` and
+knows nothing about servlets, so `application/policy` is where it belonged
+anyway.
 
 **`application/policy` is now the settled home for that kind of rule** —
 `TenantHandleResolver` (host → tenant) lives there. A policy that holds
-configuration is an instance `@Bean`ed from the config (it takes the base domain,
-so it is one); a pure function of its arguments is `static` with no bean at all,
-and the choice is just whether there is state to inject. **A constant two layers need also goes
-here** — `StorefrontRoutes` holds every storefront path for exactly that reason:
-the controller that maps them and the config that registers them as public
-cannot see each other.
+configuration is an instance, `@Bean`ed from the config — `TenantHandleResolver`
+takes the base domain, so it is one. A pure function of its arguments is `static`
+with no bean at all. The only question is whether there is state to inject.
+
+**A constant that two layers need also goes here.** `StorefrontRoutes` holds
+every storefront path for exactly that reason: the controller that maps them and
+the config that registers them as public cannot see each other.
 
 `shared` and `reference` are shared kernels — importable by any context.
 Everything else is isolated: a context reaches another only via a shared query
@@ -80,17 +83,20 @@ port or an event (never a direct import).
 > the globals on `/` and `/{locale}`, and the globals plus `page` on
 > `/pages/{handle}`. JSON and not HTML on purpose: the contract is settled before
 > anything is server-rendered again, because a wrong field is visible in a body and
-> invisible under markup nobody reads yet. Four addresses still answer a placeholder
-> `{handle, status}` — the experiences listing and the policy page, each with and
-> without a locale prefix — and no template exists, so the theme object model as a
-> *render* context is the part that is still only a plan.
+> invisible under markup nobody reads yet.
+>
+> Four addresses still answer a placeholder `{handle, status}`: the experiences
+> listing and the policy page, each with and without a locale prefix. No template
+> exists either, so the theme object model as a *render* context is the part that
+> is still only a plan.
 >
 > Each rule below carries its own reason:
 >
-> - **There is no `page` object.** Shopify's `page` is a CMS page and so is ours,
->   so the current page's metadata is `pageTitle` / `pageDescription` /
->   `ogImageUrl` at the top level — their `page_title`/`page_description`
->   globals — leaving the name free for `/pages/{handle}`.
+> - **There is no `page` object in the globals.** Shopify's `page` is a CMS page
+>   and so is ours. The current page's metadata is therefore `pageTitle` /
+>   `pageDescription` / `ogImageUrl` at the top level, matching their
+>   `page_title`/`page_description` globals. That leaves the name free for
+>   `/pages/{handle}`.
 > - **camelCase, not Liquid's snake_case**, so the storefront reads like the rest
 >   of this codebase rather than like Shopify.
 > - **`localization` mirrors Shopify's shape**: `language` is the one being
@@ -120,10 +126,12 @@ port or an event (never a direct import).
 >   (2026-08-13/14). Text types only
 >   (`single_line_text`, `multi_line_text`): a translated `true` is `true`, and a
 >   `metaobject_reference` pointing elsewhere per locale is content *selection*,
->   not translation. **The overlay is row-shaped, not column-shaped** — every
->   other translation table here is nullable columns falling back per field,
->   while a metafield value is one row with one value, so the translation row's
->   `value` is NOT NULL and "no row" is the fallback. The storefront reads
+>   not translation.
+>
+>   **The overlay is row-shaped, not column-shaped.** Every other translation
+>   table here is nullable columns falling back per field. A metafield value is
+>   one row with one value, so the translation row's `value` is NOT NULL and "no
+>   row" is the fallback. The storefront reads
 >   through its own query (`listForOwnerLocalized`), never the admin's:
 >   overlaying in the editor would make a translated field look canonical and the
 >   next save would write it back over the original. **The metaobject overlay
@@ -143,45 +151,53 @@ port or an event (never a direct import).
 >   node type in `shared` would put a JSON library on every context.
 > - **A `metaobject_reference` resolves to its entry** (2026-08-13). Liquid's own
 >   rule — their docs say a reference type's `value` "directly returns the
->   referenced object", and there is no separate `reference` property — so the
->   pair stays `{type, value}` and `value` is the entry. Fields nest under
->   `fields` rather than sitting top-level, which is why Shopify's `system`
->   object is *not* copied: theirs exists only to keep built-in names from
->   colliding with field keys, and nesting removes the collision. A reference
->   whose entry is unpublished, deleted or another operator's is **pruned whole**,
->   the way a dead menu link is — a bare id is worse than an absent field,
->   because a theme can guard on absence and can do nothing with an id.
+>   referenced object", and there is no separate `reference` property. So the
+>   pair stays `{type, value}` and `value` is the entry.
+>
+>   Fields nest under `fields` rather than sitting top-level. That is why
+>   Shopify's `system` object is *not* copied: theirs exists only to keep
+>   built-in names from colliding with field keys, and nesting removes the
+>   collision.
+>
+>   A reference whose entry is unpublished, deleted or another operator's is
+>   **pruned whole**, the way a dead menu link is. A bare id is worse than an
+>   absent field: a theme can guard on absence and can do nothing with an id.
 > - **`featuredExperiences` is top-level and capped at 12.** Shopify's globals
 >   give lazy `collections`/`all_products` accessors; an eager JSON payload
 >   cannot copy that, so the bound is the merchant's `featured` flag plus a hard
 >   cap. The filter, order and cap all live in one derived query name, and the
 >   tests parse it rather than assert a string.
 > - **`linklists` is a map of menus by handle, and every link in it resolves.**
->   An item pointing at an unpublished or deleted target is dropped, along with
->   anything nested under it — unpublishing is how an operator takes something
->   off the storefront, so leaving the link would defeat the act. Resolution is
->   two batch lookups for the whole navigation (`experience` and `page` each
->   answer for their own handles, in the rendered locale), never one per item.
+>   An item pointing at an unpublished or deleted target is dropped, and so is
+>   anything nested under it. Unpublishing is how an operator takes something off
+>   the storefront, so leaving the link would defeat the act.
+>
+>   Resolution is two batch lookups for the whole navigation, never one per item:
+>   `experience` and `page` each answer for their own handles, in the rendered
+>   locale.
 >   The link carries `{title, type, url, levels, links}`: no `handle` (no column
 >   behind it) and none of Shopify's `active`/`current` family, which are the
 >   first fields whose value would depend on which address was asked for.
-> - **A page route is globals + one object, and the object is absent elsewhere.**
->   `/pages/{handle}` adds `page`, serialized `NON_NULL` so the home page simply
->   does not carry it — Liquid's model, where a template gets the globals plus
->   its own object and the others are not defined. The page's SEO substitutes the
->   operator's through `StorefrontGlobals.withSeo`, so the globals are assembled once
->   and the one page-shaped difference is applied by the use case that knows
->   about pages. The chain itself is `SeoText`, extracted at its second caller.
+> - **A page route is the globals plus one object, and that object is absent
+>   elsewhere.** `/pages/{handle}` adds `page`, serialized `NON_NULL`, so the home
+>   page simply does not carry it. That is Liquid's model: a template gets the
+>   globals plus its own object, and the others are not defined.
+>
+>   The page's SEO substitutes the operator's through `StorefrontGlobals.withSeo`.
+>   The globals are assembled once, and the one page-shaped difference is applied
+>   by the use case that knows about pages. The chain itself is `SeoText`,
+>   extracted at its second caller.
 > - **A handle a locale renames has one address in that locale.** The canonical
->   handle 404s there rather than serving the same page twice — the rule that
->   makes `/{primary}` a 404 when the primary already lives at `/`.
+>   handle 404s there rather than serving the same page twice. It is the same rule
+>   that makes `/{primary}` a 404 when the primary already lives at `/`.
 > - **`shop.address` is Shopify's `address`, minus what a shop has no use for.**
 >   Their `first_name`/`last_name`/`company`/`id`/`url` are customer-address
->   fields and `province_code` needs ISO 3166-2 data we do not carry; `street` is
->   theirs and derived, so it is free; `summary` is a theme's business. Only the
->   **country** is a reference — ISO 3166-1 is closed at 249, while cities are
->   millions with no canonical list and a curated table would block an operator
->   whose village is missing. `country.name` is English only, and the code rides
+>   fields. `province_code` needs ISO 3166-2 data we do not carry. `street` is
+>   theirs and derived, so it is free, and `summary` is a theme's business.
+>
+>   Only the **country** is a reference. ISO 3166-1 is closed at 249. Cities are
+>   millions with no canonical list, and a curated table would block an operator
+>   whose village is missing. `country.name` is English only; the code rides
 >   alongside for a client that would rather localize it.
 > - **`shop.metafields` is Shopify's shape with our vocabulary** —
 >   `tourOperator.metafields.<namespace>.<key>` addressing a `{type, value}` object.
@@ -215,11 +231,11 @@ localization  locale, languages [ { code, current, url } ]
 ```
 
 **A named accessor beside a list is Shopify's shape and is worth copying.**
-`tourOperator.policies` iterates; `tourOperator.cancellationPolicy` is the one a booking form
-wants without comparing type strings, and is **null** when the operator has not
-written it, so a template guards on the object. The four names are not derived
-from the type — `TERMS` is `termsOfService`, because that is what a theme author
-coming from Shopify types.
+`tourOperator.policies` iterates. `tourOperator.cancellationPolicy` is the one a
+booking form wants, without comparing type strings. It is **null** when the
+operator has not written that policy, so a template guards on the object. The four
+names are not derived from the type: `TERMS` is `termsOfService`, because that is
+what a theme author coming from Shopify types.
 
 **Anything a theme renders as an `<img>` is one shared `Image`** —
 `{ url, alt, width, height, aspectRatio }`. `aspectRatio` is **derived**
@@ -251,13 +267,15 @@ included, because the Mustache compiler runs with access coercion off.
 
 **A collection the owning context orders is ordered by the query, and split by
 the query too.** The palette is `colors.primary[0].background`, so its order is a
-promise a theme indexes into — it lives in the derived query's name
-(`findByTourOperatorIdOrderByPositionAsc`) and nowhere else, pinned by parsing
-that name with Spring Data's `PartTree` (§9's shape, from the experiences
-listing). And the *role* split happens in the owning context's adapter, not the
-caller's: a role is a `touroperator` enum, so a flat list tagged with a role
-string would force `storefront` to compare against literals — a second copy of an
-enum it is fenced from seeing.
+promise a theme indexes into. That order lives in the derived query's name,
+`findByTourOperatorIdOrderByPositionAsc`, and nowhere else. It is pinned by
+parsing that name with Spring Data's `PartTree` — §9's shape, from the
+experiences listing.
+
+The *role* split happens in the owning context's adapter, not the caller's. A
+role is a `touroperator` enum. A flat list tagged with a role string would force
+`storefront` to compare against literals, which is a second copy of an enum it is
+fenced from seeing.
 
 **One rule decides what goes in: expose what the row has, invent nothing.** A
 field with no column behind it is invention and stays out; a field with a column
@@ -273,20 +291,21 @@ contract and the data follows. A field is omitted only when no column backs it,
 or when it belongs somewhere else (theme settings, `localization`).
 
 **A page adds its object to the globals rather than wrapping them.**
-`/pages/{handle}` serves the globals plus `page`, serialized `NON_NULL` so a route
-without one simply does not carry it, and a page with nothing of its own returns
-the globals directly — the home page does. While the response is JSON this costs
-nothing; it is when templates return that repeating the globals in a wrapper per
-page would start to bite, and the answer then is likely a `Map` — do not build it
-before the sections that need it.
+`/pages/{handle}` serves the globals plus `page`, serialized `NON_NULL`, so a
+route without one simply does not carry it. A page with nothing of its own
+returns the globals directly, as the home page does.
+
+While the response is JSON this costs nothing. It starts to bite when templates
+return and every page repeats the globals in a wrapper. The answer then is likely
+a `Map`. Do not build it before the sections that need it.
 
 **Where a URL that varies per page is built:** `application` says *where* a thing
 lives (the locale code, and whether it is the one that serves bare), `presentation`
 says *what its URL is*. **The language switcher does not do this yet, and that is a
-live gap on a shipped route.** Every `Language.url` is built as `/` or `/{code}` in
-`StorefrontGlobalsResponse`, so switching language from `/pages/about` sends the
-visitor to the home page instead of to that page in that language. It needs the
-handle in each locale, which no query answers today — see MAP's backlog.
+live gap on a shipped route.** Every `Language.url` is built as `/` or `/{code}`
+in `StorefrontGlobalsResponse`. So switching language from `/pages/about` sends
+the visitor to the home page, not to that page in that language. Fixing it needs
+each locale's handle, which no query answers today. See MAP's backlog.
 
 **Renaming a component here is a breaking change** once operators author themes.
 Decide the shape while there are four records to change, not forty templates.
@@ -321,12 +340,14 @@ Mustache 15.8s, Thymeleaf 18.3s per 25k renders) and render time is dwarfed by t
 framework and Postgres. Only compiling engines are meaningfully faster, and they
 compile to Java, which disqualifies them for the same reason.
 
-**Liqp was the alternative and was rejected.** Liquid is nicer to author in and has
-Drops, but `nl.big-o:liqp` is 178 stars and one maintainer, and a third-party fork
-already exists — evidence both that the abandonment risk is real and that vendoring
-is the escape. Neither engine ships Shopify's storefront filters and tags (`money`,
-`asset_url`, `{% section %}`, `{% paginate %}`); those are ours to write in any
-language, so they do not discriminate either.
+**Liqp was the alternative and was rejected.** Liquid is nicer to author in and
+has Drops. But `nl.big-o:liqp` is 178 stars and one maintainer, and a third-party
+fork already exists — evidence both that the abandonment risk is real and that
+vendoring is the escape.
+
+Neither engine ships Shopify's storefront filters and tags (`money`, `asset_url`,
+`{% section %}`, `{% paginate %}`). Those are ours to write in any language, so
+they do not discriminate either.
 
 **The cost we accepted, so nobody rediscovers it as a surprise.** Mustache is
 logic-less: `{{price}}`, never `{{price | money}}`. Every formatting need is a Java
@@ -393,11 +414,11 @@ persistence recipe (§3) **plus**:
   convention below (§4a).
 - `db/migration/<ctx>/V?__*.sql` — seeds the curated launch set.
 
-**There is no nested-only variant any more.** It used to say a reference type
-used only inside another response (`Country`, nested in a timezone) keeps entity
-+ JpaEntity + Mapper + Response and drops the repository / use case / controller.
-`Country` was its only example, and the structured-address slice needed a
-repository to validate a country id and an endpoint to populate a picker — so the
+**There is no nested-only variant any more.** It used to say that a reference type
+used only inside another response — `Country`, nested in a timezone — keeps entity,
+JpaEntity, Mapper and Response, and drops the repository, use case and controller.
+`Country` was its only example. The structured-address slice then needed a
+repository to validate a country id and an endpoint to populate a picker, so the
 variant has zero live instances and the paragraph went with it. The underlying
 instinct survives in LAW §2.4: don't add the endpoint until something needs it,
 and `GET /api/countries` was in fact deleted once for exactly that reason before
@@ -427,19 +448,19 @@ Canonical: `CurrencyResponse` (`id`, `context:"currencies"`), `MemberResponse`
 
 ## 4b. Paginated list endpoints (cursor + filter + sort)
 
-Any list over **tenant or growable data** (members, bookings, orders, audit) MUST
-use the shared list framework — **never an unbounded array** (the roster shipped
-that way once and it was the recorded mistake this fixes). The recipe:
+Any list over **tenant or growable data** — members, bookings, orders, audit —
+MUST use the shared list framework. **Never an unbounded array.** The roster
+shipped that way once, and this recipe is what came of fixing it.
 
 1. **Schema** — a `public static final ListSchema SCHEMA` on the use case:
    `.tenantScoped()` (scopes to the entity's `tourOperatorId`), `.set/text/number/
    instant(...)` for each filterable field, `.sortable(...)` + `.defaultSort(...)`.
 
    **A `.sortable(...)` field must map to a `NOT NULL` column.** The cursor is a
-   keyset on that column, and in SQL a `NULL` comparison is *unknown* rather than
-   false — so a row with a null sort value matches neither the `>`/`<` nor the
-   `id` tie-break, and **disappears after page one**: no error, no log line, just
-   a list that is quietly short.
+   keyset on that column. In SQL a `NULL` comparison is *unknown* rather than
+   false, so a row with a null sort value matches neither the `>`/`<` nor the `id`
+   tie-break. It **disappears after page one** — no error, no log line, just a
+   list that is quietly short.
 
    **A nullable column may be filtered, but only with a positive operator, and
    the schema has to say it is nullable.** The same three-valued logic bites one
@@ -501,11 +522,13 @@ and both change in lockstep, so it insulates nothing while costing a file and a
 mapping step.
 
 **Check the nested records separately from the wrapper.** `ReplaceMenuItemsRequest`
-and `ReplaceMenuItemsInput` genuinely differ — the input adds the caller and the two
-path ids — but the tree node inside them was identical, so the controller carried a
-recursive copy that ran on every save. A pair can be a real seam at the top and a
-pure copy one level down; the nested type is where the cost is, because collapsing it
-deletes a mapper and not just a file.
+and `ReplaceMenuItemsInput` genuinely differ: the input adds the caller and the two
+path ids. But the tree node inside them was identical, so the controller carried a
+recursive copy that ran on every save.
+
+A pair can be a real seam at the top and a pure copy one level down. The nested
+type is where the cost is, because collapsing it deletes a mapper and not just a
+file.
 
 When you collapse one, **the application record is the survivor** and the controller
 binds to it:
@@ -518,11 +541,11 @@ public ResponseEntity<LoginUserResponse> login(@RequestBody LoginUserInput input
 Never the other way. A use case referencing a `presentation` type inverts the layer
 graph and ArchUnit fails the build.
 
-The condition, and the build enforces it: the surviving record must carry **no
-annotations**. The application layer's allowlist is `com.vointika..` + `java..`, so a
-`@JsonProperty` or a Jakarta validation annotation on it is a compile-time-legal but
-build-breaking change — and the correct answer at that point is to reintroduce a
-presentation DTO, because the shapes have genuinely diverged.
+There is one condition, and the build enforces it: **the surviving record carries
+no annotations.** The application layer's allowlist is `com.vointika..` plus
+`java..`, so a `@JsonProperty` or a Jakarta validation annotation on it compiles
+and then breaks the build. When that happens the answer is to reintroduce a
+presentation DTO — the shapes have genuinely diverged.
 
 Responses are the mirror image: `LoginUserOutput` carries `accessToken` *and*
 `refreshToken`, `LoginUserResponse` carries only the access token because the refresh
@@ -531,9 +554,9 @@ token leaves in an httpOnly cookie. That pair stays.
 ## 4d. Two namespaces read as one must be validated as one
 
 A storefront handle resolves against **localized handles first, canonical handles
-second**. That makes them one namespace on the read side, so uniqueness has to be
-checked across both on every write — otherwise one silently shadows the other and
-the shadowed page becomes unreachable in that locale, with no error at any point.
+second**. That makes them one namespace on the read side. So uniqueness has to be
+checked across both on every write. Otherwise one silently shadows the other, and
+the shadowed page becomes unreachable in that locale with no error at any point.
 
 > **The read half was deleted twice and is back.** The `rendering` context and its
 > four `Storefront*Query` seams went on 2026-08-02; the in-process rebuild's
@@ -542,18 +565,18 @@ the shadowed page becomes unreachable in that locale, with no error at any point
 > `GetStorefrontGlobalsUseCase` resolve a *tenant* handle, and
 > `StorefrontPageQueryImpl.findByHandle` resolves a *page* handle. The rule below
 > is what they honour — it is no longer advice for a future implementer.
-> **The write guards below were kept anyway.** They cost nothing, and dropping them
-> would let a shadowing handle be stored while nothing can observe it, surfacing as
-> an unreachable page the day a read path returns — a defect committed now and
-> discovered much later. Restore this section's present tense with that read path.
+> **The write guards below were kept anyway.** They cost nothing. Dropping them
+> would let a shadowing handle be stored while nothing can observe it. It would
+> then surface as an unreachable page the day a read path returns: a defect
+> committed now and discovered much later.
 
 `page` shipped with each namespace checked only against itself, which is the natural
 mistake: the create/rename path asks `pages`, the translation path asks
 `page_translations`, and each looks complete on its own. The three write paths now
 cross-check:
 
-- **create / rename a canonical handle** → also reject it if any *other* page uses it
-  as a localized handle in **any** locale;
+- **create or rename a canonical handle** → also reject it if any *other* page uses
+  it as a localized handle in **any** locale;
 - **upsert an explicit localized handle** → also reject another page's canonical handle;
 - **derive a localized handle** → probe *both* namespaces, so the auto-suffix never
   lands on one either.
@@ -562,29 +585,31 @@ Matching the page's **own** canonical handle is fine — it resolves to the same
 The general rule: when a read path consults two sources in precedence order, list the
 write paths that feed each and make every one of them check both.
 
-`experience` had the same defect and now has the same guards, with one difference worth
-knowing before you read the two side by side and think one is wrong. **Whether a
-cross-namespace collision is a 409 or a suffix depends on who chose the value, not on
-which namespace it came from.** A page handle is operator-chosen and permanent, so a
-clash is a 409 the operator can act on. An experience's canonical handle is *derived from
-its name*, so its create path widens the probe instead — the auto-suffix simply steps
-over localized handles too, and the operator sees a `-2` rather than a 409 for a value
-they never typed and have no field to correct. The explicit localized handle is
-operator-chosen in both, and 409s in both.
+`experience` had the same defect and now has the same guards. One difference is
+worth knowing before you read the two side by side and think one is wrong.
+
+**Whether a cross-namespace collision is a 409 or a suffix depends on who chose the
+value, not on which namespace it came from.** A page handle is operator-chosen and
+permanent, so a clash is a 409 the operator can act on. An experience's canonical
+handle is *derived from its name*, so its create path widens the probe instead: the
+auto-suffix steps over localized handles too. The operator sees a `-2` rather than a
+409 for a value they never typed and have no field to correct. The explicit
+localized handle is operator-chosen in both, and 409s in both.
 
 One consequence: the any-locale probe needs an exclusion parameter only where a *rename*
 path calls it (page). Where the canonical value is immutable (experience), create is the
 only caller and never excludes — so the parameter, and page's nil-UUID sentinel standing
 in for "exclude nothing", are both absent by LAW §2.4.
 
-**These guards are pre-checks, not constraints, and that is the one thing this recipe
-cannot fix.** Uniqueness *within* a namespace is backed by a unique index, so a lost race
-surfaces as a duplicate-key failure and the loser is rejected. There is no index spanning
-the two tables and there cannot be one without a trigger — so two concurrent writes, one
-per namespace, can still land on the same value and produce exactly the shadowing the
-guards exist to prevent. The window is small and both `page` and `experience` carry it.
-Treat the cross-namespace check as closing the reachable-by-one-request hole, not as
-making the invariant true.
+**These guards are pre-checks, not constraints, and that is the one thing this
+recipe cannot fix.** Uniqueness *within* a namespace is backed by a unique index, so
+a lost race surfaces as a duplicate-key failure and the loser is rejected.
+
+No index spans the two tables, and none can without a trigger. So two concurrent
+writes, one per namespace, can still land on the same value and produce exactly the
+shadowing the guards exist to prevent. The window is small, and both `page` and
+`experience` carry it. Treat the cross-namespace check as closing the
+reachable-by-one-request hole, not as making the invariant true.
 
 ## 4e. The translation-overlay table (eight of them, in two shapes)
 
@@ -615,10 +640,11 @@ Two are *row-shaped*, added by the metafield translation slices (#151, #152):
 | `metaobject_entry_value_translations` | **composite** `(entry value, locale)` | one row, **NOT NULL** | `MetaobjectEntryJpaRepository` (`COALESCE`) | **delete the row** |
 
 **The row shape is why the split is not simply "column count".** A metafield value
-*is* one value, so there is no nullable column to fall back per field — "no row"
-is the fallback, which is why `value` is `NOT NULL` and clearing is a `DELETE`.
-It also overlays in **JPQL** (`COALESCE(t.value, v.value)` over a `LEFT JOIN`)
-rather than in Java, because the fallback is per row and the query can express it.
+*is* one value, so there is no nullable column to fall back per field. "No row" is
+the fallback instead, which is why `value` is `NOT NULL` and clearing is a
+`DELETE`. It also overlays in **JPQL** — `COALESCE(t.value, v.value)` over a
+`LEFT JOIN` — rather than in Java, because the fallback is per row and the query
+can express it.
 
 **Only `audience_translations` is never resolved to a locale**, because audiences
 are not on the storefront — full admin CRUD, no reader. That is what "the write
@@ -651,11 +677,12 @@ test pins `empty(...).isEmpty()` so a new translatable field that misses
 `isEmpty()` fails.
 
 **`menu_item_translations` is the one deliberate outlier, and it is not lazily
-written.** Its items are not editable individually — the whole tree is POSTed and
-rebuilt with fresh ids — so translations ride inline in that payload, have no
-endpoints of their own, and are cleared by being left out. It is also the only
-one without a `tour_operator_id`; items are always reached through their menu, so
-adding one would be a migration for a join nobody needs.
+written.** Its items are not editable individually: the whole tree is POSTed and
+rebuilt with fresh ids. So translations ride inline in that payload, have no
+endpoints of their own, and are cleared by being left out.
+
+It is also the only one without a `tour_operator_id`. Items are always reached
+through their menu, so adding one would be a migration for a join nobody needs.
 
 **Still not generalising, and the arithmetic is now the reason rather than the
 excuse.** The column-shaped six each overlay in their own storefront query
@@ -731,12 +758,14 @@ config key (+ any assets like a template file); no migration, and no code
 Canonical: `app.identity.ui-languages` + `GET /api/ui-languages`.
 
 **Count the consumers of the allowlist before calling it config-only.** Adding a
-UI language is a yml edit for the picker and for validation — but transactional
-email keeps its own list (`ClasspathTemplateCatalog.LOCALES`) plus a template pair
-per (type, locale), and a language missing from it does not fail: the send falls
-back to English, so the user silently gets the wrong language. A second list that
-must agree with the allowlist needs a test that fails the build when they diverge
-(`TemplateLocalesTrackUiLanguagesTest`), not a comment saying it should track.
+UI language is a yml edit for the picker and for validation. But transactional
+email keeps its own list, `ClasspathTemplateCatalog.LOCALES`, plus a template pair
+per (type, locale). A language missing from that list does not fail: the send falls
+back to English, so the user silently gets the wrong language.
+
+A second list that must agree with the allowlist needs a test that fails the build
+when they diverge — `TemplateLocalesTrackUiLanguagesTest` — not a comment saying it
+should track.
 
 ## 8a. Rate limiting (three layers)
 
@@ -765,13 +794,17 @@ never in a central hardcoded map.
 ## 8b. Audit append (every operator-facing mutation)
 
 A use case that mutates an operator-facing entity records the action through
-`shared.port.AuditTrailPort.append(NewAuditEntry)` — **inside the same
-`TransactionRunner` block as the mutation**, so the entry commits and rolls
-back atomically with the action ("no unaudited mutation"; a failed append fails
-the action). Exception: a mutation whose target is object storage (S3) appends
-in its own transaction AFTER the successful write — storage can't roll back, so
-that is the honest best-effort. Actor name is frozen at write (filter-only,
-never sortable — it's nullable and keyset cursors need non-null sort keys).
+`shared.port.AuditTrailPort.append(NewAuditEntry)`, **inside the same
+`TransactionRunner` block as the mutation**. The entry then commits and rolls back
+atomically with the action, so there is no unaudited mutation and a failed append
+fails the action.
+
+One exception: a mutation whose target is object storage (S3) appends in its own
+transaction AFTER the successful write. Storage cannot roll back, so that is the
+honest best-effort.
+
+Actor name is frozen at write. It is filter-only and never sortable, because it is
+nullable and keyset cursors need non-null sort keys.
 Canonical: any experience/audience mutating use case; the port impl lives in
 `audit/infrastructure/integration`.
 
@@ -825,12 +858,13 @@ Both are live: the gate returned in #138, so this is a description and not only 
 lesson.
 Reading the rule says this; only running it proves it, which is the point.
 
-**Logging follows the same rule.** If a *side effect* fails and the caller does not
-care — deleting an object whose row is already gone, enqueuing a welcome email — the
-adapter swallows and logs it, and the port documents that it never throws. Only when
-the use case itself has something to report (a security signal, a branch taken because
-config was missing) does it reach for `DiagnosticLogPort`, which takes the calling
-class so log names still point at the reporter.
+**Logging follows the same rule.** Some side effects fail and the caller does not
+care: deleting an object whose row is already gone, or enqueuing a welcome email.
+The adapter swallows and logs those, and the port documents that it never throws.
+
+The use case reaches for `DiagnosticLogPort` only when it has something of its own
+to report: a security signal, or a branch taken because config was missing. That
+port takes the calling class, so log names still point at the reporter.
 
 ## 9. Testing shapes
 
@@ -844,13 +878,15 @@ class so log names still point at the reporter.
   stub `AccessTokenValidatorPort.isValid/extractUserId`.
 
   **Never `.with(csrf())`.** `SecurityConfig` disables CSRF, so it changes no
-  behaviour — but whatever the request carries is *published*, and MockMvc's
-  token lands in the guide as a `_csrf` query parameter (or, on a `DELETE`, an
-  invented form body) that the API does not accept. It reached 52 of 153
-  operations before anyone diffed the generated output;
-  `DocumentationTestsPublishNoCsrfTest` now fails the build on it. The general
-  rule it is an instance of: **a documentation test's request is a published
-  example, so anything added to make the test pass is added to the contract.**
+  behaviour. But whatever the request carries is *published*: MockMvc's token
+  lands in the guide as a `_csrf` query parameter that the API does not accept,
+  or, on a `DELETE`, as an invented form body. It reached 52 of 153 operations
+  before anyone diffed the generated output. `DocumentationTestsPublishNoCsrfTest`
+  now fails the build on it.
+
+  It is an instance of a general rule: **a documentation test's request is a
+  published example, so anything added to make the test pass is added to the
+  contract.**
 - **The read-only column guard** — a table whose columns are mapped
   `insertable/updatable = false` gets a test asserting a column is writable
   **exactly while the domain can carry it**, as a biconditional. Three tables
@@ -867,12 +903,14 @@ class so log names still point at the reporter.
     test that stops at the repository mock passes, and Hibernate silently omits
     the column from the UPDATE.
 
-  **Write it as a biconditional, not a one-way assertion.** Two of these began
-  as "everything is read-only, because nothing writes it" and had to **invert**
-  when the write path landed — and the biconditional form inverts by itself, so
-  the slice that adds the writer flips the test by adding the domain accessor
-  rather than by editing the test. A one-way `isFalse()` has to be rewritten,
-  and a test you rewrite alongside the change it guards has guarded nothing.
+  **Write it as a biconditional, not a one-way assertion.** Two of these began as
+  "everything is read-only, because nothing writes it" and had to **invert** when
+  the write path landed. The biconditional form inverts by itself: the slice that
+  adds the writer flips the test by adding the domain accessor, not by editing the
+  test.
+
+  A one-way `isFalse()` has to be rewritten instead. A test you rewrite alongside
+  the change it guards has guarded nothing.
 
   Exclude the keys and `createdAt`: a primary key is written by definition, and
   `createdAt`'s immutability is its own decision rather than a statement about
@@ -898,19 +936,21 @@ next `V`. Curated reference/seed data lives in the migration.
 
 **A migration that adds a NOT NULL column without a default must sweep
 `docker/dev-seed/dev-seed.sql` in the same change.** The seed runs under
-`psql -v ON_ERROR_STOP=1`, so the first INSERT that no longer matches the schema
-aborts it and **every INSERT after it never runs** — and the symptom is not a
-seed error. V13 gave policies a surrogate id; the seed still inserted them
-without one, which killed the file before the operator's OWNER membership and
-all three experiences. On a recreated database the admin then signs in and *has
-no operators at all*, which reads as the application losing data.
+`psql -v ON_ERROR_STOP=1`. So the first INSERT that no longer matches the schema
+aborts it, and **every INSERT after it never runs**. The symptom is not a seed
+error.
 
-That is the third time this has bitten (`is_best_seller`, the storefront
-`status`, now the policy id), so the rule is worth stating as a step rather than
-a caution: **after any migration that drops, renames, or adds a required column
-to a seeded table, grep the seed for that table before opening the PR.** Only
-`VointikaApplicationTests.contextLoads` runs migrations at all, and it does not
-run the seed — nothing in the build will tell you.
+V13 gave policies a surrogate id. The seed still inserted them without one, which
+killed the file before the operator's OWNER membership and all three experiences.
+On a recreated database the admin then signs in and *has no operators at all*,
+which reads as the application losing data.
+
+That is the third time this has bitten: `is_best_seller`, the storefront `status`,
+and now the policy id. So state it as a step rather than a caution. **After any
+migration that drops, renames, or adds a required column to a seeded table, grep
+the seed for that table before opening the PR.** Only
+`VointikaApplicationTests.contextLoads` runs migrations at all, and it does not run
+the seed. Nothing in the build will tell you.
 
 **You can still check it in one command, without Docker.** Run the seed against
 the dev database inside a transaction that `TRUNCATE`s the seeded schemas first
@@ -942,19 +982,21 @@ its audit actions against the emitting code. **Add a seeded value that a value
 object validates, and add it there** — and keep the minimum-count assertions, or
 a pattern that stops matching turns the test into a no-op.
 
-**A seed insert converges or it does nothing, and the line between them is what
-the row is.** `ON CONFLICT DO NOTHING` keeps the old row while still reporting
-success, so editing a value in the file changes nothing on an existing database —
-silently. It cost three debugging rounds in two days, each time a working feature
-looking broken because the fixture behind it was stale. So: **configuration and
-authored content use `DO UPDATE`** keyed on the id or the natural key;
-**records of things that happened keep `DO NOTHING`** (`audit.audit_log` is
-append-only, and rewriting a trail entry in place would make it a lie). A row that
-is nothing but its key has no value to converge — `tour_operator_locales` needs
-`down -v`, since no conflict clause expresses a deletion. The trade is explicit:
-anything changed locally through the admin API is reset on the next `up`, which is
-right for a fixture — a seed you cannot correct is worse than one that reasserts
-itself.
+**A seed insert either converges or does nothing, and what the row is decides
+which.** `ON CONFLICT DO NOTHING` keeps the old row while still reporting success.
+So editing a value in the file changes nothing on an existing database, silently.
+It cost three debugging rounds in two days, each time a working feature looking
+broken because the fixture behind it was stale.
+
+So: **configuration and authored content use `DO UPDATE`**, keyed on the id or the
+natural key. **Records of things that happened keep `DO NOTHING`** —
+`audit.audit_log` is append-only, and rewriting a trail entry in place would make
+it a lie. A row that is nothing but its key has no value to converge, so
+`tour_operator_locales` needs `down -v`; no conflict clause expresses a deletion.
+
+The trade is explicit: anything changed locally through the admin API is reset on
+the next `up`. That is right for a fixture. A seed you cannot correct is worse than
+one that reasserts itself.
 
 **A seeded reference row gets a literal, deterministic id — never
 `gen_random_uuid()`.** `reference.country` uses UUIDv3 of `country:{code}`, so dev,
@@ -984,13 +1026,14 @@ purpose: if every owner has every optional field set, nothing shows you what
   both had to be fixed to (the first is deleted, the second carries the comment).
 - **A test whose subject reads the clock in a *stubbed* zone must build its dates
   in that same zone.** `CreateSlotUseCase` judges "is this in the past" against
-  `LocalDate.now(zone)` for the **operator's** zone — correct, a departure is a
-  wall-clock event where the tour runs. `SlotUseCasesTest` stubbed the zone to
-  UTC and then built its dates from a bare `LocalDate.now()`, i.e. the machine's
-  default. The two agree only while both name the same day, so the test failed
-  **at 00:34 CEST** — Madrid had rolled over, UTC had not, so "yesterday" was
-  still today to the use case and nothing was rejected — and passed again at
-  02:00. The window is midnight to the UTC offset, nightly.
+  `LocalDate.now(zone)` for the **operator's** zone. That is correct: a departure is
+  a wall-clock event where the tour runs.
+
+  `SlotUseCasesTest` stubbed the zone to UTC and then built its dates from a bare
+  `LocalDate.now()`, the machine's default. The two agree only while both name the
+  same day. So the test failed **at 00:34 CEST** — Madrid had rolled over, UTC had
+  not, so "yesterday" was still today to the use case and nothing was rejected — and
+  passed again at 02:00. The window is midnight to the UTC offset, nightly.
   **The Docker build cannot catch this class of bug**: `eclipse-temurin` sets no
   `TZ`, so the container is UTC and the two zones can never disagree there. It
   surfaces only for whoever runs the suite locally from a non-UTC machine, which
@@ -999,14 +1042,16 @@ purpose: if every owner has every optional field set, nothing shows you what
   helper), so the two cannot drift apart again. Prefer that to `Clock` injection
   until something needs to freeze time.
 - **A storefront page route is registered in more than one place, and only the
-  route itself fails loudly.** The `@GetMapping` is the route; `StorefrontPublicRoutes`
-  needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method
-  (miss either and it is a 401 in the JSON error shape). **It is four registrations
-  across three registries today**, because the password gate is live: its interceptor
-  needs every page pattern too, or a locked store serves the page to anyone.
-  So define the pattern **once**, in `application/policy` where both layers can
-  see it (`StorefrontRoutes`, with `LOCALIZED_*` built from `LOCALE` rather than
-  retyping the regex), and pin the rest: `servesHeadAsWellAsGet` per route.
+  route itself fails loudly.** The `@GetMapping` is the route. `StorefrontPublicRoutes`
+  needs **two** entries, GET and HEAD, because a `PublicRoute` matches one method —
+  miss either and it is a 401 in the JSON error shape. **That is four registrations
+  across three registries today**, because the password gate is live and its
+  interceptor needs every page pattern too. Miss that one and a locked store serves
+  the page to anyone.
+
+  So define the pattern **once**, in `application/policy` where both layers can see
+  it: `StorefrontRoutes`, with `LOCALIZED_*` built from `LOCALE` rather than
+  retyping the regex. Then pin the rest with `servesHeadAsWellAsGet` per route.
 - **A `PublicRoute` pattern is a security pattern first and a route second.** The
   same string that maps a handler decides what `permitAll` covers, and an
   unconstrained path variable is far wider as the latter: `/{locale}` opens
@@ -1019,15 +1064,25 @@ purpose: if every owner has every optional field set, nothing shows you what
   against a database allowlist creates a two-lists-must-agree coupling — pin it
   (`LocalePathTemplateTest`), or the day a wider code is seeded it is a 404 on a
   page the operator published and nothing says why.
+- **`@AuthenticationPrincipal UUID` binds to null on a public route, silently.**
+  `JwtAuthenticationFilter` stores the parsed `UUID`, so 141 controller parameters
+  take one directly rather than re-parsing a String. On a **public** route an
+  unauthenticated request arrives with Spring's anonymous principal, and
+  `@AuthenticationPrincipal` defaults to `errorOnInvalidType = false` — so the
+  wrong-typed principal becomes `null` with no error. That reads as "no session" by
+  luck. `InvitationAcceptController` takes `@AuthenticationPrincipal Object` to say
+  so in the type; do not "tidy" it to `UUID`.
 - **Two classes with one simple name are one bean name, and the context refuses.**
   Component scanning derives the bean name from the simple name regardless of
-  package, so `storefront.…StorefrontPasswordController` beside
-  `touroperator.…StorefrontPasswordController` is a `ConflictingBeanDefinitionException`
-  at startup — not a warning. Every sliced `@WebMvcTest` still passed; only
-  `VointikaApplicationTests.contextLoads`, which loads all thirteen contexts at once,
-  catches it. Rename rather than reaching for an explicit bean name: the collision is
-  the signal that one of the two names is describing the wrong thing (here the public
-  gate page, now `PasswordPageController`).
+  package. So `storefront.…StorefrontPasswordController` beside
+  `touroperator.…StorefrontPasswordController` is a
+  `ConflictingBeanDefinitionException` at startup, not a warning.
+
+  Every sliced `@WebMvcTest` still passed. Only
+  `VointikaApplicationTests.contextLoads` catches it, because it loads all thirteen
+  contexts at once. Rename rather than reaching for an explicit bean name: the
+  collision is the signal that one of the two names describes the wrong thing. Here
+  it was the public gate page, now `PasswordPageController`.
 - **A `WebMvcConfigurer` is pulled into *every* `@WebMvcTest`, not just its own
   context's.** So the collaborators an interceptor needs must be `ObjectProvider`s
   resolved per request, or every controller test in the codebase fails to construct
