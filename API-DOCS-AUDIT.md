@@ -21,8 +21,9 @@ Built from scratch, because stale snippets are how this audit lies to itself:
 ```
 
 BUILD SUCCESS. **154 snippet directories, 154 `operation::` macros, and every macro
-resolves.** Both numbers counted after `rm -rf target`, in a scratch copy outside the
-repo.
+resolves** — the state this pass found. F2 then added `audit-log/get-not-found`, so
+both numbers are **155** as of this commit, against 154 endpoints. Counted after
+`rm -rf target`, in a scratch copy outside the repo.
 
 ---
 
