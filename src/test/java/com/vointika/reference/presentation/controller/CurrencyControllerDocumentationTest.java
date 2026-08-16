@@ -1,6 +1,7 @@
 package com.vointika.reference.presentation.controller;
 
 import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.reference.application.usecase.ListCurrenciesUseCase;
 import com.vointika.reference.domain.entity.Currency;
@@ -90,26 +91,24 @@ class CurrencyControllerDocumentationTest {
     }
     /**
      * <b>The canonical 401, documented once for the whole API.</b> It is produced by
-     * {@code RestAuthenticationEntryPoint} before any controller runs, so every
-     * authenticated endpoint answers exactly this. Currencies is the simplest surface
-     * to publish it from — no path variables, no tenant, no roles.
+     * {@code RestAuthenticationEntryPoint} inside the filter chain, before any
+     * controller runs, so every authenticated endpoint answers exactly this.
+     * Currencies is the simplest surface to publish it from — no path variables, no
+     * tenant, no roles.
      *
-     * <p><b>Its shape is not {@code ApiErrorResponse}.</b> The entry point writes the
-     * JSON by hand and emits {@code status}, {@code error}, {@code message} and
-     * {@code timestamp} — there is no {@code code} field at all, not even a null one.
-     * So this response does NOT use the shared {@code ERROR_FIELDS} descriptor that
-     * the handler-produced errors use.
+     * <p><b>It is the ordinary error body</b>, which is why it documents itself with
+     * the shared {@link ApiErrorSnippets#errorFields()}. The entry point writes the
+     * JSON by hand and the handler serializes {@code ApiErrorResponse}, but with a
+     * null {@code code} dropped by {@code @JsonInclude(NON_NULL)} the two are the
+     * same four keys in the same order. **No 401 can carry a {@code code} either
+     * way**: {@code UnauthorizedException} has only a message constructor.
      */
     @Test
     void withoutATokenIs401() throws Exception {
         mockMvc.perform(get("/api/currencies"))
                 .andExpect(status().isUnauthorized())
                 .andDo(document("authentication/unauthorized",
-                        responseFields(
-                                fieldWithPath("status").description("Always 401"),
-                                fieldWithPath("error").description("Always \"Unauthorized\""),
-                                fieldWithPath("message").description("Always \"Authentication required\" — it never says which part of the credential failed"),
-                                fieldWithPath("timestamp").description("When the request was refused"))));
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
 }

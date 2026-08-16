@@ -18,9 +18,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
 import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.ResourceNotFoundException;
-import org.springframework.restdocs.payload.FieldDescriptor;
-import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -195,7 +194,7 @@ class ContactMessageControllerDocumentationTest {
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("messageId").description("A message id that does not exist, or belongs to another operator")),
-                        responseFields(ERROR_FIELDS)));
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     /**
@@ -218,7 +217,7 @@ class ContactMessageControllerDocumentationTest {
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("messageId").description("The message id")),
-                        responseFields(ERROR_FIELDS)));
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     /**
@@ -240,23 +239,7 @@ class ContactMessageControllerDocumentationTest {
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("messageId").description("A message id that does not exist, or belongs to another operator")),
-                        responseFields(ERROR_FIELDS)));
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
-    /**
-     * The application's one error shape, from {@code ApiErrorResponse}. {@code code}
-     * is {@code @JsonInclude(NON_NULL)}, so it is absent wherever the throw site
-     * supplied none — which needs an explicit type as well as {@code optional()},
-     * or REST Docs cannot infer one and fails the build. Throw sites that DO carry
-     * one, such as {@code InvalidFieldException} and {@code ConflictException},
-     * publish it; the descriptor covers both cases.
-     */
-    private static final FieldDescriptor[] ERROR_FIELDS = {
-            fieldWithPath("status").description("The HTTP status code"),
-            fieldWithPath("error").description("The status reason phrase"),
-            fieldWithPath("message").description("Human-readable detail"),
-            fieldWithPath("code").type(JsonFieldType.STRING)
-                    .description("Machine-readable error code; absent when the throw site supplied none").optional(),
-            fieldWithPath("timestamp").description("When the error was produced")
-    };
 }

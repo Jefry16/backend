@@ -40,8 +40,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
-import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,9 +67,7 @@ class TourOperatorLocalesControllerDocumentationTest {
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(prettyPrint())
-                        .and()
-                        .snippets().withDefaults(httpRequest(), httpResponse()))
+                        .withResponseDefaults(prettyPrint()))
                 .apply(springSecurity())
                 .build();
     }

@@ -21,12 +21,22 @@ Three results hold repo-wide and save every later pass the work:
   coverage in your context; only the `relaxed*` question is settled.**
 - **Every `operation::` macro resolves and every snippet directory is pulled in**, so
   B, C and D are clean unless a pass breaks them.
+- **Every operation publishes a curl and an httpie example.** 18 test classes had
+  called `.snippets().withDefaults(httpRequest(), httpResponse())`, which *replaces*
+  the default snippet set rather than adding to it, so 61 operations emitted four
+  snippets instead of eight and published no copy-pasteable example. All 18 are fixed;
+  the call should not reappear. **No guard catches this** —
+  `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
+  what it renders, so fewer snippets is a green build and a thinner page.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
   `.type(JsonFieldType.STRING)` as well as `.optional()`, or REST Docs cannot infer a
-  type and fails the build. Copy `ERROR_FIELDS` from
-  `ContactMessageControllerDocumentationTest`.
+  type and fails the build. **Use `ApiErrorSnippets.errorFields()`** — one copy, in
+  `src/test/java/com/vointika/shared/web/docs/`. It covers the 401 too: the entry
+  point writes that body by hand, but with a null `code` dropped it is the same four
+  keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
+  so no 401 can differ.
 
 ---
 
@@ -65,6 +75,14 @@ three emitted four snippets where every other operation emits eight — losing
 The result was visible in the published guide: **List Countries showed a `curl`
 command and the three endpoints beside it, in the same section, showed none.**
 
+**It was never a `reference` problem.** An earlier revision of this section said
+"every other operation emits eight", generalising from an `ls` of two directories —
+one of which happened to be the class that never restricted anything. Measured across
+every snippet directory: **18 classes and 61 operations**, including all ten
+`touroperator` classes, with `AuthControllerDocumentationTest` alone accounting for
+13. Only 98 of 159 operations published a curl example. All 18 are fixed here, so the
+count is now **zero**.
+
 - **Severity**: medium. Nothing is wrong or missing in the *contract* — the field
   tables are complete. What is missing is the thing a reader copies.
 - **Verified by**: `ls target/generated-snippets/{countries,currencies}/list` → 8
@@ -79,14 +97,18 @@ command and the three endpoints beside it, in the same section, showed none.**
 Every endpoint in this context is authenticated, so 401 is the only error they have,
 and no operation in the guide published it.
 
-**It is also a different body from every other error.**
-`RestAuthenticationEntryPoint` writes the JSON by hand — `status`, `error`,
-`message`, `timestamp` — with **no `code` field at all**, not even a null one. The
-handler-produced errors carry `code`. So the shared `ERROR_FIELDS` descriptor does
-**not** apply to a 401.
+**It is the ordinary error body**, and an earlier revision of this section said it was
+not. `RestAuthenticationEntryPoint` writes the JSON by hand, but
+`GlobalExceptionHandler:62` serializes `ApiErrorResponse` with a null `code` that
+`@JsonInclude(NON_NULL)` drops — leaving the same four keys in the same order. The two
+are indistinguishable to a client. **No 401 in this API can carry a `code` either
+way**: `UnauthorizedException` declares only a message constructor and the handler
+calls the two-argument `build`.
 
-- **Verified by**: `RestAuthenticationEntryPoint:24-30` read in full;
-  `SecurityConfig:48` registers it.
+- **Verified by**: `RestAuthenticationEntryPoint:24-30`, `GlobalExceptionHandler:62`
+  and `UnauthorizedException` read in full. Caught in review, in three places at once
+  — this section, the guide prose and the test javadoc — where the last of the three
+  directly contradicted `RestAuthenticationEntryPoint`'s own javadoc.
 
 ## G. Prose drift — none, but the section is uneven
 
@@ -101,13 +123,19 @@ are. Not wrong, just inconsistent — left alone rather than widened into.
 - **F1** — the three tests stopped overriding the snippet defaults. All four
   endpoints now emit eight snippets and render a curl and an httpie example, matching
   the rest of the guide.
+- **F1, repo-wide** — the `withDefaults` call is gone from all 18 classes, not just
+  the three this context owns. All 159 operations now publish a curl and an httpie
+  example; the count without one is zero.
 - **F2** — the 401 is documented **once, for the whole API**, as
   `authentication/unauthorized` under a new *Without a Token* heading in the
   Authentication section. It is published from the currencies test because that is
   the simplest surface — no path variables, no tenant, no roles — but the refusal
   happens in the filter chain before any controller, so it is every endpoint's 401.
-  The section says outright that this body is not the `@ControllerAdvice` one and has
-  no `code`.
+  It documents itself with the shared descriptor, which makes it the worked example
+  the remaining passes copy.
+- **The error descriptor moved to one place**: `ApiErrorSnippets.errorFields()` in
+  `shared/web/docs`. It was a private constant inside the contact test that two
+  contexts had already begun reaching for.
 
 **A per-endpoint error and an API-wide one are documented differently.** `contact`'s
 403 belongs to its endpoint because the rule that produces it is that endpoint's.
@@ -370,26 +398,37 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 19 body-returning operations with no field table
+## The 22 body-returning operations with no field table
 
-Repo-wide, for the passes that follow. Measured **after** F1, which removed
-`audit-log/get` from this list. Matches MAP's Debt entry.
+Repo-wide, for the passes that follow. **MAP's Debt entry says 19 and is an
+undercount** — it needs correcting to 22.
 
-`audiences/get` · `audience-translations/get` · `audience-translations/list` ·
-`experience-metafield-translations/get` ·
-`experience-metafield-translations/list-locales` · `metafield-definitions/get` ·
-`metaobject-field-translations/get` · `metaobject-field-translations/list-locales` ·
-`page-metafield-translations/get` · `page-metafield-translations/list-locales` ·
-`page-translations/get` · `pickup-locations/get` · `pickup-locations/list` ·
-`slots/cancel` · `slots/get` · `slots/list` · `slots/update` ·
-`tour-operator-metafield-translations/get` ·
+**The old scan was blind to exactly the set F1 found.** Its method is: for every
+`response-body.adoc`, strip the fences, check the body is non-empty, then test for a
+sibling `response-fields.adoc`. The 61 operations restricted by `withDefaults` emitted
+no `response-body.adoc` at all, so the scan never saw them. Removing that call
+repo-wide made three more visible: `experiences/get`, `experiences/translations/get`
+and `experiences/translations/list`. The two defects were one defect.
+
+`audiences/get` · `audience-translations/get` · 
+`audience-translations/list` · `experience-metafield-translations/get` · 
+`experience-metafield-translations/list-locales` · `experiences/get` · 
+`experiences/translations/get` · `experiences/translations/list` · 
+`metafield-definitions/get` · `metaobject-field-translations/get` · 
+`metaobject-field-translations/list-locales` · 
+`page-metafield-translations/get` · 
+`page-metafield-translations/list-locales` · `page-translations/get` · 
+`pickup-locations/get` · `pickup-locations/list` · `slots/cancel` · 
+`slots/get` · `slots/list` · `slots/update` · 
+`tour-operator-metafield-translations/get` · 
 `tour-operator-metafield-translations/list-locales`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
-checking the body is non-empty, then testing for a sibling `response-fields.adoc`. Two
-corrections on the way to this number: a first pass returned 71 by counting 204s with
-empty bodies, and the 20 reported mid-audit included `audit-log/get`, which this same
-PR fixed.
+checking the body is non-empty, then testing for a sibling `response-fields.adoc` —
+re-run after the repo-wide `withDefaults` removal, without which it cannot see 61 of
+the 159 operations. Three corrections on the way to this number: a first pass returned
+71 by counting 204s with empty bodies; 20 included `audit-log/get`, fixed in the same
+PR; and 19 was blind to the restricted set.
 
 ---
 

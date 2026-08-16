@@ -53,8 +53,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.partWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParts;
-import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
-import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -87,9 +85,7 @@ class MediaControllerDocumentationTest {
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(prettyPrint())
-                        .and()
-                        .snippets().withDefaults(httpRequest(), httpResponse()))
+                        .withResponseDefaults(prettyPrint()))
                 .apply(springSecurity())
                 .build();
         when(mediaUrlResolver.toUrl(anyString()))

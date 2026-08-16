@@ -41,8 +41,6 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
-import static org.springframework.restdocs.http.HttpDocumentation.httpRequest;
-import static org.springframework.restdocs.http.HttpDocumentation.httpResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
@@ -74,9 +72,7 @@ class TeamMemberControllerDocumentationTest {
                 .apply(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(prettyPrint())
-                        .and()
-                        .snippets().withDefaults(httpRequest(), httpResponse()))
+                        .withResponseDefaults(prettyPrint()))
                 .apply(springSecurity())
                 .build();
     }

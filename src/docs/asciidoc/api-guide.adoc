@@ -145,9 +145,9 @@ role each action needs (member / ADMIN+ / OWNER) is noted per endpoint.
 ==== Without a Token
 
 Every authenticated endpoint answers the same way, because the refusal happens in
-the security filter chain before any controller runs. **This body is not the one
-`@ControllerAdvice` produces** — it is written by the entry point itself and has no
-`code` field at all. The message never says which part of the credential failed.
+the security filter chain before any controller runs. It is the ordinary error body,
+and **no 401 in this API carries a `code`** — whichever layer produced it. The
+message never says which part of the credential failed.
 
 operation::authentication/unauthorized[]
 
