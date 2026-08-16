@@ -28,11 +28,17 @@ Verified 2026-08-16, so you do not have to rediscover it:
 - **There is exactly one Asciidoctor source: `src/docs/asciidoc/api-guide.adoc`**,
   about 1,400 lines. It renders to `target/generated-docs/api-guide.html` and is then
   copied into `static/docs`, so the packaged app serves it at `/docs/api-guide.html`.
-- **The guide uses `operation::`, not `include::`.** There are 154 `operation::`
+- **The guide uses `operation::`, not `include::`.** There are **155** `operation::`
   macros and **zero** `include::` directives. The generic form of this audit tells you
   to inventory `include::` lines; here that returns nothing and means nothing. An
   `operation::name[]` macro pulls in every snippet under
   `target/generated-snippets/name/` at once.
+- **An operation is not an endpoint, and the two counts have already diverged.** The
+  `audit` pass documented a 404 as a second operation on an existing endpoint
+  (`audit-log/get-not-found`), so there are 155 operations against 154 endpoints. Any
+  reconciliation that equates the two numbers is off by one, and by more as further
+  error responses get documented. **Count the macros against the snippet directories,
+  which do stay 1:1, and count endpoints separately from the controllers.**
 - **`target/` is gitignored, so snippets are not in version control.** That half of
   the stale-artifact question is already answered. Do not report it.
 
@@ -42,8 +48,10 @@ Verified 2026-08-16, so you do not have to rediscover it:
   open. Do not present any of it as a discovery.
 - `CLAUDE.md` for the auth model and the test traps, `PATTERNS.md` §4a, §4b and §9
   for the response and documentation-test conventions.
-- The previous `API-DOCS-AUDIT.md` if one exists. It is deleted once its findings
-  ship, so its absence means the last pass is closed, not that none ran.
+- The current `API-DOCS-AUDIT.md`. **One rolling report covers the whole series**: each
+  pass replaces it and its header names the contexts done so far. Since findings are
+  now fixed in the same pass that finds them, a report describing fixed findings is
+  the normal state, not a stale one. It is deleted when the last context is done.
 
 ## What is already enforced, and what it cannot see
 
@@ -178,7 +186,8 @@ Every finding comes from something you ran or read. This is LAW §4 and it is ab
 - **A list endpoint declares no `@RequestParam`.** That is `ListQueryParser`'s design.
 - **Reference and ui-language lists return plain arrays.** Curated and bounded,
   exempt from §4b by decision.
-- **The 19 body-returning endpoints with no field table.** Already in MAP's Debt.
+- **The 19 body-returning endpoints with no field table.** Already in MAP's Debt, and
+  listed by name in the current report.
 
 ## Output
 
@@ -189,13 +198,14 @@ A table of every endpoint in the context:
 Then the lettered findings. Then **the gaps to close first, ordered by how likely a
 consumer of this API is to be misled** — not by how easy they are to fix.
 
-Write it to **`API-DOCS-AUDIT.md`**, replacing whatever is there. Note in the header
-which context this pass covered and which passes came before it.
+Write it to **`API-DOCS-AUDIT.md`**, replacing whatever is there. The header names the
+context this pass covered and every pass before it, so the file always says how far the
+series has got.
 
 **The report is tracked.** Commit it on the branch that produces it, staging explicit
-paths — `git add -- API-DOCS-AUDIT.md src …`, **never `git add -A`**. Delete it once
-its findings have shipped: a report describing fixed defects is a doc that contradicts
-the code. Anything durable belongs in `../MAP.md`, not in the report.
+paths — `git add -- API-DOCS-AUDIT.md src …`, **never `git add -A`**. **Delete it when
+the last context is done**, not per pass. Anything that outlives the series belongs in
+`../MAP.md`, not in the report.
 
 ## How the report must read
 

@@ -104,9 +104,10 @@ The list endpoint, which returns the same record, documents all fifteen paths.
   `target/generated-docs/api-guide.html` at `resources-audit-get` → no `<table>` in
   the section.
 
-**This one is known, and MAP's count is nearly right.** MAP's Debt entry says 19
-body-returning endpoints document no field table. Measured on a clean build: **20**.
-The full list is at the foot of this report. `audit-log/get` is one of them.
+**This one is known.** MAP's Debt entry says 19 body-returning endpoints document no
+field table. At audit time it was **20**, because `audit-log/get` was one of them.
+F1 fixed that one, so the count is **19** again and MAP is correct as of this commit.
+The full list is at the foot of this report.
 
 **F2. The 404 is tested and not documented.** `getUnknownIs404` asserts
 `status().isNotFound()` and never calls `document(...)`, so the snippet is never
@@ -171,12 +172,13 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 20 body-returning operations with no field table
+## The 19 body-returning operations with no field table
 
-Repo-wide, for the passes that follow. MAP's Debt says 19.
+Repo-wide, for the passes that follow. Measured **after** F1, which removed
+`audit-log/get` from this list. Matches MAP's Debt entry.
 
 `audiences/get` · `audience-translations/get` · `audience-translations/list` ·
-`audit-log/get` · `experience-metafield-translations/get` ·
+`experience-metafield-translations/get` ·
 `experience-metafield-translations/list-locales` · `metafield-definitions/get` ·
 `metaobject-field-translations/get` · `metaobject-field-translations/list-locales` ·
 `page-metafield-translations/get` · `page-metafield-translations/list-locales` ·
@@ -186,9 +188,10 @@ Repo-wide, for the passes that follow. MAP's Debt says 19.
 `tour-operator-metafield-translations/list-locales`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
-checking the body is non-empty, then testing for a sibling `response-fields.adoc`. A
-first pass returned 71 by counting 204s with empty bodies; that number was wrong and
-is corrected here.
+checking the body is non-empty, then testing for a sibling `response-fields.adoc`. Two
+corrections on the way to this number: a first pass returned 71 by counting 204s with
+empty bodies, and the 20 reported mid-audit included `audit-log/get`, which this same
+PR fixed.
 
 ---
 
@@ -201,6 +204,11 @@ rather than only in the snippets.
   word for word, since it is the same record one level up.
 - **F2** — the 404 is documented as `audit-log/get-not-found`, with a guide section
   saying that a missing entry and another operator's entry answer identically.
+  **It is not the non-member 404**, and an earlier revision of this report claimed it
+  was. A non-member is stopped by `TourOperatorMembershipInterceptor` and gets
+  `"Tour operator not found"`; this snippet comes from the use case and says
+  `"Audit log entry not found"`. `message` is a documented field, so the two are
+  distinguishable. Caught in review.
 - **F3** — `pathParameters` on all three operations.
 
 **Two things the fix taught, both worth carrying into the next pass.**
@@ -216,8 +224,10 @@ failed with *"Cannot determine the type of the field 'code' as it is not present
 the payload"*. It needs `.type(JsonFieldType.STRING)` as well. Every error response
 documented from here on will hit this.
 
-**`audit-log/get-not-found` is the first documented non-2xx in the guide.** Every one
-of the other 154 operations documents only its happy path, while roughly 60 error
+**`audit-log/get-not-found` is the first documented non-2xx in the guide, and it makes
+operations outnumber endpoints.** There are now 155 operations against 154 endpoints,
+so any later pass that equates the two counts is off by one. Every one of the other 154
+operations documents only its happy path, while roughly 60 error
 assertions sit in the suite untested by any reader. Whether to spread this to the
 other contexts is a decision, not a mechanical follow-up — it is cheap per endpoint
 and it is 154 endpoints.

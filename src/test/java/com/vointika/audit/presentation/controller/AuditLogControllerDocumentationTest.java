@@ -168,8 +168,16 @@ class AuditLogControllerDocumentationTest {
      * the suite are tested and invisible to a reader. This one publishes the
      * error shape rather than leaving a client to discover it in production.
      *
-     * <p>The 404 is deliberately the same answer a non-member gets, so this
-     * snippet doubles as the tenant-isolation example.
+     * <p><b>This is not the non-member 404.</b> A non-member is rejected by
+     * {@code TourOperatorMembershipInterceptor} before the controller runs and
+     * gets {@code "Tour operator not found"}; this one comes from the use case
+     * and says {@code "Audit log entry not found"}. Status and shape match, but
+     * {@code message} differs and {@code message} is documented, so a caller can
+     * tell them apart.
+     *
+     * <p>What this snippet <em>does</em> cover is the pair that really is
+     * indistinguishable: the lookup is {@code findByIdAndTourOperatorId}, so
+     * another operator's entry answers exactly as a missing one does.
      */
     @Test
     void getUnknownIs404() throws Exception {
