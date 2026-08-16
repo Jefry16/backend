@@ -17,6 +17,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.shared.exception.ResourceNotFoundException;
+import org.springframework.restdocs.payload.FieldDescriptor;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -28,6 +32,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -36,6 +41,8 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -96,10 +103,11 @@ class ContactMessageControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].context").value("contact-messages"))
                 .andDo(document("contact-messages/list",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
-                                fieldWithPath("data[].id").description("The message id"),
-                                fieldWithPath("data[].context").description("\"contact-messages\""),
+                                fieldWithPath("data[].id").description("The message id — UUIDv7, so descending id is newest-first"),
+                                fieldWithPath("data[].context").description("The entity's collection: \"contact-messages\""),
                                 fieldWithPath("data[].name").description("Who wrote the message. Always present"),
                                 fieldWithPath("data[].email").description("The sender's reply address"),
                                 fieldWithPath("data[].summary").description("One-line subject"),
@@ -118,10 +126,13 @@ class ContactMessageControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("laura@example.com"))
                 .andDo(document("contact-messages/get",
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("messageId").description("The message id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
-                                fieldWithPath("id").description("The message id"),
-                                fieldWithPath("context").description("\"contact-messages\""),
+                                fieldWithPath("id").description("The message id — UUIDv7, so descending id is newest-first"),
+                                fieldWithPath("context").description("The entity's collection: \"contact-messages\""),
                                 fieldWithPath("name").description("Who wrote the message. Always present"),
                                 fieldWithPath("email").description("The sender's reply address"),
                                 fieldWithPath("summary").description("One-line subject"),
@@ -138,6 +149,69 @@ class ContactMessageControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("contact-messages/delete",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("messageId").description("The message id"))));
     }
+
+    /**
+     * The error half of this endpoint. A message id that does not exist and one
+     * belonging to another operator answer identically — the lookup is scoped to
+     * the operator, so the two are indistinguishable on purpose.
+     */
+    @Test
+    void getUnknownIs404() throws Exception {
+        authenticated();
+        when(getUseCase.execute(any(), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Contact message not found"));
+
+        mockMvc.perform(get("/api/tour-operators/{id}/contact-messages/{messageId}", OP, MSG)
+                        .header("Authorization", BEARER))
+                .andExpect(status().isNotFound())
+                .andDo(document("contact-messages/get-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("messageId").description("A message id that does not exist, or belongs to another operator")),
+                        responseFields(ERROR_FIELDS)));
+    }
+
+    /**
+     * <b>The one a STAFF integrator actually hits.</b> Reading the inbox is open to
+     * any member and deleting is ADMIN+, so a STAFF caller can list a message and
+     * then be refused when deleting it. Nothing in the guide said so in a form a
+     * client could read.
+     */
+    @Test
+    void deleteAsStaffIs403() throws Exception {
+        authenticated();
+        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+                .when(deleteUseCase).execute(any(), any(), any());
+
+        mockMvc.perform(delete("/api/tour-operators/{id}/contact-messages/{messageId}", OP, MSG)
+                        .header("Authorization", BEARER))
+                .andExpect(status().isForbidden())
+                .andDo(document("contact-messages/delete-forbidden",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("messageId").description("The message id")),
+                        responseFields(ERROR_FIELDS)));
+    }
+
+    /**
+     * The application's one error shape, from {@code ApiErrorResponse}. {@code code}
+     * is {@code @JsonInclude(NON_NULL)} and these throw sites supply none, so it is
+     * absent from the payload — which needs an explicit type as well as
+     * {@code optional()}, or REST Docs cannot infer one and fails the build.
+     */
+    private static final FieldDescriptor[] ERROR_FIELDS = {
+            fieldWithPath("status").description("The HTTP status code"),
+            fieldWithPath("error").description("The status reason phrase"),
+            fieldWithPath("message").description("Human-readable detail"),
+            fieldWithPath("code").type(JsonFieldType.STRING)
+                    .description("Machine-readable error code; absent when the throw site supplied none — as here").optional(),
+            fieldWithPath("timestamp").description("When the error was produced")
+    };
 }

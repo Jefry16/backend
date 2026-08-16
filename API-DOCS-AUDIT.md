@@ -1,19 +1,104 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit` (2026-08-16).** Eleven to go; `storefront` is last.
+**Contexts done: `audit`, `contact` (2026-08-16).** Ten to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
-**Sections A–H below are what the audit found, before anything was changed.** The
-audit pass itself changes nothing — that is the playbook's rule. The fixes came after
-it, in the same PR, and they are listed under "What was fixed" at the foot. Read the
-two together: the findings say what was wrong, and that section says what is true now.
+**One section per context, newest first.** Within each, findings A–H are what the
+audit found *before* anything changed — the audit pass itself changes nothing, which
+is the playbook's rule — and "What was fixed" says what is true now. Read the two
+together.
 
-**All three of this pass's findings are fixed.**
+**Every finding raised so far is fixed.**
 
-Two categories came back empty repo-wide, which is the useful result for the eleven
-contexts still to come.
+Three results hold repo-wide and save every later pass the work:
+
+- **No `relaxed*` documentation exists anywhere**, so finding E is closed for all
+  contexts. The strict field check is live on every documented response.
+- **Every `operation::` macro resolves and every snippet directory is pulled in**, so
+  B, C and D are clean unless a pass breaks them.
+- **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
+  no `path` field, and it is `code`, not `errorCode`. `code` is
+  `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
+  `.type(JsonFieldType.STRING)` as well as `.optional()`, or REST Docs cannot infer a
+  type and fails the build. Copy `ERROR_FIELDS` from
+  `ContactMessageControllerDocumentationTest`.
 
 ---
+
+# `contact` — 2026-08-16
+
+Three endpoints, all three documented, **no findings in A through E**. The whole gap
+was errors: not one of the three published anything but its happy path.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| GET | `/api/tour-operators/{tourOperatorId}/contact-messages` | yes | `contact-messages/list` | line 1362 | strict | documented |
+| GET | `…/contact-messages/{messageId}` | yes | `contact-messages/get` | line 1369 | strict | documented |
+| DELETE | `…/contact-messages/{messageId}` | yes | `contact-messages/delete` | line 1377 | strict | documented |
+
+**A–E: none.** Three mappings, three documenting tests, three snippet directories,
+three `operation::` lines. `contact-messages/delete` has no `response-fields.adoc`
+and that is correct, not a gap — it answers 204 with no body.
+
+- **Verified by**: `ls target/generated-snippets/contact-messages/` → `delete`, `get`,
+  `list`. `grep -n "operation::contact" src/docs/asciidoc/api-guide.adoc` → 1362,
+  1369, 1377. `grep -rln "contact-messages\|ContactMessageController" src/test/java`
+  → `ContactMessageControllerDocumentationTest`.
+
+## F. Partial coverage — the whole finding
+
+**F1. A STAFF caller can read a message and be refused when deleting it, and nothing
+said so.** Reads are any-member; delete is ADMIN+ through `ensureAdmin`. A STAFF
+member therefore lists the inbox, opens a message, and gets **403** with
+`"This action requires ADMIN privileges"` on delete. That path was neither tested nor
+documented.
+
+- **Severity**: medium, and the highest-value finding in this context. It is a
+  permission boundary *inside* one resource, so a client that tested with an ADMIN
+  token will not discover it until a STAFF user does, in production.
+- **Verified by**: `TourOperatorMembershipPolicy:48-55` throws
+  `ForbiddenException`; `GlobalExceptionHandler:70-73` maps it to 403. No 403
+  assertion existed anywhere in `ContactMessageControllerDocumentationTest`.
+
+**F2. Neither read documented its 404.** Unknown message, and another operator's
+message, both answer 404 — the lookup is operator-scoped.
+
+**F3. No `pathParameters` on any of the three.**
+
+## G. Prose drift — none
+
+The guide's filter and sort list matches `ListContactMessagesUseCase.SCHEMA` exactly
+(`name`, `email`, `summary`, `createdAt`; sort `id` or `createdAt`). Its note that the
+storefront intake does not exist yet is still true.
+
+## H. Description quality — two, both fixed
+
+`id` was described as "The message id" and `context` as `"contact-messages"` — the
+first restates the name, the second restates the value. Both now say something the
+field name does not.
+
+## What was fixed
+
+Suite **1227 → 1229**. Two new tests, both documented, both rendering in the guide.
+
+- **F1** — `contact-messages/delete-forbidden` publishes the 403, under a guide
+  heading that states the split: any member reads, ADMIN+ deletes.
+- **F2** — `contact-messages/get-not-found` publishes the 404.
+- **F3** — `pathParameters` on all five operations.
+- **H** — both weak descriptions rewritten.
+
+The error field list is now a shared `ERROR_FIELDS` constant in the test, carrying the
+`.type(JsonFieldType.STRING).optional()` that an absent `code` needs. That is the
+shape to copy into the next ten contexts.
+
+**Operations are now 157 against 154 endpoints.** Three of the 157 are error responses
+on endpoints that already had a happy path.
+
+---
+
+# `audit` — 2026-08-16
 
 ## Baseline
 

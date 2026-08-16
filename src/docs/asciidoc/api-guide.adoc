@@ -1364,9 +1364,18 @@ operation::contact-messages/list[]
 [[resources-contact-get]]
 ==== Get a Contact Message
 
-Any member.
+Any member; non-member → 404.
 
 operation::contact-messages/get[]
+
+[[resources-contact-get-not-found]]
+==== Get a Contact Message — Not Found
+
+A message id that does not exist and one belonging to another operator answer
+identically. The lookup is scoped to the operator, so the two cannot be told
+apart — which is the point.
+
+operation::contact-messages/get-not-found[]
 
 [[resources-contact-delete]]
 ==== Delete a Contact Message
@@ -1375,6 +1384,15 @@ ADMIN+ only. Audited with the summary only — the sender's email never enters t
 trail.
 
 operation::contact-messages/delete[]
+
+[[resources-contact-delete-forbidden]]
+==== Delete a Contact Message — Forbidden
+
+**Reading the inbox and deleting from it have different bars.** Any member can
+list and read a message; only ADMIN+ can delete one. So a STAFF caller can see a
+message and be refused when deleting it, and this is the answer they get.
+
+operation::contact-messages/delete-forbidden[]
 
 === Audit Log
 
