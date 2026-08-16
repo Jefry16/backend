@@ -330,11 +330,11 @@ The list endpoint, which returns the same record, documents all fifteen paths.
   `target/generated-docs/api-guide.html` at `resources-audit-get` → no `<table>` in
   the section.
 
-**This one is known.** MAP's Debt entry says 19 body-returning endpoints document no
-field table. At audit time it was **20**, because `audit-log/get` was one of them.
-F1 fixed that one, which took it off the list. For the current number and the full
-list, see the heading at the foot of this report — it has moved twice since and
-should be read there rather than here.
+**This one is known.** MAP's Debt entry said 19 body-returning endpoints document no
+field table at the time of this pass. This pass measured **20**, because
+`audit-log/get` was one of them, and F1 took it off the list. For the current number
+and the full list, see the heading at the foot of this report — it has moved twice
+since and should be read there rather than here.
 
 **F2. The 404 is tested and not documented.** `getUnknownIs404` asserts
 `status().isNotFound()` and never calls `document(...)`, so the snippet is never
