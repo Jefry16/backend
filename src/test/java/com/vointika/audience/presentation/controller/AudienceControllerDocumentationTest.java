@@ -241,7 +241,7 @@ class AudienceControllerDocumentationTest {
     void nonMemberGets404() throws Exception {
         authenticatedAsStaff();
         doThrow(new ResourceNotFoundException("not found"))
-                .when(membershipCheck).ensureMember(any(), eq(UUID.fromString(OP)));
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", STAFF_BEARER))
                 .andExpect(status().isNotFound())

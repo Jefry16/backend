@@ -250,7 +250,7 @@ class PickupLocationControllerDocumentationTest {
     void nonMemberGets404() throws Exception {
         authenticatedAsStaff();
         doThrow(new ResourceNotFoundException("not found"))
-                .when(membershipCheck).ensureMember(any(), any());
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", STAFF_BEARER))
                 .andExpect(status().isNotFound())

@@ -104,11 +104,11 @@ class MediaControllerDocumentationTest {
      */
     private static final String STAFF_TOKEN = "staff-access-token";
     private static final String STAFF_BEARER = "Bearer " + STAFF_TOKEN;
+    private static final String STAFF_USER = "550e8400-e29b-41d4-a716-4466554400ff";
 
     private void authenticatedAsStaff() {
         when(accessTokenValidator.isValid(STAFF_TOKEN)).thenReturn(true);
-        when(accessTokenValidator.extractUserId(STAFF_TOKEN))
-                .thenReturn("550e8400-e29b-41d4-a716-4466554400ff");
+        when(accessTokenValidator.extractUserId(STAFF_TOKEN)).thenReturn(STAFF_USER);
     }
 
     private void authenticated() {
@@ -261,7 +261,7 @@ class MediaControllerDocumentationTest {
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticatedAsStaff();
         doThrow(new com.vointika.shared.exception.ResourceNotFoundException("Tour operator not found"))
-                .when(membershipCheck).ensureMember(any(), eq(UUID.fromString(OPERATOR_ID)));
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OPERATOR_ID)));
 
         mockMvc.perform(get("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .header("Authorization", STAFF_BEARER))

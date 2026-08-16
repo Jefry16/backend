@@ -625,10 +625,10 @@ operation::media/upload-forbidden[]
 [[resources-media-upload-unsupported-type]]
 ==== Upload Media — Unsupported Type
 
-The allowlist is exactly four types. **`image/*` is not the rule** — `image/gif`
-and `image/svg+xml` are both refused, SVG deliberately, because an SVG can carry
-script and these files are served from a public bucket. Video is deferred until
-something consumes it.
+**`image/*` is not the rule.** `image/gif` and `image/svg+xml` both match it and
+are both refused — SVG deliberately, because an SVG can carry script and these
+files are served from a public bucket. Video is deferred until something consumes
+it.
 
 operation::media/upload-unsupported-type[]
 

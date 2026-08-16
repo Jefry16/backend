@@ -47,17 +47,25 @@ These results hold repo-wide and save every later pass the work:
   locale the operator does not publish is a `200` with nulls, or an idempotent `204`,
   never a 422. Reserve the 422 wording for the upsert.
 - **A published error example must differ from the success it contrasts with**, and
-  `PublishedExamplesAreHonestTest` now fails the build when it does not. Vary the
-  thing the error turns on: a missing id for a 404, a **STAFF token** for a 403 (that
-  error is about who asks, so the URL has to stay the same), the clashing value for a
-  409. The guard found **10 instances across five contexts** the first time it ran,
-  including two this series had already fixed by hand in one context and then
-  reproduced in four others.
+  `PublishedExamplesAreHonestTest` fails the build when it does not. Vary the thing
+  the error turns on: a missing id for a 404, a **STAFF token** for a 403 (that error
+  is about who asks, so the URL has to stay the same), the clashing value for a 409.
+  It found **10 instances across five contexts** on its first run, including two this
+  series had already fixed by hand in one context and then reproduced in four others.
+  It finds an error **by its status line, not by its name** — an earlier version
+  matched a hand-kept list of name fragments, which is the same restatement it exists
+  to remove, and would have missed the next section called `-gone` or `-too-many`.
 - **Do not restate a constant from `src/main` in a description or a stubbed error.**
   A doc test that hand-copies an allowlist or a message keeps publishing the old one
   after the source changes, and the suite stays green because the test stubs the very
   code it copied from. Build the sentence from the source
   (`ContentType.ALLOWED`, `UploadMediaUseCase.MAX_BYTES`) or raise the real exception.
+  **Generating the table is only half of it** — the guide's hand-written prose
+  describes the same facts, and that half needs its own guard:
+  `ApiGuideNamesTheRealAllowlistTest` pins the upload prose against the allowlist both
+  ways, because a type the code allows and the guide omits is an undocumented
+  capability, and one the guide names and the code refuses is a promise the API
+  breaks.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
