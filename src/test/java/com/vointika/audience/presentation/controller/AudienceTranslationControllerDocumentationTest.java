@@ -8,6 +8,7 @@ import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
@@ -34,6 +35,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -95,7 +103,12 @@ class AudienceTranslationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].locale").value("es"))
                 .andExpect(jsonPath("$[0].name").value("Adultos"))
-                .andDo(document("audience-translations/list"));
+                .andDo(document("audience-translations/list",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id")),
+                        responseFields(
+                                fieldWithPath("[].locale").description("The content locale this row translates into"),
+                                fieldWithPath("[].name").description("The translated tier name; null where the canonical value still serves").optional())));
     }
 
     @Test
@@ -106,7 +119,12 @@ class AudienceTranslationControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.locale").value("es"))
-                .andDo(document("audience-translations/get"));
+                .andDo(document("audience-translations/get",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422")),
+                        responseFields(
+                                fieldWithPath("locale").description("The content locale this row translates into"),
+                                fieldWithPath("name").description("The translated tier name; null where the canonical value still serves").optional())));
     }
 
     @Test
@@ -116,7 +134,13 @@ class AudienceTranslationControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNoContent())
-                .andDo(document("audience-translations/upsert"));
+                .andDo(document("audience-translations/upsert",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422")),
+                        // A blank name deletes the overlay rather than storing one —
+                        // an empty row and no row mean the same thing to a reader.
+                        requestFields(
+                                fieldWithPath("name").description("The translated tier name; blank or null clears the overlay for this locale").optional())));
     }
 
     @Test
@@ -125,7 +149,9 @@ class AudienceTranslationControllerDocumentationTest {
         mockMvc.perform(delete("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
-                .andDo(document("audience-translations/delete"));
+                .andDo(document("audience-translations/delete",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422"))));
     }
 
     @Test
@@ -143,7 +169,11 @@ class AudienceTranslationControllerDocumentationTest {
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andDo(document("audience-translations/upsert-forbidden",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -155,7 +185,11 @@ class AudienceTranslationControllerDocumentationTest {
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andDo(document("audience-translations/upsert-missing-body",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422")),
+                        responseFields(ApiErrorSnippets.errorFields())));
 
         verifyNoInteractions(upsertUseCase);
     }
@@ -168,6 +202,10 @@ class AudienceTranslationControllerDocumentationTest {
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "fr")
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("audience-translations/upsert-unsupported-locale",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id"), parameterWithName("locale").description("A content locale the operator supports — one it does not is a 422")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

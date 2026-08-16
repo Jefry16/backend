@@ -11,6 +11,7 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.web.list.ListQueryParser;
@@ -112,6 +113,7 @@ class AudienceControllerDocumentationTest {
                 .andExpect(header().exists("Location"))
                 .andDo(document("audiences/create",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestFields(
                                 fieldWithPath("name").description("Tier name (1–80, unique per operator)"),
                                 fieldWithPath("paxPerUnit").description("People per unit (positive; defaults to 1)").optional())));
@@ -129,6 +131,7 @@ class AudienceControllerDocumentationTest {
                 .andExpect(jsonPath("$.data[0].context").value("audiences"))
                 .andDo(document("audiences/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The audience id"),
                                 fieldWithPath("data[].context").description("The entity's collection: \"audiences\""),
@@ -149,9 +152,13 @@ class AudienceControllerDocumentationTest {
                 .andExpect(jsonPath("$.context").value("audiences"))
                 .andDo(document("audiences/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
-                        pathParameters(
-                                parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("audienceId").description("The audience id"))));
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("audienceId").description("The audience id")),
+                        responseFields(
+                                fieldWithPath("id").description("The audience id"),
+                                fieldWithPath("context").description("The entity's collection: \"audiences\""),
+                                fieldWithPath("name").description("Tier name"),
+                                fieldWithPath("paxPerUnit").description("People per unit"),
+                                fieldWithPath("createdAt").description("When created"))));
     }
 
     @Test
@@ -187,7 +194,11 @@ class AudienceControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andDo(document("audiences/create-forbidden",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -198,7 +209,11 @@ class AudienceControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andDo(document("audiences/create-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -208,6 +223,10 @@ class AudienceControllerDocumentationTest {
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("audiences/list-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

@@ -810,6 +810,14 @@ and/or `createdAt`; sort by `createdAt` (default, newest first), `name`,
 
 operation::audiences/list[]
 
+[[resources-audiences-list-not-found]]
+==== List Audiences — Not a Member
+
+The tenant 404. Identical to the answer for an operator that does not exist, so
+it says nothing about whether the tenant is real.
+
+operation::audiences/list-not-found[]
+
 [[resources-audiences-get]]
 ==== Get an Audience
 
@@ -823,6 +831,21 @@ operation::audiences/get[]
 ADMIN+ only. The name is unique per operator, case-insensitively → 409.
 
 operation::audiences/create[]
+
+[[resources-audiences-create-forbidden]]
+==== Create an Audience — Forbidden
+
+A STAFF member may list and read audiences and may not create one. The
+membership check has passed, so this is 403 rather than the 404 above.
+
+operation::audiences/create-forbidden[]
+
+[[resources-audiences-create-conflict]]
+==== Create an Audience — Name Taken
+
+Unique per operator, compared case-insensitively. Update answers the same way.
+
+operation::audiences/create-conflict[]
 
 [[resources-audiences-update]]
 ==== Update an Audience
@@ -852,6 +875,32 @@ operation::audience-translations/get[]
 ADMIN+ only. Unsupported locale → 422.
 
 operation::audience-translations/upsert[]
+
+[[resources-audience-translations-upsert-forbidden]]
+==== Upsert an Audience Translation — Forbidden
+
+Reading translations is open to any member; writing one is ADMIN+.
+
+operation::audience-translations/upsert-forbidden[]
+
+[[resources-audience-translations-upsert-unsupported-locale]]
+==== Upsert an Audience Translation — Unsupported Locale
+
+The locale must be one the operator publishes in, from
+<<resources-operator-locales-get>>. Any other is a **422**, including a valid
+ISO code the operator has not enabled.
+
+operation::audience-translations/upsert-unsupported-locale[]
+
+[[resources-audience-translations-upsert-missing-body]]
+==== Upsert an Audience Translation — Missing Body
+
+**A 400, not a 422, and it comes from Spring MVC rather than the application.**
+The body is required, so a request without one is rejected before the handler
+runs — which is why no endpoint here validates for a null body. The response is
+still the standard error shape.
+
+operation::audience-translations/upsert-missing-body[]
 
 [[resources-audience-translations-delete]]
 ==== Delete an Audience Translation
