@@ -1,11 +1,14 @@
-# API-docs sync audit — `audit` — 2026-08-16
+# API-docs sync audit — the rolling report
 
-First pass of the per-context series. Investigation only; no code or docs changed.
+**Contexts done: `audit` (2026-08-16).** Eleven to go; `storefront` is last.
+Playbook: `API-DOCS-SYNC.md`.
 
-Playbook: `API-DOCS-SYNC.md`. Order: `audit` first, `storefront` last.
+**Sections A–H below are what the audit found, before anything was changed.** The
+audit pass itself changes nothing — that is the playbook's rule. The fixes came after
+it, in the same PR, and they are listed under "What was fixed" at the foot. Read the
+two together: the findings say what was wrong, and that section says what is true now.
 
-**All three findings are fixed** (see "What was fixed" at the foot). The audit below
-is the state it found, kept so the next pass can see what this one looked for.
+**All three of this pass's findings are fixed.**
 
 Two categories came back empty repo-wide, which is the useful result for the eleven
 contexts still to come.
@@ -235,5 +238,7 @@ and it is 154 endpoints.
 
 ---
 
-*This report is tracked, and is deleted once its findings ship. Anything durable
-belongs in `../MAP.md`.*
+*This report is tracked, and one rolling copy covers the whole series: each context's
+pass replaces it and adds itself to the header. **It is deleted when the last context
+is done**, not after each pass. Anything that outlives the series belongs in
+`../MAP.md`.*
