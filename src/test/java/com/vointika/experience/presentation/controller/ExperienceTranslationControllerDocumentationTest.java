@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -109,7 +111,15 @@ class ExperienceTranslationControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id"))));
+                                parameterWithName("experienceId").description("The experience id")),
+                        responseFields(
+                                fieldWithPath("[].locale").description("The content locale this row translates into"),
+                                fieldWithPath("[].name").description("Translated name; null where the canonical value serves").optional(),
+                                fieldWithPath("[].description").description("Translated short description; null where the canonical value serves").optional(),
+                                fieldWithPath("[].longDescription").description("Translated long description; null where the canonical value serves").optional(),
+                                fieldWithPath("[].handle").description("Localized handle; null where the canonical handle serves this locale").optional(),
+                                fieldWithPath("[].seoTitle").type(JsonFieldType.STRING).description("Translated SEO title").optional(),
+                                fieldWithPath("[].seoDescription").type(JsonFieldType.STRING).description("Translated SEO description").optional())));
     }
 
     @Test
@@ -132,7 +142,15 @@ class ExperienceTranslationControllerDocumentationTest {
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("experienceId").description("The experience id"),
-                                parameterWithName("locale").description("BCP-47 locale code"))));
+                                parameterWithName("locale").description("BCP-47 locale code")),
+                        responseFields(
+                                fieldWithPath("locale").description("The content locale this row translates into"),
+                                fieldWithPath("name").description("Translated name; null where the canonical value serves").optional(),
+                                fieldWithPath("description").description("Translated short description; null where the canonical value serves").optional(),
+                                fieldWithPath("longDescription").description("Translated long description; null where the canonical value serves").optional(),
+                                fieldWithPath("handle").description("Localized handle; null where the canonical handle serves this locale").optional(),
+                                fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("Translated SEO title").optional(),
+                                fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("Translated SEO description").optional())));
     }
 
     @Test

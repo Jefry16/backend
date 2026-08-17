@@ -848,6 +848,13 @@ groups the week rather than ordering time.
 
 operation::slots/list[]
 
+[[resources-slots-list-not-found]]
+==== List Slots — Not a Member
+
+The tenant 404, identical to the answer for an operator that does not exist.
+
+operation::slots/list-not-found[]
+
 [[resources-slots-get]]
 ==== Get a Slot
 
@@ -871,6 +878,23 @@ ADMIN+ only. Generates one slot per matching day in the window.
 
 operation::slots/create-recurring[]
 
+[[resources-slots-create-recurring-no-match]]
+==== Create Recurring Slots — Pattern Matches Nothing
+
+A pattern whose validity window contains none of its requested days would create
+zero departures, so it is refused rather than silently succeeding with nothing.
+Dates are Sunday-first `0`–`6`, must be today or later, and at most 24 months
+ahead.
+
+operation::slots/create-recurring-no-match[]
+
+[[resources-slots-create-forbidden]]
+==== Create Slots — Forbidden
+
+Any member may read the schedule; only ADMIN+ may add to it.
+
+operation::slots/create-forbidden[]
+
 [[resources-slots-update]]
 ==== Update a Slot
 
@@ -885,6 +909,15 @@ operation::slots/update[]
 ADMIN+ only.
 
 operation::slots/cancel[]
+
+[[resources-slots-cancel-conflict]]
+==== Cancel a Slot — Already Cancelled
+
+**CANCELLED is terminal.** A cancelled departure cannot be re-cancelled, edited or
+reopened — recreate it instead. That is also why the capacity PATCH refuses one:
+the guard is asked once, where the edit begins, so every write path inherits it.
+
+operation::slots/cancel-conflict[]
 
 === Audiences
 
