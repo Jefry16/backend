@@ -92,9 +92,17 @@ class ApiGuideNamesTheRealAllowlistTest {
      *
      * <p>There is no exclusion list, deliberately: those restatements were <b>reworded
      * to stop carrying a number</b> rather than exempted, because an exemption list is
-     * the hand-kept vocabulary these guards exist to remove. If a section needs to name
-     * a size that is not the cap, that is the moment to reconsider — not to add an
-     * entry here.
+     * the hand-kept vocabulary these guards exist to remove.
+     *
+     * <p><b>So this makes the guide unable to state any other size in MB, and there is
+     * one real case waiting.</b> The container's own ceiling is 30 MB
+     * ({@code spring.servlet.multipart.max-file-size}), and a request over it gets a
+     * clean {@code 413} rather than the application's 422 — pinned by
+     * {@code MultipartLimitsTest.anUploadOverTheContainerCeilingIsACleanPayloadTooLarge}.
+     * Nothing is blocked today, because the guide documents no {@code 413} at all.
+     * Whoever documents it will fail here. The answer then is to reword or to
+     * reconsider the assertion, <b>not</b> to add an exemption — the number would be a
+     * second published size, which is exactly what this catches.
      */
     private static final Pattern CAP_MB = Pattern.compile("(\\d+)\\s*MB");
 
