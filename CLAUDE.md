@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **MAP** | `../MAP.md` (same place) | The living state: what exists, what each context owns, what is decided, what is still open. The only artifact that crosses session boundaries. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
-| **API-DOCS-SYNC** | `API-DOCS-SYNC.md` (in repo) | The playbook for checking one context's API against the REST Docs guide. Invoke with a context name; `storefront` goes last. Its output is `API-DOCS-AUDIT.md`, which is tracked. |
+| **API-DOCS-SYNC** | `API-DOCS-SYNC.md` (in repo) | The playbook for checking one context's API against the REST Docs guide, for a context built from here on. The eleven-context series it was written for closed 2026-08-17 (`storefront` excluded by decision); what it settled is `PATTERNS.md` §9a. |
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
 
