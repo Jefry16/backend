@@ -73,6 +73,7 @@ class MetaobjectControllerDocumentationTest {
     private static final String ENTRY = "eeeeeeee-0000-4000-8000-000000000001";
     /** A DIFFERENT entry from {@link #ENTRY} — this 409 turns on which one is already live. */
     private static final String LIVE_ENTRY = "eeeeeeee-0000-4000-8000-0000000000ff";
+    private static final String DRAFT_ENTRY = "eeeeeeee-0000-4000-8000-0000000000fe";
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
@@ -256,6 +257,30 @@ class MetaobjectControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("metaobjectId").description(
                                         "An entry that is already published")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * <b>The mirror of {@code publishTwiceIs409}.</b> Both transitions are guarded
+     * by the same entity, four lines apart — {@code MetaobjectEntry:78} and
+     * {@code :86} — so documenting one and not the other tells a client the pair is
+     * asymmetric when it is not. Only publish had an assertion, and publishing only
+     * what was already asserted is how the gap survived the audit.
+     */
+    @Test
+    void unpublishingWhatIsNotLiveIs409() throws Exception {
+        authenticated();
+        Mockito.doThrow(new ConflictException("Metaobject is not published"))
+                .when(unpublishUseCase).execute(any(), any(), any());
+
+        mockMvc.perform(post("/api/tour-operators/{id}/metaobjects/{metaobjectId}/unpublish", OP, DRAFT_ENTRY)
+                        .header("Authorization", BEARER))
+                .andExpect(status().isConflict())
+                .andDo(document("metaobjects/unpublish-conflict",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("metaobjectId").description(
+                                        "An entry that is still a draft")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }

@@ -212,7 +212,9 @@ class TourOperatorMetafieldControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token")),
                         requestFields(fieldWithPath("value").description(
-                                "Ignored — the definition is looked up before the value is read")),
+                                "Still required — this is the ordinary request body. It is simply "
+                                        + "never read on this path, because the definition is looked "
+                                        + "up first")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }
 }

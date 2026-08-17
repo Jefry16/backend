@@ -315,6 +315,39 @@ published translatable list in **six** files, and the only failure is
 behavioural test whose job is to pin the rule. Same arrangement as the menu depth
 cap: the documentation derives, and one test still makes a human look.
 
+### Round — one real finding, and it was self-inflicted
+
+**`metaobjects/unpublish` raises the same 409 as publish, and this pass documented
+only publish.** Both transitions are guarded on the entry, four lines apart
+(`MetaobjectEntry:78` and `:86`). Publishing one and not the other tells a client
+the pair is asymmetric when it is not.
+
+The cause is worth naming, because it is a method error rather than an oversight:
+**this pass published the errors that already had assertions**, and only publish
+had one. "Teach the existing assertions to publish" is a cheap and effective
+heuristic — it is most of what the earlier contexts did — and its blind spot is
+exactly the half of a symmetric pair that nobody happened to test. Fixed with a new
+test and a guide section that states the symmetry outright.
+
+Also tightened: the three `upsert-not-found` tables described `value` as
+*"Ignored"*, which is the wording `touroperator`'s review flagged on
+`invitations/accept-conflict`. Here it was **accurate** — the definition really is
+looked up before the value is read — but it still invites a reader to drop a field
+that is required on the success path. They now say "still required… simply never
+read on this path".
+
+**What the round checked and found clean:** all ten request tables match their
+records component-for-component (the fixture-shaped defect from `experience` and
+`touroperator` is absent here); the three stubbed 409 messages match production
+verbatim; no unused imports across the ten test classes; every new helper has call
+sites; all nine new anchors render and no xref is unresolved.
+
+**Surfaced, not fixed — it is `src/main` and out of a documentation pass's scope:**
+`CreateMetafieldDefinitionUseCase` (`:85`, `:105`) and
+`CreateMetaobjectDefinitionUseCase` (`:93`, `:107`) each write their conflict
+message twice, once for the pre-check and once for the unique-index race. Two
+literals per message, and nothing keeps the pair in step.
+
 ---
 
 # `touroperator` — 2026-08-17

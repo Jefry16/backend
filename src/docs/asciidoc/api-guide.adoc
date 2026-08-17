@@ -1992,6 +1992,16 @@ state you did not intend.
 
 operation::metaobjects/publish-conflict[]
 
+[[resources-metaobjects-unpublish-conflict]]
+==== Unpublish a Metaobject Entry — Not Live
+
+409, and the exact mirror of the one above: unpublishing a draft is refused the
+same way republishing a live entry is. Both transitions are guarded on the entry
+itself, so treat the pair as symmetric — read the entry's state, or accept that
+either call may 409 and treat it as "already in that state".
+
+operation::metaobjects/unpublish-conflict[]
+
 [[resources-metaobjects-unpublish]]
 ==== Unpublish a Metaobject Entry
 
