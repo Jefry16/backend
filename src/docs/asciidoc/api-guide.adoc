@@ -1078,6 +1078,17 @@ ADMIN+ only.
 
 operation::pages/update[]
 
+[[resources-pages-update-incomplete]]
+==== Update a Page — Incomplete Body
+
+**This PATCH is a whole replace, and `title` and `body` are required on every
+call.** Sending only the field you changed — what the verb invites, and what
+`PATCH /pickup-locations/{id}` actually does — is a **422** here, not a partial
+update. The two endpoints differ on purpose and the field tables say which is
+which.
+
+operation::pages/update-incomplete[]
+
 [[resources-pages-rename]]
 ==== Rename a Page's Handle
 
@@ -1091,10 +1102,14 @@ operation::pages/rename[]
 
 **Two different handles collide here, and only one of them is visible to the
 operator.** The obvious case is another page's canonical handle. The second is a
-handle another page uses as a *localized* handle: a storefront address resolves
-against localized handles first and canonical ones second, so the two are one
-namespace, and taking a value from either would make the other page unreachable
-in that language. The message says which.
+handle another page uses as a *localized* handle.
+
+A storefront address resolves against **localized handles first**, canonical ones
+second, so the two are one namespace. If this rename were allowed, a request for
+that address in that language would keep matching the page that holds it as a
+localized handle — and **the page just renamed would have no address there at
+all**. The refusal protects the renamer, not the other page. The message says
+which collision it was.
 
 operation::pages/rename-conflict[]
 
@@ -1140,6 +1155,26 @@ ADMIN+ only. An explicit localized handle already in use → 409; omitted, one i
 derived from the title.
 
 operation::page-translations/upsert[]
+
+[[resources-page-translations-upsert-unsupported-locale]]
+==== Upsert a Page Translation — Unsupported Locale
+
+The locale must be one the operator publishes in. A valid BCP-47 code they have
+not enabled is still a **422**.
+
+operation::page-translations/upsert-unsupported-locale[]
+
+[[resources-page-translations-upsert-conflict]]
+==== Upsert a Page Translation — Handle Taken
+
+**The rename conflict pointing the other way, and the direction an operator
+actually exercises.** A localized handle equal to *another page's canonical*
+handle would shadow that page in this locale, because a storefront address
+resolves localized handles first. You set localized handles routinely and rename
+rarely, so this is the collision a client meets — and it names a page the
+operator was not editing.
+
+operation::page-translations/upsert-conflict[]
 
 [[resources-page-translations-delete]]
 ==== Delete a Page Translation

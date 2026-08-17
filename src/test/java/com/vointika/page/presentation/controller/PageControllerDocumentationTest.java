@@ -14,6 +14,7 @@ import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
+import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
@@ -205,8 +206,10 @@ class PageControllerDocumentationTest {
 
         mockMvc.perform(post("/api/tour-operators/{id}/pages", OP)
                         .header("Authorization", BEARER)
-                        // The published example sends the handle that is taken, not the
-                        // one that succeeds two sections above it.
+                        // Deliberately the SAME handle the create example sends. A
+                        // create-conflict is by definition the request that would
+                        // otherwise succeed, distinguished by server state and nothing
+                        // in the payload — see PublishedExamplesAreHonestTest's javadoc.
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"About Us\",\"handle\":\"about-us\",\"body\":\"<p>Taken.</p>\"}"))
                 .andExpect(status().isConflict())
@@ -229,8 +232,11 @@ class PageControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         requestFields(
-                                fieldWithPath("title").description("Display title (whole replace)"),
-                                fieldWithPath("body").description("Raw HTML content (whole replace)"),
+                                // Despite the verb, this is not a partial update:
+                                // UpdatePageUseCase builds both value objects
+                                // unconditionally and they reject null.
+                                fieldWithPath("title").description("Display title. **Required on every call** — this PATCH replaces the whole page, so omitting it is a 422, not a no-change"),
+                                fieldWithPath("body").description("Raw HTML content. **Required on every call**, as above"),
                                 fieldWithPath("seoTitle").type("String").description("SEO title; null/blank clears").optional(),
                                 fieldWithPath("seoDescription").type("String").description("SEO description; null/blank clears").optional())));
     }
@@ -325,6 +331,34 @@ class PageControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         requestFields(fieldWithPath("handle").description(
                                 "The new handle. A 409 covers both namespaces: another page's canonical handle, or one it uses as a localized handle")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * <b>This PATCH is not partial, and the verb invites the opposite.</b>
+     * {@code UpdatePageUseCase} constructs {@code new PageTitle(input.title())} and
+     * {@code new PageBody(input.body())} unconditionally, and both reject null — so a
+     * client sending only the field it changed gets a 422, not a partial update.
+     *
+     * <p>Worth publishing because this series taught the other convention two contexts
+     * earlier: {@code pickup-locations/update} is a PATCH whose fields say "Omit to
+     * keep the current value". Carrying that across lands here.
+     */
+    @Test
+    void updateWithoutEveryFieldIs422() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException("Page title cannot be blank"))
+                .when(updatePageUseCase).execute(any());
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"seoTitle\":\"Just the SEO title\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("pages/update-incomplete",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("pageId").description("The page id")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }
 

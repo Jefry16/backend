@@ -29,11 +29,14 @@ These results hold repo-wide and save every later pass the work:
   the call should not reappear. **No guard catches this** —
   `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
   what it renders, so fewer snippets is a green build and a thinner page.
-- **Type `nextCursor` explicitly: `.type(JsonFieldType.STRING)`.** A list test that
-  stubs the last page (`new CursorPage<>(rows, null)`) hands REST Docs a null, which
-  it types from the value — so the published table told readers the cursor's type is
-  **`Null`**, i.e. that the endpoint never paginates. 10 of the 14 list endpoints did
-  this. All 14 are typed now.
+- **Any field your fixture leaves null needs an explicit `.type(...)`.** REST Docs
+  infers a field's type from the value it sees, so a stubbed null publishes the type
+  **`Null`** — telling a client the field can never hold anything. It is not about
+  cursors: `nextCursor` was 10 of 14 list endpoints (#172), `page-translations/get`
+  published `seoTitle` and `seoDescription` that way while its own list got them right
+  (#175), and **six more are still `Null` on `main`**, all in `touroperator` —
+  `brand/get`'s three media ids, `tour-operators/get`'s `address.address2`, and
+  `acceptedAt` on both invitation reads. Check the whole record, not the cursor.
 - **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
   description text.** The default request-fields template renders
   `Path | Type | Description` and has no Optional column, so a create table and its
@@ -119,7 +122,23 @@ Neither was tested. `createDuplicateHandleIs409` covered the plain case on creat
 
 ## F4. `pages/get`'s 404 was tested and not published
 
-## G. Prose drift — none
+## G. Prose drift — two, and this pass first reported none
+
+**`PATCH /pages/{pageId}` is not partial**, and nothing published said so.
+`UpdatePageUseCase` builds `new PageTitle(input.title())` and
+`new PageBody(input.body())` **unconditionally**, and both reject null — so sending
+only the field you changed is a 422. The field descriptions said "(whole replace)",
+which describes what happens to the value, not that the field is required on every
+call. And this series had taught the opposite convention two contexts earlier:
+`pickup-locations/update` is a PATCH whose fields say "Omit to keep the current
+value". Carrying that across lands on a 422.
+
+**The rename section had the breakage backwards.** It said allowing the rename would
+make *the other page* unreachable. `StorefrontPageQueryImpl.findByHandle` resolves the
+localized handle first, so that address keeps matching the page that holds it — and
+the **renamed** page is the one left with no address in that language. The refusal
+protects the renamer. Getting it inverted undercut the section, since its whole point
+is that the operator cannot see the conflict.
 
 ## H. Description quality — none
 
@@ -132,6 +151,12 @@ Suite **1236 → 1237**. One new test, for the cross-namespace rename.
 - **F3** — `pages/rename-conflict` publishes the cross-namespace refusal, under a
   guide heading that explains why a handle the operator cannot see is taken.
 - **F4** — `pages/get-not-found` and `pages/create-conflict` publish.
+
+**`page-translations/upsert` publishes zero errors while raising five**, and two of
+them cannot be deduced: the 422 for a locale the operator has not enabled, and a 409
+for a localized handle equal to **another page's canonical** handle. That second one
+is F3 pointing the other way — and it is the direction an operator exercises, since
+localized handles get set routinely and renames are rare. Both are published now.
 
 **Both new guards fired on this pass, which is the first time they have run against
 work they did not already cover.** `ApiGuideDocumentsEveryEndpointTest` caught three

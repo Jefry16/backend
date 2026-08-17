@@ -7,7 +7,10 @@ import com.vointika.page.application.usecase.UpsertPageTranslationUseCase;
 import com.vointika.page.domain.entity.PageTranslation;
 import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageTitle;
+import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Handle;
@@ -22,6 +25,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -32,6 +36,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -131,8 +136,8 @@ class PageTranslationControllerDocumentationTest {
                                 fieldWithPath("locale").description("The content locale this row translates into"),
                                 fieldWithPath("title").description("Translated title; null where the canonical value serves").optional(),
                                 fieldWithPath("body").description("Translated body, raw HTML; null where the canonical value serves").optional(),
-                                fieldWithPath("seoTitle").description("Translated SEO title; null where the canonical value serves").optional(),
-                                fieldWithPath("seoDescription").description("Translated SEO description; null where the canonical value serves").optional(),
+                                fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("Translated SEO title; null where the canonical value serves").optional(),
+                                fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("Translated SEO description; null where the canonical value serves").optional(),
                                 fieldWithPath("handle").description("Localized handle; null where the canonical handle serves this locale").optional())));
     }
 
@@ -167,4 +172,52 @@ class PageTranslationControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"), parameterWithName("locale").description("BCP-47 locale code"))));
     }
+    /**
+     * The locale must be one the operator publishes in. A valid BCP-47 code the
+     * operator has not enabled is still a 422 — the distinction #173 found no reader
+     * could draw from the guide.
+     */
+    @Test
+    void unsupportedLocaleIs422() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException("Locale 'fr' is not supported by this operator"))
+                .when(upsertUseCase).execute(any());
+
+        mockMvc.perform(put("/api/tour-operators/{id}/pages/{pageId}/translations/{locale}", OP, PAGE, "fr")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Sobre nosotros\",\"body\":\"<p>Hola</p>\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("page-translations/upsert-unsupported-locale",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"), parameterWithName("locale").description("A content locale the operator publishes in — one it does not is a 422")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * <b>The rename conflict pointing the other way, and the direction an operator
+     * actually exercises.</b> Setting a localized handle equal to <em>another page's
+     * canonical</em> handle would shadow that page in this locale, because a storefront
+     * address resolves localized handles first. You set localized handles routinely and
+     * rename rarely, so this is the collision a client meets — and it names a page the
+     * operator was not editing.
+     */
+    @Test
+    void aLocalizedHandleTakenByAnotherPagesCanonicalIs409() throws Exception {
+        authenticated();
+        doThrow(new ResourceAlreadyExistsException(
+                "Another page already uses 'sobre-nosotros' as its handle"))
+                .when(upsertUseCase).execute(any());
+
+        mockMvc.perform(put("/api/tour-operators/{id}/pages/{pageId}/translations/{locale}", OP, PAGE, "es")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"handle\":\"sobre-nosotros\"}"))
+                .andExpect(status().isConflict())
+                .andDo(document("page-translations/upsert-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"), parameterWithName("locale").description("A content locale the operator publishes in — one it does not is a 422")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
 }
