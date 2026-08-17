@@ -62,6 +62,16 @@ class AudienceTranslationControllerDocumentationTest {
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
+
+    /**
+     * A STAFF member's token. A 403 turns on <em>who</em> is asking rather than what
+     * is asked for, so the request URL is necessarily the one that succeeds for an
+     * ADMIN — varying the token is what makes the published example legible.
+     * {@code PublishedExamplesAreHonestTest} fails the build without it.
+     */
+    private static final String STAFF_TOKEN = "staff-access-token";
+    private static final String STAFF_BEARER = "Bearer " + STAFF_TOKEN;
+    private static final String STAFF_USER = "550e8400-e29b-41d4-a716-4466554400ff";
     private static final String BODY = "{\"name\":\"Adultos\"}";
 
     private MockMvc mockMvc;
@@ -87,6 +97,11 @@ class AudienceTranslationControllerDocumentationTest {
     private void authenticated() {
         when(accessTokenValidator.isValid(TOKEN)).thenReturn(true);
         when(accessTokenValidator.extractUserId(TOKEN)).thenReturn(USER);
+    }
+
+    private void authenticatedAsStaff() {
+        when(accessTokenValidator.isValid(STAFF_TOKEN)).thenReturn(true);
+        when(accessTokenValidator.extractUserId(STAFF_TOKEN)).thenReturn(STAFF_USER);
     }
 
     private AudienceTranslation translation() {
@@ -163,11 +178,11 @@ class AudienceTranslationControllerDocumentationTest {
 
     @Test
     void staffCannotUpsert() throws Exception {
-        authenticated();
+        authenticatedAsStaff();
         doThrow(new ForbiddenException("admin"))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
-                        .header("Authorization", BEARER)
+                        .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden())
                 .andDo(document("audience-translations/upsert-forbidden",

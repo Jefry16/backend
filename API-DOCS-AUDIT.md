@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
-**Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`
-(2026-08-16).** Seven to go; `storefront` is last.
+**Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
+(2026-08-16).** Six to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -46,6 +46,26 @@ These results hold repo-wide and save every later pass the work:
   same variable, checks its *shape* through `LocaleCode` and nothing else — so a
   locale the operator does not publish is a `200` with nulls, or an idempotent `204`,
   never a 422. Reserve the 422 wording for the upsert.
+- **A published error example must differ from the success it contrasts with**, and
+  `PublishedExamplesAreHonestTest` fails the build when it does not. Vary the thing
+  the error turns on: a missing id for a 404, a **STAFF token** for a 403 (that error
+  is about who asks, so the URL has to stay the same), the clashing value for a 409.
+  It found **10 instances across five contexts** on its first run, including two this
+  series had already fixed by hand in one context and then reproduced in four others.
+  It finds an error **by its status line, not by its name** — an earlier version
+  matched a hand-kept list of name fragments, which is the same restatement it exists
+  to remove, and would have missed the next section called `-gone` or `-too-many`.
+- **Do not restate a constant from `src/main` in a description or a stubbed error.**
+  A doc test that hand-copies an allowlist or a message keeps publishing the old one
+  after the source changes, and the suite stays green because the test stubs the very
+  code it copied from. Build the sentence from the source
+  (`ContentType.ALLOWED`, `UploadMediaUseCase.MAX_BYTES`) or raise the real exception.
+  **Generating the table is only half of it** — the guide's hand-written prose
+  describes the same facts, and that half needs its own guard:
+  `ApiGuideNamesTheRealAllowlistTest` pins the upload prose against the allowlist both
+  ways, because a type the code allows and the guide omits is an undocumented
+  capability, and one the guide names and the code refuses is a promise the API
+  breaks.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -55,6 +75,95 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `media` — 2026-08-16
+
+Five endpoints, and **the best-documented context in the series so far** — every
+operation already had its headers, and four of the five had their field tables. The
+findings are about what the documentation *said*, not what it omitted.
+
+## Endpoint table
+
+| method | path | has test | has snippet | in the guide | strict or relaxed | status |
+|---|---|---|---|---|---|---|
+| POST | `…/media` | yes | `media/upload` | yes | strict | **part described wrongly** |
+| GET | `…/media` | yes | `media/list` | yes | strict | documented |
+| GET | `…/media/{mediaId}` | yes | `media/get` | yes | strict | documented |
+| PATCH | `…/media/{mediaId}` | yes | `media/describe` | yes | strict | documented |
+| DELETE | `…/media/{mediaId}` | yes | `media/delete` | yes | n/a | 204, no body |
+
+**A–E: none.** This is also the first context using `requestParts` and
+`responseHeaders`, both already correct.
+
+## F1. The upload part advertised a wider allowlist than the code accepts
+
+The published part description read **"image/* or application/pdf, ≤ 25 MB"**. The
+allowlist is exactly four types — `image/jpeg`, `image/png`, `image/webp`,
+`application/pdf`.
+
+**`image/gif` and `image/svg+xml` both match `image/*` and are both refused**, and
+SVG is refused *deliberately*: an SVG can carry script and these files are served
+from a public bucket. So the one type a reader most needs warning about was the one
+the description implied was fine.
+
+- **Severity**: medium, with a security edge. A client following the guide uploads an
+  SVG, gets a 422, and has no way to know the refusal is intentional rather than a
+  bug.
+- **Verified by**: `ContentType.java:21-24` for the map, `:38` for the message, and
+  the generated `media/upload/request-parts.adoc` for what was published.
+- **The guide's own prose was right** — it lists all four types two lines above the
+  table that contradicted it. Prose and contract disagreed, and only the contract is
+  machine-readable.
+
+## F2. Three 422s define the endpoint and none was documented
+
+The allowlist, the 25 MB cap, and a zero-byte part — checked in that order, before
+the cap.
+
+**They were already tested.** `UploadMediaUseCaseTest.rejectsDisallowedContentType`
+and `rejectsEmptyAndOversizeFiles` cover all three on `main`. An earlier revision of
+this section said "neither tested nor documented", which was a behavioural claim
+reached by reading rather than running — the one thing LAW §4 names outright. Caught
+in review.
+
+What was missing was the **published** contract, which is this series' remit. The new
+tests add no behavioural coverage: they stub the use case and assert only that
+`GlobalExceptionHandler` maps `InvalidFieldException` to 422. They do not need to,
+because the behaviour was covered.
+
+## F3. Three error assertions existed and published nothing
+
+401, 403 and the tenant 404.
+
+## F4. No path parameters on upload or list
+
+## G. Prose drift — see F1
+
+## H. Description quality — none
+
+## What was fixed
+
+Suite **1231 → 1233**. Two new tests, both for the 422s.
+
+- **F1** — the part description is **generated from `ContentType.ALLOWED`** and the
+  cap from `UploadMediaUseCase.MAX_BYTES`, so adding a type updates the guide by
+  itself. The first fix hand-copied the four types, which re-created the drift class
+  F1 exists to report — the suite would have stayed green with the guide advertising
+  the old set, because the test stubs the code it copied from. The 422 example now
+  raises the refusal from the real `ContentType`, and fails loudly if SVG is ever
+  allowed.
+- **F2** — `media/upload-unsupported-type` (an actual SVG), `media/upload-too-large`
+  and `media/upload-empty` publish all three. The audit itself missed the empty-file
+  case twice before review found it.
+- **F3** — `media/upload-forbidden` and `media/list-not-found`. The 401 stays central.
+- **F4** — path parameters on both.
+
+**The lesson is that a documented context is not a correct one.** Every previous pass
+found things missing; this one found a field table that was complete, published, and
+wrong in the direction a reader would act on. The categories that scan for absence —
+A through E — were clean here.
 
 ---
 

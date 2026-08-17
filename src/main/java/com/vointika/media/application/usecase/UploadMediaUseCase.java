@@ -37,8 +37,25 @@ import java.util.UUID;
  */
 public class UploadMediaUseCase {
 
-    /** Images/PDF cap. Video (a larger tier) is deferred until a consumer needs it. */
-    static final long MAX_BYTES = 25L * 1024 * 1024;
+    /**
+     * Images/PDF cap. Video (a larger tier) is deferred until a consumer needs it.
+     *
+     * <p><b>Public because two other places must agree with it and neither may
+     * restate it</b>: {@code MultipartLimitsTest} pins the container's ceiling above
+     * this, and the API guide publishes the number.
+     */
+    public static final long MAX_BYTES = 25L * 1024 * 1024;
+
+    /**
+     * The refusal a caller sees, <b>derived from {@link #MAX_BYTES}</b> rather than
+     * written out beside it. The number used to be a literal in the throw site: raising
+     * the cap left the API refusing a 30 MB file while telling the caller the limit was
+     * 25, with a green build. The documentation test publishes this same method, so the
+     * example in the guide is the application's own sentence.
+     */
+    public static String tooLargeMessage() {
+        return "File too large: max " + MAX_BYTES / (1024 * 1024) + " MB";
+    }
 
     private final MediaRepository mediaRepository;
     private final MediaStoragePort mediaStoragePort;
@@ -76,7 +93,7 @@ public class UploadMediaUseCase {
             throw new InvalidFieldException("File is empty");
         }
         if (sizeBytes > MAX_BYTES) {
-            throw new InvalidFieldException("File too large: max 25 MB");
+            throw new InvalidFieldException(tooLargeMessage());
         }
 
         // The uploader's name is snapshotted onto the row (so the library can sort

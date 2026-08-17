@@ -58,6 +58,19 @@ class AuditLogControllerDocumentationTest {
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
 
+    /** An id no entry has, so the 404 example is not the 200 example. */
+    private static final String MISSING_ENTRY = "cccccccc-0000-4000-8000-000000000404";
+
+    /**
+     * A STAFF member's token. A 403 turns on <em>who</em> is asking rather than what
+     * is asked for, so the request URL is necessarily the one that succeeds for an
+     * ADMIN — varying the token is what makes the published example legible.
+     * {@code PublishedExamplesAreHonestTest} fails the build without it.
+     */
+    private static final String STAFF_TOKEN = "staff-access-token";
+    private static final String STAFF_BEARER = "Bearer " + STAFF_TOKEN;
+    private static final String STAFF_USER = "550e8400-e29b-41d4-a716-4466554400ff";
+
     private MockMvc mockMvc;
 
     @MockitoBean private ListAuditLogUseCase listAuditLogUseCase;
@@ -79,6 +92,11 @@ class AuditLogControllerDocumentationTest {
     private void authenticated() {
         when(accessTokenValidator.isValid(TOKEN)).thenReturn(true);
         when(accessTokenValidator.extractUserId(TOKEN)).thenReturn(USER);
+    }
+
+    private void authenticatedAsStaff() {
+        when(accessTokenValidator.isValid(STAFF_TOKEN)).thenReturn(true);
+        when(accessTokenValidator.extractUserId(STAFF_TOKEN)).thenReturn(STAFF_USER);
     }
 
     private AuditLogListItem item() {
@@ -185,7 +203,7 @@ class AuditLogControllerDocumentationTest {
         when(getAuditLogEntryUseCase.execute(any(), any(), any()))
                 .thenThrow(new ResourceNotFoundException("Audit log entry not found"));
 
-        mockMvc.perform(get("/api/tour-operators/{id}/audit-log/{entryId}", OP, ENTRY)
+        mockMvc.perform(get("/api/tour-operators/{id}/audit-log/{entryId}", OP, MISSING_ENTRY)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNotFound())
                 .andDo(document("audit-log/get-not-found",
