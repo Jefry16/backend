@@ -1,5 +1,6 @@
 package com.vointika.metafield.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.metafield.application.usecase.DeleteMetafieldValueUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldValuesUseCase;
 import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
@@ -40,6 +41,8 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -96,6 +99,12 @@ class ExperienceMetafieldControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].value").value("Moderate"))
                 .andDo(document("experience-metafields/list",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("experienceId").description(
+                                        "The experience the value belongs to. One that does not exist, or belongs "
+                                                + "to another operator, is a 404 — the two are indistinguishable")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("[].namespace").description("The definition's namespace"),
@@ -117,6 +126,16 @@ class ExperienceMetafieldControllerDocumentationTest {
                         .content("{\"value\":\"Moderate\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("experience-metafields/upsert",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("experienceId").description(
+                                        "The experience the value belongs to. One that does not exist, or belongs "
+                                                + "to another operator, is a 404 — the two are indistinguishable"),
+                                parameterWithName("namespace").description(
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition; an undefined pair is a 404 on every verb here"),
+                                parameterWithName("key").description(
+                                        "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(fieldWithPath("value")
                                 .description("The raw value; validated + normalized against the definition's type (mismatch → 422). Blank → 422 — clearing is DELETE's job"))));
@@ -131,6 +150,16 @@ class ExperienceMetafieldControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("experience-metafields/delete",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("experienceId").description(
+                                        "The experience the value belongs to. One that does not exist, or belongs "
+                                                + "to another operator, is a 404 — the two are indistinguishable"),
+                                parameterWithName("namespace").description(
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition; an undefined pair is a 404 on every verb here"),
+                                parameterWithName("key").description(
+                                        "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
 
@@ -145,6 +174,21 @@ class ExperienceMetafieldControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"value\":\"x\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("experience-metafields/upsert-not-found",
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("experienceId").description("The experience id"),
+                                parameterWithName("namespace").description(
+                                        "A namespace with no definition for this owner type"),
+                                parameterWithName("key").description(
+                                        "…and the key half. The pair must already be DEFINED — this endpoint never creates one")),
+                        requestHeaders(headerWithName("Authorization")
+                                .description("Bearer access token")),
+                        requestFields(fieldWithPath("value").description(
+                                "Still required — this is the ordinary request body. It is simply "
+                                        + "never read on this path, because the definition is looked "
+                                        + "up first")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

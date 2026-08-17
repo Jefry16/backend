@@ -1,5 +1,7 @@
 package com.vointika.metafield.presentation.controller;
 
+import com.vointika.shared.exception.ConflictException;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.metafield.application.dto.output.MetaobjectDefinitionView;
 import com.vointika.metafield.application.usecase.AddMetaobjectFieldUseCase;
 import com.vointika.metafield.application.usecase.CreateMetaobjectDefinitionUseCase;
@@ -44,6 +46,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -56,6 +59,8 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -138,14 +143,24 @@ class MetaobjectDefinitionControllerDocumentationTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andDo(document("metaobject-definitions/create",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("type").description("Handle-shaped type identifier, unique per operator — duplicate → 409 (immutable)"),
                                 fieldWithPath("name").description("Display name (1–120)"),
                                 fieldWithPath("description").description("Optional help text (≤500)").optional(),
                                 fieldWithPath("fields[]").description("The initial fields in order (at least one)"),
-                                fieldWithPath("fields[].key").description("Handle-shaped key, unique within the definition (immutable)"),
-                                fieldWithPath("fields[].type").description("single_line_text | multi_line_text | number_integer | number_decimal | boolean | date | url | json (immutable)"),
+                                fieldWithPath("fields[].key").description(
+                                        "Handle-shaped key, unique within the definition (immutable). "
+                                                + "Repeating one inside THIS payload is a 422 — a "
+                                                + "malformed request, not a clash with stored state, "
+                                                + "which is the 409 Add a Field raises"),
+                                fieldWithPath("fields[].type").description(
+                                        MetafieldType.metaobjectFieldCodes()
+                                                + " (immutable). A metaobject field cannot be a "
+                                                + "metaobject_reference — nested references are out"),
                                 fieldWithPath("fields[].name").description("The field's display name (1–120)"))));
     }
 
@@ -157,8 +172,14 @@ class MetaobjectDefinitionControllerDocumentationTest {
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions", OP)
                         .header("Authorization", BEARER)
-                        .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
-                .andExpect(status().isConflict());
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"size-chart\",\"name\":\"Size chart v2\","
+                                + "\"fields\":[{\"key\":\"heading\",\"type\":\"single_line_text\",\"name\":\"Heading\"}]}"))
+                .andExpect(status().isConflict())
+                .andDo(document("metaobject-definitions/create-conflict",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -175,6 +196,9 @@ class MetaobjectDefinitionControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].context").value("metaobject-definitions"))
                 .andDo(document("metaobject-definitions/list",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The definition id"),
@@ -196,6 +220,11 @@ class MetaobjectDefinitionControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fields[0].key").value("heading"))
                 .andDo(document("metaobject-definitions/get",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("definitionId").description(
+                                        "The definition id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The definition id"),
@@ -221,6 +250,11 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         .content("{\"name\":\"Sizing chart\",\"description\":null}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/update",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("definitionId").description(
+                                        "The definition id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("name").description("Display name (1–120)"),
@@ -235,6 +269,11 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/delete",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("definitionId").description(
+                                        "The definition id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
 
@@ -248,10 +287,16 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         .content("{\"key\":\"note\",\"type\":\"multi_line_text\",\"name\":\"Note\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/add-field",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("definitionId").description(
+                                        "The definition id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("key").description("Handle-shaped key, unique within the definition — duplicate → 409 (immutable)"),
-                                fieldWithPath("type").description("The value type code (immutable)"),
+                                fieldWithPath("type").description(
+                                        MetafieldType.metaobjectFieldCodes() + " (immutable)"),
                                 fieldWithPath("name").description("The field's display name (1–120)"))));
     }
 
@@ -266,9 +311,41 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         .content("{\"name\":\"Header\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/rename-field",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("definitionId").description(
+                                        "The definition id"),
+                                parameterWithName("key").description(
+                                        "The field key within the metaobject definition")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("name").description("The field's new display name (1–120)"))));
+    }
+
+    /**
+     * The last field cannot be removed. A definition with no fields would leave
+     * every entry of that type with nowhere to put content, so the floor is one —
+     * delete the definition instead.
+     */
+    @Test
+    void removingTheLastFieldIs409() throws Exception {
+        authenticated();
+        doThrow(new ConflictException("A metaobject definition must keep at least one field"))
+                .when(removeFieldUseCase).execute(any(), any(), any(), any());
+
+        mockMvc.perform(delete("/api/tour-operators/{id}/metaobject-definitions/{definitionId}/fields/{key}",
+                        OP, DEF, "title")
+                        .header("Authorization", BEARER))
+                .andExpect(status().isConflict())
+                .andDo(document("metaobject-definitions/remove-field-conflict",
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("definitionId").description("The definition id"),
+                                parameterWithName("key").description(
+                                        "The definition's only remaining field")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -280,6 +357,13 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-definitions/remove-field",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("definitionId").description(
+                                        "The definition id"),
+                                parameterWithName("key").description(
+                                        "The field key within the metaobject definition")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
 }

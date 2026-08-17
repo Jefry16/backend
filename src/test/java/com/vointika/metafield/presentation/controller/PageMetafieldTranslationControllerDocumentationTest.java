@@ -1,5 +1,6 @@
 package com.vointika.metafield.presentation.controller;
 
+import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.metafield.application.usecase.DeleteMetafieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.GetMetafieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldTranslationLocalesUseCase;
@@ -38,6 +39,12 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,6 +95,14 @@ class PageMetafieldTranslationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0]").value("en"))
                 .andDo(document("page-metafield-translations/list-locales",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("pageId").description(
+                                        "The page whose values these overlay. One that does not exist, "
+                                                + "or belongs to another operator, is a 404")),
+                        responseFields(fieldWithPath("[]").description(
+                                "Locale codes that have at least one translated metafield — the editor's "
+                                        + "\"started\" markers. A locale absent here is untranslated, not "
+                                        + "unsupported")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }
@@ -102,6 +117,16 @@ class PageMetafieldTranslationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['custom.opening-hours']").value("Mon-Fri 09:00-18:00"))
                 .andDo(document("page-metafield-translations/get",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("pageId").description(
+                                        "The page whose values these overlay. One that does not exist, "
+                                                + "or belongs to another operator, is a 404"),
+                                parameterWithName("locale").description(
+                                        "The locale to read. An untranslated one returns {} rather than a 404")),
+                        responseFields(fieldWithPath("*").description(
+                                "One entry per translated metafield, keyed \"namespace.key\". Only keys "
+                                        + "with an overlay in this locale appear; everything else falls back "
+                                        + "to the canonical value")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }
@@ -114,6 +139,22 @@ class PageMetafieldTranslationControllerDocumentationTest {
                         .content("{\"values\":{\"custom.opening-hours\":\"Mon-Fri 09:00-18:00\"}}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("page-metafield-translations/upsert",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("pageId").description(
+                                        "The page whose values these overlay. One that does not exist, "
+                                                + "or belongs to another operator, is a 404"),
+                                parameterWithName("locale").description(
+                                        "The locale being written. It must be one the operator "
+                                                + "publishes, not merely a well-formed code — an "
+                                                + "unpublished one is a 422. Only the upsert checks "
+                                                + "this; the read and the delete do not")),
+                        requestFields(subsectionWithPath("values").description(
+                                "The locale's overlays, keyed \"namespace.key\" — a bare key is a 422. A "
+                                        + "blank value CLEARS that key; a key left out is UNTOUCHED, so a "
+                                        + "partial form cannot delete what it never rendered. Only "
+                                        + MetafieldType.translatableCodes() + " metafields may appear, and "
+                                        + "each must already have a value to overlay. Nothing is written if "
+                                        + "any entry is rejected")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }
@@ -124,6 +165,12 @@ class PageMetafieldTranslationControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("page-metafield-translations/delete",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("pageId").description(
+                                        "The page whose values these overlay. One that does not exist, "
+                                                + "or belongs to another operator, is a 404"),
+                                parameterWithName("locale").description(
+                                        "The locale to drop whole. 204 whether or not anything was there")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }

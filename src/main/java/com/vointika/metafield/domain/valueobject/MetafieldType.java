@@ -2,6 +2,9 @@ package com.vointika.metafield.domain.valueobject;
 
 import com.vointika.shared.exception.InvalidFieldException;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
  * The metafield type catalogue. A definition's type establishes how values
  * are validated and how themes should interpret them. Codes are the wire and
@@ -52,6 +55,19 @@ public enum MetafieldType {
         return this == SINGLE_LINE_TEXT || this == MULTI_LINE_TEXT;
     }
 
+    /**
+     * Every code, in declaration order — <b>derived, because it is published</b>.
+     * The refusal below and the create endpoint's {@code type} description are both
+     * built from this. The list used to be written out by hand in both places, and
+     * this enum is expected to grow (see the class javadoc), so a tenth type would
+     * have been accepted while both published copies still named nine.
+     * {@code MetafieldOwnerType} has always derived its own; this now matches it.
+     */
+    public static String codes() {
+        return Arrays.stream(values()).map(MetafieldType::code)
+                .collect(Collectors.joining(", "));
+    }
+
     public static MetafieldType fromCode(String raw) {
         if (raw != null) {
             for (MetafieldType type : values()) {
@@ -60,8 +76,37 @@ public enum MetafieldType {
                 }
             }
         }
-        throw new InvalidFieldException(
-                "Metafield type must be one of: single_line_text, multi_line_text, number_integer, "
-                        + "number_decimal, boolean, date, url, json, metaobject_reference");
+        throw new InvalidFieldException("Metafield type must be one of: " + codes());
+    }
+
+    /**
+     * Whether a <em>metaobject field</em> may be declared with this type.
+     *
+     * <p>Nested references are out for now — a metaobject field pointing at another
+     * metaobject is a shape nothing needs, and the reference type belongs to
+     * experience/page metafields. The rule lived as {@code == METAOBJECT_REFERENCE}
+     * in two use cases and as a hand-written eight-code list in a published field
+     * description; it is one predicate now, so widening it moves the refusal and
+     * the guide together.
+     */
+    public boolean allowedAsMetaobjectField() {
+        return this != METAOBJECT_REFERENCE;
+    }
+
+    /** The codes a metaobject field may declare — derived, because it is published. */
+    public static String metaobjectFieldCodes() {
+        return Arrays.stream(values()).filter(MetafieldType::allowedAsMetaobjectField)
+                .map(MetafieldType::code).collect(Collectors.joining(", "));
+    }
+
+    /**
+     * The codes a per-locale overlay is accepted for, derived from
+     * {@link #isTranslatable()} so widening the predicate moves what is published.
+     * The guide stated this set in prose until it was found to be a fourth copy of
+     * the same class of defect.
+     */
+    public static String translatableCodes() {
+        return Arrays.stream(values()).filter(MetafieldType::isTranslatable)
+                .map(MetafieldType::code).collect(Collectors.joining(", "));
     }
 }

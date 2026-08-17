@@ -1,8 +1,8 @@
 # API-docs sync audit — the rolling report
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
-(2026-08-16), `page`, `identity`, `experience`, `touroperator` (2026-08-17).** Two
-to go — `metafield`, then `storefront` last.
+(2026-08-16), `page`, `identity`, `experience`, `touroperator`, `metafield`
+(2026-08-17).** One to go: `storefront`.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -115,6 +115,330 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `metafield` — 2026-08-17
+
+Forty-five endpoints across ten controllers — the largest surface in the
+application, and the last one before `storefront`. **A–E clean**: 45 mappings, 45
+snippet directories, 45 macros.
+
+**It carries the whole of the repo's remaining documentation debt.** All nine
+body-returning operations with no field table are here. So are the last three
+copies of a hand-written type list, and the guide's only impossible status code.
+
+## Endpoint table
+
+All 45 have a test, a snippet and a macro. What differs:
+
+| controller | endpoints | what is missing |
+|---|---|---|
+| `MetafieldDefinitionController` | 5 | `ownerType` omits a third of the model; `get` has no field table |
+| `MetaobjectDefinitionController` | 8 | every error but one |
+| `MetaobjectController` | 7 | every error but one |
+| `TourOperatorMetafieldController` | 3 | the definition-first rule |
+| `ExperienceMetafieldController` | 3 | same |
+| `PageMetafieldController` | 3 | same |
+| the four `*-translation` controllers | 16 | no request table on any upsert; no field table on any read |
+
+**Zero of the 45 documents a path variable**, and **zero publishes an error** —
+against 34 throw sites and 6 assertions.
+
+## F1. `ownerType` is published as two values and the model has three
+
+The create table reads *"Which resource kind: experience or page (immutable)"*.
+`MetafieldOwnerType` is `EXPERIENCE`, `PAGE` and **`TOUR_OPERATOR`** — the
+operator's own metafields, Shopify's `shop.metafields`, and the answer to anything
+the storefront needs that has no other home.
+
+The guide already documents three endpoints for them
+(`tour-operators/metafields/{list,upsert,delete}`). So the guide describes how to
+read and write operator metafields while the only table that says which
+definitions may exist says that owner type is not one of them. **A client cannot
+create the definition those three endpoints need**, and the definition must exist
+first — see F7.
+
+- **Severity**: highest here. It is not an omission a reader can route around: the
+  value endpoints 404 without a definition.
+- **Verified by**: `MetafieldOwnerType:23-25`;
+  `MetafieldDefinitionControllerDocumentationTest:126`; the generated
+  `metafield-definitions/create/request-fields.adoc`.
+
+## F2. Not one of the 45 documents a path variable
+
+These are the deepest paths in the API — up to four variables:
+
+```
+/api/tour-operators/{tourOperatorId}/experiences/{experienceId}/metafields/{namespace}/{key}
+```
+
+`{namespace}` and `{key}` **are the metafield's identity**, they are handle-shaped
+rather than ids, and their pairing is what a definition is keyed by. Nothing says
+so anywhere a reader looks. `{locale}` on the sixteen translation routes is
+undocumented too.
+
+## F3. The nine type codes are hand-written in three places, and the sibling enum
+in the same package already does it right
+
+`MetafieldType` declares nine constants. The list is then written out again in
+`MetafieldType.fromCode`'s refusal (`:56-59`) and a third time in the doc test's
+`type` description (`:129`), which is **published**.
+
+The type catalogue is expected to grow — the enum's own javadoc says *"list and
+color types are deliberately still out"*. Adding one leaves the refusal naming nine
+and the guide naming nine, with a green build.
+
+**`MetafieldOwnerType.fromCode:53` is the fix, already written, four files away:**
+
+```java
++ String.join(", ", Arrays.stream(values()).map(MetafieldOwnerType::code).toList()));
+```
+
+Two enums, same package, same job, one derives and one restates.
+
+## F4. The guide restates `isTranslatable()`
+
+*"Only text types can be translated — `single_line_text` and `multi_line_text`"*
+(`api-guide.adoc:1668`). That is `MetafieldType.isTranslatable()` copied into
+prose, and the predicate's javadoc explicitly anticipates being widened
+(*"Both stay out until someone names a case; widening this predicate changes no
+schema"*). Widening it leaves the guide wrong and the build green.
+
+This is the fourth appearance of the class the repo-wide block now names.
+
+## F5. No `*-translations/upsert` documents its request body
+
+All four take a `@RequestBody` and pass no `requestFields` at all, so a client gets
+a raw JSON blob. The three rules that make the payload usable live only in guide
+prose: keys are **`namespace.key`**-qualified, a blank value **clears** that key,
+and a key left out is **untouched**. None is machine-readable, and the first is
+also a 422 (F7).
+
+## F6. Nine operations publish a body with no field table — the whole tracked list
+
+The four `*-translations/get`, the four `*-translations/list-locales`, and
+`metafield-definitions/get`. This is the entire repo-wide list at the foot of this
+report; nothing outside `metafield` remains on it.
+
+`metafield-definitions/get` is the familiar shape — its own list documents the
+record and the single read documents none.
+
+## F7. Zero errors published, against 34 throw sites
+
+Six assertions exist; none publishes. The rules a client cannot deduce:
+
+- **A value needs its definition first.** `PUT …/metafields/{namespace}/{key}` on an
+  undefined pair is **404**, not an implicit create. This is the model's central
+  rule and it is a 404 on a PUT, which reads like a routing bug.
+- **A `metaobject_reference` value is checked for integrity, not just shape** — the
+  entry must exist, be this operator's, and be **of the pinned type** → 422.
+- **Two concurrent first-sets** → 409 *"set concurrently — retry"*, which is
+  retryable where most 409s here are not.
+- **A translation key must be `namespace.key`** → 422.
+- **Translating a metafield that has no value** → 404.
+- **Translating a non-translatable type** → 422, naming the key (F4).
+- **A metaobject definition must keep at least one field** → 409 on remove-field.
+
+## G. Prose drift — one, and it promises a status the code cannot return
+
+**`Delete a Metafield Definition` says *"Cascades to every value. A type still
+pinned by a reference definition → 409."*** `DeleteMetafieldDefinitionUseCase` has
+**zero** throw sites beyond the 404 for a missing id. It cascades unconditionally.
+
+The sentence belongs to the *metaobject* definition delete, which does refuse a
+pinned type — and says so correctly at `api-guide.adoc:1856`. It has been copied
+onto the neighbouring endpoint, where it is false.
+
+A client builds "409 means something still references this, warn the operator"
+and never sees it. The truth is the opposite and more dangerous: deleting a
+metafield definition **silently destroys every value on every resource**, with no
+guard at all. The first half of the sentence says so; the second half tells the
+reader they are protected.
+
+- **Verified by**: `DeleteMetafieldDefinitionUseCase` read in full — 404 and
+  nothing else; `DeleteMetaobjectDefinitionUseCase:56-57` for the real 409.
+
+## H. Description quality — none
+
+Checked mechanically across every `*-fields.adoc` in the context: no description
+equals its field name.
+
+## What was fixed
+
+Suite **1253 → 1256**; operations **210 → 219**. Nine new operations, all errors.
+
+**The repo-wide no-field-table list is now empty.** It has been tracked at the
+foot of this report since the first pass, reading 71, 20, 19, 22, 20, 16 and 9.
+`metafield-definitions/get` was the last one. That heading is deleted.
+
+- **F1** — `ownerType` derives from `MetafieldOwnerType.codes()` and publishes all
+  three. It was wrong in **two** published tables, not one: the create request and
+  the list response both said "experience or page", and the audit found only the
+  first. `MetafieldOwnerType.fromCode` had already been fixed once, with a comment
+  saying the old message "still said experience, page and would have kept saying
+  it" — and the two published copies were not fixed with it. That comment now lives
+  on `codes()` as the reason the helper exists.
+- **F2** — `pathParameters` on all 45, generated from the URI template each test
+  already used rather than hand-written per operation. `{namespace}`/`{key}` say
+  they name an existing definition, which is F7's rule where a reader meets it.
+- **F3** — `MetafieldType.codes()`, matching its sibling. The refusal, the create
+  table and the get table all build from it.
+- **F4** — `MetafieldType.translatableCodes()`, derived from `isTranslatable()`.
+  *An earlier revision of this line claimed the guide's prose no longer stated the
+  set. It still did, 43 lines from a new sentence asserting it could not — the
+  mutation that "moved six files" only searched test sources, and the seventh copy
+  was the `.adoc`. Caught in review; the prose points at the generated table now.*
+- **F5** — a `requestFields` on all four `*-translations/upsert`, carrying the
+  three rules that were prose only: keys are `namespace.key`, blank clears,
+  omitted is untouched.
+- **F6** — field tables on all nine. The four `get` reads document a dynamic map
+  with `fieldWithPath("*")` and the four `list-locales` a root array with
+  `fieldWithPath("[]")`; both were verified by running rather than assumed.
+- **F7** — nine operations: the definition-first 404 on all three owner types, the
+  403 that states the role line once, two create 409s, the publish 409, the
+  last-field 409, and the not-translatable 422.
+- **G** — the false 409 is gone. That section now says the opposite and says it
+  plainly: nothing protects the delete, it cascades to every value on every
+  resource, and a confirmation step belongs in the client.
+
+**Two things the strict check found that the audit had not.**
+`metafield-definitions/get` returns **two fields the list projection omits** —
+`description` and `updatedAt` — so the list's table was not a complete model of the
+record. And `PublishedExamplesAreHonestTest` caught three of the nine new errors
+publishing their happy path's request verbatim: all three were **pre-existing
+assertions** taught to publish, and reusing the fixture is what teaching them to
+publish does by default. Each now varies on what the error turns on — a
+second entry for the publish 409, a differently-named definition for each create
+409.
+
+**Verified by mutation.** Adding `BOOLEAN` to `isTranslatable()` moves the
+published translatable list in **six** files, and the only failure is
+`UpsertMetafieldTranslationsUseCaseTest.aNonTextTypeIsRefusedByName` — the
+behavioural test whose job is to pin the rule. Same arrangement as the menu depth
+cap: the documentation derives, and one test still makes a human look.
+
+### Round — one real finding, and it was self-inflicted
+
+**`metaobjects/unpublish` raises the same 409 as publish, and this pass documented
+only publish.** Both transitions are guarded on the entry, four lines apart
+(`MetaobjectEntry:78` and `:86`). Publishing one and not the other tells a client
+the pair is asymmetric when it is not.
+
+The cause is worth naming, because it is a method error rather than an oversight:
+**this pass published the errors that already had assertions**, and only publish
+had one. "Teach the existing assertions to publish" is a cheap and effective
+heuristic — it is most of what the earlier contexts did — and its blind spot is
+exactly the half of a symmetric pair that nobody happened to test. Fixed with a new
+test and a guide section that states the symmetry outright.
+
+Also tightened: the three `upsert-not-found` tables described `value` as
+*"Ignored"*, which is the wording `touroperator`'s review flagged on
+`invitations/accept-conflict`. Here it was **accurate** — the definition really is
+looked up before the value is read — but it still invites a reader to drop a field
+that is required on the success path. They now say "still required… simply never
+read on this path".
+
+**What the round checked and found clean:** all ten request tables match their
+records component-for-component (the fixture-shaped defect from `experience` and
+`touroperator` is absent here); the three stubbed 409 messages match production
+verbatim; no unused imports across the ten test classes; every new helper has call
+sites; all nine new anchors render and no xref is unresolved.
+
+**Surfaced, not fixed — it is `src/main` and out of a documentation pass's scope:**
+`CreateMetafieldDefinitionUseCase` (`:85`, `:105`) and
+`CreateMetaobjectDefinitionUseCase` (`:93`, `:107`) each write their conflict
+message twice, once for the pre-check and once for the unique-index race. Two
+literals per message, and nothing keeps the pair in step.
+
+### Review round — a paste that inverted a rule, and a second type catalogue
+
+**The metaobject-field translation tables said `namespace.key` and they are keyed
+by the bare key.** Both sides — the read and the upsert — and the upsert went
+further and called the correct form a 422. The published example sat directly
+beneath, showing `{"notes": …}`, contradicting its own table.
+
+**The cause is the replication that made this pass cheap.** One shape was written
+for `tour-operator-metafield-translations`, verified, then copied to the other
+three. It is right for the two metafield siblings and wrong for metaobject fields,
+which have no namespace — a distinction the guide states two sections above and
+`UpsertMetaobjectFieldTranslationsUseCase`'s javadoc states outright. The same
+paste also called them "metafields". **Replicating a verified shape does not
+verify the copies**, and nothing in the build could see it: the description is
+prose, and the strict check only counts fields.
+
+**A second type catalogue was hand-written**, and the pass's own mutation missed it
+because it mutated `isTranslatable()` rather than the type list.
+`metaobject-definitions/create` published eight codes by hand, and `add-field`
+published none. They could not call `codes()` — metaobject fields exclude
+`metaobject_reference` — which is exactly why they were copied. The rule is a
+predicate now (`MetafieldType.allowedAsMetaobjectField()`), used by both use cases
+that enforced it inline and by `metaobjectFieldCodes()` for the two descriptions.
+
+Three smaller ones, all in prose added by this pass:
+
+- *"Four of the seven fields are immutable"* — five are. `metaobjectDefinitionId`
+  is not updatable, so a reader counting four would try to repoint a reference pin
+  through `PUT`, where it is ignored rather than refused. The sentence names the
+  two mutable fields now instead of counting the rest.
+- *"a **404**, not a 201"* — this endpoint answers **204** on every success, so
+  naming 201 invited branching on a created-case that does not exist.
+- *"once for an experience and once for a page"* — two of the three owner types, in
+  the sentence explaining the uniqueness rule, one paragraph after the generated
+  table that this pass fixed to name all three. It says "once per owner type" now:
+  no list to go stale.
+
+**Verified by mutation, the reviewer's way.** Adding a tenth type moves both
+catalogues — the full one to `…metaobject_reference, color` and the metaobject-field
+one to `…json, color` — and the guide names no type set at all any more. The build
+also refuses to compile until `MetafieldValueValidator`'s exhaustive switch handles
+the new type, so validation and documentation now fail together on a new type
+rather than drifting apart.
+
+### Deep round — the generated path descriptions, read one endpoint at a time
+
+The 45 path-parameter tables were produced mechanically, from the URI template each
+test already used and one shared description per variable name. That is why the
+pass was affordable and it is also a second instance of the class the review
+caught: **one description, applied to every endpoint that happens to share a
+variable name, is right where it was written and unchecked everywhere else.**
+
+Four found, all fixed:
+
+- **`{namespace}` carried an upsert-only clause onto `DELETE`** — "there is no
+  implicit create" means nothing on a delete. Worse, it hid a real rule: **the
+  delete has two different not-founds.** An undefined pair is a 404; a *defined*
+  pair with no value stored is a **204**, returning quietly so a client can clear a
+  field without checking whether it was ever set. Delete is idempotent for the
+  value and strict about the definition, and nothing said so. The guide says it now.
+- **`{experienceId}` / `{pageId}` / `{metaobjectId}` said only what they were** —
+  no mention that a missing one, or another operator's, is a 404 from
+  `MetafieldOwnerAccess.ensureOwned`. That is a tenant-isolation boundary on **20**
+  operations. Fixed on the three value routes first and then, on noticing the
+  instance-not-class error, on all twelve translation routes too.
+- **`{locale}` on the four upserts omitted the 422** they raise — the one place the
+  repo-wide `{locale}` rule says to state it. Both upsert use cases consult
+  `OperatorLocalesQuery`; the reads and deletes do not, and their descriptions were
+  already right.
+- **`fields[].key` on `metaobject-definitions/create` read like `add-field`'s 409
+  and is a 422.** They are genuinely different rules — create's is a key repeated
+  *within the payload*, add-field's is a clash with *stored state* — so the statuses
+  are correct and only the descriptions were indistinguishable. Said plainly now.
+
+**Checked and clean**, all by reading the code rather than the prose: the other
+three translation replications (three use `namespace.key` and one bare, matching
+their two distinct use cases — the review's finding was the only inversion); the
+blank-value 422; the empty-map-not-404 claim on every read; `metaobjects/create`'s
+unknown-key, bad-value and null-stays-unset rules; add-field's append position;
+rename's immutability; both locale checks; and the whole Metaobjects prose section,
+which the original audit had not read line by line.
+
+**One limitation worth recording rather than fixing.** The dynamic-map reads
+document with `fieldWithPath("*")` and the locale lists with `fieldWithPath("[]")`.
+Both publish a true sentence, and neither is much of a *check*: `*` matches whatever
+keys the payload has, so it cannot catch an undocumented field the way a named path
+does. For a map whose keys are data that is the right trade, but do not read those
+four tables as strictly verified contracts.
 
 ---
 
@@ -1352,32 +1676,24 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 9 body-returning operations with no field table
+## Body-returning operations with no field table — none left
 
-Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
-pinning a number**, which is why this heading is the only place it is stated.
+**This list is closed.** It has read 71 (a bad scan), 20, 19 (blind to the
+`withDefaults` set), 22 (corrected), 20, 17, 16 and 9, and `metafield`'s pass took
+the last one. MAP's Debt entry pointing here can go with it.
 
-**The old scan was blind to exactly the set F1 found.** Its method is: for every
-`response-body.adoc`, strip the fences, check the body is non-empty, then test for a
-sibling `response-fields.adoc`. The 61 operations restricted by `withDefaults` emitted
-no `response-body.adoc` at all, so the scan never saw them. Removing that call
-repo-wide made three more visible: `experiences/get`, `experiences/translations/get`
-and `experiences/translations/list`. The two defects were one defect.
+The scan, for whoever needs it again — strip both fences, keep non-empty bodies,
+test for a sibling table:
 
-`experience-metafield-translations/get` ·
-`experience-metafield-translations/list-locales` · `metafield-definitions/get`
-· `metaobject-field-translations/get` ·
-`metaobject-field-translations/list-locales` ·
-`page-metafield-translations/get` · `page-metafield-translations/list-locales`
-· `tour-operator-metafield-translations/get` ·
-`tour-operator-metafield-translations/list-locales`
+```
+for d in $(find target/generated-snippets -name response-body.adoc | xargs -n1 dirname); do
+  b=$(grep -v '^\[source' "$d/response-body.adoc" | grep -v '^----$' | tr -d '[:space:]')
+  [ -n "$b" ] && [ ! -f "$d/response-fields.adoc" ] && echo "$d"
+done
+```
 
-**Verified by**: for every `response-body.adoc`, stripping the `----` fences and
-checking the body is non-empty, then testing for a sibling `response-fields.adoc` —
-re-run after the repo-wide `withDefaults` removal, without which it cannot see 61 of
-the 159 operations. The number moves as passes fix their own: it has read 71 (a bad scan), 20, 19 (blind
-to the restricted set), 22 (the corrected scan), and 20 again since `pickup`
-documented its two reads. Re-run the scan rather than trusting any of them.
+`sed '1d;$d'` is not enough — it leaves a `----` behind and reports every 204
+endpoint as a gap.
 
 ---
 
