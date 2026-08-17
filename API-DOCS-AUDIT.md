@@ -395,6 +395,51 @@ also refuses to compile until `MetafieldValueValidator`'s exhaustive switch hand
 the new type, so validation and documentation now fail together on a new type
 rather than drifting apart.
 
+### Deep round — the generated path descriptions, read one endpoint at a time
+
+The 45 path-parameter tables were produced mechanically, from the URI template each
+test already used and one shared description per variable name. That is why the
+pass was affordable and it is also a second instance of the class the review
+caught: **one description, applied to every endpoint that happens to share a
+variable name, is right where it was written and unchecked everywhere else.**
+
+Four found, all fixed:
+
+- **`{namespace}` carried an upsert-only clause onto `DELETE`** — "there is no
+  implicit create" means nothing on a delete. Worse, it hid a real rule: **the
+  delete has two different not-founds.** An undefined pair is a 404; a *defined*
+  pair with no value stored is a **204**, returning quietly so a client can clear a
+  field without checking whether it was ever set. Delete is idempotent for the
+  value and strict about the definition, and nothing said so. The guide says it now.
+- **`{experienceId}` / `{pageId}` / `{metaobjectId}` said only what they were** —
+  no mention that a missing one, or another operator's, is a 404 from
+  `MetafieldOwnerAccess.ensureOwned`. That is a tenant-isolation boundary on **20**
+  operations. Fixed on the three value routes first and then, on noticing the
+  instance-not-class error, on all twelve translation routes too.
+- **`{locale}` on the four upserts omitted the 422** they raise — the one place the
+  repo-wide `{locale}` rule says to state it. Both upsert use cases consult
+  `OperatorLocalesQuery`; the reads and deletes do not, and their descriptions were
+  already right.
+- **`fields[].key` on `metaobject-definitions/create` read like `add-field`'s 409
+  and is a 422.** They are genuinely different rules — create's is a key repeated
+  *within the payload*, add-field's is a clash with *stored state* — so the statuses
+  are correct and only the descriptions were indistinguishable. Said plainly now.
+
+**Checked and clean**, all by reading the code rather than the prose: the other
+three translation replications (three use `namespace.key` and one bare, matching
+their two distinct use cases — the review's finding was the only inversion); the
+blank-value 422; the empty-map-not-404 claim on every read; `metaobjects/create`'s
+unknown-key, bad-value and null-stays-unset rules; add-field's append position;
+rename's immutability; both locale checks; and the whole Metaobjects prose section,
+which the original audit had not read line by line.
+
+**One limitation worth recording rather than fixing.** The dynamic-map reads
+document with `fieldWithPath("*")` and the locale lists with `fieldWithPath("[]")`.
+Both publish a true sentence, and neither is much of a *check*: `*` matches whatever
+keys the payload has, so it cannot catch an undocumented field the way a named path
+does. For a map whose keys are data that is the right trade, but do not read those
+four tables as strictly verified contracts.
+
 ---
 
 # `touroperator` — 2026-08-17

@@ -136,7 +136,11 @@ class TourOperatorMetafieldTranslationControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operator-metafield-translations/upsert",
                         pathParameters(parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("locale").description("The locale being written")),
+                                parameterWithName("locale").description(
+                                        "The locale being written. It must be one the operator "
+                                                + "publishes, not merely a well-formed code — an "
+                                                + "unpublished one is a 422. Only the upsert checks "
+                                                + "this; the read and the delete do not")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token")),
                         requestFields(subsectionWithPath("values").description(
@@ -168,7 +172,11 @@ class TourOperatorMetafieldTranslationControllerDocumentationTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andDo(document("tour-operator-metafield-translations/upsert-invalid",
                         pathParameters(parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("locale").description("The locale being written")),
+                                parameterWithName("locale").description(
+                                        "The locale being written. It must be one the operator "
+                                                + "publishes, not merely a well-formed code — an "
+                                                + "unpublished one is a 422. Only the upsert checks "
+                                                + "this; the read and the delete do not")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(subsectionWithPath("values").description(
                                 "One entry names a metafield whose type is not "

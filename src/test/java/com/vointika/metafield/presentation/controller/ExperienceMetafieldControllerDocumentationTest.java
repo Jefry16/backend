@@ -103,7 +103,8 @@ class ExperienceMetafieldControllerDocumentationTest {
                                 parameterWithName("id").description(
                                         "The tour operator id"),
                                 parameterWithName("experienceId").description(
-                                        "The experience the value belongs to")),
+                                        "The experience the value belongs to. One that does not exist, or belongs "
+                                                + "to another operator, is a 404 — the two are indistinguishable")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("[].namespace").description("The definition's namespace"),
@@ -129,9 +130,10 @@ class ExperienceMetafieldControllerDocumentationTest {
                                 parameterWithName("id").description(
                                         "The tour operator id"),
                                 parameterWithName("experienceId").description(
-                                        "The experience the value belongs to"),
+                                        "The experience the value belongs to. One that does not exist, or belongs "
+                                                + "to another operator, is a 404 — the two are indistinguishable"),
                                 parameterWithName("namespace").description(
-                                        "The namespace half of the identifier. With {key} it names an EXISTING definition — there is no implicit create, so an undefined pair is a 404"),
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition; an undefined pair is a 404 on every verb here"),
                                 parameterWithName("key").description(
                                         "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -152,9 +154,10 @@ class ExperienceMetafieldControllerDocumentationTest {
                                 parameterWithName("id").description(
                                         "The tour operator id"),
                                 parameterWithName("experienceId").description(
-                                        "The experience the value belongs to"),
+                                        "The experience the value belongs to. One that does not exist, or belongs "
+                                                + "to another operator, is a 404 — the two are indistinguishable"),
                                 parameterWithName("namespace").description(
-                                        "The namespace half of the identifier. With {key} it names an EXISTING definition — there is no implicit create, so an undefined pair is a 404"),
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition; an undefined pair is a 404 on every verb here"),
                                 parameterWithName("key").description(
                                         "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));

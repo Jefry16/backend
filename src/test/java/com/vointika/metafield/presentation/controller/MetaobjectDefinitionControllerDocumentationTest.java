@@ -152,7 +152,11 @@ class MetaobjectDefinitionControllerDocumentationTest {
                                 fieldWithPath("name").description("Display name (1–120)"),
                                 fieldWithPath("description").description("Optional help text (≤500)").optional(),
                                 fieldWithPath("fields[]").description("The initial fields in order (at least one)"),
-                                fieldWithPath("fields[].key").description("Handle-shaped key, unique within the definition (immutable)"),
+                                fieldWithPath("fields[].key").description(
+                                        "Handle-shaped key, unique within the definition (immutable). "
+                                                + "Repeating one inside THIS payload is a 422 — a "
+                                                + "malformed request, not a clash with stored state, "
+                                                + "which is the 409 Add a Field raises"),
                                 fieldWithPath("fields[].type").description(
                                         MetafieldType.metaobjectFieldCodes()
                                                 + " (immutable). A metaobject field cannot be a "

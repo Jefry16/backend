@@ -96,7 +96,9 @@ class ExperienceMetafieldTranslationControllerDocumentationTest {
                 .andExpect(jsonPath("$[0]").value("en"))
                 .andDo(document("experience-metafield-translations/list-locales",
                         pathParameters(parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id")),
+                                parameterWithName("experienceId").description(
+                                        "The experience whose values these overlay. One that does not "
+                                                + "exist, or belongs to another operator, is a 404")),
                         responseFields(fieldWithPath("[]").description(
                                 "Locale codes that have at least one translated metafield — the editor's "
                                         + "\"started\" markers. A locale absent here is untranslated, not "
@@ -116,7 +118,9 @@ class ExperienceMetafieldTranslationControllerDocumentationTest {
                 .andExpect(jsonPath("$['custom.opening-hours']").value("Mon-Fri 09:00-18:00"))
                 .andDo(document("experience-metafield-translations/get",
                         pathParameters(parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id"),
+                                parameterWithName("experienceId").description(
+                                        "The experience whose values these overlay. One that does not "
+                                                + "exist, or belongs to another operator, is a 404"),
                                 parameterWithName("locale").description(
                                         "The locale to read. An untranslated one returns {} rather than a 404")),
                         responseFields(fieldWithPath("*").description(
@@ -136,8 +140,14 @@ class ExperienceMetafieldTranslationControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("experience-metafield-translations/upsert",
                         pathParameters(parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id"),
-                                parameterWithName("locale").description("The locale being written")),
+                                parameterWithName("experienceId").description(
+                                        "The experience whose values these overlay. One that does not "
+                                                + "exist, or belongs to another operator, is a 404"),
+                                parameterWithName("locale").description(
+                                        "The locale being written. It must be one the operator "
+                                                + "publishes, not merely a well-formed code — an "
+                                                + "unpublished one is a 422. Only the upsert checks "
+                                                + "this; the read and the delete do not")),
                         requestFields(subsectionWithPath("values").description(
                                 "The locale's overlays, keyed \"namespace.key\" — a bare key is a 422. A "
                                         + "blank value CLEARS that key; a key left out is UNTOUCHED, so a "
@@ -156,7 +166,9 @@ class ExperienceMetafieldTranslationControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("experience-metafield-translations/delete",
                         pathParameters(parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id"),
+                                parameterWithName("experienceId").description(
+                                        "The experience whose values these overlay. One that does not "
+                                                + "exist, or belongs to another operator, is a 404"),
                                 parameterWithName("locale").description(
                                         "The locale to drop whole. 204 whether or not anything was there")),
                         requestHeaders(headerWithName("Authorization")

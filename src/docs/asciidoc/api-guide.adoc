@@ -1648,6 +1648,12 @@ Two clients setting the first value for the same pair at the same instant: one
 wins, the other gets a **409 saying to retry**, and the retry lands as a normal
 replace. It is the one 409 in this section that is worth retrying automatically.
 
+**Clearing has two different not-founds**, and only one of them is a 404.
+`DELETE` on a pair with **no definition** is a 404, like the upsert. `DELETE` on a
+defined pair that simply has **no value** is a **204** — it returns quietly rather
+than complaining, so a client can clear a field without first checking whether it
+was ever set. Delete is idempotent for the value and strict about the definition.
+
 [[resources-experience-metafields-upsert-not-found]]
 ==== Set an Experience's Metafield Value — No Definition
 

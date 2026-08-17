@@ -138,7 +138,7 @@ class TourOperatorMetafieldControllerDocumentationTest {
                                 parameterWithName("id").description(
                                         "The tour operator id"),
                                 parameterWithName("namespace").description(
-                                        "The namespace half of the identifier. With {key} it names an EXISTING definition — there is no implicit create, so an undefined pair is a 404"),
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition; an undefined pair is a 404 on every verb here"),
                                 parameterWithName("key").description(
                                         "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
@@ -159,7 +159,7 @@ class TourOperatorMetafieldControllerDocumentationTest {
                                 parameterWithName("id").description(
                                         "The tour operator id"),
                                 parameterWithName("namespace").description(
-                                        "The namespace half of the identifier. With {key} it names an EXISTING definition — there is no implicit create, so an undefined pair is a 404"),
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition; an undefined pair is a 404 on every verb here"),
                                 parameterWithName("key").description(
                                         "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
