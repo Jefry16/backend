@@ -10,6 +10,7 @@ import com.vointika.experience.application.usecase.UpdateSlotUseCase;
 import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -27,6 +28,8 @@ import org.springframework.restdocs.RestDocumentationExtension;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.time.LocalDate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -72,24 +75,41 @@ class SlotControllerDocumentationTest {
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
 
-    private static final String SINGLE_BODY = """
-            {"startAt":"2026-08-01T10:00","endAt":"2026-08-01T13:00",
-             "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}""";
-    private static final String RECURRING_BODY = """
-            {"days":[1,3,5],"startTime":"10:00","endTime":"13:00",
-             "validFrom":"2026-08-01","validTo":"2026-09-01",
-             "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}""";
     /**
-     * A window that contains none of the requested days — Tuesday to Wednesday, asking
-     * for Mon/Wed/Fri… no, asking for a Sunday. The published 422 has to send the
-     * pattern that matches nothing, not the one that produces slots.
+     * <b>Dates are derived, not written down.</b> All three create examples shipped
+     * with hardcoded dates that were future when typed and past by the time anyone
+     * read them — so a reader copying the published request got
+     * {@code "Date must be today or later"} rather than the endpoint's actual answer,
+     * and the recurring-422 example could not produce the error it documents. The
+     * snapshots differ per build; that costs nothing here, because generated snippets
+     * are not in version control.
+     */
+    private static final LocalDate NEXT_MONTH = LocalDate.now().plusMonths(1).withDayOfMonth(1);
+
+    /** A Tuesday and the Wednesday after it, so a Sunday pattern matches nothing. */
+    private static final LocalDate TUESDAY = NEXT_MONTH.with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.TUESDAY));
+
+        private static final String SINGLE_BODY = """
+            {"startAt":"%sT10:00","endAt":"%sT13:00",
+             "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}"""
+            .formatted(NEXT_MONTH, NEXT_MONTH);
+private static final String RECURRING_BODY = """
+            {"days":[1,3,5],"startTime":"10:00","endTime":"13:00",
+             "validFrom":"%s","validTo":"%s",
+             "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}"""
+            .formatted(NEXT_MONTH, NEXT_MONTH.plusMonths(1));
+    /**
+     * A Tuesday-to-Wednesday window asking for Sundays — so no date in it matches, and
+     * the request reaches the day-matching check rather than tripping the earlier
+     * "must be today or later" one.
      */
     private static final String RECURRING_BODY_MATCHING_NOTHING = """
             {"days":[0],"startTime":"10:00","endTime":"13:00",
-             "validFrom":"2026-08-04","validTo":"2026-08-05",
-             "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}""";
+             "validFrom":"%s","validTo":"%s",
+             "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}"""
+            .formatted(TUESDAY, TUESDAY.plusDays(1));
 
-    /** An id no slot has, so a 404 example is not a 200 example. */
+    /** An id no slot has, so the 404 example is not the 200 example. */
     private static final String MISSING_SLOT = "bbbbbbbb-0000-4000-8000-000000000404";
 
     /** A slot already in its terminal state, for the conflict example. */
@@ -329,7 +349,7 @@ class SlotControllerDocumentationTest {
                         .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(SINGLE_BODY))
                 .andExpect(status().isForbidden())
-                .andDo(document("slots/create-forbidden",
+                .andDo(document("slots/create-single-forbidden",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("eid").description("The experience the slot belongs to")),
                         responseFields(ApiErrorSnippets.errorFields())));
@@ -364,4 +384,44 @@ class SlotControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }
+    /**
+     * <b>The 422 an operator actually meets.</b> Reducing seats on a departure that has
+     * already sold is refused rather than truncated — the seats are booked, so the
+     * capacity cannot go under them. This rule was named as a finding before it was
+     * asserted; it is asserted now.
+     */
+    @Test
+    void capacityBelowBookedIs422() throws Exception {
+        authenticated();
+        doThrow(new InvalidFieldException("Capacity cannot be below the seats already booked"))
+                .when(updateSlotUseCase).execute(any(), any(), any(), any());
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/slots/{slotId}", OP, SLOT)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"capacities":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","capacity":1}]}"""))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("slots/update-capacity-too-low",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("slotId").description("The slot id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /** The slot 404 the MISSING_SLOT fixture was written for. */
+    @Test
+    void unknownSlotIs404() throws Exception {
+        authenticated();
+        doThrow(new com.vointika.shared.exception.ResourceNotFoundException("Slot not found"))
+                .when(getSlotUseCase).execute(any(), any(), any());
+
+        mockMvc.perform(get("/api/tour-operators/{id}/slots/{slotId}", OP, MISSING_SLOT)
+                        .header("Authorization", BEARER))
+                .andExpect(status().isNotFound())
+                .andDo(document("slots/get-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("slotId").description("The slot id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
 }

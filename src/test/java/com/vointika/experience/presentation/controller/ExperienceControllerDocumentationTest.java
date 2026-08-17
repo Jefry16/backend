@@ -105,6 +105,14 @@ class ExperienceControllerDocumentationTest {
                 new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
     }
 
+    /**
+     * <b>Every field ExperienceRequest carries.</b> It used to send seven of ten, which
+     * made the published table seven of ten too — strict {@code requestFields} fails on
+     * an undocumented field <em>present</em> in the payload, never on a documented field
+     * absent from it, so the gap was invisible. A client copying the old table omitted
+     * {@code startingPrice}, which is required, and then cleared both SEO fields on
+     * every save, because create and update are whole replaces.
+     */
     private static final String CREATE_BODY = """
             {
               "name": "Sunset Dive",
@@ -113,7 +121,10 @@ class ExperienceControllerDocumentationTest {
               "featured": true,
               "mediaIds": [],
               "thumbnailMediaId": null,
-              "bookingCutoffHours": 24
+              "bookingCutoffHours": 24,
+              "seoTitle": "Sunset Dive | Acme Tours",
+              "seoDescription": "A guided reef dive at dusk, daily.",
+              "startingPrice": 45.00
             }""";
 
     @Test
@@ -134,8 +145,11 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("longDescription").description("Long description (≤10000)"),
                                 fieldWithPath("featured").description("Featured flag (default false)").optional(),
                                 fieldWithPath("mediaIds").description("Gallery media ids — must be in this operator's library (≤20)").optional(),
-                                fieldWithPath("thumbnailMediaId").description("Thumbnail — must be one of mediaIds").optional(),
-                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)")),
+                                fieldWithPath("thumbnailMediaId").type(JsonFieldType.STRING).description("Thumbnail — must be one of mediaIds").optional(),
+                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"),
+                                fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("SEO title override; a whole replace, so omitting it clears the stored value").optional(),
+                                fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("SEO meta description; cleared the same way").optional(),
+                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet")),
                         responseHeaders(headerWithName("Location").description("URI of the created experience"))));
     }
 
@@ -237,8 +251,11 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("longDescription").description("Long description (≤10000)"),
                                 fieldWithPath("featured").description("Featured flag").optional(),
                                 fieldWithPath("mediaIds").description("Gallery media ids — must be in this operator's library").optional(),
-                                fieldWithPath("thumbnailMediaId").description("Thumbnail — must be one of mediaIds").optional(),
-                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"))));
+                                fieldWithPath("thumbnailMediaId").type(JsonFieldType.STRING).description("Thumbnail — must be one of mediaIds").optional(),
+                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"),
+                                fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("SEO title override; a whole replace, so omitting it clears the stored value").optional(),
+                                fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("SEO meta description; cleared the same way").optional(),
+                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet"))));
     }
 
     @Test

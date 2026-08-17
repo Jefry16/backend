@@ -30,14 +30,24 @@ These results hold repo-wide and save every later pass the work:
   the call should not reappear. **No guard catches this** —
   `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
   what it renders, so fewer snippets is a green build and a thinner page.
+- **A request table is only as complete as the fixture that exercises it.** Strict
+  `requestFields` fails on an undocumented field **present** in the payload — never on
+  a documented field absent from it. So a fixture sending seven of a record's ten
+  fields produces a seven-field table and a green build, and a client copying it omits
+  whatever was left out. `experiences/create` and `/update` published seven of ten
+  that way, one of them (`startingPrice`) required. **Read the request record, not the
+  fixture.**
 - **Any field your fixture leaves null needs an explicit `.type(...)`.** REST Docs
   infers a field's type from the value it sees, so a stubbed null publishes the type
   **`Null`** — telling a client the field can never hold anything. It is not about
   cursors: `nextCursor` was 10 of 14 list endpoints (#172), `page-translations/get`
   published `seoTitle` and `seoDescription` that way while its own list got them right
-  (#175), and **six more are still `Null` on `main`**, all in `touroperator` —
-  `brand/get`'s three media ids, `tour-operators/get`'s `address.address2`, and
-  `acceptedAt` on both invitation reads. Check the whole record, not the cursor.
+  (#175), and **nine more are still `Null` on `main`**, all in `touroperator`: `brand/get` and
+  `brand/update` each publish three media ids that way, plus
+  `tour-operators/get`'s `address.address2` and `acceptedAt` on both invitation reads.
+  It read six until a scan of `response-fields.adoc` alone was widened to
+  `*-fields.adoc` — **request tables carry this defect too**. Check the whole record,
+  not the cursor.
 - **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
   description text.** The default request-fields template renders
   `Path | Type | Description` and has no Optional column, so a create table and its
@@ -104,17 +114,27 @@ Sunday-first, or that **none of the three statuses is an operator toggle** —
 `SOLD_OUT` is counted from bookings, `CANCELLED` has its own endpoint, and the PATCH
 edits capacity only.
 
-## F2. Four error assertions, none published
+## F2. Four error assertions existed, none published — and two more rules had none
+
+Asserted and unpublished:
 
 - **409 — a cancelled slot is terminal.** It cannot be re-cancelled, edited or
   reopened; you recreate it. The guard is asked once where the edit begins, so the
   capacity PATCH inherits it.
-- **422 — capacity may never go below `bookedCount`.** An operator reducing seats on a
-  selling departure hits this, and it is a refusal rather than a truncation.
 - **422 — a recurring pattern whose window contains none of its days.** It would
   create zero departures, so it is refused rather than silently succeeding with
   nothing.
-- **404** for a non-member.
+- **403** for a STAFF member, and **404** for a non-member.
+
+Neither asserted nor published, and both raised by `UpdateSlotUseCase:93,97`:
+
+- **422 — capacity may never go below `bookedCount`**, the one an operator reducing
+  seats on a selling departure meets.
+- **422 — a tier not priced on this slot.**
+
+*An earlier revision of this section listed the capacity 422 among the four asserted
+and omitted the 403, so the four found and the four fixed were not the same four.
+Caught in review; both are covered now.*
 
 ## F3. `experiences/get` and both translation reads had no field table
 
@@ -132,7 +152,18 @@ headers, path variables and body.
 - **F1** — the sixteen-field slot response, with the wall-clock, frozen-pricing and
   status rules in the descriptions rather than only in Javadoc.
 - **F2** — `slots/cancel-conflict`, `slots/create-recurring-no-match`,
-  `slots/create-forbidden` and `slots/list-not-found`.
+  `slots/create-single-forbidden`, `slots/list-not-found`, plus the two that had no
+  assertion at all: `slots/update-capacity-too-low` and `slots/get-not-found`.
+- **Every slot example is now runnable.** All three create fixtures carried hardcoded
+  dates that were future when written and past by the time anyone read them — so a
+  reader copying the published request got `"Date must be today or later"`, and the
+  recurring-422 example **could not produce the error it documents**, because the
+  window check runs before the day match. The dates derive from `LocalDate.now()` now;
+  the snapshots differ per build, which costs nothing because generated snippets are
+  not in version control.
+- **`slots/create-forbidden` was silently outside `PublishedExamplesAreHonestTest`** —
+  the guard finds a happy path by longest name *prefix*, and no operation is a prefix
+  of that name. Renamed to `slots/create-single-forbidden`, which engages it.
 - **F3** — field tables on all three reads and a request body on the update. The
   tracked no-field-table list drops **16 → 9**, and every one of the nine that remain
   belongs to `metafield`.

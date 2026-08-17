@@ -862,6 +862,14 @@ Any member.
 
 operation::slots/get[]
 
+[[resources-slots-get-not-found]]
+==== Get a Slot — Not Found
+
+A slot id that does not exist and one belonging to another operator answer
+identically; the lookup is scoped to the operator.
+
+operation::slots/get-not-found[]
+
 [[resources-slots-create-single]]
 ==== Create a Slot
 
@@ -893,7 +901,7 @@ operation::slots/create-recurring-no-match[]
 
 Any member may read the schedule; only ADMIN+ may add to it.
 
-operation::slots/create-forbidden[]
+operation::slots/create-single-forbidden[]
 
 [[resources-slots-update]]
 ==== Update a Slot
@@ -902,6 +910,15 @@ ADMIN+ only. Status and per-audience capacity. Timing is immutable — cancel an
 recreate instead.
 
 operation::slots/update[]
+
+[[resources-slots-update-capacity-too-low]]
+==== Update a Slot — Capacity Below Bookings
+
+**Seats already booked are a floor.** Reducing a tier's capacity under its
+`bookedCount` is refused, not truncated — the bookings exist, so the only way
+down is to cancel the departure. A tier not priced on this slot is the same 422.
+
+operation::slots/update-capacity-too-low[]
 
 [[resources-slots-cancel]]
 ==== Cancel a Slot
