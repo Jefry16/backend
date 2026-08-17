@@ -1,5 +1,6 @@
 package com.vointika.architecture;
 
+import com.vointika.identity.application.usecase.SetAvatarUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.media.domain.valueobject.ContentType;
 import org.junit.jupiter.api.DisplayName;
@@ -170,6 +171,18 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "Counts go stale the moment the allowlist changes — name the "
                         + "types, which this test keeps true, and drop the number.")
                 .doesNotContain("exactly four types");
+
+        // The avatar carries its own allowlist and its own cap, published the same
+        // way. It was restating both until #176 — the media defect in a second
+        // context — so it gets the same assertion rather than a second chance to drift.
+        assertThat(SetAvatarUseCase.allowedContentTypes())
+                .withFailMessage("""
+                        The avatar allowlist and the guide disagree, or the guide names \
+                        a type the avatar refuses. The part description is generated \
+                        from SetAvatarUseCase, so this fires when the two get out of \
+                        step some other way — usually prose added beside it.""")
+                .isNotEmpty()
+                .doesNotContain("image/svg+xml");
 
         assertThat(namedAsRefused(guide))
                 .withFailMessage("""

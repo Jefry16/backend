@@ -189,10 +189,39 @@ Returns an access token in the body and the refresh token as an `httpOnly` cooki
 
 operation::auth/login[]
 
+[[resources-login-invalid]]
+==== Login — Invalid Credentials
+
+A wrong password and an address with no account answer **identically**, by
+design: a login that distinguished them would confirm which addresses are
+registered.
+
+operation::auth/login-invalid[]
+
 [[resources-refresh]]
 ==== Refresh Access Token
 
+Rotates the refresh token: the presented one is revoked and a new one is set on
+the cookie. **A refresh token is single-use.**
+
 operation::auth/refresh[]
+
+[[resources-refresh-invalid]]
+==== Refresh Access Token — Rejected
+
+**One response, three causes, and one of them ends every session you hold.** An
+unknown token, an expired one, and a *replayed* one all answer this same 401 with
+the same message — deliberately, because telling a caller they tripped the reuse
+detector would tell an attacker the same thing.
+
+The consequence differs sharply. A replayed token — one already rotated away — is
+treated as a theft signal, and **the entire token family is revoked**: every
+session descended from that login is ended, not just this one. A client that
+retries a refresh with a stale token, or races two tabs through a rotation, will
+find itself logged out everywhere with nothing in the response explaining why.
+Treat any 401 here as "start again at login", never as "retry".
+
+operation::auth/refresh-invalid[]
 
 [[resources-logout]]
 ==== Logout
@@ -224,7 +253,15 @@ operation::auth/profile[]
 [[resources-set-avatar]]
 ==== Set Avatar
 
+Multipart (`file` part). The allowlist and the size cap are in the field table
+below; SVG is not accepted, for the same reason the media library refuses it.
+
 operation::auth/set-avatar[]
+
+[[resources-set-avatar-unsupported-type]]
+==== Set Avatar — Unsupported Type
+
+operation::auth/set-avatar-unsupported-type[]
 
 [[resources-clear-avatar]]
 ==== Clear Avatar
