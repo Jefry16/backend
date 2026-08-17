@@ -1,8 +1,8 @@
 # API-docs sync audit — the rolling report
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
-(2026-08-16), `page`, `identity`, `experience` (2026-08-17).** Three to go;
-`storefront` is last.
+(2026-08-16), `page`, `identity`, `experience`, `touroperator` (2026-08-17).** Two
+to go — `metafield`, then `storefront` last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -89,6 +89,185 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `touroperator` — 2026-08-17
+
+Forty endpoints across twelve controllers — the largest context in the
+application. **A–E clean**: forty mappings, forty snippet directories, forty
+macros, and every field table complete enough that this context adds nothing to
+the no-field-table list.
+
+**Not one of the forty operations publishes an error.** Twenty-six non-2xx
+assertions already sit in the twelve tests, and a reader can see none of them.
+That is the whole finding, and it is the largest gap the series has met.
+
+## Endpoint table
+
+All forty have a test, a snippet and a macro, so the per-row columns would read
+`yes yes yes strict` forty times. What differs is below.
+
+| controller | endpoints | what is missing |
+|---|---|---|
+| `TourOperatorController` | 3 | create's side effects; update's request table is 2 of 6 fields |
+| `TeamMemberController` | 4 | path variables; the ownership-transfer consequence; every error |
+| `TeamInvitationController` | 5 | path variables on 2; every error |
+| `InvitationAcceptController` | 2 | `{token}`; five distinct failures, including the API's only 410 |
+| `MenuController` | 6 | path variables on all six; the duplicate-handle 409 |
+| `PolicyController` | 5 | every error |
+| `PolicyTranslationController` | 3 | every error |
+| `BrandController` | 2 | three request and three response fields typed `Null` |
+| `OperatorSeoController` | 2 | every error |
+| `OperatorTranslationController` | 4 | every error |
+| `StorefrontPasswordController` | 2 | path variables; the enable-without-password 422 |
+| `TourOperatorLocalesController` | 2 | every error |
+
+## F1. Promoting a member to OWNER demotes the caller, and nothing says so
+
+`PATCH /members/{userId}` with `{"role":"OWNER"}` promotes the target **and
+demotes the acting owner to ADMIN**, in one transaction. The caller cannot undo
+it: only the new owner can transfer back.
+
+Three places describe this endpoint and not one states the consequence. The
+published `role` description reads "Target role: OWNER (ownership transfer),
+ADMIN, or STAFF". The guide says "Promoting to OWNER is an owner-only ownership
+transfer." Both name the *permission* and skip the *cost*.
+
+- **Severity**: highest in this context. It is irreversible, it is one field
+  value away from an ordinary role change, and an admin UI built from this
+  documentation would offer OWNER in the same dropdown as ADMIN and STAFF.
+- **Verified by**: `ChangeMemberRoleUseCase:117-133` — `transferOwnership` calls
+  `caller.changeRole(MemberRole.ADMIN)` before `target.changeRole(OWNER)`, and
+  the audit entry carries `demotedUserId`.
+
+## F2. The invitee's two public routes publish only success
+
+`/api/invitations/{token}/preview` and `/accept` are the only unauthenticated
+routes in this context, and they are the flow an invitee actually walks. Five
+failures, none documented:
+
+- **404** — an unknown token.
+- **409** — already accepted.
+- **410 Gone** — revoked, or past its window. **No operation in the guide
+  publishes a 410**; the status-code table names it and nothing shows it.
+- **403** — a logged-in caller whose account email differs from the invitee's.
+- **422** — accepting anonymously without `name` and `password`.
+
+And the one an invitee hits routinely: **409, "An account with this email
+already exists — log in to accept the invitation"**. Someone who already has a
+Vointika account, clicked the link while logged out, and filled in the form gets
+this. A frontend that has not been told about it shows a generic failure on the
+most common path through the flow.
+
+- **Verified by**: `AcceptInvitationUseCase:85-142` and
+  `GetInvitationPreviewUseCase:42-45`; `GlobalExceptionHandler:55-56` maps
+  `GoneException` to 410.
+
+## F3. `tour-operators/update` publishes 2 of its 6 fields
+
+`UpdateTourOperatorInput` carries `name`, `address`, `phone`, `email`,
+`timezoneId` and `currencyId`. The fixture sends `phone` and `email`, so strict
+`requestFields` passed on a two-row table — the rule this series recorded after
+`experiences/create`, in a second place.
+
+Two consequences, and the second is worse than an omission:
+
+- **`address`'s whole-replace rule is published nowhere.** Sending
+  `{"address":{"city":"Barcelona"}}` against a Madrid address replaces the whole
+  object, so the street disappears. `AddressInput`'s javadoc calls this out —
+  "a wrong address rather than a partial one, and one that looks entirely
+  plausible" — and no reader of the guide sees it.
+- **The guide describes a field the contract omits.** Its Update section spends a
+  paragraph on `timezoneId` and what changing it does to stored departures.
+  `timezoneId` is not in the published table at all.
+
+- **Verified by**: `UpdateTourOperatorInput` read in full;
+  `TourOperatorControllerDocumentationTest:200-212` sends two fields; the
+  generated `tour-operators/update/request-fields.adoc` has two rows.
+
+## F4. Twenty-one endpoints are role-gated and the context asserts no 403 anywhere
+
+`grep -c isForbidden` across all twelve test classes returns zero. Twenty-one of
+the forty use cases call `ensureAdmin` or `ensureOwner`.
+
+The role split *is* this context — teams, invitations, brand, policies, the
+storefront gate — and the boundary is invisible. The guide's prose carries it per
+section, which is better than nothing and is not machine-readable.
+
+## F5. Sixteen operations document no path variable
+
+Every menu operation (6), every member operation (4), both storefront-password,
+both `tour-operators/invitations` collection routes, and both public
+`/api/invitations/{token}` routes. `tour-operators/create` correctly has none —
+it is the only endpoint here with no path variable.
+
+`{token}` is the one that matters: it is the emailed capability, and the two
+routes that take it say nothing about it.
+
+## F6. Nine fields publish type `Null`
+
+`brand/get` and `brand/update` each publish three media ids that way,
+`tour-operators/get` publishes `address.address2`, and `acceptedAt` is `Null` on
+both invitation reads. Three of the nine are in a **request** table, which is why
+the earlier count read six — the scan was looking at `response-fields.adoc`
+alone.
+
+A client reads `Null` as "this field can only ever be null" and skips the media
+picker for three of the four brand images.
+
+## F7. `Create Tour Operator` is one sentence over three hidden side effects
+
+The guide says the caller becomes OWNER. Creation also:
+
+- **generates the handle** from the name — the storefront subdomain, returned
+  nowhere in the 201 (only the id, in `Location`);
+- **generates a storefront password and enables the gate**, so the new store
+  answers the password page rather than the shop;
+- **creates two menus**, `main-menu` and `footer`.
+
+A client that creates a store and opens its address gets the gate and no
+explanation. A client that then creates a menu called `main-menu` gets a 409 for
+a menu it never made.
+
+Also undocumented: **409 on a second operator with the same name under the same
+owner**, and 422 for an unknown country, timezone or currency.
+
+- **Verified by**: `CreateTourOperatorUseCase:139-192`.
+
+## G. Prose drift — none
+
+Every hand-written claim in the forty sections was checked against its use case
+and holds:
+
+- resend and revoke "accepted or revoked → 409, a lapsed pending one can" —
+  `TourOperatorInvitation:94-118`, where `requirePending` raises it;
+- brand "an absent field clears it and absent collections empty them" —
+  `UpdateBrandUseCase:35-45`;
+- storefront password "a null or blank password keeps the stored one" —
+  `UpdateStorefrontPasswordUseCase:53`;
+- locales "unknown code or primary ∉ supported → 422" —
+  `UpdateOperatorLocalesUseCase:57-67`;
+- policy "the type is not settable" — `UpdatePolicyInput` has no `type`.
+
+One near-miss, named because the series has met its shape before and it is not
+drift: **`PATCH /locales` requires both fields.** Both are read unconditionally,
+so sending one is a 422 — the `pages/update` trap. The guide's "Replaces the
+primary + supported set" conveys it; the two field descriptions do not.
+
+## H. Description quality — none
+
+Checked mechanically across every `*-fields.adoc` in the context: no description
+equals its field name, or its field name with "The" in front.
+
+## Out of scope, noted once
+
+Every test in the repository writes the tenant path variable as `{id}` while the
+API declares `{tourOperatorId}` — 208 sites, so every published path-parameters
+table names `id`. The name never reaches the wire, so nothing is wrong for a
+client; it is a cosmetic mismatch with the guide's own prose, repo-wide rather
+than this context's, and changing 208 call sites inside a documentation pass
+would bury the pass. Left alone deliberately.
 
 ---
 
