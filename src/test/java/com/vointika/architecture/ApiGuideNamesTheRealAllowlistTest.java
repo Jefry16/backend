@@ -63,10 +63,15 @@ class ApiGuideNamesTheRealAllowlistTest {
     private static final String MEDIA_ANCHOR = "==== Upload Media";
 
     /**
-     * Where the avatar states what it accepts. <b>The trailing newline is
-     * load-bearing</b>: without it this also matches
-     * {@code ==== Set Avatar — Unsupported Type}, and the positive check would read the
-     * section that names refused types. It looks like a typo and is not.
+     * Where the avatar states what it accepts.
+     *
+     * <p><b>The trailing newline is defensive, not load-bearing</b> — worth saying
+     * because it reads like a typo and would otherwise be tidied away.
+     * {@code indexOf} returns the first match and the plain heading precedes
+     * {@code ==== Set Avatar — Unsupported Type} in the guide, so the positive check
+     * reads the right section either way. {@link #MEDIA_ANCHOR} carries no newline and
+     * is correct for exactly that reason, ahead of four {@code — …} siblings. The
+     * newline keeps this true if the sections are ever reordered.
      */
     private static final String AVATAR_ANCHOR = "==== Set Avatar\n";
 
