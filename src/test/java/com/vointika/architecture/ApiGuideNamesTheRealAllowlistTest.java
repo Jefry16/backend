@@ -45,8 +45,17 @@ class ApiGuideNamesTheRealAllowlistTest {
 
     private static final Path GUIDE = Path.of("src", "docs", "asciidoc", "api-guide.adoc");
 
-    /** The sentence that states the allowlist; nothing else in the section claims one. */
+    /** The sentence that states the allowlist. */
     private static final String ALLOWLIST_ANCHOR = "Allowed:";
+
+    /**
+     * The section that names types as <em>refused</em>. That is a claim about
+     * {@link ContentType#ALLOWED} too, only inverted, and it needs its own assertion:
+     * scoping the positive check to one sentence left this one unguarded, so allowing
+     * {@code image/gif} and documenting it correctly still left the guide calling it
+     * refused four lines further down, with a green build.
+     */
+    private static final String REFUSED_ANCHOR = "==== Upload Media — Unsupported Type";
 
     /**
      * Ends that sentence at a full stop <b>followed by whitespace</b>, not at any full
@@ -115,5 +124,27 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "Counts go stale the moment the allowlist changes — name the "
                         + "types, which this test keeps true, and drop the number.")
                 .doesNotContain("exactly four types");
+
+        assertThat(namedAsRefused(guide))
+                .withFailMessage("""
+                        The guide names a type as refused that ContentType.ALLOWED now \
+                        accepts. The two claims sit four lines apart, so a reader takes \
+                        the negative one and does not send a file the API would have \
+                        taken. Update the '%s' section, or stop naming the type there.""",
+                        REFUSED_ANCHOR)
+                .doesNotContainAnyElementsOf(ContentType.ALLOWED);
     }
+    /** The types the guide names as refused, from the section that exists to name them. */
+    private static List<String> namedAsRefused(String guide) {
+        int start = guide.indexOf(REFUSED_ANCHOR);
+        assertThat(start)
+                .withFailMessage("No '%s' heading in %s. This assertion reads that "
+                        + "section and nothing else, so a rename would let it pass by "
+                        + "examining no prose at all.", REFUSED_ANCHOR, GUIDE)
+                .isGreaterThan(0);
+        int end = guide.indexOf("\n==== ", start + 1);
+        String section = guide.substring(start, end > 0 ? end : guide.length());
+        return MIME.matcher(section).results().map(r -> r.group(1)).distinct().sorted().toList();
+    }
+
 }
