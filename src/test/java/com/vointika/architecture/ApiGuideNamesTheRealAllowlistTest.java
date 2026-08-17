@@ -59,7 +59,15 @@ class ApiGuideNamesTheRealAllowlistTest {
      */
     private static final String REFUSED_ANCHOR = "==== Upload Media — Unsupported Type";
 
-    /** Where the avatar states what it accepts. */
+    /** The media upload's own section. */
+    private static final String MEDIA_ANCHOR = "==== Upload Media";
+
+    /**
+     * Where the avatar states what it accepts. <b>The trailing newline is
+     * load-bearing</b>: without it this also matches
+     * {@code ==== Set Avatar — Unsupported Type}, and the positive check would read the
+     * section that names refused types. It looks like a typo and is not.
+     */
     private static final String AVATAR_ANCHOR = "==== Set Avatar\n";
 
     /** Where the avatar names what it refuses — which may not overlap the allowlist. */
@@ -124,25 +132,7 @@ class ApiGuideNamesTheRealAllowlistTest {
     @DisplayName("the guide's upload prose names exactly ContentType.ALLOWED")
     void theGuideNamesEveryAllowedTypeAndNoOther() throws IOException {
         String guide = Files.readString(GUIDE);
-        int start = guide.indexOf("==== Upload Media");
-        assertThat(start)
-                .withFailMessage("No '==== Upload Media' heading in %s — this test is "
-                        + "anchored to it and would otherwise pass by reading nothing.", GUIDE)
-                .isGreaterThan(0);
-
-        int end = guide.indexOf("\n==== ", start + 1);
-        String section = guide.substring(start, end > 0 ? end : guide.length());
-
-        int listStart = section.indexOf(ALLOWLIST_ANCHOR);
-        assertThat(listStart)
-                .withFailMessage("No '%s' sentence under '==== Upload Media' in %s. This "
-                        + "test reads that sentence and nothing else, so a rename would "
-                        + "otherwise let it pass by examining no prose at all.",
-                        ALLOWLIST_ANCHOR, GUIDE)
-                .isGreaterThan(0);
-        Matcher sentenceEnd = SENTENCE_END.matcher(section);
-        String allowlistSentence = section.substring(
-                listStart, sentenceEnd.find(listStart) ? sentenceEnd.start() : section.length());
+        String allowlistSentence = allowlistSentenceIn(guide, MEDIA_ANCHOR);
 
         List<String> mentioned = MIME.matcher(allowlistSentence).results()
                 .map(r -> r.group(1)).distinct().sorted().toList();
@@ -179,14 +169,14 @@ class ApiGuideNamesTheRealAllowlistTest {
                         crept in.""", capMb, statedSizes)
                 .containsExactly(String.valueOf(capMb));
 
-        assertThat(section)
+        assertThat(sectionUnder(guide, MEDIA_ANCHOR))
                 .withFailMessage("The upload prose states a count of allowed types. "
                         + "Counts go stale the moment the allowlist changes — name the "
                         + "types, which this test keeps true, and drop the number.")
                 .doesNotContain("exactly four types");
 
         List<String> avatarAllowed = SetAvatarUseCase.allowedContentTypes().stream().sorted().toList();
-        assertThat(mimeTokensIn(guide, AVATAR_ANCHOR))
+        assertThat(mimeTokensIn(allowlistSentenceIn(guide, AVATAR_ANCHOR)))
                 .withFailMessage("""
                         The Set Avatar prose names a type the avatar does not accept, or \
                         omits one it does. Code allows %s. The part description is \
@@ -194,7 +184,7 @@ class ApiGuideNamesTheRealAllowlistTest {
                         is hand-written and can.""", avatarAllowed)
                 .containsExactlyElementsOf(avatarAllowed);
 
-        assertThat(mimeTokensIn(guide, AVATAR_REFUSED_ANCHOR))
+        assertThat(mimeTokensIn(sectionUnder(guide, AVATAR_REFUSED_ANCHOR)))
                 .withFailMessage("""
                         The Set Avatar error section names a type the avatar accepts. \
                         Code allows %s. That section exists to name what is refused, so \
@@ -250,7 +240,12 @@ class ApiGuideNamesTheRealAllowlistTest {
      * <p>{@code image/*} survives both because {@link #MIME}'s character class has no
      * {@code *} — load-bearing, and it looks accidental.
      */
-    private static List<String> mimeTokensIn(String guide, String anchor) {
+    private static List<String> mimeTokensIn(String prose) {
+        return MIME.matcher(prose).results().map(r -> r.group(1)).distinct().sorted().toList();
+    }
+
+    /** Everything under a {@code ====} heading, up to the next one. */
+    private static String sectionUnder(String guide, String anchor) {
         int start = guide.indexOf(anchor);
         assertThat(start)
                 .withFailMessage("No '%s' heading in %s. This assertion reads that "
@@ -258,8 +253,32 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "examining no prose at all.", anchor.strip(), GUIDE)
                 .isGreaterThan(0);
         int end = guide.indexOf("\n==== ", start + 1);
-        String section = guide.substring(start, end > 0 ? end : guide.length());
-        return MIME.matcher(section).results().map(r -> r.group(1)).distinct().sorted().toList();
+        return guide.substring(start, end > 0 ? end : guide.length());
+    }
+
+    /**
+     * The {@code Allowed:} sentence of a section, and nothing else in it.
+     *
+     * <p><b>Both allowlists read this way, from one implementation.</b> The media half
+     * was narrowed to this sentence on #174, because reading the whole section made a
+     * writer describing the request encoding as {@code multipart/form-data} look like
+     * they had promised a content type the API refuses. The avatar half was then
+     * written to read the whole section and reproduced the identical trap — on prose
+     * that opens with the words {@code Multipart (`file` part).}, so spelling it out is
+     * the obvious next edit. There is one implementation now so a third copy cannot
+     * diverge again.
+     */
+    private static String allowlistSentenceIn(String guide, String sectionAnchor) {
+        String section = sectionUnder(guide, sectionAnchor);
+        int listStart = section.indexOf(ALLOWLIST_ANCHOR);
+        assertThat(listStart)
+                .withFailMessage("No '%s' sentence under '%s' in %s. This assertion reads "
+                        + "that sentence and nothing else, so a rename would otherwise let "
+                        + "it pass by examining no prose at all.",
+                        ALLOWLIST_ANCHOR, sectionAnchor.strip(), GUIDE)
+                .isGreaterThan(0);
+        Matcher end = SENTENCE_END.matcher(section);
+        return section.substring(listStart, end.find(listStart) ? end.start() : section.length());
     }
 
 }
