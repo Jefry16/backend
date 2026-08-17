@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,10 +30,30 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>It deliberately checks <b>both ways</b>. A type in the allowlist and not in the
  * guide is an undocumented capability; a type in the guide and not in the allowlist is
  * a promise the API breaks — the one that sends a client to upload an SVG.
+ *
+ * <p><b>Scope is the allowlist sentence, not the section.</b> Two earlier versions read
+ * too widely and failed against prose that was right. Reading the whole upload section
+ * swept in the error siblings, which name {@code image/gif} and {@code image/svg+xml}
+ * on purpose as the types that are <em>refused</em>. Narrowing to the section still
+ * swept in any other MIME token a writer might reasonably use there — describing the
+ * request encoding as {@code multipart/form-data}, or a future metadata part as
+ * {@code application/json} — which turned a correct edit into a red build accusing the
+ * writer of promising a type the API refuses. Only the sentence beginning
+ * {@code Allowed:} is a claim about the allowlist, so only that is read.
  */
 class ApiGuideNamesTheRealAllowlistTest {
 
     private static final Path GUIDE = Path.of("src", "docs", "asciidoc", "api-guide.adoc");
+
+    /** The sentence that states the allowlist; nothing else in the section claims one. */
+    private static final String ALLOWLIST_ANCHOR = "Allowed:";
+
+    /**
+     * Ends that sentence at a full stop <b>followed by whitespace</b>, not at any full
+     * stop: a MIME type may carry one ({@code image/vnd.foo}) and cutting there would
+     * silently read half the list.
+     */
+    private static final Pattern SENTENCE_END = Pattern.compile("\\.\\s");
 
     /**
      * Any quoted MIME type, whatever its family.
@@ -59,14 +80,21 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "anchored to it and would otherwise pass by reading nothing.", GUIDE)
                 .isGreaterThan(0);
 
-        // The upload section ONLY, stopping at its first error sibling. The sibling
-        // sections name types on purpose — "image/gif and image/svg+xml are both
-        // refused" — and reading those as claims about the allowlist is how this test
-        // failed on prose that was correct.
         int end = guide.indexOf("\n==== ", start + 1);
         String section = guide.substring(start, end > 0 ? end : guide.length());
 
-        List<String> mentioned = MIME.matcher(section).results()
+        int listStart = section.indexOf(ALLOWLIST_ANCHOR);
+        assertThat(listStart)
+                .withFailMessage("No '%s' sentence under '==== Upload Media' in %s. This "
+                        + "test reads that sentence and nothing else, so a rename would "
+                        + "otherwise let it pass by examining no prose at all.",
+                        ALLOWLIST_ANCHOR, GUIDE)
+                .isGreaterThan(0);
+        Matcher sentenceEnd = SENTENCE_END.matcher(section);
+        String allowlistSentence = section.substring(
+                listStart, sentenceEnd.find(listStart) ? sentenceEnd.start() : section.length());
+
+        List<String> mentioned = MIME.matcher(allowlistSentence).results()
                 .map(r -> r.group(1)).distinct().sorted().toList();
         List<String> allowed = ContentType.ALLOWED.stream().sorted().toList();
 
