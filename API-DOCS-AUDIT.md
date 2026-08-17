@@ -144,7 +144,14 @@ is that the operator cannot see the conflict.
 
 ## What was fixed
 
-Suite **1236 → 1237**. One new test, for the cross-namespace rename.
+**Four new tests**, all publishing an error this context raised and never showed:
+`renameOntoALocalizedHandleIs409`, `updateWithoutEveryFieldIs422`,
+`unsupportedLocaleIs422` and `aLocalizedHandleTakenByAnotherPagesCanonicalIs409`.
+Three of the four came out of review rather than the audit.
+
+*(No suite total here. The line originally read "1236 → 1237, one new test" and was
+stale within the hour, because a review round adds work after the summary is written —
+which is how every pinned count in this series went stale. Names do not.)*
 
 - **F1** — `pathParameters` on all twelve.
 - **F2** — the field table, which takes the tracked list **17 → 16**.
