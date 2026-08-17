@@ -105,6 +105,14 @@ class ExperienceControllerDocumentationTest {
                 new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
     }
 
+    /**
+     * <b>Every field ExperienceRequest carries.</b> It used to send seven of ten, which
+     * made the published table seven of ten too — strict {@code requestFields} fails on
+     * an undocumented field <em>present</em> in the payload, never on a documented field
+     * absent from it, so the gap was invisible. A client copying the old table omitted
+     * {@code startingPrice}, which is required, and then cleared both SEO fields on
+     * every save, because create and update are whole replaces.
+     */
     private static final String CREATE_BODY = """
             {
               "name": "Sunset Dive",
@@ -113,7 +121,10 @@ class ExperienceControllerDocumentationTest {
               "featured": true,
               "mediaIds": [],
               "thumbnailMediaId": null,
-              "bookingCutoffHours": 24
+              "bookingCutoffHours": 24,
+              "seoTitle": "Sunset Dive | Acme Tours",
+              "seoDescription": "A guided reef dive at dusk, daily.",
+              "startingPrice": 45.00
             }""";
 
     @Test
@@ -134,8 +145,11 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("longDescription").description("Long description (≤10000)"),
                                 fieldWithPath("featured").description("Featured flag (default false)").optional(),
                                 fieldWithPath("mediaIds").description("Gallery media ids — must be in this operator's library (≤20)").optional(),
-                                fieldWithPath("thumbnailMediaId").description("Thumbnail — must be one of mediaIds").optional(),
-                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)")),
+                                fieldWithPath("thumbnailMediaId").type(JsonFieldType.STRING).description("Thumbnail — must be one of mediaIds").optional(),
+                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"),
+                                fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("SEO title override; a whole replace, so omitting it clears the stored value").optional(),
+                                fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("SEO meta description; cleared the same way").optional(),
+                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet")),
                         responseHeaders(headerWithName("Location").description("URI of the created experience"))));
     }
 
@@ -192,7 +206,29 @@ class ExperienceControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id"))));
+                                parameterWithName("experienceId").description("The experience id")),
+                        // Same record the list returns. The SEO pair is here because it
+                        // was missing once: the request accepted it, the response never
+                        // returned it, and the next whole-replace save cleared both.
+                        responseFields(
+                                fieldWithPath("id").description("The experience id"),
+                                fieldWithPath("context").description("The entity's collection: \"experiences\""),
+                                fieldWithPath("name").description("Display name"),
+                                fieldWithPath("handle").description("Canonical handle (immutable; unique per operator across canonical and localized handles)"),
+                                fieldWithPath("description").description("Short description"),
+                                fieldWithPath("longDescription").description("Long description"),
+                                fieldWithPath("featured").description("Featured flag"),
+                                fieldWithPath("thumbnailMediaId").description("Thumbnail media id, or null").optional(),
+                                fieldWithPath("thumbnailUrl").description("Resolved thumbnail URL, or null").optional(),
+                                fieldWithPath("mediaIds").description("Gallery media ids (stored order)"),
+                                fieldWithPath("galleryUrls").description("Resolved gallery URLs (media-id order)"),
+                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours"),
+                                fieldWithPath("published").description("Whether the experience is published (shopper-visible)"),
+                                fieldWithPath("seoTitle").description("Search-engine title override, or null — falls back to the operator's").optional(),
+                                fieldWithPath("seoDescription").description("Meta description override, or null — falls back to the operator's").optional(),
+                                fieldWithPath("startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),
+                                fieldWithPath("createdBy").description("Creator user id"),
+                                fieldWithPath("createdAt").description("When created"))));
     }
 
     @Test
@@ -206,7 +242,20 @@ class ExperienceControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
-                                parameterWithName("experienceId").description("The experience id"))));
+                                parameterWithName("experienceId").description("The experience id")),
+                        // A whole replace, like create — the handle is absent because it
+                        // is immutable once set.
+                        requestFields(
+                                fieldWithPath("name").description("Display name (1–200)"),
+                                fieldWithPath("description").description("Short description (≤500)"),
+                                fieldWithPath("longDescription").description("Long description (≤10000)"),
+                                fieldWithPath("featured").description("Featured flag").optional(),
+                                fieldWithPath("mediaIds").description("Gallery media ids — must be in this operator's library").optional(),
+                                fieldWithPath("thumbnailMediaId").type(JsonFieldType.STRING).description("Thumbnail — must be one of mediaIds").optional(),
+                                fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"),
+                                fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("SEO title override; a whole replace, so omitting it clears the stored value").optional(),
+                                fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("SEO meta description; cleared the same way").optional(),
+                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet"))));
     }
 
     @Test

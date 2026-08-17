@@ -848,6 +848,13 @@ groups the week rather than ordering time.
 
 operation::slots/list[]
 
+[[resources-slots-list-not-found]]
+==== List Slots — Not a Member
+
+The tenant 404, identical to the answer for an operator that does not exist.
+
+operation::slots/list-not-found[]
+
 [[resources-slots-get]]
 ==== Get a Slot
 
@@ -855,8 +862,20 @@ Any member.
 
 operation::slots/get[]
 
+[[resources-slots-get-not-found]]
+==== Get a Slot — Not Found
+
+A slot id that does not exist and one belonging to another operator answer
+identically; the lookup is scoped to the operator.
+
+operation::slots/get-not-found[]
+
 [[resources-slots-create-single]]
 ==== Create a Slot
+
+**Note the singular path**, `…/experiences/{id}/slot`. The plural
+`…/experiences/{id}/slots` is the recurring endpoint below, and posting a
+single-departure body to it answers a 422 about `days`.
 
 ADMIN+ only. Start and end are operator-local; the span must be positive and at
 most 24 hours, and the date must not be in the past. Per-audience price and
@@ -867,17 +886,50 @@ operation::slots/create-single[]
 [[resources-slots-create-recurring]]
 ==== Create Recurring Slots
 
+**Note the plural path**, `…/experiences/{id}/slots` — one character from the
+single-departure endpoint above.
+
 ADMIN+ only. Generates one slot per matching day in the window.
 
 operation::slots/create-recurring[]
 
+[[resources-slots-create-recurring-no-match]]
+==== Create Recurring Slots — Pattern Matches Nothing
+
+A pattern whose validity window contains none of its requested days would create
+zero departures, so it is refused rather than silently succeeding with nothing.
+Dates are Sunday-first `0`–`6`, must be today or later, and at most 24 months
+ahead.
+
+operation::slots/create-recurring-no-match[]
+
+[[resources-slots-create-forbidden]]
+==== Create a Slot — Forbidden
+
+Any member may read the schedule; only ADMIN+ may add to it. **Both create
+endpoints answer this** — the example below is the single-departure one, and the
+recurring endpoint refuses a STAFF caller identically.
+
+operation::slots/create-single-forbidden[]
+
 [[resources-slots-update]]
 ==== Update a Slot
 
-ADMIN+ only. Status and per-audience capacity. Timing is immutable — cancel and
-recreate instead.
+ADMIN+ only. **Per-audience capacity only.** Timing is immutable — cancel and
+recreate instead — and status is not an operator choice: `SOLD_OUT` is counted
+from bookings and `CANCELLED` has its own endpoint. The request body has no
+`status` field.
 
 operation::slots/update[]
+
+[[resources-slots-update-capacity-too-low]]
+==== Update a Slot — Capacity Below Bookings
+
+**Seats already booked are a floor.** Reducing a tier's capacity under its
+`bookedCount` is refused, not truncated — the bookings exist, so the only way
+down is to cancel the departure. A tier not priced on this slot is the same 422.
+
+operation::slots/update-capacity-too-low[]
 
 [[resources-slots-cancel]]
 ==== Cancel a Slot
@@ -885,6 +937,15 @@ operation::slots/update[]
 ADMIN+ only.
 
 operation::slots/cancel[]
+
+[[resources-slots-cancel-conflict]]
+==== Cancel a Slot — Already Cancelled
+
+**CANCELLED is terminal.** A cancelled departure cannot be re-cancelled, edited or
+reopened — recreate it instead. That is also why the capacity PATCH refuses one:
+the guard is asked once, where the edit begins, so every write path inherits it.
+
+operation::slots/cancel-conflict[]
 
 === Audiences
 

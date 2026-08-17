@@ -1,7 +1,8 @@
 # API-docs sync audit — the rolling report
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
-(2026-08-16), `page`, `identity` (2026-08-17).** Four to go; `storefront` is last.
+(2026-08-16), `page`, `identity`, `experience` (2026-08-17).** Three to go;
+`storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -29,14 +30,24 @@ These results hold repo-wide and save every later pass the work:
   the call should not reappear. **No guard catches this** —
   `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
   what it renders, so fewer snippets is a green build and a thinner page.
+- **A request table is only as complete as the fixture that exercises it.** Strict
+  `requestFields` fails on an undocumented field **present** in the payload — never on
+  a documented field absent from it. So a fixture sending seven of a record's ten
+  fields produces a seven-field table and a green build, and a client copying it omits
+  whatever was left out. `experiences/create` and `/update` published seven of ten
+  that way, one of them (`startingPrice`) required. **Read the request record, not the
+  fixture.**
 - **Any field your fixture leaves null needs an explicit `.type(...)`.** REST Docs
   infers a field's type from the value it sees, so a stubbed null publishes the type
   **`Null`** — telling a client the field can never hold anything. It is not about
   cursors: `nextCursor` was 10 of 14 list endpoints (#172), `page-translations/get`
   published `seoTitle` and `seoDescription` that way while its own list got them right
-  (#175), and **six more are still `Null` on `main`**, all in `touroperator` —
-  `brand/get`'s three media ids, `tour-operators/get`'s `address.address2`, and
-  `acceptedAt` on both invitation reads. Check the whole record, not the cursor.
+  (#175), and **nine more are still `Null` on `main`**, all in `touroperator`: `brand/get` and
+  `brand/update` each publish three media ids that way, plus
+  `tour-operators/get`'s `address.address2` and `acceptedAt` on both invitation reads.
+  It read six until a scan of `response-fields.adoc` alone was widened to
+  `*-fields.adoc` — **request tables carry this defect too**. Check the whole record,
+  not the cursor.
 - **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
   description text.** The default request-fields template renders
   `Path | Type | Description` and has no Optional column, so a create table and its
@@ -78,6 +89,115 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `experience` — 2026-08-17
+
+Sixteen endpoints across three controllers — the largest context yet. **A–E clean**:
+sixteen mappings, sixteen snippet directories, sixteen macros.
+
+**`slots` published no contract at all.** All six of its operations emitted only the
+default snippets: no headers, no path variables, no field tables, no request bodies.
+Six endpoints, and the guide showed a reader a curl and a raw JSON blob for each.
+
+That matters more here than in the contexts where it happened before, because slots
+carry the domain rules a client is most likely to get wrong.
+
+## F1. The slot contract was entirely unpublished
+
+Nothing said that `startAt` is **operator-local wall-clock with no zone** — the reason
+a 10:00 sailing stays 10:00 when an operator corrects their timezone. Nothing said
+`price` and `capacity` are **frozen per slot at create**, so editing an audience never
+reprices a sold departure. Nothing said `durationMinutes` is derived, or that `day` is
+Sunday-first, or that **none of the three statuses is an operator toggle** —
+`SOLD_OUT` is counted from bookings, `CANCELLED` has its own endpoint, and the PATCH
+edits capacity only.
+
+## F2. Four error assertions existed, none published — and two more rules had none
+
+Asserted and unpublished:
+
+- **409 — a cancelled slot is terminal.** It cannot be re-cancelled, edited or
+  reopened; you recreate it. The guard is asked once where the edit begins, so the
+  capacity PATCH inherits it.
+- **422 — a recurring pattern whose window contains none of its days.** It would
+  create zero departures, so it is refused rather than silently succeeding with
+  nothing.
+- **403** for a STAFF member, and **404** for a non-member.
+
+Neither asserted nor published, and both raised by `UpdateSlotUseCase:93,97`:
+
+- **422 — capacity may never go below `bookedCount`**, the one an operator reducing
+  seats on a selling departure meets.
+- **422 — a tier not priced on this slot.**
+
+*An earlier revision of this section listed the capacity 422 among the four asserted
+and omitted the 403, so the four found and the four fixed were not the same four.
+Caught in review; both are covered now.*
+
+## F3. `experiences/get` and both translation reads had no field table
+
+And `experiences/update` — a whole replace — documented no request body at all.
+
+## G. Prose drift — one, and this pass rewrote the section around it
+
+**`Update a Slot` promised "Status and per-audience capacity".** Status is not
+updatable, and four places say so — the `requestFields` table rendered directly
+below it (which carries `capacities[]` and nothing else), the `status` description in
+the response table on the same page, `UpdateSlotInput:9`, and this pass's own test
+comment. `SlotStatus`'s javadoc records that status *was* briefly PATCH-writeable, so
+the sentence looks like the survivor of removing it.
+
+A client reads it, sends `{"status": "CANCELLED"}`, and gets a 400 for a body with no
+such field, while `cancel` is its own endpoint two sections down. Pre-existing on
+`main`, and this section reported the category clean while rewriting the tables that
+contradict it.
+
+## H. Description quality — none
+
+## What was fixed
+
+Six new operations, five of them errors; every slot operation now documents its
+headers, path variables and body.
+
+- **F1** — the sixteen-field slot response, with the wall-clock, frozen-pricing and
+  status rules in the descriptions rather than only in Javadoc.
+- **F2** — `slots/cancel-conflict`, `slots/create-recurring-no-match`,
+  `slots/create-single-forbidden`, `slots/list-not-found`, plus the two that had no
+  assertion at all: `slots/update-capacity-too-low` and `slots/get-not-found`.
+- **Every slot example is now runnable.** All three create fixtures carried hardcoded
+  dates that were future when written and past by the time anyone read them — so a
+  reader copying the published request got `"Date must be today or later"`, and the
+  recurring-422 example **could not produce the error it documents**, because the
+  window check runs before the day match. The dates derive from `LocalDate.now()` now;
+  the snapshots differ per build, which costs nothing because generated snippets are
+  not in version control.
+- **`slots/create-forbidden` was silently outside `PublishedExamplesAreHonestTest`** —
+  the guard finds a happy path by longest name *prefix*, and no operation is a prefix
+  of that name. Renamed to `slots/create-single-forbidden`, which engages it.
+- **`SOLD_OUT` stopped being published as live behaviour.** The description said it
+  *is* derived from bookings — present tense, in four operations. Nothing writes it:
+  `grep -rn "SOLD_OUT" src/main/java` returns the enum declaration and two javadoc
+  mentions, no assignment. It is counted at checkout success and checkout does not
+  exist, so the only rows carrying it are the dev seed's. A client greying out full
+  departures would have waited for a value the API cannot produce — and it appears to
+  work against the seed, which is worse than never appearing. The description says
+  **not written yet** now.
+- **The singular/plural path trap is stated where a reader meets it.**
+  `…/experiences/{id}/slot` creates one departure and `…/slots` creates a recurring
+  pattern; the published curls differ by one character, and a client following REST
+  convention posts a single-departure body to the collection path and gets a 422 about
+  `days`. Both sections now name their path.
+- **F3** — field tables on all three reads and a request body on the update. The
+  tracked no-field-table list drops **16 → 9**, and every one of the nine that remain
+  belongs to `metafield`.
+
+**Both guards fired again, and both caught real work.**
+`ApiGuideDocumentsEveryEndpointTest` found four operations with no `operation::` line.
+`PublishedExamplesAreHonestTest` found three errors publishing their happy path's
+request — including the recurring 422, which was sending **the pattern that produces
+slots** while claiming to document the pattern that matches nothing.
 
 ---
 
@@ -894,7 +1014,7 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 16 body-returning operations with no field table
+## The 9 body-returning operations with no field table
 
 Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
 pinning a number**, which is why this heading is the only place it is stated.
@@ -907,13 +1027,11 @@ repo-wide made three more visible: `experiences/get`, `experiences/translations/
 and `experiences/translations/list`. The two defects were one defect.
 
 `experience-metafield-translations/get` ·
-`experience-metafield-translations/list-locales` · `experiences/get` ·
-`experiences/translations/get` · `experiences/translations/list` ·
-`metafield-definitions/get` · `metaobject-field-translations/get` ·
+`experience-metafield-translations/list-locales` · `metafield-definitions/get`
+· `metaobject-field-translations/get` ·
 `metaobject-field-translations/list-locales` ·
 `page-metafield-translations/get` · `page-metafield-translations/list-locales`
-· `slots/cancel` · `slots/get` · `slots/list` · `slots/update` ·
-`tour-operator-metafield-translations/get` ·
+· `tour-operator-metafield-translations/get` ·
 `tour-operator-metafield-translations/list-locales`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
