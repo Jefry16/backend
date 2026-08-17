@@ -94,13 +94,22 @@ and four 422s on the avatar.
 ## F1. A rejected refresh has three causes and one of them ends every session
 
 `RefreshAccessTokenUseCase` answers **the same 401 with the same message** for an
-unknown token, an expired one, and a **replayed** one. That sameness is deliberate —
-telling a caller they tripped the reuse detector tells an attacker the same thing.
+unknown token and a **replayed** one. An expired token says so —
+`"Refresh token has expired"` — so the ambiguity is two-way, not three. The sameness
+where it exists is deliberate: telling a caller they tripped the reuse detector tells
+an attacker the same thing.
 
 The consequence is not the same. A replayed token is treated as a theft signal and
-`revokeAllByFamilyId` ends **every session descended from that login**. A client that
-retries a stale refresh, or races two tabs through a rotation, is logged out
-everywhere with nothing in the response explaining why.
+`revokeAllByFamilyId` ends **every session descended from that login**. Retrying a
+refresh with a token already exchanged lands there.
+
+**A genuine simultaneous double-submit does not**, and an earlier revision of this
+section said it did. `:93` guards the rotation so that two tabs presenting the same
+*live* token produce a plain 401 for the loser with the family intact — the comment
+there says as much. Publishing the opposite would have had frontend authors put a
+mutex around refresh to prevent a logout that cannot happen. Caught in review, from
+this section's own `Verified by` line, which cited the guard three lines below the
+claim.
 
 - **Severity**: high, and the most consequential undocumented behaviour found so far.
   It is not deducible: the response is byte-identical to the benign case.
@@ -140,8 +149,15 @@ Three new tests, each publishing an error nothing showed:
   part description with it.
 - **F3** — prose for both, plus `auth/login-invalid` documenting that a wrong password
   and an unknown address answer identically.
-- The avatar is now inside `ApiGuideNamesTheRealAllowlistTest` rather than left as a
-  second chance to drift.
+- The avatar is now inside `ApiGuideNamesTheRealAllowlistTest` — **reading the guide**.
+  The first attempt asserted against `SetAvatarUseCase` alone and never opened the
+  file, while its failure message claimed the two disagreed; a sentence naming a
+  refused type left the build green. It compares the Set Avatar prose against the
+  allowlist now, anchored like its siblings.
+- `LARGEST_APP_CAP` in `MultipartLimitsTest` derives from **both** caps rather than
+  naming the media one and describing the avatar's in a comment, and
+  `application.yml` stops restating either. Making the avatar cap public closed those
+  two the same way it closed the published description.
 
 **The lesson repeated across contexts:** media's F1 was not a media bug. The same
 hand-copied allowlist and hardcoded cap sat in `identity`, unguarded, while the guard

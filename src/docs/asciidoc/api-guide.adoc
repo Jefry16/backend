@@ -209,17 +209,22 @@ operation::auth/refresh[]
 [[resources-refresh-invalid]]
 ==== Refresh Access Token — Rejected
 
-**One response, three causes, and one of them ends every session you hold.** An
-unknown token, an expired one, and a *replayed* one all answer this same 401 with
-the same message — deliberately, because telling a caller they tripped the reuse
-detector would tell an attacker the same thing.
+**Three causes, and one of them ends every session you hold.** An expired token
+says so — `Refresh token has expired`. An unknown token and a **replayed** one
+are deliberately indistinguishable, both answering `Invalid refresh token`,
+because telling a caller they tripped the reuse detector would tell an attacker
+the same thing.
 
 The consequence differs sharply. A replayed token — one already rotated away — is
 treated as a theft signal, and **the entire token family is revoked**: every
-session descended from that login is ended, not just this one. A client that
-retries a refresh with a stale token, or races two tabs through a rotation, will
-find itself logged out everywhere with nothing in the response explaining why.
-Treat any 401 here as "start again at login", never as "retry".
+session descended from that login ends, not just this one. Retrying a refresh
+with a token you already exchanged lands here.
+
+**A genuine simultaneous double-submit does not.** If two tabs present the *same
+live* token at once, the loser gets a plain 401 and the family survives — the
+rotation is guarded precisely so racing clients are not logged out of everything.
+You do not need a mutex around refresh; you do need to treat a 401 as "start
+again at login" rather than "retry with the same token".
 
 operation::auth/refresh-invalid[]
 
@@ -260,6 +265,10 @@ operation::auth/set-avatar[]
 
 [[resources-set-avatar-unsupported-type]]
 ==== Set Avatar — Unsupported Type
+
+The allowlist is exact, and narrower than the media library's — an avatar is
+`image/jpeg`, `image/png` or `image/webp`, with no PDF. As there, `image/*` is
+not the rule: SVG matches it and is refused, because an SVG can carry script.
 
 operation::auth/set-avatar-unsupported-type[]
 

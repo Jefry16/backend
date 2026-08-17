@@ -17,9 +17,13 @@ public class SetAvatarUseCase {
 
 
     /**
-     * The avatar cap. <b>Public because the API guide publishes it</b> and must not
-     * restate it — {@code ApiGuideNamesTheRealAllowlistTest} asserts the two agree, the
-     * same way it does for the media library's own cap.
+     * The avatar cap. <b>Public because the API guide publishes it through the
+     * generated part description</b>, and must not restate it.
+     *
+     * <p>No test asserts the two agree, and none can while the guide is written this
+     * way: {@code ApiGuideNamesTheRealAllowlistTest} requires every megabyte figure in
+     * the guide source to be the <em>media</em> cap, so this number reaches a reader
+     * only through the generated table. Deriving it here is what keeps it true.
      */
     public static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
 

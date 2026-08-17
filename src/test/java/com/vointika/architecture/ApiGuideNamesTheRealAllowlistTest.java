@@ -59,6 +59,9 @@ class ApiGuideNamesTheRealAllowlistTest {
      */
     private static final String REFUSED_ANCHOR = "==== Upload Media — Unsupported Type";
 
+    /** Where the avatar's own allowlist is stated in prose. */
+    private static final String AVATAR_ANCHOR = "==== Set Avatar — Unsupported Type";
+
     /**
      * Ends that sentence at a full stop <b>followed by whitespace</b>, not at any full
      * stop: a MIME type may carry one ({@code image/vnd.foo}) and cutting there would
@@ -94,6 +97,13 @@ class ApiGuideNamesTheRealAllowlistTest {
      * <p>There is no exclusion list, deliberately: those restatements were <b>reworded
      * to stop carrying a number</b> rather than exempted, because an exemption list is
      * the hand-kept vocabulary these guards exist to remove.
+     *
+     * <p><b>This is a claim about the guide source, not the rendered page.</b> The
+     * avatar has its own, smaller cap, and it reaches a reader through a generated
+     * field table — so the published HTML carries two megabyte figures while the source
+     * carries one. That is the intended arrangement: the avatar cap is kept out of the
+     * prose precisely so it cannot be restated, and it is derived where it is
+     * published. Do not "fix" the discrepancy by adding it to the prose.
      *
      * <p><b>So this makes the guide unable to state any other size in MB, and there is
      * one real case waiting.</b> The container's own ceiling is 30 MB
@@ -172,17 +182,15 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "types, which this test keeps true, and drop the number.")
                 .doesNotContain("exactly four types");
 
-        // The avatar carries its own allowlist and its own cap, published the same
-        // way. It was restating both until #176 — the media defect in a second
-        // context — so it gets the same assertion rather than a second chance to drift.
-        assertThat(SetAvatarUseCase.allowedContentTypes())
+        assertThat(namedInAvatarProse(guide))
                 .withFailMessage("""
-                        The avatar allowlist and the guide disagree, or the guide names \
-                        a type the avatar refuses. The part description is generated \
-                        from SetAvatarUseCase, so this fires when the two get out of \
-                        step some other way — usually prose added beside it.""")
-                .isNotEmpty()
-                .doesNotContain("image/svg+xml");
+                        The Set Avatar prose names a type the avatar does not accept, or \
+                        omits one it does. Code allows %s. The part description is \
+                        generated from SetAvatarUseCase and cannot drift; this sentence \
+                        is hand-written and can.""",
+                        SetAvatarUseCase.allowedContentTypes().stream().sorted().toList())
+                .containsExactlyElementsOf(
+                        SetAvatarUseCase.allowedContentTypes().stream().sorted().toList());
 
         assertThat(namedAsRefused(guide))
                 .withFailMessage("""
@@ -212,6 +220,27 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "nothing wrong.", REFUSED_ANCHOR)
                 .isNotEmpty();
         return refused;
+    }
+
+    /**
+     * The types the Set Avatar error section names, which is where the avatar's
+     * allowlist reaches a reader in prose.
+     *
+     * <p>An earlier version asserted against {@code SetAvatarUseCase} alone and never
+     * opened the guide, while its failure message claimed the two disagreed. Adding a
+     * sentence to that prose naming a type the code refuses left the build green — the
+     * exact scenario the message described.
+     */
+    private static List<String> namedInAvatarProse(String guide) {
+        int start = guide.indexOf(AVATAR_ANCHOR);
+        assertThat(start)
+                .withFailMessage("No '%s' heading in %s. This assertion reads that "
+                        + "section and nothing else, so a rename would let it pass by "
+                        + "examining no prose at all.", AVATAR_ANCHOR, GUIDE)
+                .isGreaterThan(0);
+        int end = guide.indexOf("\n==== ", start + 1);
+        String section = guide.substring(start, end > 0 ? end : guide.length());
+        return MIME.matcher(section).results().map(r -> r.group(1)).distinct().sorted().toList();
     }
 
 }
