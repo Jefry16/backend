@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
-(2026-08-16).** Six to go; `storefront` is last.
+(2026-08-16), `page` (2026-08-17).** Five to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -75,6 +75,70 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `page` — 2026-08-17
+
+Twelve endpoints across two controllers, the largest context so far. **A–E clean.**
+The finding is one shape repeated twelve times, plus a conflict a client cannot
+diagnose.
+
+## Endpoint table
+
+Eight on `PageController` — list, get, create, update, publish, unpublish, rename,
+delete — and four on `PageTranslationController` — list, get, upsert, delete. All
+twelve had a test, a snippet and a macro.
+
+## F1. Not one of the twelve documented a path variable
+
+Every endpoint takes `{tourOperatorId}`, ten take `{pageId}`, three take `{locale}`.
+None was described. It is the same gap `pickup` and `audience` had, at four times the
+size.
+
+## F2. `page-translations/get` published no field table
+
+Six components on `PageTranslationResponse`, none documented — while the sibling list
+documented all six.
+
+## F3. The rename has two different 409s and published neither
+
+This is the one worth the pass. `RenamePageUseCase` refuses a handle for **two
+distinct reasons** with two distinct messages:
+
+- another page's **canonical** handle — the obvious case; and
+- a handle another page uses as a **localized** handle.
+
+The second is PATTERNS §4d reaching a client. A storefront address resolves against
+localized handles first and canonical ones second, so the two are one namespace: taking
+a value from either would make the other page unreachable in that language. **The
+operator sees no page called that in their own language**, so without the distinct
+message and its own example, "already exists" reads as a bug.
+
+Neither was tested. `createDuplicateHandleIs409` covered the plain case on create only.
+
+## F4. `pages/get`'s 404 was tested and not published
+
+## G. Prose drift — none
+
+## H. Description quality — none
+
+## What was fixed
+
+Suite **1236 → 1237**. One new test, for the cross-namespace rename.
+
+- **F1** — `pathParameters` on all twelve.
+- **F2** — the field table, which takes the tracked list **17 → 16**.
+- **F3** — `pages/rename-conflict` publishes the cross-namespace refusal, under a
+  guide heading that explains why a handle the operator cannot see is taken.
+- **F4** — `pages/get-not-found` and `pages/create-conflict` publish.
+
+**Both new guards fired on this pass, which is the first time they have run against
+work they did not already cover.** `ApiGuideDocumentsEveryEndpointTest` caught three
+operations with no `operation::` line. `PublishedExamplesAreHonestTest` caught
+`pages/get-not-found` and `pages/create-conflict` publishing the same request as their
+happy paths — the defect that took two review rounds to find by hand in `contact`, now
+caught before the PR opened.
 
 ---
 
@@ -713,7 +777,7 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 17 body-returning operations with no field table
+## The 16 body-returning operations with no field table
 
 Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
 pinning a number**, which is why this heading is the only place it is stated.
@@ -725,15 +789,15 @@ no `response-body.adoc` at all, so the scan never saw them. Removing that call
 repo-wide made three more visible: `experiences/get`, `experiences/translations/get`
 and `experiences/translations/list`. The two defects were one defect.
 
-`metaobject-field-translations/get` ·
-`metaobject-field-translations/list-locales` · `slots/get` · `slots/cancel` ·
-`slots/list` · `slots/update` · `tour-operator-metafield-translations/get` ·
-`tour-operator-metafield-translations/list-locales` ·
-`metafield-definitions/get` · `page-metafield-translations/get` ·
-`page-metafield-translations/list-locales` · `page-translations/get` ·
-`experiences/get` · `experience-metafield-translations/get` ·
-`experience-metafield-translations/list-locales` ·
-`experiences/translations/get` · `experiences/translations/list`
+`experience-metafield-translations/get` ·
+`experience-metafield-translations/list-locales` · `experiences/get` ·
+`experiences/translations/get` · `experiences/translations/list` ·
+`metafield-definitions/get` · `metaobject-field-translations/get` ·
+`metaobject-field-translations/list-locales` ·
+`page-metafield-translations/get` · `page-metafield-translations/list-locales`
+· `slots/cancel` · `slots/get` · `slots/list` · `slots/update` ·
+`tour-operator-metafield-translations/get` ·
+`tour-operator-metafield-translations/list-locales`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
 checking the body is non-empty, then testing for a sibling `response-fields.adoc` —

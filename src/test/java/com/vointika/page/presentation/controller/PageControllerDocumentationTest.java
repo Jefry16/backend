@@ -18,6 +18,7 @@ import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.Handle;
 import com.vointika.shared.web.list.ListQueryParser;
@@ -43,10 +44,13 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -69,6 +73,9 @@ class PageControllerDocumentationTest {
 
     private static final String OP = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String PAGE = "bbbbbbbb-0000-4000-8000-000000000001";
+
+    /** An id no page has, so the 404 example is not the 200 example. */
+    private static final String MISSING_PAGE = "bbbbbbbb-0000-4000-8000-000000000404";
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN = "test-access-token";
     private static final String BEARER = "Bearer " + TOKEN;
@@ -130,6 +137,7 @@ class PageControllerDocumentationTest {
                 .andExpect(jsonPath("$.data[0].context").value("pages"))
                 .andDo(document("pages/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The page id"),
                                 fieldWithPath("data[].context").description("The entity's collection: \"pages\""),
@@ -154,6 +162,7 @@ class PageControllerDocumentationTest {
                 .andExpect(jsonPath("$.body").value("<p>Hello</p>"))
                 .andDo(document("pages/get",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         responseFields(
                                 fieldWithPath("id").description("The page id"),
                                 fieldWithPath("context").description("\"pages\""),
@@ -179,6 +188,7 @@ class PageControllerDocumentationTest {
                 .andExpect(header().exists("Location"))
                 .andDo(document("pages/create",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestFields(
                                 fieldWithPath("title").description("Display title (1–255)"),
                                 fieldWithPath("handle").description("Operator-chosen URL segment (handle-shaped, unique per operator — a collision is a 409, never auto-suffixed)"),
@@ -195,8 +205,15 @@ class PageControllerDocumentationTest {
 
         mockMvc.perform(post("/api/tour-operators/{id}/pages", OP)
                         .header("Authorization", BEARER)
-                        .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
-                .andExpect(status().isConflict());
+                        // The published example sends the handle that is taken, not the
+                        // one that succeeds two sections above it.
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"About Us\",\"handle\":\"about-us\",\"body\":\"<p>Taken.</p>\"}"))
+                .andExpect(status().isConflict())
+                .andDo(document("pages/create-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -210,6 +227,7 @@ class PageControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/update",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         requestFields(
                                 fieldWithPath("title").description("Display title (whole replace)"),
                                 fieldWithPath("body").description("Raw HTML content (whole replace)"),
@@ -225,13 +243,15 @@ class PageControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/publish",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"))));
 
         mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/unpublish", OP, PAGE)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/unpublish",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"))));
     }
 
     @Test
@@ -245,6 +265,7 @@ class PageControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/rename",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         requestFields(fieldWithPath("handle")
                                 .description("The new canonical handle (handle-shaped; taken → 409)"))));
     }
@@ -257,7 +278,8 @@ class PageControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("pages/delete",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"))));
     }
 
     @Test
@@ -266,8 +288,44 @@ class PageControllerDocumentationTest {
         when(getPageUseCase.execute(any(), any(), any()))
                 .thenThrow(new ResourceNotFoundException("Page not found"));
 
-        mockMvc.perform(get("/api/tour-operators/{id}/pages/{pageId}", OP, PAGE)
+        mockMvc.perform(get("/api/tour-operators/{id}/pages/{pageId}", OP, MISSING_PAGE)
                         .header("Authorization", BEARER))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("pages/get-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
+    /**
+     * <b>The cross-namespace conflict, and the only place a client meets PATTERNS
+     * §4d.</b> A storefront handle resolves against localized handles first and
+     * canonical ones second, so the two are one namespace on the read side. Renaming a
+     * page onto a handle that <em>another page uses as a localized handle</em> is
+     * therefore a 409 — even though nothing in the `pages` table holds that value, and
+     * the operator can see no page called that in their own language.
+     *
+     * <p>It is a different message from the plain duplicate, which is why it is a
+     * different published example: without one, a client sees "already exists" for a
+     * handle that visibly does not.
+     */
+    @Test
+    void renameOntoALocalizedHandleIs409() throws Exception {
+        authenticated();
+        doThrow(new ResourceAlreadyExistsException(
+                "A page already uses this handle as a localized handle"))
+                .when(renamePageUseCase).execute(any(), any(), any(), any());
+
+        mockMvc.perform(post("/api/tour-operators/{id}/pages/{pageId}/rename", OP, PAGE)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"handle\":\"sobre-nosotros\"}"))
+                .andExpect(status().isConflict())
+                .andDo(document("pages/rename-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
+                        requestFields(fieldWithPath("handle").description(
+                                "The new handle. A 409 covers both namespaces: another page's canonical handle, or one it uses as a localized handle")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
 }

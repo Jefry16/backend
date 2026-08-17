@@ -35,6 +35,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
@@ -102,6 +104,7 @@ class PageTranslationControllerDocumentationTest {
                 .andExpect(jsonPath("$[0].locale").value("es"))
                 .andDo(document("page-translations/list",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         responseFields(
                                 fieldWithPath("[].locale").description("The overlay's locale"),
                                 fieldWithPath("[].title").description("Translated title; null = falls back to canonical").optional(),
@@ -122,7 +125,15 @@ class PageTranslationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.handle").value("sobre-nosotros"))
                 .andDo(document("page-translations/get",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"), parameterWithName("locale").description("BCP-47 locale code")),
+                        responseFields(
+                                fieldWithPath("locale").description("The content locale this row translates into"),
+                                fieldWithPath("title").description("Translated title; null where the canonical value serves").optional(),
+                                fieldWithPath("body").description("Translated body, raw HTML; null where the canonical value serves").optional(),
+                                fieldWithPath("seoTitle").description("Translated SEO title; null where the canonical value serves").optional(),
+                                fieldWithPath("seoDescription").description("Translated SEO description; null where the canonical value serves").optional(),
+                                fieldWithPath("handle").description("Localized handle; null where the canonical handle serves this locale").optional())));
     }
 
     @Test
@@ -136,6 +147,7 @@ class PageTranslationControllerDocumentationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("page-translations/upsert",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"), parameterWithName("locale").description("A content locale the operator publishes in — one it does not is a 422")),
                         requestFields(
                                 fieldWithPath("title").description("Translated title; blank/absent = untranslated").optional(),
                                 fieldWithPath("body").description("Translated raw-HTML body; blank/absent = untranslated").optional(),
@@ -152,6 +164,7 @@ class PageTranslationControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("page-translations/delete",
-                        requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id"), parameterWithName("locale").description("BCP-47 locale code"))));
     }
 }
