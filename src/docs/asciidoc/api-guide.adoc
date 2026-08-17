@@ -258,17 +258,18 @@ operation::auth/profile[]
 [[resources-set-avatar]]
 ==== Set Avatar
 
-Multipart (`file` part). The allowlist and the size cap are in the field table
-below; SVG is not accepted, for the same reason the media library refuses it.
+Multipart (`file` part). Allowed: `image/jpeg`, `image/png`, `image/webp` —
+narrower than the media library's, with no PDF. The size cap is in the field
+table below.
 
 operation::auth/set-avatar[]
 
 [[resources-set-avatar-unsupported-type]]
 ==== Set Avatar — Unsupported Type
 
-The allowlist is exact, and narrower than the media library's — an avatar is
-`image/jpeg`, `image/png` or `image/webp`, with no PDF. As there, `image/*` is
-not the rule: SVG matches it and is refused, because an SVG can carry script.
+As with the media library, **`image/*` is not the rule**: `image/gif` and
+`image/svg+xml` both match it and are both refused — SVG deliberately, because an
+SVG can carry script.
 
 operation::auth/set-avatar-unsupported-type[]
 

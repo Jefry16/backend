@@ -59,8 +59,11 @@ class ApiGuideNamesTheRealAllowlistTest {
      */
     private static final String REFUSED_ANCHOR = "==== Upload Media — Unsupported Type";
 
-    /** Where the avatar's own allowlist is stated in prose. */
-    private static final String AVATAR_ANCHOR = "==== Set Avatar — Unsupported Type";
+    /** Where the avatar states what it accepts. */
+    private static final String AVATAR_ANCHOR = "==== Set Avatar\n";
+
+    /** Where the avatar names what it refuses — which may not overlap the allowlist. */
+    private static final String AVATAR_REFUSED_ANCHOR = "==== Set Avatar — Unsupported Type";
 
     /**
      * Ends that sentence at a full stop <b>followed by whitespace</b>, not at any full
@@ -182,15 +185,22 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "types, which this test keeps true, and drop the number.")
                 .doesNotContain("exactly four types");
 
-        assertThat(namedInAvatarProse(guide))
+        List<String> avatarAllowed = SetAvatarUseCase.allowedContentTypes().stream().sorted().toList();
+        assertThat(mimeTokensIn(guide, AVATAR_ANCHOR))
                 .withFailMessage("""
                         The Set Avatar prose names a type the avatar does not accept, or \
                         omits one it does. Code allows %s. The part description is \
                         generated from SetAvatarUseCase and cannot drift; this sentence \
-                        is hand-written and can.""",
-                        SetAvatarUseCase.allowedContentTypes().stream().sorted().toList())
-                .containsExactlyElementsOf(
-                        SetAvatarUseCase.allowedContentTypes().stream().sorted().toList());
+                        is hand-written and can.""", avatarAllowed)
+                .containsExactlyElementsOf(avatarAllowed);
+
+        assertThat(mimeTokensIn(guide, AVATAR_REFUSED_ANCHOR))
+                .withFailMessage("""
+                        The Set Avatar error section names a type the avatar accepts. \
+                        Code allows %s. That section exists to name what is refused, so \
+                        naming an accepted type there tells a reader the opposite of the \
+                        truth.""", avatarAllowed)
+                .doesNotContainAnyElementsOf(avatarAllowed);
 
         assertThat(namedAsRefused(guide))
                 .withFailMessage("""
@@ -226,17 +236,26 @@ class ApiGuideNamesTheRealAllowlistTest {
      * The types the Set Avatar error section names, which is where the avatar's
      * allowlist reaches a reader in prose.
      *
-     * <p>An earlier version asserted against {@code SetAvatarUseCase} alone and never
-     * opened the guide, while its failure message claimed the two disagreed. Adding a
-     * sentence to that prose naming a type the code refuses left the build green — the
-     * exact scenario the message described.
+     * <p>Two earlier versions were wrong in opposite directions. The first asserted
+     * against {@code SetAvatarUseCase} alone and never opened the guide, so a sentence
+     * naming a refused type passed green. The second compared the whole
+     * <em>Unsupported Type</em> section for equality — which forbade that section from
+     * naming an unsupported type, the one thing it exists to do, so writing
+     * {@code `image/svg+xml`} the way the media sibling does turned correct prose red.
+     *
+     * <p>So the question is split the way the media allowlist splits it: the endpoint's
+     * own section states what is accepted and is compared for equality; the error
+     * section names what is refused and is compared for disjointness.
+     *
+     * <p>{@code image/*} survives both because {@link #MIME}'s character class has no
+     * {@code *} — load-bearing, and it looks accidental.
      */
-    private static List<String> namedInAvatarProse(String guide) {
-        int start = guide.indexOf(AVATAR_ANCHOR);
+    private static List<String> mimeTokensIn(String guide, String anchor) {
+        int start = guide.indexOf(anchor);
         assertThat(start)
                 .withFailMessage("No '%s' heading in %s. This assertion reads that "
                         + "section and nothing else, so a rename would let it pass by "
-                        + "examining no prose at all.", AVATAR_ANCHOR, GUIDE)
+                        + "examining no prose at all.", anchor.strip(), GUIDE)
                 .isGreaterThan(0);
         int end = guide.indexOf("\n==== ", start + 1);
         String section = guide.substring(start, end > 0 ? end : guide.length());
