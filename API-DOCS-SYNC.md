@@ -56,10 +56,11 @@ Verified 2026-08-16, so you do not have to rediscover it:
   open. Do not present any of it as a discovery.
 - `CLAUDE.md` for the auth model and the test traps, `PATTERNS.md` §4a, §4b and §9
   for the response and documentation-test conventions.
-- The current `API-DOCS-AUDIT.md`. **One rolling report covers the whole series**: each
-  pass replaces it and its header names the contexts done so far. Since findings are
-  now fixed in the same pass that finds them, a report describing fixed findings is
-  the normal state, not a stale one. It is deleted when the last context is done.
+- **`PATTERNS.md` §9a — what a documentation test publishes.** Every rule the
+  eleven-context series paid for lives there now, and each one cost a real defect:
+  the fixture-shaped request table, the `Null`-typed field, the restated constant,
+  the unreachable error example, the copied shape that was right once. Read it
+  before starting; it is the difference between this taking one pass and three.
 
 ## What is already enforced, and what it cannot see
 
@@ -206,14 +207,14 @@ A table of every endpoint in the context:
 Then the lettered findings. Then **the gaps to close first, ordered by how likely a
 consumer of this API is to be misled** — not by how easy they are to fix.
 
-Write it to **`API-DOCS-AUDIT.md`**, replacing whatever is there. The header names the
-context this pass covered and every pass before it, so the file always says how far the
-series has got.
+Write it to `API-DOCS-AUDIT.md`. **The file does not exist between passes** — the
+eleven-context series closed on 2026-08-17 and its report was deleted once its durable
+half reached `PATTERNS.md` §9a. Create it for the pass, commit it on the branch that
+produces it, and delete it in the same PR that lands the fixes. Anything that outlives
+one context belongs in §9a or `../MAP.md`, not in a report nobody re-reads.
 
-**The report is tracked.** Commit it on the branch that produces it, staging explicit
-paths — `git add -- API-DOCS-AUDIT.md src …`, **never `git add -A`**. **Delete it when
-the last context is done**, not per pass. Anything that outlives the series belongs in
-`../MAP.md`, not in the report.
+**The report is tracked** — stage explicit paths, `git add -- API-DOCS-AUDIT.md src …`,
+**never `git add -A`**.
 
 ## How the report must read
 

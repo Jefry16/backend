@@ -928,6 +928,90 @@ port takes the calling class, so log names still point at the reporter.
   presentation/config boundary by design, and a fence there would restate the
   layer rules ArchUnit already enforces.
 
+## 9a. What a documentation test publishes
+
+Every `document(...)` call writes to the API guide, so a documentation test is a
+contract more than a test. The eleven-context audit that produced these ran
+2026-08-16/17; each rule below cost at least one real defect, most of them two.
+
+**The strict field check is narrower than it looks.** `requestFields` fails on a
+field **present** in the payload and undocumented — never on a documented field
+**absent** from it. So a fixture sending two of a record's six produces a two-row
+table and a green build, and a client copying it omits the rest. `tour-operators/update`
+published 2 of 6 that way while the guide's prose described a field the table
+omitted. **Read the request record, not the fixture.**
+
+**A stubbed null publishes the type `Null`**, which tells a client the field can
+never hold anything. Any field your fixture leaves null needs an explicit
+`.type(JsonFieldType.STRING)` beside `.optional()`. It ran to 19 across the repo.
+Scan with `grep -r '^|`+Null+`$' target/generated-snippets --include='*-fields.adoc'` —
+**`*-fields`, not `response-fields`**: request tables carry it too.
+
+**`.optional()` publishes nothing.** The default template renders
+`Path | Type | Description` with no Optional column, so a create table and its
+PATCH come out byte-identical and the PATCH's fields read as mandatory. Put the
+partial rule in the **description text**, and check what omission actually does —
+several PATCHes here require every field and answer 422.
+
+**Never restate a constant from `src/main`.** A description or stubbed message that
+hand-copies an allowlist, a cap or a catalogue keeps publishing the old one after
+the source changes, and the suite stays green because the test stubs the code it
+copied from. Four instances: the media allowlist and its 25 MB cap, the avatar cap,
+the menu depth cap, and two metafield type catalogues.
+
+Two resolutions, in order of preference:
+1. **Reword so the sentence carries no value at all** and point at the generated
+   table or the published error that does. Nothing left to keep in step.
+2. **Derive it** — make the constant public with an accessor beside it
+   (`ContentType.ALLOWED`, `UploadMediaUseCase.MAX_BYTES`, `MenuItem.MAX_DEPTH`,
+   `MetafieldType.codes()`), and build both the refusal and the description from it.
+
+A predicate beats a second list: `MetafieldType.allowedAsMetaobjectField()` replaced
+an inlined `== METAOBJECT_REFERENCE` in two use cases *and* a hand-written eight-code
+description. **Prove it by mutation** — change the constant, rebuild, and check the
+published output moved. Search `.adoc` as well as `.java`: one probe reported six
+files moved and missed the seventh because it only searched test sources.
+
+**A published error example must be reachable and must differ from its happy path.**
+`PublishedExamplesAreHonestTest` fails the build on the second and cannot see the
+first. Vary the thing the error turns on — a missing id for a 404, a STAFF token for
+a 403 (that error is about who asks, so the URL stays), the clashing value for a 409.
+Then walk the request back through the use case in the order it runs its guards:
+`{"role":"OWNER"}` was published against "you cannot change your own role", which no
+caller can reach, and a 422 about nesting depth was published with an empty array
+that would have succeeded.
+
+**Publishing only the errors that already have assertions misses half of every
+symmetric pair.** `metaobjects/publish` had one and `unpublish` did not, so the guide
+described a symmetry as one-sided.
+
+**Verifying a shape does not verify its copies.** Both late passes worked by
+replication — one translation table written and copied to three siblings, one path
+description applied to every endpoint sharing a variable name. Each was right where
+it was written and wrong somewhere else: metaobject fields are keyed bare, not
+`namespace.key`; an upsert-only clause landed on a DELETE. Read each copy against
+its own endpoint.
+
+**A `{locale}` path variable does not mean the locale is validated.** Only the
+`Upsert*` use cases consult `OperatorLocalesQuery`; reads answer `{}` and deletes
+204. Say the 422 on the upsert and nothing on the others — per verb, not per section.
+
+**Errors are documented, not just happy paths.** Use
+`ApiErrorSnippets.errorFields()` (`src/test/java/com/vointika/shared/web/docs/`) —
+the shape is `status`, `error`, `message`, `code`, `timestamp`, there is no `path`,
+and `code` is `@JsonInclude(NON_NULL)` so it needs `.type(STRING)` as well as
+`.optional()`. An error a filter raises for the whole API (the 401) is documented
+once, centrally; an error an endpoint's own rule raises belongs to that endpoint.
+
+**Do not call `.snippets().withDefaults(...)`.** It *replaces* the default snippet
+set rather than adding to it, so the operation stops publishing a curl and an httpie
+example. It reached 61 operations across 18 classes, and no guard catches it —
+`ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not what
+it renders.
+
+**There is no `relaxed*` documentation in this repository, and there should stay
+none.** Each one suppresses the strict check.
+
 ## 10. Migrations
 
 Per-context folder `db/migration/<ctx>/`, independent V-sequence, own Postgres
