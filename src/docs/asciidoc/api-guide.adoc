@@ -635,8 +635,9 @@ operation::media/upload-unsupported-type[]
 [[resources-media-upload-too-large]]
 ==== Upload Media — Too Large
 
-25 MB, for any allowed type. **The request body in this example is elided** — a
-docs build cannot carry 26 MB of PNG.
+The cap applies to any allowed type, and the error body below states it.
+**The request body in this example is elided** — a docs build cannot carry a file
+that size.
 
 operation::media/upload-too-large[]
 

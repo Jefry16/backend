@@ -320,7 +320,7 @@ class MediaControllerDocumentationTest {
     }
 
     /**
-     * The 25 MB cap. The container spools the whole part before any handler runs, so
+     * The size cap. The container spools the whole part before any handler runs, so
      * a marginally oversize file still reaches the use case and gets this 422 rather
      * than the container's own error — see the multipart note in application.yml.
      */
@@ -332,7 +332,7 @@ class MediaControllerDocumentationTest {
                         org.mockito.ArgumentMatchers.anyLong(), any(), any());
 
         var big = new org.springframework.mock.web.MockMultipartFile(
-                "file", "poster.png", "image/png", "…26 MB of PNG, elided…".getBytes());
+                "file", "poster.png", "image/png", "…a PNG over the cap, elided…".getBytes());
 
         mockMvc.perform(multipart("/api/tour-operators/{id}/media", OPERATOR_ID)
                         .file(big)
@@ -341,7 +341,7 @@ class MediaControllerDocumentationTest {
                 .andDo(document("media/upload-too-large",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id")),
-                        requestParts(partWithName("file").description("A file over the 25 MB cap")),
+                        requestParts(partWithName("file").description("A file over the " + MAX_MB + " MB cap")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }
 

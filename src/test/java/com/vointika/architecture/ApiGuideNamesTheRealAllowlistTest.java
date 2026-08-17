@@ -80,7 +80,22 @@ class ApiGuideNamesTheRealAllowlistTest {
      */
     private static final Pattern MIME = Pattern.compile("`([a-z]+/[a-z0-9.+-]+)`");
 
-    /** The size the allowlist sentence promises, as in {@code ≤ 25 MB}. */
+    /**
+     * Every size in megabytes the guide states, as in {@code ≤ 25 MB}.
+     *
+     * <p><b>Scanned across the whole guide, not one sentence.</b> Scoping it to the
+     * {@code Allowed:} sentence left four more statements of the cap unguarded — the
+     * "Too Large" section restated it, so did the elision note beside it, and so did a
+     * part description that renders into the published table. Raising the cap and
+     * updating only the guarded sentence produced a green build with one guide telling
+     * a client the limit was 50 MB in two places and 25 MB in two others.
+     *
+     * <p>There is no exclusion list, deliberately: those restatements were <b>reworded
+     * to stop carrying a number</b> rather than exempted, because an exemption list is
+     * the hand-kept vocabulary these guards exist to remove. If a section needs to name
+     * a size that is not the cap, that is the moment to reconsider — not to add an
+     * entry here.
+     */
     private static final Pattern CAP_MB = Pattern.compile("(\\d+)\\s*MB");
 
     @Test
@@ -123,20 +138,24 @@ class ApiGuideNamesTheRealAllowlistTest {
                         beneath it generates itself.""", mentioned, allowed)
                 .isEqualTo(allowed);
 
-        Matcher cap = CAP_MB.matcher(allowlistSentence);
-        assertThat(cap.find())
-                .withFailMessage("The '%s' sentence states no size cap. It is the only "
-                        + "place the guide's prose promises one, so dropping it leaves "
-                        + "the limit undocumented.", ALLOWLIST_ANCHOR)
+        assertThat(CAP_MB.matcher(allowlistSentence).find())
+                .withFailMessage("The '%s' sentence states no size cap. It is where the "
+                        + "guide promises one, so dropping it leaves the limit "
+                        + "undocumented.", ALLOWLIST_ANCHOR)
                 .isTrue();
-        assertThat(Long.parseLong(cap.group(1)))
+
+        long capMb = UploadMediaUseCase.MAX_BYTES / (1024 * 1024);
+        List<String> statedSizes = CAP_MB.matcher(guide).results()
+                .map(r -> r.group(1)).distinct().sorted().toList();
+        assertThat(statedSizes)
                 .withFailMessage("""
-                        The guide's prose and UploadMediaUseCase.MAX_BYTES disagree about \
-                        the upload cap: prose says %s MB, code allows %d MB. The field \
-                        table beneath generates itself from MAX_BYTES, so raising the cap \
-                        leaves the two contradicting each other four words apart.""",
-                        cap.group(1), UploadMediaUseCase.MAX_BYTES / (1024 * 1024))
-                .isEqualTo(UploadMediaUseCase.MAX_BYTES / (1024 * 1024));
+                        The guide states a size in MB that is not the upload cap. Code \
+                        allows %d MB; the guide says %s. Every megabyte figure in this \
+                        document is the cap — the sections that used to restate it were \
+                        reworded to stop carrying a number, so a second figure means \
+                        either the cap moved and a restatement did not, or a new one \
+                        crept in.""", capMb, statedSizes)
+                .containsExactly(String.valueOf(capMb));
 
         assertThat(section)
                 .withFailMessage("The upload prose states a count of allowed types. "
