@@ -89,15 +89,17 @@ class SlotControllerDocumentationTest {
     /** A Tuesday and the Wednesday after it, so a Sunday pattern matches nothing. */
     private static final LocalDate TUESDAY = NEXT_MONTH.with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.TUESDAY));
 
-        private static final String SINGLE_BODY = """
+    private static final String SINGLE_BODY = """
             {"startAt":"%sT10:00","endAt":"%sT13:00",
              "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}"""
             .formatted(NEXT_MONTH, NEXT_MONTH);
-private static final String RECURRING_BODY = """
+
+    private static final String RECURRING_BODY = """
             {"days":[1,3,5],"startTime":"10:00","endTime":"13:00",
              "validFrom":"%s","validTo":"%s",
              "audiencePrices":[{"audienceId":"cccccccc-0000-4000-8000-000000000001","price":30.00,"capacity":10}]}"""
             .formatted(NEXT_MONTH, NEXT_MONTH.plusMonths(1));
+
     /**
      * A Tuesday-to-Wednesday window asking for Sundays — so no date in it matches, and
      * the request reaches the day-matching check rather than tripping the earlier

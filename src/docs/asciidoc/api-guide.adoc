@@ -904,9 +904,11 @@ ahead.
 operation::slots/create-recurring-no-match[]
 
 [[resources-slots-create-forbidden]]
-==== Create Slots — Forbidden
+==== Create a Slot — Forbidden
 
-Any member may read the schedule; only ADMIN+ may add to it.
+Any member may read the schedule; only ADMIN+ may add to it. **Both create
+endpoints answer this** — the example below is the single-departure one, and the
+recurring endpoint refuses a STAFF caller identically.
 
 operation::slots/create-single-forbidden[]
 
