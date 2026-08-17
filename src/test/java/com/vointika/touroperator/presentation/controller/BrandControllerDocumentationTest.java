@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -114,9 +116,12 @@ class BrandControllerDocumentationTest {
                                 fieldWithPath("logoMediaId")
                                         .description("Media id, not a URL — the storefront resolves it")
                                         .optional(),
-                                fieldWithPath("squareLogoMediaId").description("Media id, or null").optional(),
-                                fieldWithPath("faviconMediaId").description("Media id, or null").optional(),
-                                fieldWithPath("coverImageMediaId").description("Media id, or null").optional(),
+                                fieldWithPath("squareLogoMediaId").type(JsonFieldType.STRING)
+                                        .description("Media id, or null").optional(),
+                                fieldWithPath("faviconMediaId").type(JsonFieldType.STRING)
+                                        .description("Media id, or null").optional(),
+                                fieldWithPath("coverImageMediaId").type(JsonFieldType.STRING)
+                                        .description("Media id, or null").optional(),
                                 fieldWithPath("colors.primary[].background")
                                         .description("Lower-case hex; order is significant").optional(),
                                 fieldWithPath("colors.primary[].foreground").description("Lower-case hex").optional(),
@@ -160,9 +165,12 @@ class BrandControllerDocumentationTest {
                                 fieldWithPath("logoMediaId")
                                         .description("Must be in this operator's media library, else 422")
                                         .optional(),
-                                fieldWithPath("squareLogoMediaId").description("Media id, or null").optional(),
-                                fieldWithPath("faviconMediaId").description("Media id, or null").optional(),
-                                fieldWithPath("coverImageMediaId").description("Media id, or null").optional(),
+                                fieldWithPath("squareLogoMediaId").type(JsonFieldType.STRING)
+                                        .description("Media id, or null").optional(),
+                                fieldWithPath("faviconMediaId").type(JsonFieldType.STRING)
+                                        .description("Media id, or null").optional(),
+                                fieldWithPath("coverImageMediaId").type(JsonFieldType.STRING)
+                                        .description("Media id, or null").optional(),
                                 fieldWithPath("colors.primary[].background")
                                         .description("Six-digit hex; case-insensitive, stored lower-case. "
                                                 + "Array order becomes the palette order a theme indexes")
@@ -186,8 +194,16 @@ class BrandControllerDocumentationTest {
 
         mockMvc.perform(put("/api/tour-operators/{id}/brand", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token")
-                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isUnprocessableEntity());
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"logoMediaId\":\"019f8100-ffff-7000-8000-0000000000ff\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("tour-operators/brand/update-invalid",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        requestFields(fieldWithPath("logoMediaId").description(
+                                "A media id from another operator's library. All four image ids are checked "
+                                        + "in one batch, so any one of them raises this")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test

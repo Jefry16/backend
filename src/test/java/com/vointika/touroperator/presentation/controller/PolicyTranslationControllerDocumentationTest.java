@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -53,6 +54,7 @@ class PolicyTranslationControllerDocumentationTest {
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
     private static final String POLICY_ID = "019f8000-0000-7000-8000-000000000001";
+    private static final String MISSING_POLICY = "019f8000-0000-7000-8000-0000000000ff";
     private static final String BODY =
             "{\"title\":\"Política de cancelación\","
                     + "\"body\":\"<p>Gratis hasta 48h antes.</p>\"}";
@@ -157,10 +159,18 @@ class PolicyTranslationControllerDocumentationTest {
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/policies/{policyId}/translations/{locale}",
-                        OPERATOR_ID, POLICY_ID, "es")
+                        OPERATOR_ID, MISSING_POLICY, "es")
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("tour-operators/policy-translations/upsert-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("policyId").description(
+                                        "A policy that does not exist yet. There is nothing to overlay, so "
+                                                + "write the canonical policy first"),
+                                parameterWithName("locale").description("The locale being translated")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -173,6 +183,14 @@ class PolicyTranslationControllerDocumentationTest {
                         OPERATOR_ID, POLICY_ID, "fr")
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("tour-operators/policy-translations/upsert-unsupported-locale",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("policyId").description("The policy id"),
+                                parameterWithName("locale").description(
+                                        "A well-formed code the operator does not publish in. Only the "
+                                                + "upsert checks this; the read and the delete do not")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

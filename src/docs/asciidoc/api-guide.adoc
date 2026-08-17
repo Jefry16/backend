@@ -331,6 +331,29 @@ The authenticated caller becomes the operator's OWNER.
 
 operation::tour-operators/create[]
 
+**Creating a store does more than store a name**, and none of it is in the
+response — the 201 carries only a `Location`. Read the operator back to see any
+of it:
+
+* A **handle** is generated from the name. It is the storefront subdomain and it
+  is not editable afterwards. A collision is suffixed silently, so a second
+  "Sunset Tours" becomes `sunset-tours-2` rather than being refused.
+* The store is **password-protected from the moment it exists**, with a
+  generated password, the way a new Shopify store is. It answers the gate page,
+  not the shop, until an ADMIN turns protection off — see
+  <<resources-operator-password-update>>.
+* Two menus already exist: `main-menu` and `footer`. They are ordinary menus and
+  can be renamed or deleted, but creating one with either handle is a 409.
+
+[[resources-create-operator-conflict]]
+==== Create Tour Operator — Name Already Used
+
+409. One name per owner: creating a second operator with a name you already use
+is refused, which is what makes a double-submitted form safe. Two *different*
+owners may both run "Sunset Tours" — the check is scoped to you.
+
+operation::tour-operators/create-conflict[]
+
 [[resources-invite]]
 ==== Invite a Team Member
 
@@ -338,6 +361,16 @@ ADMIN+ only. Invites an email as ADMIN or STAFF (never OWNER) and sends an
 accept link.
 
 operation::tour-operators/invitations/create[]
+
+[[resources-invite-not-found]]
+==== Invite a Team Member — Not a Member
+
+404. Every route under `/api/tour-operators/{id}` answers this way when you are
+not a member of that operator, and it is byte-identical to the answer for an
+operator that does not exist. The interceptor runs before the ADMIN+ gate, so a
+non-member never sees a 403 here — only a member with too low a role does.
+
+operation::tour-operators/invitations/create-not-found[]
 
 [[resources-invitations-list]]
 ==== List Invitations
@@ -385,6 +418,19 @@ Public — validates the emailed token before the accept form.
 
 operation::invitations/preview[]
 
+[[resources-invitation-preview-gone]]
+==== Preview an Invitation — Link No Longer Valid
+
+**410 Gone, the only one in this API.** An accept link lasts seven days, and a
+resend mints a fresh token that kills the previous one — so an older email in the
+same thread is a dead link rather than a wrong one. Revoking has the same effect.
+
+410 rather than 404 on purpose: it says "this existed and is over", so the client
+tells the invitee to ask for a new invitation instead of offering a retry. An
+unknown token — one that never existed — is a 404.
+
+operation::invitations/preview-gone[]
+
 [[resources-invitation-accept]]
 ==== Accept an Invitation
 
@@ -392,6 +438,27 @@ Public. A new invitee provides a name + password and is auto-logged-in; an
 already-authenticated user (matching email) simply joins.
 
 operation::invitations/accept[]
+
+[[resources-invitation-accept-conflict]]
+==== Accept an Invitation — You Already Have an Account
+
+409, and **the most common way this flow fails**. Someone with a Vointika account
+who opened the link while logged out and filled in the name-and-password form
+lands here: the endpoint will not set a password on an account that has one.
+
+The invitation is still valid. Send them to log in and back to the same link —
+an authenticated accept needs no body at all.
+
+operation::invitations/accept-conflict[]
+
+[[resources-invitation-accept-forbidden]]
+==== Accept an Invitation — Issued to Someone Else
+
+403. An invitation belongs to one email address. An authenticated caller whose
+account email differs is refused rather than joined, so forwarding the email to a
+colleague does not hand them the seat.
+
+operation::invitations/accept-forbidden[]
 
 [[resources-members-list]]
 ==== List Team Members
@@ -403,19 +470,64 @@ with `cursor`.
 
 operation::tour-operators/members/list[]
 
+[[resources-members-list-not-found]]
+==== List Team Members — Not a Member
+
+404, from the membership interceptor. See
+<<resources-invite-not-found>> — the same answer covers every tenant-scoped route.
+
+operation::tour-operators/members/list-not-found[]
+
 [[resources-members-change-role]]
 ==== Change a Member's Role
 
-ADMIN+. Promoting to OWNER is an owner-only ownership transfer.
+ADMIN+ for ADMIN and STAFF.
+
+**OWNER is not a role you grant — it is a transfer, and it costs you the store.**
+Sending `{"role":"OWNER"}` promotes that member and **demotes you to ADMIN in the
+same transaction**. Only an owner may send it, and only the new owner can hand it
+back. An admin UI should not put OWNER in the same dropdown as the other two
+without saying this.
+
+An ADMIN may change any ordinary member's role and is refused on the owner's.
+Nobody changes their own role, whatever it is.
 
 operation::tour-operators/members/change-role[]
+
+[[resources-members-change-role-forbidden]]
+==== Change a Member's Role — Only an Owner Touches the Owner
+
+403. The membership check has already passed here, so this is a line *inside* a
+permission an admin has: they may edit every member except the owner.
+
+operation::tour-operators/members/change-role-forbidden[]
+
+[[resources-members-change-role-conflict]]
+==== Change a Member's Role — Not Your Own
+
+409. An owner cannot demote themselves out of the last owner slot and an admin
+cannot self-promote, so the endpoint refuses your own id outright. To step down,
+transfer ownership; the transfer demotes you as part of the same call.
+
+operation::tour-operators/members/change-role-conflict[]
 
 [[resources-members-remove]]
 ==== Remove a Member
 
-Self = leave; other = ADMIN+. The last owner cannot be removed.
+Self = leave; other = ADMIN+. **Removing yourself needs no role at all** — a
+STAFF member can leave — so the role gate applies only when the id is someone
+else's. Only an owner may remove an owner.
 
 operation::tour-operators/members/remove[]
+
+[[resources-members-remove-conflict]]
+==== Remove a Member — The Last Owner Stays
+
+409, from either side: the sole owner cannot leave, and an admin cannot remove
+them. A store always has exactly one owner. Transfer ownership first — see
+<<resources-members-change-role>>.
+
+operation::tour-operators/members/remove-conflict[]
 
 
 [[resources-operator-locales-get]]
@@ -425,6 +537,14 @@ Any member. The operator's default/primary content locale + its supported set.
 
 operation::tour-operators/locales/get[]
 
+[[resources-operator-locales-get-not-found]]
+==== Get the Operator's Languages — Not a Member
+
+404. The tenant-isolation answer, shown once more here because this is often the
+first tenant-scoped call a client makes. See <<resources-invite-not-found>>.
+
+operation::tour-operators/locales/get-not-found[]
+
 [[resources-operator-locales-update]]
 ==== Set the Operator's Languages
 
@@ -432,7 +552,18 @@ ADMIN+ only. Replaces the primary + supported set. Each code must be a supported
 platform language (`GET /api/languages`) or → 422; the primary must be one of the
 supported locales or → 422.
 
+**Both fields are required on every call**, despite the PATCH: this replaces the
+pair, so sending one alone is a 422 rather than a partial update.
+
 operation::tour-operators/locales/update[]
+
+[[resources-operator-locales-update-invalid]]
+==== Set the Operator's Languages — Invalid
+
+422. A code that is not a platform language, a primary that is not in the
+supported set, an empty supported set, or only one of the two fields.
+
+operation::tour-operators/locales/update-invalid[]
 
 [[resources-operator-get]]
 ==== Get the Operator
@@ -474,6 +605,15 @@ ADMIN+ only. `ogImageMediaId` must be a media id from this operator's library.
 
 operation::tour-operators/seo/update[]
 
+[[resources-operator-seo-update-invalid]]
+==== Update Operator SEO — Foreign Image
+
+422. The image must be in this operator's own media library. A valid id from
+another operator is refused rather than rendered, so a public page can never
+point at someone else's file.
+
+operation::tour-operators/seo/update-invalid[]
+
 [[resources-operator-brand-get]]
 ==== Get the Brand
 
@@ -492,6 +632,18 @@ and https only.
 
 operation::tour-operators/brand/update[]
 
+[[resources-operator-brand-update-invalid]]
+==== Update the Brand — Invalid
+
+422. All four image ids are checked against this operator's library in one pass,
+so any one of them raises this. So does a colour that is not six-digit hex, a
+repeated social platform, and a social URL that is not `http` or `https`.
+
+**Nothing is written when any of it fails** — a payload with a good slogan and a
+bad colour leaves the brand exactly as it was, rather than half-applied.
+
+operation::tour-operators/brand/update-invalid[]
+
 [[resources-operator-password-get]]
 ==== Get Storefront Password Protection
 
@@ -507,6 +659,15 @@ ADMIN+ only. Enabling with no password stored and none supplied → 422. A null 
 blank password keeps the stored one; a blank message clears it.
 
 operation::storefront-password/update[]
+
+[[resources-operator-password-update-invalid]]
+==== Update Storefront Password Protection — No Password to Enable
+
+422. Turning the gate on with nothing stored and nothing supplied. Operators
+created since the gate landed always have a generated password, so this is
+reachable mainly on the older ones that were left open.
+
+operation::storefront-password/update-invalid[]
 
 [[resources-operator-translations-list]]
 ==== List Operator Translations
@@ -530,6 +691,16 @@ brand's slogan and short description. A blank field means untranslated, so the
 canonical value is used. Unsupported locale → 422.
 
 operation::tour-operators/translations/upsert[]
+
+[[resources-operator-translations-upsert-invalid]]
+==== Upsert an Operator Translation — Locale Not Published
+
+422. `{locale}` must be one the operator publishes in, not merely a well-formed
+code. **Only the upsert checks this.** The read answers 200 with an empty
+overlay and the delete answers 204, so a client cannot use those two to discover
+which locales are enabled — ask <<resources-operator-locales-get>>.
+
+operation::tour-operators/translations/upsert-unsupported-locale[]
 
 [[resources-operator-translations-delete]]
 ==== Delete an Operator Translation
@@ -557,12 +728,43 @@ verbatim and rendered unescaped.
 
 operation::tour-operators/policies/create[]
 
+[[resources-policies-create-conflict]]
+==== Create a Store Policy — Type Already Used
+
+409. One policy per type, and the type is the document's storefront address. To
+replace the text of an existing policy, PUT it; to change a policy's type, delete
+it and create the other.
+
+operation::tour-operators/policies/create-conflict[]
+
+[[resources-policies-create-forbidden]]
+==== Create a Store Policy — STAFF May Not Write
+
+403, and **the shape of the role boundary across this whole section**. A STAFF
+member reads everything an operator owns — policies, menus, brand, the team
+roster, the storefront password — and is refused on every write. Twenty-one of
+this section's endpoints gate on ADMIN+ or OWNER and answer exactly this way.
+
+It is a 403 and not a 404 because the membership check has already passed: the
+caller *is* a member, just not a senior enough one. A non-member gets
+<<resources-invite-not-found>> instead, and never learns the operator exists.
+
+operation::tour-operators/policies/create-forbidden[]
+
 [[resources-policies-get]]
 ==== Get a Store Policy
 
 Any member. A policy id belonging to another operator → 404.
 
 operation::tour-operators/policies/get[]
+
+[[resources-policies-get-not-found]]
+==== Get a Store Policy — Not Found
+
+404. The lookup binds the id to the tenant, so a policy that does not exist and
+one that belongs to another operator are byte-identical here.
+
+operation::tour-operators/policies/get-not-found[]
 
 [[resources-policies-update]]
 ==== Update a Store Policy
@@ -594,6 +796,23 @@ document. Unsupported locale → 422; an unwritten policy → 404.
 
 operation::tour-operators/policy-translations/upsert[]
 
+[[resources-policy-translations-upsert-not-found]]
+==== Upsert a Policy Translation — No Such Policy
+
+404. A translation overlays a canonical document, so there has to be one. Write
+the policy in the operator's own language first, then translate it.
+
+operation::tour-operators/policy-translations/upsert-not-found[]
+
+[[resources-policy-translations-upsert-invalid]]
+==== Upsert a Policy Translation — Locale Not Published
+
+422, on the same rule as
+<<resources-operator-translations-upsert-invalid>>: only the upsert checks the
+locale against the operator's published set.
+
+operation::tour-operators/policy-translations/upsert-unsupported-locale[]
+
 [[resources-policy-translations-delete]]
 ==== Delete a Policy Translation
 
@@ -624,6 +843,15 @@ ADMIN+ only. The handle is immutable once set; a duplicate → 409.
 
 operation::menus/create[]
 
+[[resources-menus-create-conflict]]
+==== Create a Menu — Handle Already Used
+
+409. Worth knowing before the first call: **creating an operator seeds
+`main-menu` and `footer`**, so both handles collide for an operator that has
+never made a menu. Rename or delete the seeded one, or pick another handle.
+
+operation::menus/create-conflict[]
+
 [[resources-menus-rename]]
 ==== Rename a Menu
 
@@ -639,6 +867,19 @@ written, ids are fresh on each save, and one audit event is recorded. Depth is
 capped at 3. EXPERIENCE and PAGE targets must belong to this operator → 422.
 
 operation::menus/replace-items[]
+
+[[resources-menus-replace-items-invalid]]
+==== Replace a Menu's Items — Invalid Tree
+
+422. Nesting past three levels, a link type that does not match the fields sent,
+a resource id from another operator, or a translation for a locale the operator
+does not publish.
+
+**The whole save is refused, not the offending node** — the tree is validated
+before anything is written, so the menu on the storefront is never left half
+updated.
+
+operation::menus/replace-items-invalid[]
 
 [[resources-menus-delete]]
 ==== Delete a Menu

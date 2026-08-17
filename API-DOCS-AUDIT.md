@@ -42,10 +42,16 @@ These results hold repo-wide and save every later pass the work:
   **`Null`** — telling a client the field can never hold anything. It is not about
   cursors: `nextCursor` was 10 of 14 list endpoints (#172), `page-translations/get`
   published `seoTitle` and `seoDescription` that way while its own list got them right
-  (#175), and **nine more are still `Null` on `main`**, all in `touroperator`: `brand/get` and
-  `brand/update` each publish three media ids that way, plus
-  `tour-operators/get`'s `address.address2` and `acceptedAt` on both invitation reads.
-  It read six until a scan of `response-fields.adoc` alone was widened to
+  (#175), and `touroperator` carried the last nine — three media ids each on
+  `brand/get` and `brand/update`, `tour-operators/get`'s `address.address2`, and
+  `acceptedAt` on both invitation reads. **The repo-wide count is now zero.** Keep it
+  there with
+
+  ```
+  grep -rc '^|`+Null+`$' target/generated-snippets --include='*-fields.adoc' | grep -v ':0'
+  ```
+
+  It read six until that scan was widened from `response-fields.adoc` to
   `*-fields.adoc` — **request tables carry this defect too**. Check the whole record,
   not the cursor.
 - **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
@@ -268,6 +274,66 @@ table names `id`. The name never reaches the wire, so nothing is wrong for a
 client; it is a cosmetic mismatch with the guide's own prose, repo-wide rather
 than this context's, and changing 208 call sites inside a documentation pass
 would bury the pass. Left alone deliberately.
+
+## What was fixed
+
+Suite **1245 → 1253**; operations **188 → 210**. All twenty-two new operations are
+errors, so this context went from publishing none to publishing the whole shape of
+how it refuses things.
+
+- **F1** — the `role` description and the guide both say it now: OWNER is a
+  transfer, it demotes you to ADMIN in the same transaction, and only the new
+  owner can hand it back. Plus `members/change-role-forbidden` (an admin may not
+  touch the owner), `members/change-role-conflict` (never your own role) and
+  `members/remove-conflict` (the last owner stays).
+- **F2** — `invitations/preview-gone` publishes the API's **first and only 410**,
+  under a heading saying why it is not a 404: 410 means ask for a new invitation,
+  404 means retry. `invitations/accept-conflict` publishes the routine failure —
+  you already have an account, so log in and return to the link — and
+  `invitations/accept-forbidden` the wrong-email refusal.
+- **F3** — the update fixture sends all six fields, so the table goes from 2 rows
+  to 12. `address`'s whole-replace rule and `timezoneId`'s wall-clock rule are in
+  the contract now, not only in prose the table contradicted.
+- **F4** — `policies/create-forbidden` publishes the 403 once, under a heading
+  that states the rule for all twenty-one gated endpoints: STAFF reads everything
+  and writes nothing, and it is a 403 rather than a 404 because the caller *is* a
+  member. The other 403s are the same answer and are not duplicated.
+- **F5** — `pathParameters` on all sixteen, `{token}` included.
+- **F6** — the nine are typed, and **the repo-wide count is zero**. Verified with
+  the scan in the header block, not with the six the first pass found.
+- **F7** — the Create section names the three side effects: the generated handle,
+  the store arriving password-protected, and the two seeded menus. Plus
+  `tour-operators/create-conflict` for the duplicate name, and a
+  `menus/create-conflict` heading connecting the two — `main-menu` collides for an
+  operator that has never made a menu.
+- **The near-miss under G is closed**: both `locales` field descriptions say they
+  are required on every call, and the guide says the PATCH replaces the pair.
+- Also published, from assertions that already existed and showed nothing:
+  `policies/create-conflict`, `policies/get-not-found`,
+  `policy-translations/upsert-not-found`,
+  `policy-translations/upsert-unsupported-locale`,
+  `translations/upsert-unsupported-locale`, `brand/update-invalid`,
+  `seo/update-invalid`, `storefront-password/update-invalid`,
+  `locales/update-invalid`, `locales/get-not-found`,
+  `invitations/create-not-found`, `members/list-not-found` and
+  `menus/replace-items-invalid`.
+
+**`menus/replace-items-invalid` could not have produced its own error**, which is
+the `slots` lesson repeating. The assertion sent `{"items":[]}` while stubbing a
+"nested at most 3 levels deep" refusal — an empty array would have succeeded. It
+sends a four-level tree now. An error example that cannot cause the error is worse
+than none, because a reader copies it and it works.
+
+**Eleven of the twenty-two errors had to be varied away from their happy path** to
+satisfy `PublishedExamplesAreHonestTest`: a distinct operator id for each tenant
+404, a missing policy id, a STAFF token for the 403, a second title for the 409.
+Every one was varied while writing rather than after the guard fired — which is
+what having the guard is for.
+
+**Everything above was checked in `target/generated-docs/api-guide.html`**, not
+only in the snippets: 210 macros, 210 snippet directories, every one rendering a
+curl example, and the no-field-table list still at 9 and still entirely
+`metafield`.
 
 ---
 

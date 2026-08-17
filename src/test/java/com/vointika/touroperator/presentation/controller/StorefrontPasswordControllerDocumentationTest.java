@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -38,6 +39,8 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -86,6 +89,7 @@ class StorefrontPasswordControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andDo(document("storefront-password/get",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("enabled").description("Whether the storefront is password-protected"),
@@ -104,6 +108,7 @@ class StorefrontPasswordControllerDocumentationTest {
                                 + "\"message\":\"We open in August\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("storefront-password/update",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("enabled").description("Turn password protection on/off"),
@@ -121,6 +126,14 @@ class StorefrontPasswordControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"enabled\":true}"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("storefront-password/update-invalid",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        requestFields(fieldWithPath("enabled").description(
+                                "Turning the gate on with no password stored and none supplied. In practice "
+                                        + "an operator created after #157 always has one, so this is reachable "
+                                        + "mainly on the older operators that were left open")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

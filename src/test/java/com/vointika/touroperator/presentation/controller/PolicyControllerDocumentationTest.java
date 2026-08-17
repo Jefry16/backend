@@ -1,5 +1,7 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.exception.ForbiddenException;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -67,7 +69,9 @@ class PolicyControllerDocumentationTest {
 
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+    private static final String STAFF_USER_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
     private static final String POLICY_ID = "019f8000-0000-7000-8000-000000000001";
+    private static final String MISSING_POLICY = "019f8000-0000-7000-8000-0000000000ff";
     private static final String CREATE_BODY =
             "{\"type\":\"CANCELLATION\",\"title\":\"Cancellation policy\","
                     + "\"body\":\"<h2>Cancellations</h2><p>Free up to 48h before.</p>\"}";
@@ -197,8 +201,20 @@ class PolicyControllerDocumentationTest {
 
         mockMvc.perform(post("/api/tour-operators/{id}/policies", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token")
-                        .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
-                .andExpect(status().isConflict());
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"CANCELLATION\",\"title\":\"Cancellations (v2)\","
+                                + "\"body\":\"<p>Superseded copy.</p>\"}"))
+                .andExpect(status().isConflict())
+                .andDo(document("tour-operators/policies/create-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestFields(
+                                fieldWithPath("type").description(
+                                        "A type this operator already has. One policy per type, forever — "
+                                                + "to replace the text, PUT the existing one"),
+                                fieldWithPath("title").description("Ignored — the type decides"),
+                                fieldWithPath("body").description("Ignored — the type decides")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -245,9 +261,41 @@ class PolicyControllerDocumentationTest {
         doThrow(new ResourceNotFoundException("Policy not found"))
                 .when(getUseCase).execute(any(), any(), any());
 
-        mockMvc.perform(get("/api/tour-operators/{id}/policies/{policyId}", OPERATOR_ID, POLICY_ID)
+        mockMvc.perform(get("/api/tour-operators/{id}/policies/{policyId}", OPERATOR_ID, MISSING_POLICY)
                         .header("Authorization", "Bearer test-access-token"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("tour-operators/policies/get-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("policyId").description(
+                                        "A policy id that does not exist, or belongs to another operator — "
+                                                + "the two are byte-identical here")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * <b>The role line, published once for this context.</b> Twenty-one of the
+     * forty endpoints here gate on ADMIN+ or OWNER and the guide showed a reader
+     * none of them. A STAFF member lists and reads policies and is refused on
+     * every write — 403, not 404, because the membership check has already passed.
+     */
+    @Test
+    void aStaffMemberCannotWriteAPolicy() throws Exception {
+        when(accessTokenValidator.isValid("staff-access-token")).thenReturn(true);
+        when(accessTokenValidator.extractUserId("staff-access-token")).thenReturn(STAFF_USER_ID);
+        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+                .when(createUseCase).execute(any(), any(), any());
+
+        mockMvc.perform(post("/api/tour-operators/{id}/policies", OPERATOR_ID)
+                        .header("Authorization", "Bearer staff-access-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
+                .andExpect(status().isForbidden())
+                .andDo(document("tour-operators/policies/create-forbidden",
+                        requestHeaders(headerWithName("Authorization").description(
+                                "Bearer access token for a STAFF member — this error is about who asks, "
+                                        + "so the URL and the body are the successful call's")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test

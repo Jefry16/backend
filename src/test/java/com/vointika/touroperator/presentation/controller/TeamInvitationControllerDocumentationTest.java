@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -65,6 +66,7 @@ import java.util.List;
 class TeamInvitationControllerDocumentationTest {
 
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
+    private static final String MISSING_OP = "019f7f33-0000-7dc1-b008-000000000000";
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
     private MockMvc mockMvc;
@@ -120,6 +122,7 @@ class TeamInvitationControllerDocumentationTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andDo(document("tour-operators/invitations/create",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("email").description("The invitee's email address"),
@@ -160,6 +163,7 @@ class TeamInvitationControllerDocumentationTest {
                 .andExpect(jsonPath("$.data[0].invitedBy.name").value("Olive Owner"))
                 .andExpect(jsonPath("$.nextCursor").value("eyJ2MSI6Im5leHQifQ"))
                 .andDo(document("tour-operators/invitations/list",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The invitation id"),
@@ -171,7 +175,8 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("data[].expired").description("True when a PENDING invitation is past its expiry window"),
                                 fieldWithPath("data[].createdAt").description("When the invitation was issued"),
                                 fieldWithPath("data[].expiresAt").description("When the accept link lapses"),
-                                fieldWithPath("data[].acceptedAt").description("When it was accepted, or null").optional(),
+                                fieldWithPath("data[].acceptedAt").type(JsonFieldType.STRING)
+                                        .description("When it was accepted, or null").optional(),
                                 fieldWithPath("data[].invitedBy.id").description("The inviting user's id"),
                                 fieldWithPath("data[].invitedBy.context").description("The entity's collection: \"users\""),
                                 fieldWithPath("data[].invitedBy.name").description("The inviter's display name, frozen at issue time (always present)"),
@@ -209,7 +214,8 @@ class TeamInvitationControllerDocumentationTest {
                                 fieldWithPath("expired").description("True when a PENDING invitation is past its expiry window"),
                                 fieldWithPath("createdAt").description("When the invitation was issued"),
                                 fieldWithPath("expiresAt").description("When the accept link lapses"),
-                                fieldWithPath("acceptedAt").description("When it was accepted, or null").optional(),
+                                fieldWithPath("acceptedAt").type(JsonFieldType.STRING)
+                                        .description("When it was accepted, or null").optional(),
                                 fieldWithPath("invitedBy.id").description("The inviting user's id"),
                                 fieldWithPath("invitedBy.context").description("The entity's collection: \"users\""),
                                 fieldWithPath("invitedBy.name").description("The inviter's display name, frozen at issue time (always present)"))));
@@ -270,14 +276,20 @@ class TeamInvitationControllerDocumentationTest {
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
         doThrow(new ResourceNotFoundException("Tour operator not found"))
-                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(OPERATOR_ID)));
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(MISSING_OP)));
 
-        mockMvc.perform(post("/api/tour-operators/{id}/invitations", OPERATOR_ID)
+        mockMvc.perform(post("/api/tour-operators/{id}/invitations", MISSING_OP)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "email": "teammate@example.com", "name": "Teammate", "role": "STAFF" }"""))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("tour-operators/invitations/create-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description(
+                                "An operator you are not a member of. The interceptor answers before the "
+                                        + "ADMIN+ gate runs, so a non-member never sees a 403")),
+                        responseFields(ApiErrorSnippets.errorFields())));
 
         Mockito.verifyNoInteractions(inviteTeamMemberUseCase);
     }

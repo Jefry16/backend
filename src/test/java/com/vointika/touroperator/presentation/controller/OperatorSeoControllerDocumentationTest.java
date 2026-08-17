@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -134,7 +135,13 @@ class OperatorSeoControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"ogImageMediaId\":\"" + MEDIA_ID + "\"}"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("tour-operators/seo/update-invalid",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        requestFields(fieldWithPath("ogImageMediaId").description(
+                                "A media id from another operator's library")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
