@@ -873,6 +873,10 @@ operation::slots/get-not-found[]
 [[resources-slots-create-single]]
 ==== Create a Slot
 
+**Note the singular path**, `…/experiences/{id}/slot`. The plural
+`…/experiences/{id}/slots` is the recurring endpoint below, and posting a
+single-departure body to it answers a 422 about `days`.
+
 ADMIN+ only. Start and end are operator-local; the span must be positive and at
 most 24 hours, and the date must not be in the past. Per-audience price and
 capacity are frozen at creation.
@@ -881,6 +885,9 @@ operation::slots/create-single[]
 
 [[resources-slots-create-recurring]]
 ==== Create Recurring Slots
+
+**Note the plural path**, `…/experiences/{id}/slots` — one character from the
+single-departure endpoint above.
 
 ADMIN+ only. Generates one slot per matching day in the window.
 
@@ -906,8 +913,10 @@ operation::slots/create-single-forbidden[]
 [[resources-slots-update]]
 ==== Update a Slot
 
-ADMIN+ only. Status and per-audience capacity. Timing is immutable — cancel and
-recreate instead.
+ADMIN+ only. **Per-audience capacity only.** Timing is immutable — cancel and
+recreate instead — and status is not an operator choice: `SOLD_OUT` is counted
+from bookings and `CANCELLED` has its own endpoint. The request body has no
+`status` field.
 
 operation::slots/update[]
 

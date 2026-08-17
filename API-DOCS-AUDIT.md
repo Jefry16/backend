@@ -140,7 +140,19 @@ Caught in review; both are covered now.*
 
 And `experiences/update` — a whole replace — documented no request body at all.
 
-## G. Prose drift — none
+## G. Prose drift — one, and this pass rewrote the section around it
+
+**`Update a Slot` promised "Status and per-audience capacity".** Status is not
+updatable, and four places say so — the `requestFields` table rendered directly
+below it (which carries `capacities[]` and nothing else), the `status` description in
+the response table on the same page, `UpdateSlotInput:9`, and this pass's own test
+comment. `SlotStatus`'s javadoc records that status *was* briefly PATCH-writeable, so
+the sentence looks like the survivor of removing it.
+
+A client reads it, sends `{"status": "CANCELLED"}`, and gets a 400 for a body with no
+such field, while `cancel` is its own endpoint two sections down. Pre-existing on
+`main`, and this section reported the category clean while rewriting the tables that
+contradict it.
 
 ## H. Description quality — none
 
@@ -164,6 +176,19 @@ headers, path variables and body.
 - **`slots/create-forbidden` was silently outside `PublishedExamplesAreHonestTest`** —
   the guard finds a happy path by longest name *prefix*, and no operation is a prefix
   of that name. Renamed to `slots/create-single-forbidden`, which engages it.
+- **`SOLD_OUT` stopped being published as live behaviour.** The description said it
+  *is* derived from bookings — present tense, in four operations. Nothing writes it:
+  `grep -rn "SOLD_OUT" src/main/java` returns the enum declaration and two javadoc
+  mentions, no assignment. It is counted at checkout success and checkout does not
+  exist, so the only rows carrying it are the dev seed's. A client greying out full
+  departures would have waited for a value the API cannot produce — and it appears to
+  work against the seed, which is worse than never appearing. The description says
+  **not written yet** now.
+- **The singular/plural path trap is stated where a reader meets it.**
+  `…/experiences/{id}/slot` creates one departure and `…/slots` creates a recurring
+  pattern; the published curls differ by one character, and a client following REST
+  convention posts a single-departure body to the collection path and gets a 422 about
+  `days`. Both sections now name their path.
 - **F3** — field tables on all three reads and a request body on the update. The
   tracked no-field-table list drops **16 → 9**, and every one of the nine that remain
   belongs to `metafield`.
