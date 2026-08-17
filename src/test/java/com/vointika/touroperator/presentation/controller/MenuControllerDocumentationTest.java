@@ -18,6 +18,7 @@ import com.vointika.touroperator.application.usecase.ListMenusUseCase;
 import com.vointika.touroperator.application.usecase.RenameMenuUseCase;
 import com.vointika.touroperator.application.usecase.ReplaceMenuItemsUseCase;
 import com.vointika.touroperator.domain.entity.Menu;
+import com.vointika.touroperator.domain.entity.MenuItem;
 import com.vointika.touroperator.domain.enums.MenuItemLinkType;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -201,7 +202,8 @@ class MenuControllerDocumentationTest {
                                 fieldWithPath("context").description("\"menus\""),
                                 fieldWithPath("handle").description("The theme-facing identifier"),
                                 fieldWithPath("title").description("Display title"),
-                                subsectionWithPath("items").description("The item tree: each node has id, title, linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId/url per type, titleTranslations (locale → title) and children, position-ordered, max 3 levels"),
+                                subsectionWithPath("items").description("The item tree: each node has id, title, linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId/url per type, titleTranslations (locale → title) and children, position-ordered, max "
+                                        + MenuItem.MAX_DEPTH + " levels"),
                                 fieldWithPath("createdAt").description("When created"),
                                 fieldWithPath("updatedAt").description("When last changed"))));
     }
@@ -240,13 +242,14 @@ class MenuControllerDocumentationTest {
                                 parameterWithName("menuId").description("The menu id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
-                                subsectionWithPath("items").description("The WHOLE tree, wholesale (array order = position, nesting = depth, max 3 levels). Node: title (1–120), linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId (EXPERIENCE/PAGE — must be the operator's, else 422), url (EXTERNAL_URL), titleTranslations (locale → title, supported locales only), children"))));
+                                subsectionWithPath("items").description("The WHOLE tree, wholesale (array order = position, "
+                                        + "nesting = depth, max " + MenuItem.MAX_DEPTH + " levels). Node: title (1–120), linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId (EXPERIENCE/PAGE — must be the operator's, else 422), url (EXTERNAL_URL), titleTranslations (locale → title, supported locales only), children"))));
     }
 
     @Test
     void replaceItemsRejectsBadTree() throws Exception {
         authenticated();
-        Mockito.doThrow(new InvalidFieldException("Menu items can be nested at most 3 levels deep"))
+        Mockito.doThrow(new InvalidFieldException(MenuItem.tooDeepMessage()))
                 .when(replaceItemsUseCase).execute(any());
 
         // A tree four deep, so the published example actually produces the error

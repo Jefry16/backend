@@ -86,6 +86,16 @@ These results hold repo-wide and save every later pass the work:
   ways, because a type the code allows and the guide omits is an undocumented
   capability, and one the guide names and the code refuses is a promise the API
   breaks.
+
+  **This has now happened three times — `media`'s 25 MB, `identity`'s avatar cap,
+  `touroperator`'s menu depth — so treat it as the default suspicion, not a
+  discovery.** Before publishing any limit, grep the number across `src/`: if the
+  constant is private and the figure appears more than once, that is the defect.
+  There is a second resolution besides deriving, and it is often better for guide
+  prose: **reword so the sentence carries no number at all** and let the generated
+  table or the published error body state it. The menu cap went that way — the guide
+  now says "nesting past the cap" and points at the two places that name it — which
+  leaves nothing to guard, rather than one more guard to keep true.
 - **The error shape is `status`, `error`, `message`, `code`, `timestamp`.** There is
   no `path` field, and it is `code`, not `errorCode`. `code` is
   `@JsonInclude(NON_NULL)`, so where the throw site supplies none it needs
@@ -334,6 +344,35 @@ what having the guard is for.
 only in the snippets: 210 macros, 210 snippet directories, every one rendering a
 curl example, and the no-field-table list still at 9 and still entirely
 `metafield`.
+
+### Review round — the depth cap was the 25 MB defect again
+
+`MenuItem.MAX_DEPTH` was private and **six places wrote "3" out by hand**, four of
+them published: the guide's prose, both item-tree descriptions, and the stubbed
+422's message. Raising the cap would have enforced the new number while every
+published place stated the old one, with a green build — nothing but the throw
+site read the constant.
+
+Closed the way #174 closed the media cap, plus one step further:
+
+- `MAX_DEPTH` is public, with `tooDeepMessage()` beside it. The throw site, both
+  descriptions, the doc test's stub and `MenuUseCasesTest`'s message assertion all
+  derive from them.
+- **The guide's prose stopped carrying the number instead of being guarded.** It
+  says "nesting past the cap" and points at the generated table and the published
+  error body. That is the resolution the `CAP_MB` javadoc already recommends —
+  reword rather than exempt — and it needs no fourth prose guard.
+- `ReplaceMenuItemsRequest`'s javadoc links `MenuItem#MAX_DEPTH` rather than
+  repeating it.
+
+**Verified by mutation, not by reading.** With `MAX_DEPTH = 4` the build publishes
+"4 levels" in all four places and **zero** mentions of "3 levels" survive anywhere
+in `target/`. One test fails under the mutation —
+`MenuUseCasesTest.replaceRejectsTooDeepTreeBeforeAnyWrite`, whose fixture is a
+fixed four-level tree that a cap of 4 now allows. **That one is left hardcoded on
+purpose**: it is the behavioural check that the refusal still works, so whoever
+raises the cap should have to look at it. Deriving its depth too would make the
+mutation pass silently, which is the opposite of what it is for.
 
 ---
 

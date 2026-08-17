@@ -863,17 +863,23 @@ operation::menus/rename[]
 ==== Replace a Menu's Items
 
 ADMIN+ only. Writes the whole tree at once: every item is validated before any is
-written, ids are fresh on each save, and one audit event is recorded. Depth is
-capped at 3. EXPERIENCE and PAGE targets must belong to this operator → 422.
+written, ids are fresh on each save, and one audit event is recorded. EXPERIENCE
+and PAGE targets must belong to this operator → 422.
+
+The nesting cap is stated in the `items` description below and in the refusal
+under <<resources-menus-replace-items-invalid>>, both generated from
+`MenuItem.MAX_DEPTH`. It is deliberately not written out here as well: it was, in
+four published places, and raising the cap would have moved the enforcement and
+left every one of them saying the old number.
 
 operation::menus/replace-items[]
 
 [[resources-menus-replace-items-invalid]]
 ==== Replace a Menu's Items — Invalid Tree
 
-422. Nesting past three levels, a link type that does not match the fields sent,
-a resource id from another operator, or a translation for a locale the operator
-does not publish.
+422. Nesting past the cap, a link type that does not match the fields sent, a
+resource id from another operator, or a translation for a locale the operator
+does not publish. The response below names the cap.
 
 **The whole save is refused, not the offending node** — the tree is validated
 before anything is written, so the menu on the storefront is never left half
