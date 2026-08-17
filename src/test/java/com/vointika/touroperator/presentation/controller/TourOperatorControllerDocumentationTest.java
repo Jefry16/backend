@@ -292,9 +292,13 @@ class TourOperatorControllerDocumentationTest {
                                         .description("Absent = unchanged; blank = clear. \u2264320 chars")
                                         .optional(),
                                 fieldWithPath("timezoneId")
-                                        .description("A reference timezone id (GET /api/timezones). Changing "
-                                                + "it re-reads every stored departure at the same wall-clock "
-                                                + "hour \u2014 a 10:00 sailing stays 10:00").optional(),
+                                        .description("A reference timezone id (GET /api/timezones). "
+                                                + "CHANGING THIS RE-TIMES THE WHOLE PUBLISHED SCHEDULE: "
+                                                + "departures store operator-local wall-clock with no "
+                                                + "zone, so a 10:00 sailing stays \"10:00\" and now means "
+                                                + "a different instant. Nothing rewrites the stored rows. "
+                                                + "That is what correcting a mis-set timezone needs, and "
+                                                + "it is wrong for an operator that actually moved").optional(),
                                 fieldWithPath("currencyId")
                                         .description("A reference currency id (GET /api/currencies)")
                                         .optional())));

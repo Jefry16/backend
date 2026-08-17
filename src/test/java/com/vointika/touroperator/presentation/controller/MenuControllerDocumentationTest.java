@@ -128,7 +128,7 @@ class MenuControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/menus", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"handle\":\"main-menu\",\"title\":\"Main menu\"}"))
+                        .content("{\"handle\":\"legal\",\"title\":\"Legal\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andDo(document("menus/create",

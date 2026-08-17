@@ -131,8 +131,8 @@ class StorefrontPasswordControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(fieldWithPath("enabled").description(
-                                "Turning the gate on with no password stored and none supplied. In practice "
-                                        + "an operator created after #157 always has one, so this is reachable "
+                                "Turning the gate on with no password stored and none supplied. An operator "
+                                        + "created since the gate landed always has one, so this is reachable "
                                         + "mainly on the older operators that were left open")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }

@@ -66,6 +66,16 @@ These results hold repo-wide and save every later pass the work:
   same variable, checks its *shape* through `LocaleCode` and nothing else — so a
   locale the operator does not publish is a `200` with nulls, or an idempotent `204`,
   never a 422. Reserve the 422 wording for the upsert.
+- **Walk each published error example back through its use case and ask whether the
+  pair can happen at all.** Differing from the happy path is not the same as being
+  reachable, and no guard checks reachability — every documentation test mocks the
+  use case it documents, so a stubbed message is published whatever request sits
+  beside it. `touroperator` published two impossible pairs: `role: OWNER` against
+  "You cannot change your own role" (an ADMIN is refused at `ensureOwner` first and
+  an OWNER gets the other message), and a `main-menu` create shown as 201 four
+  sections above prose saying that handle is seeded for every operator. **Read the
+  guards in the order the use case runs them** — that is what decides which message
+  a payload actually reaches.
 - **A published error example must differ from the success it contrasts with**, and
   `PublishedExamplesAreHonestTest` fails the build when it does not. Vary the thing
   the error turns on: a missing id for a 404, a **STAFF token** for a 403 (that error
@@ -345,7 +355,51 @@ only in the snippets: 210 macros, 210 snippet directories, every one rendering a
 curl example, and the no-field-table list still at 9 and still entirely
 `metafield`.
 
-### Review round — the depth cap was the 25 MB defect again
+### Review round 2 — six examples that were wrong rather than missing
+
+A second pass traced every published error example back through its use case to
+ask whether the request and response shown can occur together. **Two could not**,
+and the suite could not see either: every documentation test mocks the use case it
+documents, so a stubbed message publishes beside whatever request is sent.
+
+- **`members/change-role-conflict` published `{"role":"OWNER"}` against "You cannot
+  change your own role".** Neither caller who could send that gets that message.
+  `execute` gates on the role *before* the transaction, so an ADMIN is refused at
+  `ensureOwner` (403) and never reaches the self-check, and an OWNER is the sole
+  owner by the single-owner index, so `apply` throws the other variant — transfer
+  ownership first. The body is `{"role":"ADMIN"}` now, which is the only shape that
+  reaches it.
+- **`menus/create` published `main-menu` as a 201**, four sections above new prose
+  saying that handle is seeded for every operator and always collides. Both could
+  not be true. The prose was the accurate half, so the fixture moved to `legal` —
+  which also makes the 201/409 pair differ on the **handle**, the field the conflict
+  turns on, rather than only on the title.
+- **`invitations/accept-conflict` called `name` and `password` "ignored on this
+  path".** They are validated *before* the account lookup, so omitting them is the
+  422 this same report lists as a separate failure — the two halves of the pass
+  disagreed. They say "required even here" now.
+- **`seo/update-invalid` reused the happy path's `MEDIA_ID`** while calling it
+  another operator's, so one id was published as both owned and foreign two sections
+  apart. Its sibling `brand/update-invalid` had introduced a distinct id for exactly
+  this reason; SEO now has one too. Same shape on
+  `members/change-role-forbidden`, which PATCHed the same member id `change-role`
+  uses while calling it the owner's.
+- **`storefront-password/update-invalid` published "#157"** in a field table. An
+  internal PR number means nothing to an API consumer; the adjacent prose already
+  said "since the gate landed".
+- **The `timezoneId` description reassured where the code warns.** It said changing
+  the timezone keeps a 10:00 sailing at 10:00, which reads as *safe*.
+  `UpdateTourOperatorUseCase`'s javadoc frames the identical mechanism as the
+  hazard: the wall-clock is preserved and therefore **silently means a different
+  instant**, nothing rewrites the rows, and a migration is the open half. The field
+  description and the guide paragraph both say that now.
+
+**The lesson, promoted to the repo-wide block**: differing from the happy path is
+not the same as being reachable. `PublishedExamplesAreHonestTest` checks the first
+and nothing checks the second, so it is read by hand — in the order the use case
+runs its guards.
+
+### Review round 1 — the depth cap was the 25 MB defect again
 
 `MenuItem.MAX_DEPTH` was private and **six places wrote "3" out by hand**, four of
 them published: the guide's prose, both item-tree descriptions, and the stubbed

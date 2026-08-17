@@ -163,8 +163,13 @@ class InvitationAcceptControllerDocumentationTest {
                 .andDo(document("invitations/accept-conflict",
                         pathParameters(parameterWithName("token").description("The raw token from the invitation email")),
                         requestFields(
-                                fieldWithPath("name").description("Ignored on this path — the account exists"),
-                                fieldWithPath("password").description("Ignored on this path — the account exists")),
+                                fieldWithPath("name").description(
+                                        "Required even here. Both fields are validated before the account "
+                                                + "lookup runs, so omitting them is a 422 rather than this "
+                                                + "409 — the value is simply unused once the conflict is found"),
+                                fieldWithPath("password").description(
+                                        "Required even here, for the same reason. Nothing is written to the "
+                                                + "existing account")),
                         responseFields(ApiErrorSnippets.errorFields())));
     }
 

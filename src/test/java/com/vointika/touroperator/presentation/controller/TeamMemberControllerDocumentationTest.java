@@ -64,6 +64,7 @@ class TeamMemberControllerDocumentationTest {
     private static final String OP = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
     private static final String OTHER_USER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+    private static final String OWNER_USER = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
     private static final String MISSING_OP = "019f7f33-0000-7dc1-b008-000000000000";
 
     private MockMvc mockMvc;
@@ -175,7 +176,7 @@ class TeamMemberControllerDocumentationTest {
         doThrow(new ForbiddenException("Only the owner can change the owner's role"))
                 .when(changeMemberRoleUseCase).execute(any(), any(), any(), any());
 
-        mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, OTHER_USER)
+        mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, OWNER_USER)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"role\": \"STAFF\" }"))
@@ -188,9 +189,17 @@ class TeamMemberControllerDocumentationTest {
     }
 
     /**
-     * Nobody edits their own role, whatever it is — an owner cannot demote
-     * themselves out of the last owner slot, and an admin cannot self-promote.
-     * The example uses the caller's own id, because that is what the error turns on.
+     * Nobody edits their own role, whatever it is. The example uses the caller's
+     * own id, because that is what the error turns on.
+     *
+     * <p><b>The body has to be a non-OWNER role for this message to be reachable.</b>
+     * {@code role: OWNER} is gated before the transaction — an ADMIN sending it is
+     * refused by {@code ensureOwner} (403) and never meets the self-check, and an
+     * OWNER sending it is the sole owner by the single-owner index, so
+     * {@code apply} throws the other variant, "Transfer ownership to another member
+     * before changing your own role". An earlier revision published
+     * {@code role: OWNER} against this message, which is a pair the code cannot
+     * produce.
      */
     @Test
     void changingYourOwnRoleIs409() throws Exception {
@@ -201,7 +210,7 @@ class TeamMemberControllerDocumentationTest {
         mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, USER)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"role\": \"OWNER\" }"))
+                        .content("{ \"role\": \"ADMIN\" }"))
                 .andExpect(status().isConflict())
                 .andDo(document("tour-operators/members/change-role-conflict",
                         pathParameters(parameterWithName("id").description("The tour operator id"),

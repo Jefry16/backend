@@ -505,9 +505,10 @@ operation::tour-operators/members/change-role-forbidden[]
 [[resources-members-change-role-conflict]]
 ==== Change a Member's Role — Not Your Own
 
-409. An owner cannot demote themselves out of the last owner slot and an admin
-cannot self-promote, so the endpoint refuses your own id outright. To step down,
-transfer ownership; the transfer demotes you as part of the same call.
+409. The endpoint refuses your own id whatever role you send. An owner who tries
+gets a different message — transfer ownership first — because stepping down and
+leaving the store ownerless are the same act. The transfer demotes you as part of
+the same call, so that is the way down.
 
 operation::tour-operators/members/change-role-conflict[]
 
@@ -578,9 +579,16 @@ operation::tour-operators/get[]
 ADMIN+ only. An absent field is unchanged; a blank string clears an optional one
 (phone, email). `handle` is not editable — it is the storefront subdomain.
 
-Changing `timezoneId` leaves every stored departure at the wall-clock hour it was
-authored: a 10:00 sailing stays a 10:00 sailing. That is deliberate — it is what
-correcting a mis-set timezone requires.
+**Changing `timezoneId` re-times the operator's whole published schedule.**
+Departures store operator-local wall-clock with no zone, so a 10:00 sailing stays
+"10:00" and now means a different instant — and nothing rewrites the stored rows.
+`CreateSlotUseCase`'s past-date guard also begins judging against a different
+today.
+
+That is deliberate, and it is exactly right for an operator correcting a mis-set
+timezone. It is exactly wrong for one that genuinely moved, and the API does not
+distinguish the two. The audit entry carries the before and after, so the change
+is at least traceable.
 
 operation::tour-operators/update[]
 
