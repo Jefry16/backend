@@ -22,9 +22,22 @@ import java.util.UUID;
  */
 public class MenuItem {
 
-    private static final int MAX_DEPTH = 3;
+    /**
+     * How deep a menu tree may nest. <b>Public because it is published</b>: the
+     * guide's two item-tree descriptions and the 422's message are all built from
+     * it. It was private, and six places wrote "3" out by hand — raising it would
+     * have enforced the new cap while telling clients the old one, with a green
+     * build, which is the defect {@code UploadMediaUseCase.MAX_BYTES} was made
+     * public to close.
+     */
+    public static final int MAX_DEPTH = 3;
     private static final int TITLE_MAX_LENGTH = 120;
     private static final int URL_MAX_LENGTH = 2048;
+
+    /** The refusal, so a documentation test can publish it without copying it. */
+    public static String tooDeepMessage() {
+        return "Menu items can be nested at most " + MAX_DEPTH + " levels deep";
+    }
 
     private final UUID id;
     private final UUID menuId;
@@ -98,8 +111,7 @@ public class MenuItem {
             throw new InvalidFieldException("Child menu items must have a parent depth of at least 1");
         }
         if (parentDepth + 1 > MAX_DEPTH) {
-            throw new InvalidFieldException(
-                    "Menu items can be nested at most " + MAX_DEPTH + " levels deep");
+            throw new InvalidFieldException(tooDeepMessage());
         }
         switch (linkType) {
             case EXPERIENCE, PAGE -> {

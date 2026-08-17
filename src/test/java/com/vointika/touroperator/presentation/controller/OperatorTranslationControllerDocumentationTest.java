@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -196,7 +197,15 @@ class OperatorTranslationControllerDocumentationTest {
         mockMvc.perform(put("/api/tour-operators/{id}/translations/{locale}", OPERATOR_ID, "fr")
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("tour-operators/translations/upsert-unsupported-locale",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("locale").description(
+                                        "A well-formed code the operator does not publish in. Only the "
+                                                + "upsert checks this; the read returns an empty overlay and "
+                                                + "the delete a 204")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test

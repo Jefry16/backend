@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.list.CursorPage;
@@ -17,6 +18,7 @@ import com.vointika.touroperator.application.usecase.ListMenusUseCase;
 import com.vointika.touroperator.application.usecase.RenameMenuUseCase;
 import com.vointika.touroperator.application.usecase.ReplaceMenuItemsUseCase;
 import com.vointika.touroperator.domain.entity.Menu;
+import com.vointika.touroperator.domain.entity.MenuItem;
 import com.vointika.touroperator.domain.enums.MenuItemLinkType;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +58,8 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -124,10 +128,11 @@ class MenuControllerDocumentationTest {
         mockMvc.perform(post("/api/tour-operators/{id}/menus", OP)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"handle\":\"main-menu\",\"title\":\"Main menu\"}"))
+                        .content("{\"handle\":\"legal\",\"title\":\"Legal\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andDo(document("menus/create",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("handle").description("Handle-shaped theme-facing identifier, unique per operator, immutable — duplicate → 409"),
@@ -144,7 +149,17 @@ class MenuControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"handle\":\"main-menu\",\"title\":\"Again\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andDo(document("menus/create-conflict",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        requestFields(
+                                fieldWithPath("handle").description(
+                                        "A handle this operator already uses. NOTE: creating an operator "
+                                                + "seeds main-menu and footer, so both collide before anyone "
+                                                + "has made a menu"),
+                                fieldWithPath("title").description("Ignored — the handle decides")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -157,6 +172,7 @@ class MenuControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].context").value("menus"))
                 .andDo(document("menus/list",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The menu id"),
@@ -178,13 +194,16 @@ class MenuControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].children[0].resourceId").value(PAGE))
                 .andDo(document("menus/get",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("menuId").description("The menu id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The menu id"),
                                 fieldWithPath("context").description("\"menus\""),
                                 fieldWithPath("handle").description("The theme-facing identifier"),
                                 fieldWithPath("title").description("Display title"),
-                                subsectionWithPath("items").description("The item tree: each node has id, title, linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId/url per type, titleTranslations (locale → title) and children, position-ordered, max 3 levels"),
+                                subsectionWithPath("items").description("The item tree: each node has id, title, linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId/url per type, titleTranslations (locale → title) and children, position-ordered, max "
+                                        + MenuItem.MAX_DEPTH + " levels"),
                                 fieldWithPath("createdAt").description("When created"),
                                 fieldWithPath("updatedAt").description("When last changed"))));
     }
@@ -199,6 +218,8 @@ class MenuControllerDocumentationTest {
                         .content("{\"title\":\"Primary navigation\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("menus/rename",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("menuId").description("The menu id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
                                 fieldWithPath("title").description("New display title (1–120); the handle never changes"))));
@@ -217,22 +238,35 @@ class MenuControllerDocumentationTest {
                                 + "\"resourceId\":\"" + PAGE + "\"}]}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("menus/replace-items",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("menuId").description("The menu id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(
-                                subsectionWithPath("items").description("The WHOLE tree, wholesale (array order = position, nesting = depth, max 3 levels). Node: title (1–120), linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId (EXPERIENCE/PAGE — must be the operator's, else 422), url (EXTERNAL_URL), titleTranslations (locale → title, supported locales only), children"))));
+                                subsectionWithPath("items").description("The WHOLE tree, wholesale (array order = position, "
+                                        + "nesting = depth, max " + MenuItem.MAX_DEPTH + " levels). Node: title (1–120), linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId (EXPERIENCE/PAGE — must be the operator's, else 422), url (EXTERNAL_URL), titleTranslations (locale → title, supported locales only), children"))));
     }
 
     @Test
     void replaceItemsRejectsBadTree() throws Exception {
         authenticated();
-        Mockito.doThrow(new InvalidFieldException("Menu items can be nested at most 3 levels deep"))
+        Mockito.doThrow(new InvalidFieldException(MenuItem.tooDeepMessage()))
                 .when(replaceItemsUseCase).execute(any());
 
+        // A tree four deep, so the published example actually produces the error
+        // it documents rather than an empty array that would have succeeded.
         mockMvc.perform(put("/api/tour-operators/{id}/menus/{menuId}/items", OP, MENU)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"items\":[]}"))
-                .andExpect(status().isUnprocessableEntity());
+                        .content("{\"items\":[{\"title\":\"One\",\"linkType\":\"HOME\",\"children\":["
+                                + "{\"title\":\"Two\",\"linkType\":\"HOME\",\"children\":["
+                                + "{\"title\":\"Three\",\"linkType\":\"HOME\",\"children\":["
+                                + "{\"title\":\"Four\",\"linkType\":\"HOME\"}]}]}]}]}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("menus/replace-items-invalid",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("menuId").description("The menu id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
@@ -243,6 +277,8 @@ class MenuControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("menus/delete",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("menuId").description("The menu id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
 }

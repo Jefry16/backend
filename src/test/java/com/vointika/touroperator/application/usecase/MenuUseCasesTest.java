@@ -290,7 +290,7 @@ class MenuUseCasesTest {
         assertThatThrownBy(() -> replaceUseCase().execute(
                 new ReplaceMenuItemsInput(USER, OP, MENU, List.of(level1))))
                 .isInstanceOf(InvalidFieldException.class)
-                .hasMessageContaining("3 levels");
+                .hasMessage(MenuItem.tooDeepMessage());
         verify(menuItemRepository, never()).deleteByMenuId(any());
         verify(menuItemRepository, never()).saveAll(any());
     }

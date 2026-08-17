@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -50,6 +51,8 @@ class OperatorSeoControllerDocumentationTest {
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
     private static final String MEDIA_ID = "aaaaaaaa-0000-4000-8000-000000000001";
+    /** Deliberately NOT {@link #MEDIA_ID} — one id cannot be both owned and foreign. */
+    private static final String FOREIGN_MEDIA_ID = "019f8100-ffff-7000-8000-0000000000ff";
 
     private MockMvc mockMvc;
 
@@ -133,8 +136,14 @@ class OperatorSeoControllerDocumentationTest {
         mockMvc.perform(put("/api/tour-operators/{id}/seo", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"ogImageMediaId\":\"" + MEDIA_ID + "\"}"))
-                .andExpect(status().isUnprocessableEntity());
+                        .content("{\"ogImageMediaId\":\"" + FOREIGN_MEDIA_ID + "\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("tour-operators/seo/update-invalid",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        requestFields(fieldWithPath("ogImageMediaId").description(
+                                "A media id from another operator's library")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test

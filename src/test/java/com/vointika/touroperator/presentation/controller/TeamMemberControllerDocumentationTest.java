@@ -1,6 +1,9 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.exception.ConflictException;
+import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -47,6 +50,8 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,6 +63,9 @@ class TeamMemberControllerDocumentationTest {
 
     private static final String OP = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
+    private static final String OTHER_USER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+    private static final String OWNER_USER = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
+    private static final String MISSING_OP = "019f7f33-0000-7dc1-b008-000000000000";
 
     private MockMvc mockMvc;
 
@@ -100,6 +108,7 @@ class TeamMemberControllerDocumentationTest {
                 .andExpect(jsonPath("$.data[0].role").value("OWNER"))
                 .andExpect(jsonPath("$.nextCursor").value("eyJ2MSI6Im5leHQifQ"))
                 .andDo(document("tour-operators/members/list",
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The member's user id"),
@@ -125,6 +134,8 @@ class TeamMemberControllerDocumentationTest {
                 .andExpect(jsonPath("$.context").value("users"))
                 .andExpect(jsonPath("$.role").value("ADMIN"))
                 .andDo(document("tour-operators/members/get",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("userId").description("The member's user id; a user who is not a member of this operator is a 404")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The member's user id"),
@@ -138,35 +149,123 @@ class TeamMemberControllerDocumentationTest {
     @Test
     void changeRole() throws Exception {
         authenticated();
-        mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, UUID.randomUUID())
+        mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, OTHER_USER)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"role\": \"ADMIN\" }"))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operators/members/change-role",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("userId").description("The member whose role changes; your own id is a 409")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(fieldWithPath("role")
-                                .description("Target role: OWNER (ownership transfer), ADMIN, or STAFF"))));
+                                .description("OWNER, ADMIN or STAFF. OWNER is not a role you grant — it is a "
+                                        + "TRANSFER: the target becomes OWNER and YOU are demoted to ADMIN in "
+                                        + "the same transaction, and only the new owner can hand it back. "
+                                        + "Only an owner may send it. Anything else → 422"))));
+    }
+
+    /**
+     * The 403 that only an owner clears. {@code ensureAdmin} has already passed
+     * here — an ADMIN may change any ordinary member's role and is refused on the
+     * owner's, which is a boundary <em>inside</em> a permission an admin has.
+     */
+    @Test
+    void anAdminCannotChangeTheOwnersRole() throws Exception {
+        authenticated();
+        doThrow(new ForbiddenException("Only the owner can change the owner's role"))
+                .when(changeMemberRoleUseCase).execute(any(), any(), any(), any());
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, OWNER_USER)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"STAFF\" }"))
+                .andExpect(status().isForbidden())
+                .andDo(document("tour-operators/members/change-role-forbidden",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("userId").description("The owner's user id")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /**
+     * Nobody edits their own role, whatever it is. The example uses the caller's
+     * own id, because that is what the error turns on.
+     *
+     * <p><b>The body has to be a non-OWNER role for this message to be reachable.</b>
+     * {@code role: OWNER} is gated before the transaction — an ADMIN sending it is
+     * refused by {@code ensureOwner} (403) and never meets the self-check, and an
+     * OWNER sending it is the sole owner by the single-owner index, so
+     * {@code apply} throws the other variant, "Transfer ownership to another member
+     * before changing your own role". An earlier revision published
+     * {@code role: OWNER} against this message, which is a pair the code cannot
+     * produce.
+     */
+    @Test
+    void changingYourOwnRoleIs409() throws Exception {
+        authenticated();
+        doThrow(new ConflictException("You cannot change your own role"))
+                .when(changeMemberRoleUseCase).execute(any(), any(), any(), any());
+
+        mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, USER)
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"ADMIN\" }"))
+                .andExpect(status().isConflict())
+                .andDo(document("tour-operators/members/change-role-conflict",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("userId").description("Your own user id — which is the conflict")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
     void removeMember() throws Exception {
         authenticated();
-        mockMvc.perform(delete("/api/tour-operators/{id}/members/{userId}", OP, UUID.randomUUID())
+        mockMvc.perform(delete("/api/tour-operators/{id}/members/{userId}", OP, OTHER_USER)
                         .header("Authorization", "Bearer test-access-token"))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operators/members/remove",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("userId").description("The member to remove; your own id means leaving the team, which needs no role")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
+    }
+
+    /**
+     * The wall an operator with one owner hits, from either side: the owner
+     * cannot leave and an admin cannot remove them. The example uses the caller's
+     * own id, so it publishes the "leaving" wording rather than the "removing" one.
+     */
+    @Test
+    void theLastOwnerCannotLeave() throws Exception {
+        authenticated();
+        doThrow(new ConflictException("Transfer ownership to another member before leaving"))
+                .when(removeTeamMemberUseCase).execute(any(), any(), any());
+
+        mockMvc.perform(delete("/api/tour-operators/{id}/members/{userId}", OP, USER)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isConflict())
+                .andDo(document("tour-operators/members/remove-conflict",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("userId").description("Your own user id — leaving the team")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
         doThrow(new ResourceNotFoundException("Tour operator not found"))
-                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(OP)));
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(MISSING_OP)));
 
-        mockMvc.perform(get("/api/tour-operators/{id}/members", OP)
+        mockMvc.perform(get("/api/tour-operators/{id}/members", MISSING_OP)
                         .header("Authorization", "Bearer test-access-token"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("tour-operators/members/list-not-found",
+                        pathParameters(parameterWithName("id").description(
+                                "An operator you are not a member of, or one that does not exist — "
+                                        + "the two answer identically")),
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

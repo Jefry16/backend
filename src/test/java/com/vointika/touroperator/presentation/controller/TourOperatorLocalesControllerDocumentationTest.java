@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -52,6 +53,7 @@ import java.util.UUID;
 class TourOperatorLocalesControllerDocumentationTest {
 
     private static final String OPERATOR_ID = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
+    private static final String MISSING_OP = "019f7f33-0000-7dc1-b008-000000000000";
     private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
     private MockMvc mockMvc;
@@ -155,17 +157,35 @@ class TourOperatorLocalesControllerDocumentationTest {
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"primaryLocale\": \"en\", \"supportedLocales\": [\"en\", \"xx\"] }"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("tour-operators/locales/update-invalid",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description("The tour operator id")),
+                        requestFields(
+                                fieldWithPath("primaryLocale").description(
+                                        "Required on every call — this PATCH replaces both fields, so "
+                                                + "sending one alone is a 422"),
+                                fieldWithPath("supportedLocales").description(
+                                        "Every code must be a platform language (GET /api/languages), and "
+                                                + "primaryLocale must be one of them")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
         doThrow(new ResourceNotFoundException("Tour operator not found"))
-                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(OPERATOR_ID)));
+                .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(MISSING_OP)));
 
-        mockMvc.perform(get("/api/tour-operators/{id}/locales", OPERATOR_ID)
+        mockMvc.perform(get("/api/tour-operators/{id}/locales", MISSING_OP)
                         .header("Authorization", "Bearer test-access-token"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("tour-operators/locales/get-not-found",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        pathParameters(parameterWithName("id").description(
+                                "An operator you are not a member of, or one that does not exist. Every "
+                                        + "route under /api/tour-operators/{id} answers this way, and the "
+                                        + "two cases are deliberately indistinguishable")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }

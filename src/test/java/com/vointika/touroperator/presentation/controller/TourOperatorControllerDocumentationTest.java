@@ -1,5 +1,7 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
+import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.CreateTourOperatorOutput;
@@ -17,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -122,6 +125,39 @@ class TourOperatorControllerDocumentationTest {
                         responseHeaders(headerWithName("Location").description("URI of the created tour operator"))));
     }
 
+    /**
+     * The double-submit guard, and the only 409 on create. It is scoped to the
+     * caller: two different owners may both run "Sunset Tours". The handle is not
+     * the conflict — a colliding handle is suffixed silently, so "Sunset Tours"
+     * becomes {@code sunset-tours-2} rather than being refused.
+     */
+    @Test
+    void aSecondOperatorWithTheSameNameIs409() throws Exception {
+        authenticate();
+        when(createTourOperatorUseCase.execute(any()))
+                .thenThrow(new ResourceAlreadyExistsException(
+                        "You already have an operator named \"Acme Tours\""));
+
+        mockMvc.perform(post("/api/tour-operators")
+                        .header("Authorization", "Bearer test-access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Acme Tours",
+                                    "address": {
+                                        "address1": "9 Second Street",
+                                        "city": "Punta Cana",
+                                        "countryId": "33333333-3333-3333-3333-333333333333"
+                                    },
+                                    "timezoneId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                                    "currencyId": "cccc0001-0000-0000-0000-000000000001"
+                                }"""))
+                .andExpect(status().isConflict())
+                .andDo(document("tour-operators/create-conflict",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
     @Test
     void createRequiresAuthentication() throws Exception {
         mockMvc.perform(post("/api/tour-operators")
@@ -172,7 +208,8 @@ class TourOperatorControllerDocumentationTest {
                                 fieldWithPath("address").description(
                                         "The business address, or null for an operator that has not entered one").optional(),
                                 fieldWithPath("address.address1").description("Street line").optional(),
-                                fieldWithPath("address.address2").description("Second line, or null").optional(),
+                                fieldWithPath("address.address2").type(JsonFieldType.STRING)
+                                        .description("Second line, or null").optional(),
                                 fieldWithPath("address.city").description("City").optional(),
                                 fieldWithPath("address.province").description("Province or region, or null").optional(),
                                 fieldWithPath("address.zip").description("Postcode, or null").optional(),
@@ -189,6 +226,14 @@ class TourOperatorControllerDocumentationTest {
                                 fieldWithPath("updatedAt").description("When its details last changed"))));
     }
 
+    /**
+     * Sends <b>every</b> field {@code UpdateTourOperatorInput} accepts, not the
+     * two a realistic edit would. Strict {@code requestFields} fails on an
+     * undocumented field that is <em>present</em> and never on a documented one
+     * that is absent, so a two-field fixture published a two-row table and a
+     * green build \u2014 while the guide's own prose described {@code timezoneId},
+     * which the table did not carry.
+     */
     @Test
     void patchDetails() throws Exception {
         authenticate();
@@ -196,17 +241,66 @@ class TourOperatorControllerDocumentationTest {
         mockMvc.perform(patch("/api/tour-operators/{id}", OPERATOR_ID)
                         .header("Authorization", "Bearer test-access-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phone\":\"+34 611 111 111\",\"email\":\"hola@acme.test\"}"))
+                        .content("""
+                                {
+                                    "name": "Acme Tours",
+                                    "address": {
+                                        "address1": "Calle Mayor 1",
+                                        "address2": "3\u00ba B",
+                                        "city": "Madrid",
+                                        "province": "Madrid",
+                                        "zip": "28013",
+                                        "countryId": "11111111-1111-1111-1111-111111111111"
+                                    },
+                                    "phone": "+34 611 111 111",
+                                    "email": "hola@acme.test",
+                                    "timezoneId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                                    "currencyId": "cccc0001-0000-0000-0000-000000000001"
+                                }"""))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operators/update",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         requestFields(
+                                fieldWithPath("name")
+                                        .description("Absent = unchanged. Cannot be cleared, only replaced "
+                                                + "(2\u2013150 chars)").optional(),
+                                fieldWithPath("address")
+                                        .description("Absent = unchanged. Sending it REPLACES the stored "
+                                                + "address whole, optional parts included \u2014 send every "
+                                                + "line you want kept, or a city-only body leaves a new "
+                                                + "city on an old street").optional(),
+                                fieldWithPath("address.address1")
+                                        .description("Street line (required when address is sent, \u2264255)")
+                                        .optional(),
+                                fieldWithPath("address.address2")
+                                        .description("Second line; omit to clear it").optional(),
+                                fieldWithPath("address.city")
+                                        .description("City (required when address is sent, \u2264120)")
+                                        .optional(),
+                                fieldWithPath("address.province")
+                                        .description("Province or region; omit to clear it").optional(),
+                                fieldWithPath("address.zip")
+                                        .description("Postcode; omit to clear it").optional(),
+                                fieldWithPath("address.countryId")
+                                        .description("A reference country id (GET /api/countries); unknown "
+                                                + "\u2192 422").optional(),
                                 fieldWithPath("phone")
                                         .description("Absent = unchanged; blank = clear. \u226430 chars, "
                                                 + "no format imposed").optional(),
                                 fieldWithPath("email")
                                         .description("Absent = unchanged; blank = clear. \u2264320 chars")
+                                        .optional(),
+                                fieldWithPath("timezoneId")
+                                        .description("A reference timezone id (GET /api/timezones). "
+                                                + "CHANGING THIS RE-TIMES THE WHOLE PUBLISHED SCHEDULE: "
+                                                + "departures store operator-local wall-clock with no "
+                                                + "zone, so a 10:00 sailing stays \"10:00\" and now means "
+                                                + "a different instant. Nothing rewrites the stored rows. "
+                                                + "That is what correcting a mis-set timezone needs, and "
+                                                + "it is wrong for an operator that actually moved").optional(),
+                                fieldWithPath("currencyId")
+                                        .description("A reference currency id (GET /api/currencies)")
                                         .optional())));
     }
 }
