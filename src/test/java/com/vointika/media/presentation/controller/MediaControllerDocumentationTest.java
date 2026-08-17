@@ -327,7 +327,7 @@ class MediaControllerDocumentationTest {
     @Test
     void anOversizeFileIs422() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("File too large: max " + MAX_MB + " MB"))
+        doThrow(new InvalidFieldException(UploadMediaUseCase.tooLargeMessage()))
                 .when(uploadMediaUseCase).execute(any(), any(), any(),
                         org.mockito.ArgumentMatchers.anyLong(), any(), any());
 

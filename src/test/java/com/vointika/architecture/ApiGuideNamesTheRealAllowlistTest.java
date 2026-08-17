@@ -1,5 +1,6 @@
 package com.vointika.architecture;
 
+import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.media.domain.valueobject.ContentType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,9 @@ class ApiGuideNamesTheRealAllowlistTest {
      */
     private static final Pattern MIME = Pattern.compile("`([a-z]+/[a-z0-9.+-]+)`");
 
+    /** The size the allowlist sentence promises, as in {@code ≤ 25 MB}. */
+    private static final Pattern CAP_MB = Pattern.compile("(\\d+)\\s*MB");
+
     @Test
     @DisplayName("the guide's upload prose names exactly ContentType.ALLOWED")
     void theGuideNamesEveryAllowedTypeAndNoOther() throws IOException {
@@ -119,6 +123,21 @@ class ApiGuideNamesTheRealAllowlistTest {
                         beneath it generates itself.""", mentioned, allowed)
                 .isEqualTo(allowed);
 
+        Matcher cap = CAP_MB.matcher(allowlistSentence);
+        assertThat(cap.find())
+                .withFailMessage("The '%s' sentence states no size cap. It is the only "
+                        + "place the guide's prose promises one, so dropping it leaves "
+                        + "the limit undocumented.", ALLOWLIST_ANCHOR)
+                .isTrue();
+        assertThat(Long.parseLong(cap.group(1)))
+                .withFailMessage("""
+                        The guide's prose and UploadMediaUseCase.MAX_BYTES disagree about \
+                        the upload cap: prose says %s MB, code allows %d MB. The field \
+                        table beneath generates itself from MAX_BYTES, so raising the cap \
+                        leaves the two contradicting each other four words apart.""",
+                        cap.group(1), UploadMediaUseCase.MAX_BYTES / (1024 * 1024))
+                .isEqualTo(UploadMediaUseCase.MAX_BYTES / (1024 * 1024));
+
         assertThat(section)
                 .withFailMessage("The upload prose states a count of allowed types. "
                         + "Counts go stale the moment the allowlist changes — name the "
@@ -144,7 +163,15 @@ class ApiGuideNamesTheRealAllowlistTest {
                 .isGreaterThan(0);
         int end = guide.indexOf("\n==== ", start + 1);
         String section = guide.substring(start, end > 0 ? end : guide.length());
-        return MIME.matcher(section).results().map(r -> r.group(1)).distinct().sorted().toList();
+        List<String> refused = MIME.matcher(section).results()
+                .map(r -> r.group(1)).distinct().sorted().toList();
+        assertThat(refused)
+                .withFailMessage("The '%s' section names no type at all. Its whole job is "
+                        + "to name the ones that are refused, so an empty result means "
+                        + "this assertion is examining nothing rather than finding "
+                        + "nothing wrong.", REFUSED_ANCHOR)
+                .isNotEmpty();
+        return refused;
     }
 
 }
