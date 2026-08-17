@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
-(2026-08-16).** Six to go; `storefront` is last.
+(2026-08-16), `page` (2026-08-17).** Five to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -29,11 +29,14 @@ These results hold repo-wide and save every later pass the work:
   the call should not reappear. **No guard catches this** —
   `ApiGuideDocumentsEveryEndpointTest` checks that an operation is referenced, not
   what it renders, so fewer snippets is a green build and a thinner page.
-- **Type `nextCursor` explicitly: `.type(JsonFieldType.STRING)`.** A list test that
-  stubs the last page (`new CursorPage<>(rows, null)`) hands REST Docs a null, which
-  it types from the value — so the published table told readers the cursor's type is
-  **`Null`**, i.e. that the endpoint never paginates. 10 of the 14 list endpoints did
-  this. All 14 are typed now.
+- **Any field your fixture leaves null needs an explicit `.type(...)`.** REST Docs
+  infers a field's type from the value it sees, so a stubbed null publishes the type
+  **`Null`** — telling a client the field can never hold anything. It is not about
+  cursors: `nextCursor` was 10 of 14 list endpoints (#172), `page-translations/get`
+  published `seoTitle` and `seoDescription` that way while its own list got them right
+  (#175), and **six more are still `Null` on `main`**, all in `touroperator` —
+  `brand/get`'s three media ids, `tour-operators/get`'s `address.address2`, and
+  `acceptedAt` on both invitation reads. Check the whole record, not the cursor.
 - **`.optional()` publishes nothing, so a PATCH's partial rule must be in the
   description text.** The default request-fields template renders
   `Path | Type | Description` and has no Optional column, so a create table and its
@@ -75,6 +78,99 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `page` — 2026-08-17
+
+Twelve endpoints across two controllers, the largest context so far. **A–E clean.**
+The finding is one shape repeated twelve times, plus a conflict a client cannot
+diagnose.
+
+## Endpoint table
+
+Eight on `PageController` — list, get, create, update, publish, unpublish, rename,
+delete — and four on `PageTranslationController` — list, get, upsert, delete. All
+twelve had a test, a snippet and a macro.
+
+## F1. Not one of the twelve documented a path variable
+
+Every endpoint takes `{tourOperatorId}`, ten take `{pageId}`, three take `{locale}`.
+None was described. It is the same gap `pickup` and `audience` had, at four times the
+size.
+
+## F2. `page-translations/get` published no field table
+
+Six components on `PageTranslationResponse`, none documented — while the sibling list
+documented all six.
+
+## F3. The rename has two different 409s and published neither
+
+This is the one worth the pass. `RenamePageUseCase` refuses a handle for **two
+distinct reasons** with two distinct messages:
+
+- another page's **canonical** handle — the obvious case; and
+- a handle another page uses as a **localized** handle.
+
+The second is PATTERNS §4d reaching a client. A storefront address resolves against
+localized handles first and canonical ones second, so the two are one namespace: taking
+a value from either would make the other page unreachable in that language. **The
+operator sees no page called that in their own language**, so without the distinct
+message and its own example, "already exists" reads as a bug.
+
+Neither was tested. `createDuplicateHandleIs409` covered the plain case on create only.
+
+## F4. `pages/get`'s 404 was tested and not published
+
+## G. Prose drift — two, and this pass first reported none
+
+**`PATCH /pages/{pageId}` is not partial**, and nothing published said so.
+`UpdatePageUseCase` builds `new PageTitle(input.title())` and
+`new PageBody(input.body())` **unconditionally**, and both reject null — so sending
+only the field you changed is a 422. The field descriptions said "(whole replace)",
+which describes what happens to the value, not that the field is required on every
+call. And this series had taught the opposite convention two contexts earlier:
+`pickup-locations/update` is a PATCH whose fields say "Omit to keep the current
+value". Carrying that across lands on a 422.
+
+**The rename section had the breakage backwards.** It said allowing the rename would
+make *the other page* unreachable. `StorefrontPageQueryImpl.findByHandle` resolves the
+localized handle first, so that address keeps matching the page that holds it — and
+the **renamed** page is the one left with no address in that language. The refusal
+protects the renamer. Getting it inverted undercut the section, since its whole point
+is that the operator cannot see the conflict.
+
+## H. Description quality — none
+
+## What was fixed
+
+**Four new tests**, all publishing an error this context raised and never showed:
+`renameOntoALocalizedHandleIs409`, `updateWithoutEveryFieldIs422`,
+`unsupportedLocaleIs422` and `aLocalizedHandleTakenByAnotherPagesCanonicalIs409`.
+Three of the four came out of review rather than the audit.
+
+*(No suite total here. The line originally read "1236 → 1237, one new test" and was
+stale within the hour, because a review round adds work after the summary is written —
+which is how every pinned count in this series went stale. Names do not.)*
+
+- **F1** — `pathParameters` on all twelve.
+- **F2** — the field table, which takes the tracked list **17 → 16**.
+- **F3** — `pages/rename-conflict` publishes the cross-namespace refusal, under a
+  guide heading that explains why a handle the operator cannot see is taken.
+- **F4** — `pages/get-not-found` and `pages/create-conflict` publish.
+
+**`page-translations/upsert` publishes zero errors while raising five**, and two of
+them cannot be deduced: the 422 for a locale the operator has not enabled, and a 409
+for a localized handle equal to **another page's canonical** handle. That second one
+is F3 pointing the other way — and it is the direction an operator exercises, since
+localized handles get set routinely and renames are rare. Both are published now.
+
+**Both new guards fired on this pass, which is the first time they have run against
+work they did not already cover.** `ApiGuideDocumentsEveryEndpointTest` caught three
+operations with no `operation::` line. `PublishedExamplesAreHonestTest` caught
+`pages/get-not-found` and `pages/create-conflict` publishing the same request as their
+happy paths — the defect that took two review rounds to find by hand in `contact`, now
+caught before the PR opened.
 
 ---
 
@@ -713,7 +809,7 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 17 body-returning operations with no field table
+## The 16 body-returning operations with no field table
 
 Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
 pinning a number**, which is why this heading is the only place it is stated.
@@ -725,15 +821,15 @@ no `response-body.adoc` at all, so the scan never saw them. Removing that call
 repo-wide made three more visible: `experiences/get`, `experiences/translations/get`
 and `experiences/translations/list`. The two defects were one defect.
 
-`metaobject-field-translations/get` ·
-`metaobject-field-translations/list-locales` · `slots/get` · `slots/cancel` ·
-`slots/list` · `slots/update` · `tour-operator-metafield-translations/get` ·
-`tour-operator-metafield-translations/list-locales` ·
-`metafield-definitions/get` · `page-metafield-translations/get` ·
-`page-metafield-translations/list-locales` · `page-translations/get` ·
-`experiences/get` · `experience-metafield-translations/get` ·
-`experience-metafield-translations/list-locales` ·
-`experiences/translations/get` · `experiences/translations/list`
+`experience-metafield-translations/get` ·
+`experience-metafield-translations/list-locales` · `experiences/get` ·
+`experiences/translations/get` · `experiences/translations/list` ·
+`metafield-definitions/get` · `metaobject-field-translations/get` ·
+`metaobject-field-translations/list-locales` ·
+`page-metafield-translations/get` · `page-metafield-translations/list-locales`
+· `slots/cancel` · `slots/get` · `slots/list` · `slots/update` ·
+`tour-operator-metafield-translations/get` ·
+`tour-operator-metafield-translations/list-locales`
 
 **Verified by**: for every `response-body.adoc`, stripping the `----` fences and
 checking the body is non-empty, then testing for a sibling `response-fields.adoc` —

@@ -39,6 +39,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * share a URL when the difference is the caller rather than the call — a 403 turns on
  * who is asking — so an {@code Authorization} header that differs is enough.
  *
+ * <p><b>One shape has no achievable answer, and the failure message does not say so.</b>
+ * A conflict on <em>create</em> is by definition the request that would otherwise
+ * succeed: nothing in the payload distinguishes it, only server state does.
+ * {@code pages/create-conflict} passes today because its fixture happens to differ in
+ * title casing and body text — normalise those and this fires with advice nobody can
+ * follow. If that happens, the honest fix is an exemption for create-conflicts with the
+ * reason recorded, not a contrived payload difference.
+ *
  * <p><b>An error is found by its status, not by its name.</b> An earlier version
  * matched a hand-kept list of name fragments ({@code -not-found}, {@code -forbidden},
  * …), which is the same restatement this guard exists to remove: the next section
