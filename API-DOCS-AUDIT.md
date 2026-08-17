@@ -285,7 +285,10 @@ foot of this report since the first pass, reading 71, 20, 19, 22, 20, 16 and 9.
 - **F3** — `MetafieldType.codes()`, matching its sibling. The refusal, the create
   table and the get table all build from it.
 - **F4** — `MetafieldType.translatableCodes()`, derived from `isTranslatable()`.
-  The guide's prose no longer states the set; the published request table does.
+  *An earlier revision of this line claimed the guide's prose no longer stated the
+  set. It still did, 43 lines from a new sentence asserting it could not — the
+  mutation that "moved six files" only searched test sources, and the seventh copy
+  was the `.adoc`. Caught in review; the prose points at the generated table now.*
 - **F5** — a `requestFields` on all four `*-translations/upsert`, carrying the
   three rules that were prose only: keys are `namespace.key`, blank clears,
   omitted is untouched.
@@ -347,6 +350,50 @@ sites; all nine new anchors render and no xref is unresolved.
 `CreateMetaobjectDefinitionUseCase` (`:93`, `:107`) each write their conflict
 message twice, once for the pre-check and once for the unique-index race. Two
 literals per message, and nothing keeps the pair in step.
+
+### Review round — a paste that inverted a rule, and a second type catalogue
+
+**The metaobject-field translation tables said `namespace.key` and they are keyed
+by the bare key.** Both sides — the read and the upsert — and the upsert went
+further and called the correct form a 422. The published example sat directly
+beneath, showing `{"notes": …}`, contradicting its own table.
+
+**The cause is the replication that made this pass cheap.** One shape was written
+for `tour-operator-metafield-translations`, verified, then copied to the other
+three. It is right for the two metafield siblings and wrong for metaobject fields,
+which have no namespace — a distinction the guide states two sections above and
+`UpsertMetaobjectFieldTranslationsUseCase`'s javadoc states outright. The same
+paste also called them "metafields". **Replicating a verified shape does not
+verify the copies**, and nothing in the build could see it: the description is
+prose, and the strict check only counts fields.
+
+**A second type catalogue was hand-written**, and the pass's own mutation missed it
+because it mutated `isTranslatable()` rather than the type list.
+`metaobject-definitions/create` published eight codes by hand, and `add-field`
+published none. They could not call `codes()` — metaobject fields exclude
+`metaobject_reference` — which is exactly why they were copied. The rule is a
+predicate now (`MetafieldType.allowedAsMetaobjectField()`), used by both use cases
+that enforced it inline and by `metaobjectFieldCodes()` for the two descriptions.
+
+Three smaller ones, all in prose added by this pass:
+
+- *"Four of the seven fields are immutable"* — five are. `metaobjectDefinitionId`
+  is not updatable, so a reader counting four would try to repoint a reference pin
+  through `PUT`, where it is ignored rather than refused. The sentence names the
+  two mutable fields now instead of counting the rest.
+- *"a **404**, not a 201"* — this endpoint answers **204** on every success, so
+  naming 201 invited branching on a created-case that does not exist.
+- *"once for an experience and once for a page"* — two of the three owner types, in
+  the sentence explaining the uniqueness rule, one paragraph after the generated
+  table that this pass fixed to name all three. It says "once per owner type" now:
+  no list to go stale.
+
+**Verified by mutation, the reviewer's way.** Adding a tenth type moves both
+catalogues — the full one to `…metaobject_reference, color` and the metaobject-field
+one to `…json, color` — and the guide names no type set at all any more. The build
+also refuses to compile until `MetafieldValueValidator`'s exhaustive switch handles
+the new type, so validation and documentation now fail together on a new type
+rather than drifting apart.
 
 ---
 

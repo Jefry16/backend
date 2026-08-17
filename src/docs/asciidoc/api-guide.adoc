@@ -1578,9 +1578,10 @@ operation::metafield-definitions/create[]
 ==== Create a Metafield Definition — Already Defined
 
 409. `namespace.key` is unique per operator **and owner type**, so the same pair
-may exist once for an experience and once for a page. Four of the seven fields
-are immutable, so a definition you regret is a delete and a create — and the
-delete cascades, per <<resources-metafield-definitions-delete>>.
+may exist once per owner type. Only `name` and `description` can be changed
+afterwards — everything else, the reference pin included, is fixed at creation, so
+a definition you regret is a delete and a create. And the delete cascades, per
+<<resources-metafield-definitions-delete>>.
 
 operation::metafield-definitions/create-conflict[]
 
@@ -1634,8 +1635,9 @@ operation::experience-metafields/upsert[]
 
 **The definition comes first, always.** `{namespace}` and `{key}` name a
 definition that must already exist for this owner type; there is no implicit
-create. Setting a value for an undefined pair is a **404**, not a 201 — which
-reads like a routing mistake and is not one. Create the definition at
+create. Setting a value for an undefined pair is a **404**, not a silent create —
+which reads like a routing mistake and is not one. Every success here is a **204**,
+first write and replacement alike. Create the definition at
 <<resources-metafield-definitions-create>>, then set values.
 
 `metaobject_reference` values are checked twice: the shape, and then that the
@@ -1730,9 +1732,10 @@ has translated two of five metafields gets two translated and three canonical.
 
 Three things are fixed by design:
 
-* **Only text types can be translated** — `single_line_text` and
-  `multi_line_text`. A translated `true` is `true` and a translated `2026-08-13`
-  is the same date, so every other type is a 422 naming the key. A
+* **Only text types can be translated.** The set is named in the upsert's request
+  table, generated from the code rather than written here — a translated `true` is
+  `true` and a translated `2026-08-13` is the same date, so every other type is a
+  422 naming the key. A
   `metaobject_reference` is not a gap either: pointing at a different entry per
   locale is content *selection*, not translation — translate the entry's own
   fields instead.

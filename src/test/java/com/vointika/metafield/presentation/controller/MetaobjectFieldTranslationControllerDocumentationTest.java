@@ -121,7 +121,8 @@ class MetaobjectFieldTranslationControllerDocumentationTest {
                                 parameterWithName("locale").description(
                                         "The locale to read. An untranslated one returns {} rather than a 404")),
                         responseFields(fieldWithPath("*").description(
-                                "One entry per translated metafield, keyed \"namespace.key\". Only keys "
+                                "One entry per translated field, keyed by the BARE field key — a "
+                                        + "metaobject field has no namespace, unlike a metafield. Only keys "
                                         + "with an overlay in this locale appear; everything else falls back "
                                         + "to the canonical value")),
                         requestHeaders(headerWithName("Authorization")
@@ -141,12 +142,13 @@ class MetaobjectFieldTranslationControllerDocumentationTest {
                                 parameterWithName("metaobjectId").description("The metaobject entry id"),
                                 parameterWithName("locale").description("The locale being written")),
                         requestFields(subsectionWithPath("values").description(
-                                "The locale's overlays, keyed \"namespace.key\" — a bare key is a 422. A "
+                                "The locale's overlays, keyed by the BARE field key — a metaobject field "
+                                        + "has no namespace, so a dotted \"namespace.key\" is a 404. A "
                                         + "blank value CLEARS that key; a key left out is UNTOUCHED, so a "
                                         + "partial form cannot delete what it never rendered. Only "
-                                        + MetafieldType.translatableCodes() + " metafields may appear, and "
-                                        + "each must already have a value to overlay. Nothing is written if "
-                                        + "any entry is rejected")),
+                                        + MetafieldType.translatableCodes() + " fields may appear, and each "
+                                        + "must already have a value to overlay. Nothing is written if any "
+                                        + "entry is rejected")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }

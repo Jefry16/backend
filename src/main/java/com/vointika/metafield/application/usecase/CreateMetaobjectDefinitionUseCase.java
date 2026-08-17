@@ -77,7 +77,7 @@ public class CreateMetaobjectDefinitionUseCase {
                 throw new InvalidFieldException("Duplicate field key '" + key.value() + "'");
             }
             MetafieldType fieldType = MetafieldType.fromCode(spec.type());
-            if (fieldType == MetafieldType.METAOBJECT_REFERENCE) {
+            if (!fieldType.allowedAsMetaobjectField()) {
                 // Nested references (metaobject → metaobject) are out for now;
                 // the reference type belongs to experience/page metafields.
                 throw new InvalidFieldException(

@@ -80,6 +80,26 @@ public enum MetafieldType {
     }
 
     /**
+     * Whether a <em>metaobject field</em> may be declared with this type.
+     *
+     * <p>Nested references are out for now — a metaobject field pointing at another
+     * metaobject is a shape nothing needs, and the reference type belongs to
+     * experience/page metafields. The rule lived as {@code == METAOBJECT_REFERENCE}
+     * in two use cases and as a hand-written eight-code list in a published field
+     * description; it is one predicate now, so widening it moves the refusal and
+     * the guide together.
+     */
+    public boolean allowedAsMetaobjectField() {
+        return this != METAOBJECT_REFERENCE;
+    }
+
+    /** The codes a metaobject field may declare — derived, because it is published. */
+    public static String metaobjectFieldCodes() {
+        return Arrays.stream(values()).filter(MetafieldType::allowedAsMetaobjectField)
+                .map(MetafieldType::code).collect(Collectors.joining(", "));
+    }
+
+    /**
      * The codes a per-locale overlay is accepted for, derived from
      * {@link #isTranslatable()} so widening the predicate moves what is published.
      * The guide stated this set in prose until it was found to be a fourth copy of
