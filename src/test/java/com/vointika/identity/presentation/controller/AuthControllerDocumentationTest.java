@@ -5,6 +5,9 @@ import com.vointika.identity.application.dto.output.GetProfileOutput;
 import com.vointika.identity.application.dto.output.RefreshAccessTokenOutput;
 import com.vointika.identity.application.dto.output.SetAvatarOutput;
 import com.vointika.shared.web.security.RefreshTokenCookieFactory;
+import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.UnauthorizedException;
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.identity.application.usecase.*;
 import com.vointika.identity.infrastructure.security.IdentityPublicRoutes;
@@ -395,7 +398,7 @@ class AuthControllerDocumentationTest {
                                 headerWithName("Authorization").description("Bearer access token")
                         ),
                         requestParts(
-                                partWithName("file").description("The avatar image. image/jpeg, image/png or image/webp, max 5 MB")
+                                partWithName("file").description(AVATAR_PART_DESCRIPTION)
                         ),
                         responseFields(
                                 fieldWithPath("avatarUrl").description("Public URL of the new avatar (unique per upload — safe to swap in without cache busting)")
@@ -438,4 +441,71 @@ class AuthControllerDocumentationTest {
                                 headerWithName("Authorization").description("Bearer access token")
                         )));
     }
+    /**
+     * <b>Built from {@link SetAvatarUseCase}, never restated.</b> The description used
+     * to hand-copy the three types and the cap; adding a type or raising the limit
+     * would have left the guide advertising the old ones with a green build. Same
+     * defect the media upload carried until #174, in a different context.
+     */
+    private static final String AVATAR_PART_DESCRIPTION =
+            "The avatar image. "
+            + String.join(", ", SetAvatarUseCase.allowedContentTypes().stream().sorted().toList())
+            + ", at most " + SetAvatarUseCase.MAX_AVATAR_BYTES / (1024 * 1024) + " MB";
+
+    /**
+     * <b>Reuse detection is invisible in the response and drastic in effect.</b> A
+     * replayed refresh token answers exactly as an unknown one does — the same 401,
+     * the same message — because telling an attacker they tripped the detector would
+     * defeat it. But this branch also revokes the <em>entire</em> token family, so a
+     * client that retries a stale token is logged out of every session it holds, with
+     * nothing in the response saying so. Published because a client cannot deduce it.
+     */
+    @Test
+    void aReplayedRefreshTokenIs401AndEndsEverySession() throws Exception {
+        when(refreshAccessTokenUseCase.execute(any()))
+                .thenThrow(new UnauthorizedException("Invalid refresh token"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie(REFRESH_COOKIE_NAME, "already-rotated-refresh-token")))
+                .andExpect(status().isUnauthorized())
+                .andDo(document("auth/refresh-invalid",
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /** Wrong password and unknown account answer identically — anti-enumeration. */
+    @Test
+    void badCredentialsAre401() throws Exception {
+        when(loginUserUseCase.execute(any()))
+                .thenThrow(new UnauthorizedException("Invalid credentials"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"nobody@example.com\",\"password\":\"wrong-password\"}"))
+                .andExpect(status().isUnauthorized())
+                .andDo(document("auth/login-invalid",
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
+    /** The avatar allowlist, published from the real refusal. */
+    @Test
+    void anUnsupportedAvatarTypeIs422() throws Exception {
+        when(accessTokenValidator.isValid("test-access-token")).thenReturn(true);
+        when(accessTokenValidator.extractUserId("test-access-token"))
+                .thenReturn("550e8400-e29b-41d4-a716-446655440000");
+        when(setAvatarUseCase.execute(any()))
+                .thenThrow(new InvalidFieldException(SetAvatarUseCase.unsupportedTypeMessage()));
+
+        MockMultipartFile svg = new MockMultipartFile(
+                "file", "avatar.svg", "image/svg+xml", "<svg/>".getBytes());
+
+        mockMvc.perform(multipart("/api/auth/profile/avatar")
+                        .file(svg)
+                        .header("Authorization", "Bearer test-access-token"))
+                .andExpect(status().isUnprocessableEntity())
+                .andDo(document("auth/set-avatar-unsupported-type",
+                        requestHeaders(headerWithName("Authorization").description("Bearer access token")),
+                        requestParts(partWithName("file").description("A file whose content type is not on the avatar allowlist")),
+                        responseFields(ApiErrorSnippets.errorFields())));
+    }
+
 }

@@ -1,7 +1,7 @@
 # API-docs sync audit — the rolling report
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
-(2026-08-16), `page` (2026-08-17).** Five to go; `storefront` is last.
+(2026-08-16), `page`, `identity` (2026-08-17).** Four to go; `storefront` is last.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the
@@ -78,6 +78,91 @@ These results hold repo-wide and save every later pass the work:
   point writes that body by hand, but with a null `code` dropped it is the same four
   keys as the handler's, and `UnauthorizedException` has no code-carrying constructor,
   so no 401 can differ.
+
+---
+
+# `identity` — 2026-08-17
+
+Fourteen endpoints. **A–E clean**, and no path variables anywhere, so that gap is
+correctly absent rather than missed.
+
+**This is the only context with public unauthenticated routes, and the only one whose
+documentation test asserted no non-2xx at all** — on the richest error surface in the
+application: three distinct 401s on refresh, a 401 on login, a 401 on change-password,
+and four 422s on the avatar.
+
+## F1. A rejected refresh has three causes and one of them ends every session
+
+`RefreshAccessTokenUseCase` answers **the same 401 with the same message** for an
+unknown token and a **replayed** one. An expired token says so —
+`"Refresh token has expired"` — so the ambiguity is two-way, not three. The sameness
+where it exists is deliberate: telling a caller they tripped the reuse detector tells
+an attacker the same thing.
+
+The consequence is not the same. A replayed token is treated as a theft signal and
+`revokeAllByFamilyId` ends **every session descended from that login**. Retrying a
+refresh with a token already exchanged lands there.
+
+**A genuine simultaneous double-submit does not**, and an earlier revision of this
+section said it did. `:93` guards the rotation so that two tabs presenting the same
+*live* token produce a plain 401 for the loser with the family intact — the comment
+there says as much. Publishing the opposite would have had frontend authors put a
+mutex around refresh to prevent a logout that cannot happen. Caught in review, from
+this section's own `Verified by` line, which cited the guard three lines below the
+claim.
+
+- **Severity**: high, and the most consequential undocumented behaviour found so far.
+  It is not deducible: the response is byte-identical to the benign case.
+- **Verified by**: `RefreshAccessTokenUseCase:58-63` for the reuse branch, `:65-66`
+  for expiry, `:93-94` for the rotation race — which is deliberately *not*
+  reuse-detection, and says so.
+
+## F2. The avatar restated its allowlist and its cap
+
+`"image/jpeg, image/png or image/webp, max 5 MB"` was hand-written in the part
+description, and `SetAvatarUseCase` hardcoded `"File too large: max 5 MB"` beside
+`MAX_AVATAR_BYTES`. **This is exactly the media defect from #174, in a second
+context** — including the production half: raising the cap would refuse a 6 MB file
+while telling the caller the limit is 5.
+
+## F3. Refresh and Set Avatar had no prose at all
+
+Two of the three most consequential endpoints in the API carried a heading, a macro
+and nothing else.
+
+## G. Prose drift — none
+
+## H. Description quality — none
+
+## What was fixed
+
+Three new tests, each publishing an error nothing showed:
+`aReplayedRefreshTokenIs401AndEndsEverySession`, `badCredentialsAre401`,
+`anUnsupportedAvatarTypeIs422`.
+
+- **F1** — `auth/refresh-invalid` publishes the 401, under a guide section stating the
+  three causes and the consequence: *treat any 401 here as "start again at login",
+  never as "retry"*.
+- **F2** — `SetAvatarUseCase` exposes `MAX_AVATAR_BYTES`, `allowedContentTypes()`,
+  `tooLargeMessage()` and `unsupportedTypeMessage()`; the throw sites and the published
+  description all derive from them. Probed: raising the cap to 8 MB moves the published
+  part description with it.
+- **F3** — prose for both, plus `auth/login-invalid` documenting that a wrong password
+  and an unknown address answer identically.
+- The avatar is now inside `ApiGuideNamesTheRealAllowlistTest` — **reading the guide**.
+  The first attempt asserted against `SetAvatarUseCase` alone and never opened the
+  file, while its failure message claimed the two disagreed; a sentence naming a
+  refused type left the build green. It compares the Set Avatar prose against the
+  allowlist now, anchored like its siblings.
+- `LARGEST_APP_CAP` in `MultipartLimitsTest` derives from **both** caps rather than
+  naming the media one and describing the avatar's in a comment, and
+  `application.yml` stops restating either. Making the avatar cap public closed those
+  two the same way it closed the published description.
+
+**The lesson repeated across contexts:** media's F1 was not a media bug. The same
+hand-copied allowlist and hardcoded cap sat in `identity`, unguarded, while the guard
+written for it covered only the media section. A rule recorded for one context does
+not reach the next unless something executes it.
 
 ---
 

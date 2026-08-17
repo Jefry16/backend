@@ -1,5 +1,6 @@
 package com.vointika.architecture;
 
+import com.vointika.identity.application.usecase.SetAvatarUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
 import com.vointika.media.domain.valueobject.ContentType;
 import org.junit.jupiter.api.DisplayName;
@@ -58,6 +59,25 @@ class ApiGuideNamesTheRealAllowlistTest {
      */
     private static final String REFUSED_ANCHOR = "==== Upload Media — Unsupported Type";
 
+    /** The media upload's own section. */
+    private static final String MEDIA_ANCHOR = "==== Upload Media";
+
+    /**
+     * Where the avatar states what it accepts.
+     *
+     * <p><b>The trailing newline is defensive, not load-bearing</b> — worth saying
+     * because it reads like a typo and would otherwise be tidied away.
+     * {@code indexOf} returns the first match and the plain heading precedes
+     * {@code ==== Set Avatar — Unsupported Type} in the guide, so the positive check
+     * reads the right section either way. {@link #MEDIA_ANCHOR} carries no newline and
+     * is correct for exactly that reason, ahead of four {@code — …} siblings. The
+     * newline keeps this true if the sections are ever reordered.
+     */
+    private static final String AVATAR_ANCHOR = "==== Set Avatar\n";
+
+    /** Where the avatar names what it refuses — which may not overlap the allowlist. */
+    private static final String AVATAR_REFUSED_ANCHOR = "==== Set Avatar — Unsupported Type";
+
     /**
      * Ends that sentence at a full stop <b>followed by whitespace</b>, not at any full
      * stop: a MIME type may carry one ({@code image/vnd.foo}) and cutting there would
@@ -94,6 +114,13 @@ class ApiGuideNamesTheRealAllowlistTest {
      * to stop carrying a number</b> rather than exempted, because an exemption list is
      * the hand-kept vocabulary these guards exist to remove.
      *
+     * <p><b>This is a claim about the guide source, not the rendered page.</b> The
+     * avatar has its own, smaller cap, and it reaches a reader through a generated
+     * field table — so the published HTML carries two megabyte figures while the source
+     * carries one. That is the intended arrangement: the avatar cap is kept out of the
+     * prose precisely so it cannot be restated, and it is derived where it is
+     * published. Do not "fix" the discrepancy by adding it to the prose.
+     *
      * <p><b>So this makes the guide unable to state any other size in MB, and there is
      * one real case waiting.</b> The container's own ceiling is 30 MB
      * ({@code spring.servlet.multipart.max-file-size}), and a request over it gets a
@@ -110,25 +137,7 @@ class ApiGuideNamesTheRealAllowlistTest {
     @DisplayName("the guide's upload prose names exactly ContentType.ALLOWED")
     void theGuideNamesEveryAllowedTypeAndNoOther() throws IOException {
         String guide = Files.readString(GUIDE);
-        int start = guide.indexOf("==== Upload Media");
-        assertThat(start)
-                .withFailMessage("No '==== Upload Media' heading in %s — this test is "
-                        + "anchored to it and would otherwise pass by reading nothing.", GUIDE)
-                .isGreaterThan(0);
-
-        int end = guide.indexOf("\n==== ", start + 1);
-        String section = guide.substring(start, end > 0 ? end : guide.length());
-
-        int listStart = section.indexOf(ALLOWLIST_ANCHOR);
-        assertThat(listStart)
-                .withFailMessage("No '%s' sentence under '==== Upload Media' in %s. This "
-                        + "test reads that sentence and nothing else, so a rename would "
-                        + "otherwise let it pass by examining no prose at all.",
-                        ALLOWLIST_ANCHOR, GUIDE)
-                .isGreaterThan(0);
-        Matcher sentenceEnd = SENTENCE_END.matcher(section);
-        String allowlistSentence = section.substring(
-                listStart, sentenceEnd.find(listStart) ? sentenceEnd.start() : section.length());
+        String allowlistSentence = allowlistSentenceIn(guide, MEDIA_ANCHOR);
 
         List<String> mentioned = MIME.matcher(allowlistSentence).results()
                 .map(r -> r.group(1)).distinct().sorted().toList();
@@ -165,11 +174,28 @@ class ApiGuideNamesTheRealAllowlistTest {
                         crept in.""", capMb, statedSizes)
                 .containsExactly(String.valueOf(capMb));
 
-        assertThat(section)
+        assertThat(sectionUnder(guide, MEDIA_ANCHOR))
                 .withFailMessage("The upload prose states a count of allowed types. "
                         + "Counts go stale the moment the allowlist changes — name the "
                         + "types, which this test keeps true, and drop the number.")
                 .doesNotContain("exactly four types");
+
+        List<String> avatarAllowed = SetAvatarUseCase.allowedContentTypes().stream().sorted().toList();
+        assertThat(mimeTokensIn(allowlistSentenceIn(guide, AVATAR_ANCHOR)))
+                .withFailMessage("""
+                        The Set Avatar prose names a type the avatar does not accept, or \
+                        omits one it does. Code allows %s. The part description is \
+                        generated from SetAvatarUseCase and cannot drift; this sentence \
+                        is hand-written and can.""", avatarAllowed)
+                .containsExactlyElementsOf(avatarAllowed);
+
+        assertThat(mimeTokensIn(sectionUnder(guide, AVATAR_REFUSED_ANCHOR)))
+                .withFailMessage("""
+                        The Set Avatar error section names a type the avatar accepts. \
+                        Code allows %s. That section exists to name what is refused, so \
+                        naming an accepted type there tells a reader the opposite of the \
+                        truth.""", avatarAllowed)
+                .doesNotContainAnyElementsOf(avatarAllowed);
 
         assertThat(namedAsRefused(guide))
                 .withFailMessage("""
@@ -199,6 +225,65 @@ class ApiGuideNamesTheRealAllowlistTest {
                         + "nothing wrong.", REFUSED_ANCHOR)
                 .isNotEmpty();
         return refused;
+    }
+
+    /**
+     * The types the Set Avatar error section names, which is where the avatar's
+     * allowlist reaches a reader in prose.
+     *
+     * <p>Two earlier versions were wrong in opposite directions. The first asserted
+     * against {@code SetAvatarUseCase} alone and never opened the guide, so a sentence
+     * naming a refused type passed green. The second compared the whole
+     * <em>Unsupported Type</em> section for equality — which forbade that section from
+     * naming an unsupported type, the one thing it exists to do, so writing
+     * {@code `image/svg+xml`} the way the media sibling does turned correct prose red.
+     *
+     * <p>So the question is split the way the media allowlist splits it: the endpoint's
+     * own section states what is accepted and is compared for equality; the error
+     * section names what is refused and is compared for disjointness.
+     *
+     * <p>{@code image/*} survives both because {@link #MIME}'s character class has no
+     * {@code *} — load-bearing, and it looks accidental.
+     */
+    private static List<String> mimeTokensIn(String prose) {
+        return MIME.matcher(prose).results().map(r -> r.group(1)).distinct().sorted().toList();
+    }
+
+    /** Everything under a {@code ====} heading, up to the next one. */
+    private static String sectionUnder(String guide, String anchor) {
+        int start = guide.indexOf(anchor);
+        assertThat(start)
+                .withFailMessage("No '%s' heading in %s. This assertion reads that "
+                        + "section and nothing else, so a rename would let it pass by "
+                        + "examining no prose at all.", anchor.strip(), GUIDE)
+                .isGreaterThan(0);
+        int end = guide.indexOf("\n==== ", start + 1);
+        return guide.substring(start, end > 0 ? end : guide.length());
+    }
+
+    /**
+     * The {@code Allowed:} sentence of a section, and nothing else in it.
+     *
+     * <p><b>Both allowlists read this way, from one implementation.</b> The media half
+     * was narrowed to this sentence on #174, because reading the whole section made a
+     * writer describing the request encoding as {@code multipart/form-data} look like
+     * they had promised a content type the API refuses. The avatar half was then
+     * written to read the whole section and reproduced the identical trap — on prose
+     * that opens with the words {@code Multipart (`file` part).}, so spelling it out is
+     * the obvious next edit. There is one implementation now so a third copy cannot
+     * diverge again.
+     */
+    private static String allowlistSentenceIn(String guide, String sectionAnchor) {
+        String section = sectionUnder(guide, sectionAnchor);
+        int listStart = section.indexOf(ALLOWLIST_ANCHOR);
+        assertThat(listStart)
+                .withFailMessage("No '%s' sentence under '%s' in %s. This assertion reads "
+                        + "that sentence and nothing else, so a rename would otherwise let "
+                        + "it pass by examining no prose at all.",
+                        ALLOWLIST_ANCHOR, sectionAnchor.strip(), GUIDE)
+                .isGreaterThan(0);
+        Matcher end = SENTENCE_END.matcher(section);
+        return section.substring(listStart, end.find(listStart) ? end.start() : section.length());
     }
 
 }

@@ -1,5 +1,6 @@
 package com.vointika.media.application.usecase;
 
+import com.vointika.identity.application.usecase.SetAvatarUseCase;
 import com.vointika.shared.web.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * numbers that must stay in step, and nothing made them.
  *
  * <p>{@code spring.servlet.multipart.max-file-size} was set in the first identity
- * slice, when the only upload was the 5 MB avatar, and never revisited. The
+ * slice, when the only upload was the avatar, and never revisited. The
  * container spools the whole part <em>before</em> a handler runs, so a ceiling far
  * above what any endpoint accepts just buys an authenticated caller that much
  * ingest per request for a upload guaranteed to be refused.
@@ -39,8 +40,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class MultipartLimitsTest {
 
-    /** The largest upload any endpoint accepts (media; the avatar's cap is 5 MB). */
-    private static final long LARGEST_APP_CAP = UploadMediaUseCase.MAX_BYTES;
+    /**
+     * The largest upload any endpoint accepts, <b>derived rather than named</b>. It
+     * used to be the media cap with a comment saying the avatar's was smaller — true
+     * when written, and a second place to remember if either moved. Both are public
+     * constants, so take the max and the comment stops being needed.
+     */
+    private static final long LARGEST_APP_CAP =
+            Math.max(UploadMediaUseCase.MAX_BYTES, SetAvatarUseCase.MAX_AVATAR_BYTES);
 
     /** Headroom so a marginally-oversize upload still gets the app's own 422. */
     private static final long CEILING = LARGEST_APP_CAP * 2;

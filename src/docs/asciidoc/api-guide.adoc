@@ -189,10 +189,44 @@ Returns an access token in the body and the refresh token as an `httpOnly` cooki
 
 operation::auth/login[]
 
+[[resources-login-invalid]]
+==== Login — Invalid Credentials
+
+A wrong password and an address with no account answer **identically**, by
+design: a login that distinguished them would confirm which addresses are
+registered.
+
+operation::auth/login-invalid[]
+
 [[resources-refresh]]
 ==== Refresh Access Token
 
+Rotates the refresh token: the presented one is revoked and a new one is set on
+the cookie. **A refresh token is single-use.**
+
 operation::auth/refresh[]
+
+[[resources-refresh-invalid]]
+==== Refresh Access Token — Rejected
+
+**Three causes, and one of them ends every session you hold.** An expired token
+says so — `Refresh token has expired`. An unknown token and a **replayed** one
+are deliberately indistinguishable, both answering `Invalid refresh token`,
+because telling a caller they tripped the reuse detector would tell an attacker
+the same thing.
+
+The consequence differs sharply. A replayed token — one already rotated away — is
+treated as a theft signal, and **the entire token family is revoked**: every
+session descended from that login ends, not just this one. Retrying a refresh
+with a token you already exchanged lands here.
+
+**A genuine simultaneous double-submit does not.** If two tabs present the *same
+live* token at once, the loser gets a plain 401 and the family survives — the
+rotation is guarded precisely so racing clients are not logged out of everything.
+You do not need a mutex around refresh; you do need to treat a 401 as "start
+again at login" rather than "retry with the same token".
+
+operation::auth/refresh-invalid[]
 
 [[resources-logout]]
 ==== Logout
@@ -224,7 +258,20 @@ operation::auth/profile[]
 [[resources-set-avatar]]
 ==== Set Avatar
 
+Multipart (`file` part). Allowed: `image/jpeg`, `image/png`, `image/webp` —
+narrower than the media library's, with no PDF. The size cap is in the field
+table below.
+
 operation::auth/set-avatar[]
+
+[[resources-set-avatar-unsupported-type]]
+==== Set Avatar — Unsupported Type
+
+As with the media library, **`image/*` is not the rule**: `image/gif` and
+`image/svg+xml` both match it and are both refused — SVG deliberately, because an
+SVG can carry script.
+
+operation::auth/set-avatar-unsupported-type[]
 
 [[resources-clear-avatar]]
 ==== Clear Avatar

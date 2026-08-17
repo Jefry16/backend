@@ -16,7 +16,37 @@ import java.util.Map;
 public class SetAvatarUseCase {
 
 
-    private static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
+    /**
+     * The avatar cap. <b>Public because the API guide publishes it through the
+     * generated part description</b>, and must not restate it.
+     *
+     * <p>No test asserts the two agree, and none can while the guide is written this
+     * way: {@code ApiGuideNamesTheRealAllowlistTest} requires every megabyte figure in
+     * the guide source to be the <em>media</em> cap, so this number reaches a reader
+     * only through the generated table. Deriving it here is what keeps it true.
+     */
+    public static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
+
+    /**
+     * The refusal a caller sees, derived from {@link #MAX_AVATAR_BYTES} rather than
+     * written out beside it. The number used to be a literal here: raising the cap
+     * would have left the API refusing a 6 MB file while telling the caller the limit
+     * was 5, with a green build. Same defect the media upload carried until #174.
+     */
+    public static String tooLargeMessage() {
+        return "File too large: max " + MAX_AVATAR_BYTES / (1024 * 1024) + " MB";
+    }
+
+    /** What an avatar may be. Public for the same reason as the cap. */
+    public static java.util.Set<String> allowedContentTypes() {
+        return EXTENSION_BY_CONTENT_TYPE.keySet();
+    }
+
+    /** The refusal for a type off the list, built from the list. */
+    public static String unsupportedTypeMessage() {
+        return "Unsupported avatar content type: allowed "
+                + String.join(", ", allowedContentTypes().stream().sorted().toList());
+    }
 
     // Raster images only — SVG is excluded for the same script-injection
     // reason the media library excludes it.
@@ -47,14 +77,13 @@ public class SetAvatarUseCase {
         String contentType = normalizeContentType(input.contentType());
         String extension = EXTENSION_BY_CONTENT_TYPE.get(contentType);
         if (extension == null) {
-            throw new InvalidFieldException(
-                    "Unsupported avatar content type: allowed image/jpeg, image/png, image/webp");
+            throw new InvalidFieldException(unsupportedTypeMessage());
         }
         if (input.sizeBytes() <= 0) {
             throw new InvalidFieldException("File is empty");
         }
         if (input.sizeBytes() > MAX_AVATAR_BYTES) {
-            throw new InvalidFieldException("File too large: max 5 MB");
+            throw new InvalidFieldException(tooLargeMessage());
         }
 
         User user = userRepository.findById(input.userId())
