@@ -2,7 +2,8 @@
 
 **Contexts done: `audit`, `contact`, `reference`, `pickup`, `audience`, `media`
 (2026-08-16), `page`, `identity`, `experience`, `touroperator`, `metafield`
-(2026-08-17).** One to go: `storefront`.
+(2026-08-17).** **`storefront` is deliberately not audited** — decided 2026-08-17,
+not deferred. Eleven of the twelve contexts are done and the series is closed.
 Playbook: `API-DOCS-SYNC.md`.
 
 **One section per context, newest first.** Within each, findings A–H are what the

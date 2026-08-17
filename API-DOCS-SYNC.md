@@ -7,9 +7,10 @@ Invoke with a context name:
 
 > **Run `API-DOCS-SYNC.md` on `page`.**
 
-Run it context by context. **`storefront` goes last** — its surface is public,
-unauthenticated and still half placeholder, so it answers to different rules than the
-admin API and is easiest to judge once the rest is settled.
+Run it context by context. **`storefront` was excluded by decision** (2026-08-17),
+not left until later: its surface is public, unauthenticated and still half
+placeholder, so it answers to different rules than the admin API and there is no
+point pinning a contract that is waiting for themes. The other eleven are done.
 
 ## What this repo actually is
 
