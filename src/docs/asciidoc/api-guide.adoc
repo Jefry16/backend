@@ -1574,6 +1574,29 @@ ADMIN+ only. Owner type, namespace, key and type are immutable once created.
 
 operation::metafield-definitions/create[]
 
+[[resources-metafield-definitions-create-conflict]]
+==== Create a Metafield Definition — Already Defined
+
+409. `namespace.key` is unique per operator **and owner type**, so the same pair
+may exist once for an experience and once for a page. Four of the seven fields
+are immutable, so a definition you regret is a delete and a create — and the
+delete cascades, per <<resources-metafield-definitions-delete>>.
+
+operation::metafield-definitions/create-conflict[]
+
+[[resources-metafield-definitions-create-forbidden]]
+==== Create a Metafield Definition — STAFF May Not Write
+
+403, and **the role line for this whole section**. Every read here is
+member-visible and every write is ADMIN+ — definitions, metaobject types,
+metaobject entries and metafield values alike. A STAFF member browses the
+operator's custom schema and its data and changes none of it.
+
+It is a 403 rather than a 404 because the membership check has already passed. A
+non-member never learns the operator exists.
+
+operation::metafield-definitions/create-forbidden[]
+
 [[resources-metafield-definitions-update]]
 ==== Update a Metafield Definition
 
@@ -1584,8 +1607,14 @@ operation::metafield-definitions/update[]
 [[resources-metafield-definitions-delete]]
 ==== Delete a Metafield Definition
 
-ADMIN+ only. Cascades to every value. A type still pinned by a reference
-definition → 409.
+ADMIN+ only. **Nothing protects this.** It cascades: every value for this
+definition, on every resource that had one, is deleted with it. There is no
+in-use check and no 409 — the audit entry recording what was removed is the only
+trace. A confirmation step belongs in the client.
+
+(The 409 for a type still pinned by a reference lives on
+<<resources-metaobject-definitions-delete>>, which is a different endpoint. This
+section claimed it too, and could not raise it.)
 
 operation::metafield-definitions/delete[]
 
@@ -1602,6 +1631,25 @@ operation::experience-metafields/list[]
 ADMIN+ only. Validated against the definition's type → 422.
 
 operation::experience-metafields/upsert[]
+
+**The definition comes first, always.** `{namespace}` and `{key}` name a
+definition that must already exist for this owner type; there is no implicit
+create. Setting a value for an undefined pair is a **404**, not a 201 — which
+reads like a routing mistake and is not one. Create the definition at
+<<resources-metafield-definitions-create>>, then set values.
+
+`metaobject_reference` values are checked twice: the shape, and then that the
+entry exists, belongs to this operator, **and is of the type the definition
+pinned**. Any of the three failing is a 422.
+
+Two clients setting the first value for the same pair at the same instant: one
+wins, the other gets a **409 saying to retry**, and the retry lands as a normal
+replace. It is the one 409 in this section that is worth retrying automatically.
+
+[[resources-experience-metafields-upsert-not-found]]
+==== Set an Experience's Metafield Value — No Definition
+
+operation::experience-metafields/upsert-not-found[]
 
 [[resources-experience-metafields-delete]]
 ==== Clear an Experience's Metafield Value
@@ -1623,6 +1671,15 @@ operation::page-metafields/list[]
 ADMIN+ only.
 
 operation::page-metafields/upsert[]
+
+[[resources-page-metafields-upsert-not-found]]
+==== Set a Page's Metafield Value — No Definition
+
+404, per <<resources-experience-metafields-upsert-not-found>>. The definition
+must exist **for the `page` owner type** — one defined for experiences does not
+serve pages, even with the same `namespace.key`.
+
+operation::page-metafields/upsert-not-found[]
 
 [[resources-page-metafields-delete]]
 ==== Clear a Page's Metafield Value
@@ -1648,6 +1705,14 @@ operation::tour-operator-metafields/list[]
 ADMIN+ only.
 
 operation::tour-operator-metafields/upsert[]
+
+[[resources-tour-operator-metafields-upsert-not-found]]
+==== Set the Operator's Metafield Value — No Definition
+
+404, per <<resources-experience-metafields-upsert-not-found>>, with the
+definition's owner type set to `tour_operator`.
+
+operation::tour-operator-metafields/upsert-not-found[]
 
 [[resources-tour-operator-metafields-delete]]
 ==== Clear the Operator's Metafield Value
@@ -1702,6 +1767,15 @@ operation::tour-operator-metafield-translations/get[]
 ADMIN+ only. A locale the operator does not publish → 422.
 
 operation::tour-operator-metafield-translations/upsert[]
+
+[[resources-tour-operator-metafield-translations-upsert-invalid]]
+==== Set the Operator's Metafield Translations — Not Translatable
+
+422. Either a key naming a metafield whose type carries no overlay, or a key that
+is not `namespace.key`-shaped. The published request table names the types that
+qualify, and it is generated from the code — so it stays true if the set widens.
+
+operation::tour-operator-metafield-translations/upsert-invalid[]
 
 [[resources-tour-operator-metafield-translations-delete]]
 ==== Clear the Operator's Metafield Translations
@@ -1857,6 +1931,21 @@ ADMIN+ only. A type pinned by a reference metafield → 409.
 
 operation::metaobject-definitions/delete[]
 
+[[resources-metaobject-definitions-create-conflict]]
+==== Create a Metaobject Definition — Type Already Used
+
+409. The `type` handle is the definition's identity and is unique per operator.
+
+operation::metaobject-definitions/create-conflict[]
+
+[[resources-metaobject-definitions-remove-field-conflict]]
+==== Remove a Field — The Last One Stays
+
+409. A definition must keep at least one field: with none, every entry of that
+type would have nowhere to hold content. Delete the definition instead.
+
+operation::metaobject-definitions/remove-field-conflict[]
+
 [[resources-metaobjects-list]]
 ==== List Metaobject Entries
 
@@ -1893,6 +1982,15 @@ operation::metaobjects/update[]
 ADMIN+ only.
 
 operation::metaobjects/publish[]
+
+[[resources-metaobjects-publish-conflict]]
+==== Publish a Metaobject Entry — Already Published
+
+409. Publishing is not idempotent: an entry that is already live is refused
+rather than silently re-published, so a double-submitted form cannot hide a
+state you did not intend.
+
+operation::metaobjects/publish-conflict[]
 
 [[resources-metaobjects-unpublish]]
 ==== Unpublish a Metaobject Entry

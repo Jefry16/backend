@@ -264,6 +264,57 @@ reader they are protected.
 Checked mechanically across every `*-fields.adoc` in the context: no description
 equals its field name.
 
+## What was fixed
+
+Suite **1253 → 1256**; operations **210 → 219**. Nine new operations, all errors.
+
+**The repo-wide no-field-table list is now empty.** It has been tracked at the
+foot of this report since the first pass, reading 71, 20, 19, 22, 20, 16 and 9.
+`metafield-definitions/get` was the last one. That heading is deleted.
+
+- **F1** — `ownerType` derives from `MetafieldOwnerType.codes()` and publishes all
+  three. It was wrong in **two** published tables, not one: the create request and
+  the list response both said "experience or page", and the audit found only the
+  first. `MetafieldOwnerType.fromCode` had already been fixed once, with a comment
+  saying the old message "still said experience, page and would have kept saying
+  it" — and the two published copies were not fixed with it. That comment now lives
+  on `codes()` as the reason the helper exists.
+- **F2** — `pathParameters` on all 45, generated from the URI template each test
+  already used rather than hand-written per operation. `{namespace}`/`{key}` say
+  they name an existing definition, which is F7's rule where a reader meets it.
+- **F3** — `MetafieldType.codes()`, matching its sibling. The refusal, the create
+  table and the get table all build from it.
+- **F4** — `MetafieldType.translatableCodes()`, derived from `isTranslatable()`.
+  The guide's prose no longer states the set; the published request table does.
+- **F5** — a `requestFields` on all four `*-translations/upsert`, carrying the
+  three rules that were prose only: keys are `namespace.key`, blank clears,
+  omitted is untouched.
+- **F6** — field tables on all nine. The four `get` reads document a dynamic map
+  with `fieldWithPath("*")` and the four `list-locales` a root array with
+  `fieldWithPath("[]")`; both were verified by running rather than assumed.
+- **F7** — nine operations: the definition-first 404 on all three owner types, the
+  403 that states the role line once, two create 409s, the publish 409, the
+  last-field 409, and the not-translatable 422.
+- **G** — the false 409 is gone. That section now says the opposite and says it
+  plainly: nothing protects the delete, it cascades to every value on every
+  resource, and a confirmation step belongs in the client.
+
+**Two things the strict check found that the audit had not.**
+`metafield-definitions/get` returns **two fields the list projection omits** —
+`description` and `updatedAt` — so the list's table was not a complete model of the
+record. And `PublishedExamplesAreHonestTest` caught three of the nine new errors
+publishing their happy path's request verbatim: all three were **pre-existing
+assertions** taught to publish, and reusing the fixture is what teaching them to
+publish does by default. Each now varies on what the error turns on — a
+second entry for the publish 409, a differently-named definition for each create
+409.
+
+**Verified by mutation.** Adding `BOOLEAN` to `isTranslatable()` moves the
+published translatable list in **six** files, and the only failure is
+`UpsertMetafieldTranslationsUseCaseTest.aNonTextTypeIsRefusedByName` — the
+behavioural test whose job is to pin the rule. Same arrangement as the menu depth
+cap: the documentation derives, and one test still makes a human look.
+
 ---
 
 # `touroperator` — 2026-08-17
@@ -1500,32 +1551,24 @@ Ordered by how likely a consumer is to be misled.
 3. **F3 — add `pathParameters(...)` to both.** Cosmetic here. Decide it as a
    convention now, because the contexts with 40 and 45 mappings are coming.
 
-## The 9 body-returning operations with no field table
+## Body-returning operations with no field table — none left
 
-Repo-wide, for the passes that follow. **MAP's Debt entry points here rather than
-pinning a number**, which is why this heading is the only place it is stated.
+**This list is closed.** It has read 71 (a bad scan), 20, 19 (blind to the
+`withDefaults` set), 22 (corrected), 20, 17, 16 and 9, and `metafield`'s pass took
+the last one. MAP's Debt entry pointing here can go with it.
 
-**The old scan was blind to exactly the set F1 found.** Its method is: for every
-`response-body.adoc`, strip the fences, check the body is non-empty, then test for a
-sibling `response-fields.adoc`. The 61 operations restricted by `withDefaults` emitted
-no `response-body.adoc` at all, so the scan never saw them. Removing that call
-repo-wide made three more visible: `experiences/get`, `experiences/translations/get`
-and `experiences/translations/list`. The two defects were one defect.
+The scan, for whoever needs it again — strip both fences, keep non-empty bodies,
+test for a sibling table:
 
-`experience-metafield-translations/get` ·
-`experience-metafield-translations/list-locales` · `metafield-definitions/get`
-· `metaobject-field-translations/get` ·
-`metaobject-field-translations/list-locales` ·
-`page-metafield-translations/get` · `page-metafield-translations/list-locales`
-· `tour-operator-metafield-translations/get` ·
-`tour-operator-metafield-translations/list-locales`
+```
+for d in $(find target/generated-snippets -name response-body.adoc | xargs -n1 dirname); do
+  b=$(grep -v '^\[source' "$d/response-body.adoc" | grep -v '^----$' | tr -d '[:space:]')
+  [ -n "$b" ] && [ ! -f "$d/response-fields.adoc" ] && echo "$d"
+done
+```
 
-**Verified by**: for every `response-body.adoc`, stripping the `----` fences and
-checking the body is non-empty, then testing for a sibling `response-fields.adoc` —
-re-run after the repo-wide `withDefaults` removal, without which it cannot see 61 of
-the 159 operations. The number moves as passes fix their own: it has read 71 (a bad scan), 20, 19 (blind
-to the restricted set), 22 (the corrected scan), and 20 again since `pickup`
-documented its two reads. Re-run the scan rather than trusting any of them.
+`sed '1d;$d'` is not enough — it leaves a `----` behind and reports every 204
+endpoint as a gap.
 
 ---
 

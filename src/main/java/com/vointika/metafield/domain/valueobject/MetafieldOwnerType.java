@@ -3,6 +3,7 @@ package com.vointika.metafield.domain.valueobject;
 import com.vointika.shared.exception.InvalidFieldException;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Which resource kind a definition attaches to. The value machinery is
@@ -47,9 +48,24 @@ public enum MetafieldOwnerType {
                 }
             }
         }
-        // Built from the values rather than written out: the message this
-        // replaced still said "experience, page" and would have kept saying it.
-        throw new InvalidFieldException("Metafield owner type must be one of: "
-                + String.join(", ", Arrays.stream(values()).map(MetafieldOwnerType::code).toList()));
+        throw new InvalidFieldException("Metafield owner type must be one of: " + codes());
+    }
+
+    /**
+     * Every code, in declaration order — <b>derived, because it is published</b>.
+     * The refusal above and the create endpoint's {@code ownerType} description are
+     * both built from this.
+     *
+     * <p>The refusal was fixed first, and its comment recorded why: the message it
+     * replaced "still said experience, page and would have kept saying it". The
+     * published description was not fixed with it and said exactly that for as long
+     * as {@code TOUR_OPERATOR} existed — so a client could read how to write the
+     * operator's own metafields and not be told the definition they need was
+     * allowed. Fixing a restatement means finding every copy, including the ones in
+     * test sources that reach a reader.
+     */
+    public static String codes() {
+        return Arrays.stream(values()).map(MetafieldOwnerType::code)
+                .collect(Collectors.joining(", "));
     }
 }

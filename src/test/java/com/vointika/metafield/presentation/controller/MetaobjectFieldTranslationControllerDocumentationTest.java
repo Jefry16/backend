@@ -1,5 +1,6 @@
 package com.vointika.metafield.presentation.controller;
 
+import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.metafield.application.usecase.DeleteMetaobjectFieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.GetMetaobjectFieldTranslationsUseCase;
 import com.vointika.metafield.application.usecase.ListMetaobjectFieldTranslationLocalesUseCase;
@@ -36,6 +37,12 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,6 +95,12 @@ class MetaobjectFieldTranslationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0]").value("en"))
                 .andDo(document("metaobject-field-translations/list-locales",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("metaobjectId").description("The metaobject entry id")),
+                        responseFields(fieldWithPath("[]").description(
+                                "Locale codes that have at least one translated metafield — the editor's "
+                                        + "\"started\" markers. A locale absent here is untranslated, not "
+                                        + "unsupported")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }
@@ -103,6 +116,14 @@ class MetaobjectFieldTranslationControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notes").value("Sloop, 11 m. Refitted in 2022."))
                 .andDo(document("metaobject-field-translations/get",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("metaobjectId").description("The metaobject entry id"),
+                                parameterWithName("locale").description(
+                                        "The locale to read. An untranslated one returns {} rather than a 404")),
+                        responseFields(fieldWithPath("*").description(
+                                "One entry per translated metafield, keyed \"namespace.key\". Only keys "
+                                        + "with an overlay in this locale appear; everything else falls back "
+                                        + "to the canonical value")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }
@@ -116,6 +137,16 @@ class MetaobjectFieldTranslationControllerDocumentationTest {
                         .content("{\"values\":{\"notes\":\"Sloop, 11 m. Refitted in 2022.\"}}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-field-translations/upsert",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("metaobjectId").description("The metaobject entry id"),
+                                parameterWithName("locale").description("The locale being written")),
+                        requestFields(subsectionWithPath("values").description(
+                                "The locale's overlays, keyed \"namespace.key\" — a bare key is a 422. A "
+                                        + "blank value CLEARS that key; a key left out is UNTOUCHED, so a "
+                                        + "partial form cannot delete what it never rendered. Only "
+                                        + MetafieldType.translatableCodes() + " metafields may appear, and "
+                                        + "each must already have a value to overlay. Nothing is written if "
+                                        + "any entry is rejected")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }
@@ -127,6 +158,10 @@ class MetaobjectFieldTranslationControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("metaobject-field-translations/delete",
+                        pathParameters(parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("metaobjectId").description("The metaobject entry id"),
+                                parameterWithName("locale").description(
+                                        "The locale to drop whole. 204 whether or not anything was there")),
                         requestHeaders(headerWithName("Authorization")
                                 .description("Bearer access token"))));
     }

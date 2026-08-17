@@ -1,5 +1,6 @@
 package com.vointika.metafield.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.metafield.application.usecase.DeleteMetafieldValueUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldValuesUseCase;
 import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
@@ -45,6 +46,8 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -107,6 +110,9 @@ class TourOperatorMetafieldControllerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].value").value("Mon–Sat 09:00–18:00"))
                 .andDo(document("tour-operator-metafields/list",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("[].namespace").description("The definition's namespace"),
@@ -128,6 +134,13 @@ class TourOperatorMetafieldControllerDocumentationTest {
                         .content("{\"value\":\"Mon–Sat 09:00–18:00\"}"))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operator-metafields/upsert",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("namespace").description(
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition — there is no implicit create, so an undefined pair is a 404"),
+                                parameterWithName("key").description(
+                                        "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         requestFields(fieldWithPath("value")
                                 .description("The raw value; validated + normalized against the definition's type (mismatch → 422). Blank → 422 — clearing is DELETE's job"))));
@@ -142,6 +155,13 @@ class TourOperatorMetafieldControllerDocumentationTest {
                         .header("Authorization", BEARER))
                 .andExpect(status().isNoContent())
                 .andDo(document("tour-operator-metafields/delete",
+                        pathParameters(
+                                parameterWithName("id").description(
+                                        "The tour operator id"),
+                                parameterWithName("namespace").description(
+                                        "The namespace half of the identifier. With {key} it names an EXISTING definition — there is no implicit create, so an undefined pair is a 404"),
+                                parameterWithName("key").description(
+                                        "The key half of the identifier. Handle-shaped, and paired with {namespace} it is what the definition is looked up by")),
                         requestHeaders(headerWithName("Authorization").description("Bearer access token"))));
     }
 
@@ -181,6 +201,18 @@ class TourOperatorMetafieldControllerDocumentationTest {
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"value\":\"x\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andDo(document("tour-operator-metafields/upsert-not-found",
+                        pathParameters(
+                                parameterWithName("id").description("The tour operator id"),
+                                parameterWithName("namespace").description(
+                                        "A namespace with no definition for this owner type"),
+                                parameterWithName("key").description(
+                                        "…and the key half. The pair must already be DEFINED — this endpoint never creates one")),
+                        requestHeaders(headerWithName("Authorization")
+                                .description("Bearer access token")),
+                        requestFields(fieldWithPath("value").description(
+                                "Ignored — the definition is looked up before the value is read")),
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }
