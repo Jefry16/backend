@@ -9,7 +9,6 @@ import com.vointika.experience.domain.repository.SlotRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.AuditChanges;
@@ -27,9 +26,9 @@ import java.util.UUID;
  *
  * <p>Slots snapshot the experience's name/description at creation — when either
  * changes here, the snapshot is refreshed across the experience's slots in the
- * same transaction, so existing departures never show stale copy. Timing is
- * untouched (a slot's startAt/endAt are explicit; the experience's
- * durationMinutes is only the advertised length).
+ * same transaction, so existing departures never show stale copy. Slot timing is
+ * untouched: a slot's startAt/endAt are explicit, and the experience carries no
+ * duration of its own to derive them from.
  */
 public class UpdateExperienceUseCase {
 
@@ -56,8 +55,8 @@ public class UpdateExperienceUseCase {
 
     public void execute(UUID tourOperatorId, UUID experienceId, UUID callerUserId, ExperienceInput input) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        Experience experience = experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
+        Experience experience = experienceRepository
+                .requireByIdAndTourOperatorId(experienceId, tourOperatorId);
 
         var mediaIds = ExperienceInputMapper.mediaIds(input);
         mediaReferenceValidator.validate(tourOperatorId, mediaIds, input.thumbnailMediaId());
@@ -70,7 +69,7 @@ public class UpdateExperienceUseCase {
                 ExperienceInputMapper.name(input),
                 ExperienceInputMapper.description(input),
                 ExperienceInputMapper.longDescription(input),
-                input.featured(),
+                input.isFeatured(),
                 mediaIds,
                 input.thumbnailMediaId(),
                 ExperienceInputMapper.bookingCutoffHours(input),

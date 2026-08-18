@@ -7,10 +7,9 @@ import com.vointika.experience.domain.repository.ExperienceTranslationRepository
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
-import com.vointika.experience.domain.valueobject.SeoDescription;
-import com.vointika.experience.domain.valueobject.SeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.service.OperatorLocaleCheck;
@@ -21,7 +20,6 @@ import com.vointika.shared.valueobject.AuditActor;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Handle;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -81,20 +79,19 @@ public class UpsertExperienceTranslationUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
 
-        if (experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Experience not found");
-        }
+        experienceRepository.requireExists(experienceId, tourOperatorId);
         operatorLocaleCheck.require(tourOperatorId, locale.value());
 
-        ExperienceName name = input.name() == null || input.name().isBlank() ? null : new ExperienceName(input.name());
-        Description description = blankNull(input.description()) == null ? null : new Description(input.description());
-        LongDescription longDescription = blankNull(input.longDescription()) == null ? null : new LongDescription(input.longDescription());
+        ExperienceName name = ifPresent(input.name(), ExperienceName::new);
         Handle handle = resolveHandle(tourOperatorId, experienceId, locale, input.handle(), name);
         ExperienceTranslation translation = new ExperienceTranslation(
                 experienceId, tourOperatorId, locale,
-                name, description, longDescription, handle,
-                blankNull(input.seoTitle()) == null ? null : new SeoTitle(input.seoTitle()),
-                blankNull(input.seoDescription()) == null ? null : new SeoDescription(input.seoDescription()));
+                name,
+                ifPresent(input.description(), Description::new),
+                ifPresent(input.longDescription(), LongDescription::new),
+                handle,
+                ifPresent(input.seoTitle(), SeoTitle::new),
+                ifPresent(input.seoDescription(), SeoDescription::new));
 
         if (translation.isEmpty()) {
             clear(tourOperatorId, experienceId, locale, callerUserId);
@@ -156,14 +153,8 @@ public class UpsertExperienceTranslationUseCase {
         return null;
     }
 
-    private static String blankNull(String s) {
-        return s == null || s.isBlank() ? null : s;
-    }
-
-    private static <T> List<T> mapList(List<String> raw, Function<String, T> vo) {
-        if (raw == null || raw.isEmpty()) {
-            return null;
-        }
-        return raw.stream().map(vo).toList();
+    /** Blank and absent both mean "not translated in this locale", so both map to no value object. */
+    private static <T> T ifPresent(String raw, Function<String, T> valueObject) {
+        return raw == null || raw.isBlank() ? null : valueObject.apply(raw);
     }
 }

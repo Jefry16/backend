@@ -11,8 +11,8 @@ import com.vointika.page.application.usecase.UpdatePageUseCase;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.projection.PageListItem;
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
@@ -117,7 +117,7 @@ class PageControllerDocumentationTest {
         return new Page(UUID.fromString(PAGE), UUID.fromString(OP),
                 new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"),
-                new PageSeoTitle("About"), new PageSeoDescription("Who we are"),
+                new SeoTitle("About"), new SeoDescription("Who we are"),
                 false,
                 UUID.fromString(USER),
                 Instant.parse("2026-07-27T10:00:00Z"), Instant.parse("2026-07-27T10:00:00Z"));

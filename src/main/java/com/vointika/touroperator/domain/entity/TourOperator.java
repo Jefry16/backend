@@ -3,8 +3,8 @@ package com.vointika.touroperator.domain.entity;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Handle;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import com.vointika.touroperator.domain.valueobject.TourOperatorPhone;
@@ -52,8 +52,8 @@ public class TourOperator {
     private boolean passwordEnabled;
     private String storefrontPassword;
     private String passwordMessage;
-    private OperatorSeoTitle seoTitle;
-    private OperatorSeoDescription seoDescription;
+    private SeoTitle seoTitle;
+    private SeoDescription seoDescription;
     private UUID ogImageMediaId;
     private TourOperatorPhone phone;
     private TourOperatorEmail email;
@@ -121,8 +121,8 @@ public class TourOperator {
                         boolean passwordEnabled,
                         String storefrontPassword,
                         String passwordMessage,
-                        OperatorSeoTitle seoTitle,
-                        OperatorSeoDescription seoDescription,
+                        SeoTitle seoTitle,
+                        SeoDescription seoDescription,
                         UUID ogImageMediaId,
                         TourOperatorPhone phone,
                         TourOperatorEmail email) {
@@ -204,8 +204,8 @@ public class TourOperator {
      * — an empty string would be a title of zero characters, not the absence of
      * one.
      */
-    public void updateSeo(OperatorSeoTitle newSeoTitle,
-                          OperatorSeoDescription newSeoDescription,
+    public void updateSeo(SeoTitle newSeoTitle,
+                          SeoDescription newSeoDescription,
                           UUID newOgImageMediaId) {
         this.seoTitle = newSeoTitle;
         this.seoDescription = newSeoDescription;
@@ -278,8 +278,8 @@ public class TourOperator {
     public boolean isPasswordEnabled() { return passwordEnabled; }
     public String getStorefrontPassword() { return storefrontPassword; }
     public String getPasswordMessage() { return passwordMessage; }
-    public OperatorSeoTitle getSeoTitle() { return seoTitle; }
-    public OperatorSeoDescription getSeoDescription() { return seoDescription; }
+    public SeoTitle getSeoTitle() { return seoTitle; }
+    public SeoDescription getSeoDescription() { return seoDescription; }
     public UUID getOgImageMediaId() { return ogImageMediaId; }
     public TourOperatorPhone getPhone() { return phone; }
     public TourOperatorEmail getEmail() { return email; }

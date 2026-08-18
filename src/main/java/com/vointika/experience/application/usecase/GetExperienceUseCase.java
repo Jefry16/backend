@@ -3,7 +3,6 @@ package com.vointika.experience.application.usecase;
 import com.vointika.experience.application.dto.output.ExperienceView;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
@@ -31,8 +30,8 @@ public class GetExperienceUseCase {
 
     public ExperienceView execute(UUID tourOperatorId, UUID experienceId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        Experience experience = experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
+        Experience experience = experienceRepository
+                .requireByIdAndTourOperatorId(experienceId, tourOperatorId);
 
         List<UUID> ids = new ArrayList<>(experience.getMediaIds());
         if (experience.getThumbnailMediaId() != null) {

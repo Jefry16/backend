@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -93,6 +94,9 @@ class SlotUseCasesTest {
     @BeforeEach
     void setUp() {
         experienceRepository = mock(ExperienceRepository.class);
+        // requireByIdAndTourOperatorId is a default method, so Mockito would
+        // stub it to null and every 404 assertion below would pass vacuously.
+        doCallRealMethod().when(experienceRepository).requireByIdAndTourOperatorId(any(), any());
         slotRepository = mock(SlotRepository.class);
         pricingRepository = mock(SlotAudiencePricingRepository.class);
         pricingResolver = mock(AudiencePricingResolver.class);
@@ -112,7 +116,7 @@ class SlotUseCasesTest {
         when(parent.getName()).thenReturn(new ExperienceName("Sunset Tour"));
         when(parent.getDescription()).thenReturn(new Description("A guided walk"));
         when(experienceRepository.findByIdAndTourOperatorId(EXP, OP)).thenReturn(Optional.of(parent));
-        when(pricingResolver.buildRows(any(), any(), any())).thenReturn(List.of());
+        when(pricingResolver.buildRows(any(), any())).thenReturn(List.of());
     }
 
     private List<AudiencePricingInput> prices() {

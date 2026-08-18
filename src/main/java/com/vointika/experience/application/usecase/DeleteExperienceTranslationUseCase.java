@@ -2,7 +2,6 @@ package com.vointika.experience.application.usecase;
 
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -40,9 +39,7 @@ public class DeleteExperienceTranslationUseCase {
 
     public void execute(UUID tourOperatorId, UUID experienceId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        if (experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Experience not found");
-        }
+        experienceRepository.requireExists(experienceId, tourOperatorId);
         String locale = new LocaleCode(rawLocale).value();
         // Probe first: an idempotent delete that removes nothing records nothing.
         if (translationRepository.findByExperienceIdAndLocale(experienceId, locale).isEmpty()) {

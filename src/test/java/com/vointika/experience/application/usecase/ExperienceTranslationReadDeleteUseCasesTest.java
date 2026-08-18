@@ -1,7 +1,6 @@
 package com.vointika.experience.application.usecase;
 
 import com.vointika.experience.application.dto.output.ExperienceTranslationView;
-import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.entity.ExperienceTranslation;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
@@ -26,6 +25,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -63,13 +63,14 @@ class ExperienceTranslationReadDeleteUseCasesTest {
     @BeforeEach
     void setUp() {
         experienceRepository = mock(ExperienceRepository.class);
+        // requireExists is a default method — run it, or the 404 case proves nothing.
+        doCallRealMethod().when(experienceRepository).requireExists(any(), any());
         translationRepository = mock(ExperienceTranslationRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         getUseCase = new GetExperienceTranslationUseCase(experienceRepository, translationRepository, membershipCheck);
         listUseCase = new ListExperienceTranslationsUseCase(experienceRepository, translationRepository, membershipCheck);
         deleteUseCase = new DeleteExperienceTranslationUseCase(experienceRepository, translationRepository, membershipCheck, transactionRunner, auditTrailPort);
-        when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId))
-                .thenReturn(Optional.of(mock(Experience.class)));
+        when(experienceRepository.existsByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(true);
     }
 
     @Test
@@ -128,8 +129,7 @@ class ExperienceTranslationReadDeleteUseCasesTest {
 
     @Test
     void unknownExperienceIs404OnRead() {
-        when(experienceRepository.findByIdAndTourOperatorId(eq(experienceId), eq(operatorId)))
-                .thenReturn(Optional.empty());
+        when(experienceRepository.existsByIdAndTourOperatorId(eq(experienceId), eq(operatorId))).thenReturn(false);
         assertThrows(ResourceNotFoundException.class, () -> listUseCase.execute(operatorId, experienceId, callerId));
     }
 }

@@ -1,8 +1,8 @@
 package com.vointika.page.domain.entity;
 
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.valueobject.Handle;
@@ -33,8 +33,8 @@ public class Page {
     private PageTitle title;
     private Handle handle;
     private PageBody body;
-    private PageSeoTitle seoTitle;
-    private PageSeoDescription seoDescription;
+    private SeoTitle seoTitle;
+    private SeoDescription seoDescription;
     private boolean published;
     private final UUID createdBy;
     private final Instant createdAt;
@@ -46,8 +46,8 @@ public class Page {
                 PageTitle title,
                 Handle handle,
                 PageBody body,
-                PageSeoTitle seoTitle,
-                PageSeoDescription seoDescription,
+                SeoTitle seoTitle,
+                SeoDescription seoDescription,
                 UUID createdBy) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
@@ -68,8 +68,8 @@ public class Page {
                 PageTitle title,
                 Handle handle,
                 PageBody body,
-                PageSeoTitle seoTitle,
-                PageSeoDescription seoDescription,
+                SeoTitle seoTitle,
+                SeoDescription seoDescription,
                 boolean published,
                 UUID createdBy,
                 Instant createdAt,
@@ -96,8 +96,8 @@ public class Page {
      */
     public void update(PageTitle newTitle,
                        PageBody newBody,
-                       PageSeoTitle newSeoTitle,
-                       PageSeoDescription newSeoDescription) {
+                       SeoTitle newSeoTitle,
+                       SeoDescription newSeoDescription) {
         this.title = newTitle;
         this.body = newBody;
         this.seoTitle = newSeoTitle;
@@ -144,8 +144,8 @@ public class Page {
         snapshot.put("title", title.value());
         snapshot.put("handle", handle.value());
         snapshot.put("body", body.value());
-        snapshot.put("seoTitle", getSeoTitle().map(PageSeoTitle::value).orElse(null));
-        snapshot.put("seoDescription", getSeoDescription().map(PageSeoDescription::value).orElse(null));
+        snapshot.put("seoTitle", getSeoTitle().map(SeoTitle::value).orElse(null));
+        snapshot.put("seoDescription", getSeoDescription().map(SeoDescription::value).orElse(null));
         snapshot.put("published", String.valueOf(published));
         return snapshot;
     }
@@ -155,8 +155,8 @@ public class Page {
     public PageTitle getTitle() { return title; }
     public Handle getHandle() { return handle; }
     public PageBody getBody() { return body; }
-    public Optional<PageSeoTitle> getSeoTitle() { return Optional.ofNullable(seoTitle); }
-    public Optional<PageSeoDescription> getSeoDescription() { return Optional.ofNullable(seoDescription); }
+    public Optional<SeoTitle> getSeoTitle() { return Optional.ofNullable(seoTitle); }
+    public Optional<SeoDescription> getSeoDescription() { return Optional.ofNullable(seoDescription); }
     public boolean isPublished() { return published; }
     /** Nullable — {@code null} means the base {@code page} template (mirrors experiences). */
     public UUID getCreatedBy() { return createdBy; }

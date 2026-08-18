@@ -36,7 +36,7 @@ public class MediaReferenceValidator {
         }
         int owned = mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, ids).size();
         if (owned < ids.size()) {
-            throw new InvalidFieldException("One or more media ids are not in this operator's library");
+            throw new InvalidFieldException(MediaAssetBatchQuery.NOT_IN_LIBRARY);
         }
     }
 }

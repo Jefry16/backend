@@ -12,7 +12,6 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.AudienceView;
 import com.vointika.shared.port.OperatorTimezoneQuery;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -84,16 +83,18 @@ public class CreateSlotsUseCase {
 
         transactionRunner.run(() -> {
             Experience parent = experienceRepository
-                    .findByIdAndTourOperatorId(input.experienceId(), input.tourOperatorId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
+                    .requireByIdAndTourOperatorId(input.experienceId(), input.tourOperatorId());
 
+            // Empty means the operator is gone, not the experience — the seam
+            // resolves the operator's own timezone, and the column is NOT NULL.
             ZoneId zone = operatorTimezoneQuery.findZoneId(input.tourOperatorId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            TourOperatorMembershipCheck.TENANT_NOT_FOUND));
             LocalDate today = LocalDate.now(zone);
             SlotScheduling.requireWithinWindow(input.validFrom(), today);
             SlotScheduling.requireWithinWindow(input.validTo(), today);
 
-            List<AudienceView> resolved =
+            List<AudiencePricingResolver.PricedAudience> resolved =
                     pricingResolver.validateAndResolve(input.audiencePrices(), input.tourOperatorId());
 
             int created = 0;
@@ -112,8 +113,7 @@ public class CreateSlotsUseCase {
                         parent.getName().value(), parent.getDescription().value());
                 slotRepository.save(slot);
 
-                for (SlotAudiencePricing row :
-                        pricingResolver.buildRows(slot.id(), input.audiencePrices(), resolved)) {
+                for (SlotAudiencePricing row : pricingResolver.buildRows(slot.id(), resolved)) {
                     pricingRepository.save(row);
                 }
                 created++;

@@ -6,8 +6,8 @@ import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
-import com.vointika.experience.domain.valueobject.SeoDescription;
-import com.vointika.experience.domain.valueobject.SeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.exception.InvalidFieldException;
 
 import java.util.List;
@@ -25,8 +25,6 @@ public final class ExperienceInputMapper {
     public static ExperienceName name(ExperienceInput in) { return new ExperienceName(in.name()); }
     public static Description description(ExperienceInput in) { return new Description(in.description()); }
     public static LongDescription longDescription(ExperienceInput in) { return new LongDescription(in.longDescription()); }
-
-
 
     public static List<UUID> mediaIds(ExperienceInput in) {
         return safe(in.mediaIds());

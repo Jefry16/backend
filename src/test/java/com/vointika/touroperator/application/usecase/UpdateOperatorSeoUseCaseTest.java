@@ -88,7 +88,7 @@ class UpdateOperatorSeoUseCaseTest {
     void aNullFieldClearsTheOverrideRatherThanKeepingIt() {
         // Whole-value replace: this is how an operator removes a default, and a
         // partial patch could not express it without a sentinel.
-        operator.updateSeo(new com.vointika.touroperator.domain.valueobject.OperatorSeoTitle("Old"), null, null);
+        operator.updateSeo(new com.vointika.shared.valueobject.SeoTitle("Old"), null, null);
 
         useCase().execute(OP, null, null, null, USER);
 

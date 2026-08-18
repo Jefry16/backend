@@ -3,8 +3,8 @@ package com.vointika.experience.domain.entity;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
-import com.vointika.experience.domain.valueobject.SeoDescription;
-import com.vointika.experience.domain.valueobject.SeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Handle;
 

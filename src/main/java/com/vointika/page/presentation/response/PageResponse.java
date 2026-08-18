@@ -1,8 +1,8 @@
 package com.vointika.page.presentation.response;
 
 import com.vointika.page.domain.entity.Page;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -27,8 +27,8 @@ public record PageResponse(
                 p.getTitle().value(),
                 p.getHandle().value(),
                 p.getBody().value(),
-                p.getSeoTitle().map(PageSeoTitle::value).orElse(null),
-                p.getSeoDescription().map(PageSeoDescription::value).orElse(null),
+                p.getSeoTitle().map(SeoTitle::value).orElse(null),
+                p.getSeoDescription().map(SeoDescription::value).orElse(null),
                 p.isPublished(),
                 p.getCreatedAt(),
                 p.getUpdatedAt());

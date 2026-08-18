@@ -2,8 +2,8 @@ package com.vointika.touroperator.domain.entity;
 
 import com.vointika.touroperator.domain.valueobject.BrandShortDescription;
 import com.vointika.touroperator.domain.valueobject.BrandSlogan;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.valueobject.LocaleCode;
 
 import java.util.Objects;
@@ -33,8 +33,8 @@ import java.util.UUID;
 public record TourOperatorTranslation(
         UUID tourOperatorId,
         LocaleCode locale,
-        OperatorSeoTitle seoTitle,
-        OperatorSeoDescription seoDescription,
+        SeoTitle seoTitle,
+        SeoDescription seoDescription,
         String passwordMessage,
         BrandSlogan slogan,
         BrandShortDescription shortDescription) {

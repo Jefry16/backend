@@ -726,6 +726,29 @@ A context never imports another's types. Two channels only:
   Canonical: `UserAccountQuery`, `UserTourOperatorMembershipsQuery`.
 - **Event over Kafka** (asynchronous) — see §7.
 
+**A rule two contexts state identically belongs in the kernel, not in either one.**
+Not a third channel — `shared` is importable by everyone, so this is about where a
+type lives, not about contexts talking. Four have moved so far: `HandleGenerator`,
+`OperatorLocaleCheck` (seven call sites in five contexts), and
+`shared.valueobject.SeoTitle`/`SeoDescription`, which replaced six per-context
+records — `experience`'s pair and `touroperator`'s were byte-identical apart from
+javadoc, and `page`'s differed only by prefixing `"Page "` onto each refusal.
+
+Two things to settle before moving one, in order:
+
+1. **Is a published contract involved?** Run the sentinel probe in §9a *first*. The
+   SEO collapse grepped to zero snippets, so it was a refactor; had `page`'s prefixed
+   wording been a published example, the same edit would have been a breaking change
+   dressed as cleanup.
+2. **Does the sameness carry weight, or is it coincidence?** Three contexts capping
+   an SEO title at 70 is one fact (SERP truncation) written three times. Three
+   contexts capping a *name* at 200 might just be three independent choices that
+   happen to agree, and merging those couples them forever. Ask what would have to be
+   true for one to change alone.
+
+The counterweight is §2.4: a constant with one caller is not a kernel type. Two
+independent statements of the same rule is the threshold.
+
 ## 7. Event flow (Kafka)
 
 - **Publish:** a use case calls `EventPublisherPort.publish(new FooEvent(...))`.
@@ -904,6 +927,16 @@ port takes the calling class, so log names still point at the reporter.
   body and watch it fail**, or the guard is proving only that the mock returns what it
   was told.
 
+  **And do the same at the call sites, rather than stubbing the default there.** When
+  `experience` collapsed twelve `orElseThrow`s, the sixteen existing use-case tests broke
+  loudly — the mocked default returned null and they NPE'd — and the tempting repair is
+  to stub `requireByIdAndTourOperatorId` directly. That turns every `unknownExperienceIs404`
+  into a tautology: the test tells the mock to throw, then asserts it threw. Adding one
+  `doCallRealMethod(...)` line in each `setUp` instead keeps the abstract stub as the
+  input, so the real branch runs. The mutation proves the difference — inverting both
+  defaults failed **7** tests, 5 of them the pre-existing call-site 404s that would
+  otherwise have gone quiet.
+
 - **The read-only column guard** — a table whose columns are mapped
   `insertable/updatable = false` gets a test asserting a column is writable
   **exactly while the domain can carry it**, as a biconditional. Three tables
@@ -1051,6 +1084,21 @@ Expect it to move **four** files, not seven: the two `metafield` upserts and one
 ask the check but publish no locale-422 operation, so they have no body to move. A
 probe that moves fewer files than there are call sites is not evidence of a gap —
 count the published operations, not the callers.
+
+**Run the probe with a sentinel and `grep`, never `diff -r` on the snippet tree.**
+Every error snippet carries a `timestamp`, so it is rewritten on every build: a
+baseline-vs-rebuild `diff -rq` reported **~150 files "moved"** for a change that
+touched two sentences, and the four that mattered were invisible in the noise.
+Replace the message with something unmistakable (`"MUTATED-LIBRARY"`), rebuild, then
+`grep -rl MUTATED target/generated-snippets` — the answer is the exact list of
+published operations that carry it, and an empty answer is a real result rather than
+a diff you gave up reading.
+
+That empty answer is worth having on purpose. Collapsing six SEO value objects into
+two, and rewording `page`'s three refusals to drop their `"Page "` prefix, grepped to
+**zero snippets**: no SEO refusal is a published example anywhere, so the whole
+cross-context change was invisible to clients. Knowing that *before* touching three
+contexts is the difference between a refactor and a contract change.
 
 **Errors are documented, not just happy paths.** Use
 `ApiErrorSnippets.errorFields()` (`src/test/java/com/vointika/shared/web/docs/`) —

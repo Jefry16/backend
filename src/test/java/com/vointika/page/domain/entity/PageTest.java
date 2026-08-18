@@ -1,8 +1,8 @@
 package com.vointika.page.domain.entity;
 
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.valueobject.Handle;
@@ -20,7 +20,7 @@ class PageTest {
         return new Page(UUID.randomUUID(), UUID.randomUUID(),
                 new PageTitle("About us"), new Handle("about-us"),
                 new PageBody("<p>Hello</p>"),
-                new PageSeoTitle("About"), new PageSeoDescription("Who we are"),
+                new SeoTitle("About"), new SeoDescription("Who we are"),
                 UUID.randomUUID());
     }
 

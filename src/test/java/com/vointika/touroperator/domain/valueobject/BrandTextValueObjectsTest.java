@@ -1,6 +1,7 @@
 package com.vointika.touroperator.domain.valueobject;
 
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.valueobject.SeoDescription;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,6 +75,6 @@ class BrandTextValueObjectsTest {
         // 150 here against the SEO description's 320: this is body copy a theme
         // renders, not a meta tag, which is why both exist rather than one.
         assertThrows(InvalidFieldException.class, () -> new BrandShortDescription("a".repeat(320)));
-        assertEquals(320, new OperatorSeoDescription("a".repeat(320)).value().length());
+        assertEquals(320, new SeoDescription("a".repeat(320)).value().length());
     }
 }

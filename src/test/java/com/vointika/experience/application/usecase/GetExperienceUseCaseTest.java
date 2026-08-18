@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +47,9 @@ class GetExperienceUseCaseTest {
     @BeforeEach
     void setUp() {
         repository = mock(ExperienceRepository.class);
+        // requireByIdAndTourOperatorId is a default method, so Mockito would
+        // stub it to null and every 404 assertion below would pass vacuously.
+        doCallRealMethod().when(repository).requireByIdAndTourOperatorId(any(), any());
         resolver = mock(MediaUrlBatchResolver.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new GetExperienceUseCase(repository, resolver, membershipCheck);

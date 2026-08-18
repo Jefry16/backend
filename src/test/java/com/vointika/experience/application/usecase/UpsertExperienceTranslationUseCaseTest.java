@@ -5,7 +5,6 @@ import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.experience.application.dto.input.UpsertExperienceTranslationInput;
-import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.entity.ExperienceTranslation;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,6 +33,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -70,14 +69,15 @@ class UpsertExperienceTranslationUseCaseTest {
     @BeforeEach
     void setUp() {
         experienceRepository = mock(ExperienceRepository.class);
+        // requireExists is a default method — run it, or the 404 case proves nothing.
+        doCallRealMethod().when(experienceRepository).requireExists(any(), any());
         translationRepository = mock(ExperienceTranslationRepository.class);
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
                 new OperatorLocaleCheck(operatorLocalesQuery), new HandleGenerator(), membershipCheck, transactionRunner, auditTrailPort);
 
-        when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId))
-                .thenReturn(Optional.of(mock(Experience.class)));
+        when(experienceRepository.existsByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(true);
         when(operatorLocalesQuery.findSupportedLocales(operatorId)).thenReturn(Set.of("en", "es"));
         when(translationRepository.existsByOperatorLocaleHandle(any(), any(), any(), any())).thenReturn(false);
         when(translationRepository.upsert(any())).thenAnswer(a -> a.getArgument(0));
@@ -212,7 +212,7 @@ class UpsertExperienceTranslationUseCaseTest {
 
     @Test
     void unknownExperienceIs404() {
-        when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.empty());
+        when(experienceRepository.existsByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(false);
         assertThrows(ResourceNotFoundException.class,
                 () -> useCase.execute(operatorId, experienceId, "es", input("X", null), callerId));
         verify(translationRepository, never()).upsert(any());

@@ -5,8 +5,8 @@ import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.experience.domain.valueobject.ExperienceName;
 import com.vointika.experience.domain.valueobject.LongDescription;
 import com.vointika.experience.domain.valueobject.Price;
-import com.vointika.experience.domain.valueobject.SeoDescription;
-import com.vointika.experience.domain.valueobject.SeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.valueobject.Handle;
@@ -19,10 +19,10 @@ import java.util.UUID;
 
 /**
  * An operator's sellable product. The core aggregate: identity (name, immutable
- * per-operator {@link Handle}), prose, content lists, media references (bare
- * media-ids validated at the write boundary, resolved to URLs at read),
- * duration + booking cutoff, and a DRAFT↔PUBLISHED lifecycle. Slots, pricing,
- * pickup, and translations are separate aggregates/overlays.
+ * per-operator {@link Handle}), prose, media references (bare media-ids validated
+ * at the write boundary, resolved to URLs at read), the booking cutoff, and a
+ * DRAFT↔PUBLISHED lifecycle. Slots, pricing, pickup, and translations are
+ * separate aggregates/overlays.
  *
  * <p>Collection caps and the thumbnail∈gallery rule are aggregate invariants,
  * re-checked on every mutation.

@@ -2,8 +2,8 @@ package com.vointika.page.infrastructure.persistence.mapper;
 
 import com.vointika.page.domain.entity.PageTranslation;
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.page.infrastructure.persistence.entity.PageTranslationJpaEntity;
 import com.vointika.shared.valueobject.LocaleCode;
@@ -32,8 +32,8 @@ public final class PageTranslationMapper {
                 new LocaleCode(e.getLocale()),
                 e.getTitle() == null ? null : new PageTitle(e.getTitle()),
                 e.getBody() == null ? null : new PageBody(e.getBody()),
-                e.getSeoTitle() == null ? null : new PageSeoTitle(e.getSeoTitle()),
-                e.getSeoDescription() == null ? null : new PageSeoDescription(e.getSeoDescription()),
+                e.getSeoTitle() == null ? null : new SeoTitle(e.getSeoTitle()),
+                e.getSeoDescription() == null ? null : new SeoDescription(e.getSeoDescription()),
                 e.getHandle() == null ? null : new Handle(e.getHandle()));
     }
 }

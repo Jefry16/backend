@@ -4,8 +4,8 @@ import com.vointika.page.application.dto.input.UpdatePageInput;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -53,10 +53,10 @@ public class UpdatePageUseCase {
 
         PageTitle title = new PageTitle(input.title());
         PageBody body = new PageBody(input.body());
-        PageSeoTitle seoTitle = input.seoTitle() == null || input.seoTitle().isBlank()
-                ? null : new PageSeoTitle(input.seoTitle());
-        PageSeoDescription seoDescription = input.seoDescription() == null || input.seoDescription().isBlank()
-                ? null : new PageSeoDescription(input.seoDescription());
+        SeoTitle seoTitle = input.seoTitle() == null || input.seoTitle().isBlank()
+                ? null : new SeoTitle(input.seoTitle());
+        SeoDescription seoDescription = input.seoDescription() == null || input.seoDescription().isBlank()
+                ? null : new SeoDescription(input.seoDescription());
         Map<String, Object> before = page.auditSnapshot();
         page.update(title, body, seoTitle, seoDescription);
         // A no-op replace (nothing actually changed) saves but records nothing.
