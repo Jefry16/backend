@@ -30,11 +30,14 @@ public interface MetaobjectDefinitionRepository {
      * out at each of them, so the message existed in as many copies as there were
      * call sites and a rename would have had to find them all.
      *
-     * <p><b>Only where the id came from the path.</b> A definition id that arrives
-     * in a <em>body</em> is a field, and a bad field is a 422 —
-     * {@code CreateMetafieldDefinitionUseCase} looks the pin up by hand for exactly
-     * that reason. Reaching for this there would turn a validation error into a
-     * missing-resource one.
+     * <p><b>The two body-sourced ids answer differently, and this is not a rule you
+     * can apply blind.</b> {@code CreateMetafieldDefinitionUseCase} looks its
+     * {@code metaobjectDefinitionId} pin up by hand and answers <b>422</b>, treating
+     * a bad pin as the invalid field it is. {@code CreateMetaobjectEntryUseCase}
+     * calls this with a body-sourced {@code definitionId} and answers <b>404</b>.
+     * Both predate the split and neither is obviously wrong; what would be wrong is
+     * "fixing" one to match the other from this javadoc alone, without deciding
+     * which answer the API should give.
      */
     default MetaobjectDefinition requireByIdAndTourOperatorId(UUID definitionId, UUID tourOperatorId) {
         return findByIdAndTourOperatorId(definitionId, tourOperatorId)

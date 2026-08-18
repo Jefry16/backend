@@ -84,7 +84,7 @@ public class CreateMetaobjectDefinitionUseCase {
             if (!fieldType.allowedAsMetaobjectField()) {
                 // Nested references (metaobject → metaobject) are out for now;
                 // the reference type belongs to experience/page metafields.
-                throw new InvalidFieldException(MetafieldType.NOT_A_METAOBJECT_FIELD_TYPE);
+                throw new InvalidFieldException(MetafieldType.notAMetaobjectFieldTypeMessage());
             }
             fields.add(new MetaobjectField(
                     idGenerator.newId(), definition.getId(), key, fieldType,

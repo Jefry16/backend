@@ -155,7 +155,7 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
     void anotherOperatorsEntryIs404() {
         UUID foreign = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eff");
         when(entryRepository.requireByIdAndTourOperatorId(foreign, OPERATOR))
-                .thenThrow(new ResourceNotFoundException("scoped lookup missed"));
+                .thenThrow(MetaobjectEntryRepository.NOT_FOUND.get());
 
         assertThatThrownBy(() -> useCase.execute(new UpsertMetaobjectFieldTranslationsInput(
                 CALLER, OPERATOR, foreign, "en", Map.of("notes", "x"))))

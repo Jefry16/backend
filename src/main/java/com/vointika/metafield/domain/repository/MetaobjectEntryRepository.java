@@ -9,10 +9,14 @@ import com.vointika.shared.list.ListQuery;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.UUID;
 
 /** The entry AGGREGATE: the entry row plus its per-field values. */
 public interface MetaobjectEntryRepository {
+
+    Supplier<ResourceNotFoundException> NOT_FOUND =
+            () -> new ResourceNotFoundException("Metaobject not found");
 
     /** The handle is unique per definition; both the pre-check and the index race say so. */
     String DUPLICATE_HANDLE = "A metaobject with this handle already exists for this type";
@@ -28,7 +32,7 @@ public interface MetaobjectEntryRepository {
      */
     default MetaobjectEntry requireByIdAndTourOperatorId(UUID entryId, UUID tourOperatorId) {
         return findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+                .orElseThrow(NOT_FOUND);
     }
 
     boolean existsByDefinitionIdAndHandle(UUID definitionId, String handle);

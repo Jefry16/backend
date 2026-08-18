@@ -8,7 +8,6 @@ import com.vointika.metafield.application.usecase.UpsertMetafieldValueUseCase;
 import com.vointika.metafield.domain.projection.MetafieldValueWithDefinition;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.web.list.ListQueryParser;

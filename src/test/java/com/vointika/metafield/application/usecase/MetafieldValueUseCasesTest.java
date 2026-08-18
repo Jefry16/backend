@@ -175,7 +175,7 @@ class MetafieldValueUseCasesTest {
     @Test
     void unknownDefinitionIs404() {
         when(definitionRepository.requireByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle"))
-                .thenThrow(new ResourceNotFoundException("identity lookup missed"));
+                .thenThrow(MetafieldDefinitionRepository.NOT_FOUND.get());
         assertThatThrownBy(() -> upsert().execute(input("x")))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

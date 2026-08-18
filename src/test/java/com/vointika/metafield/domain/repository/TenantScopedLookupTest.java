@@ -1,6 +1,7 @@
 package com.vointika.metafield.domain.repository;
 
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
+import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.metafield.domain.valueobject.MetaobjectEntryName;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.valueobject.Handle;
@@ -64,6 +65,40 @@ class TenantScopedLookupTest {
         assertThatThrownBy(() -> repository.requireByIdAndTourOperatorId(ID, OPERATOR))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Metafield definition not found");
+    }
+
+    /**
+     * <b>The other two lookups, and why they are here.</b> A value endpoint
+     * addresses its definition by {@code namespace.key}, and rename/remove address a
+     * field by key — different lookups, the same 404. Both were left executed by no
+     * test at all when their call sites' assertions were rewritten into stubs of the
+     * very method that now contains the throw. Caught in review by mutation:
+     * replacing both bodies with {@code orElse(null)} left the suite green while
+     * production would have NPE'd into a 500 where it used to answer 404.
+     */
+    @Test
+    void aMissingIdentityIsNotFound() {
+        MetafieldDefinitionRepository repository = mock(MetafieldDefinitionRepository.class);
+        when(repository.findByIdentity(OPERATOR, MetafieldOwnerType.PAGE, "custom", "subtitle"))
+                .thenReturn(Optional.empty());
+        doCallRealMethod().when(repository)
+                .requireByIdentity(OPERATOR, MetafieldOwnerType.PAGE, "custom", "subtitle");
+
+        assertThatThrownBy(() -> repository.requireByIdentity(
+                OPERATOR, MetafieldOwnerType.PAGE, "custom", "subtitle"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Metafield definition not found");
+    }
+
+    @Test
+    void aMissingMetaobjectFieldIsNotFound() {
+        MetaobjectDefinitionRepository repository = mock(MetaobjectDefinitionRepository.class);
+        when(repository.findField(ID, "heading")).thenReturn(Optional.empty());
+        doCallRealMethod().when(repository).requireField(ID, "heading");
+
+        assertThatThrownBy(() -> repository.requireField(ID, "heading"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Metaobject field not found");
     }
 
     /**
