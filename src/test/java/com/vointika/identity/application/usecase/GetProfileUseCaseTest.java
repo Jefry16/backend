@@ -6,7 +6,7 @@ import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.enums.UserStatus;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery.TourOperatorMembershipView;
@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +35,10 @@ class GetProfileUseCaseTest {
 
     @BeforeEach
     void setUp() {
+        // requireById is a default method: Mockito would stub it to null and every
+        // "invalid principal" assertion below would pass without running the branch.
+        // lenient() because not every test in this class reaches the lookup.
+        lenient().doCallRealMethod().when(userRepository).requireById(any());
         useCase = new GetProfileUseCase(userRepository, membershipsQuery);
     }
 
@@ -82,6 +87,10 @@ class GetProfileUseCaseTest {
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
                 () -> useCase.execute(new GetProfileInput(userId)));
+        // The one assertion in the repository that spells this sentence, so leave it
+        // spelled out. Every other site now reads UserAccountQuery.INVALID_PRINCIPAL,
+        // which makes those assertions hold for any value — swapping this one for the
+        // constant too would leave the wording pinned nowhere (PATTERNS §9a).
         assertEquals("Invalid authenticated user", ex.getMessage());
         verifyNoInteractions(membershipsQuery);
     }

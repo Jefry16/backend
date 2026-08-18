@@ -7,7 +7,7 @@ import com.vointika.identity.domain.entity.VerificationToken;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.identity.domain.repository.VerificationTokenRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.TransactionRunner;
 import org.junit.jupiter.api.BeforeEach;

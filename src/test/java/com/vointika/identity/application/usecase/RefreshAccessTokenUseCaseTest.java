@@ -12,7 +12,7 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.RefreshTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;

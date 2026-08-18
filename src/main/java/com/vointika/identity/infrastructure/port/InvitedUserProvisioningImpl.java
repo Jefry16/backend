@@ -7,7 +7,7 @@ import com.vointika.identity.domain.entity.RefreshToken;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.RefreshTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.Password;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.InvitedUserProvisioning;

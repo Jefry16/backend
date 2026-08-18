@@ -10,7 +10,7 @@ import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
-import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ class RevokeInvitationUseCaseTest {
 
     private TourOperatorInvitation invitationWith(InvitationStatus status) {
         return new TourOperatorInvitation(
-                invitationId, operatorId, new InviteeEmail("teammate@example.com"), new InviteeName("Test Invitee"),
+                invitationId, operatorId, new Email("teammate@example.com"), new InviteeName("Test Invitee"),
                 MemberRole.STAFF, "hash", status, UUID.randomUUID(), "Olive Inviter",
                 Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2030-01-01T00:00:00Z"), null);
     }

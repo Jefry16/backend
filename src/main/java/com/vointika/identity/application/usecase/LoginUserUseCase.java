@@ -11,7 +11,7 @@ import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.RefreshTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.service.IdGenerator;
 
@@ -59,13 +59,12 @@ public class LoginUserUseCase {
     }
 
     public LoginUserOutput execute(LoginUserInput input) {
-        // 1. Construct email value object
         Email email = new Email(input.email());
 
-        // 2. Find user (Optional — do NOT throw yet, to keep timing constant)
+        // Find user (Optional — do NOT throw yet, to keep timing constant)
         var maybeUser = userRepository.findByEmail(email);
 
-        // 3. Always run BCrypt, either against the real hash or a sentinel.
+        // Always run BCrypt, either against the real hash or a sentinel.
         //    This normalizes login latency so attackers can't distinguish "no
         //    such user" from "wrong password" by response time.
         String hash = maybeUser.map(User::getHashedPassword).orElse(SENTINEL_HASH);
@@ -82,7 +81,7 @@ public class LoginUserUseCase {
         }
         User user = maybeUser.get();
 
-        // 4. Guard — only verified users can log in. Distinct from the 401 above:
+        // Guard — only verified users can log in. Distinct from the 401 above:
         //    reaching here means the credentials were correct, so this is an
         //    authenticated-but-forbidden state (403), not a credentials failure.
         //    Only someone holding the right password can trigger it, so it adds
@@ -91,11 +90,11 @@ public class LoginUserUseCase {
             throw new ForbiddenException("Account is not verified");
         }
 
-        // 5. Generate tokens. Raw refresh token never persisted — only its hash.
+        // Generate tokens. Raw refresh token never persisted — only its hash.
         String rawRefreshToken = tokenGenerator.generateRefreshToken();
         String accessToken = tokenGenerator.generateAccessToken(user.getId().toString());
 
-        // 6. Persist root refresh token (familyId = id)
+        // Persist root refresh token (familyId = id)
         RefreshToken refreshToken = RefreshToken.newRoot(
                 idGenerator.newId(), user.getId(), tokenHasher.hash(rawRefreshToken));
         refreshTokenRepository.save(refreshToken);

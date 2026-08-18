@@ -2,7 +2,7 @@ package com.vointika.identity.infrastructure.persistence.repository;
 
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.infrastructure.persistence.mapper.UserMapper;
 
 import org.springframework.stereotype.Repository;

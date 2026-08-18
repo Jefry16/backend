@@ -2,7 +2,7 @@ package com.vointika.identity.domain.entity;
 
 import com.vointika.identity.domain.enums.UserStatus;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 
 import java.time.Instant;

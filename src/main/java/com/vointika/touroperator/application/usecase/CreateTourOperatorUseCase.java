@@ -56,8 +56,7 @@ public class CreateTourOperatorUseCase {
     }
 
     /** Thrown twice — the pre-check and the race answer identically. */
-    private static final String INVALID_PRINCIPAL =
-            "Invalid authenticated user";
+    private static final String INVALID_PRINCIPAL = UserAccountQuery.INVALID_PRINCIPAL;
 
 
     /** Bounded handle-collision retries; each attempt regenerates the handle in a fresh tx. */

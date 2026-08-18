@@ -3,7 +3,7 @@ package com.vointika.touroperator.domain.entity;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.touroperator.domain.enums.InvitationStatus;
 import com.vointika.touroperator.domain.enums.MemberRole;
-import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
 
 import java.time.Duration;
@@ -33,7 +33,7 @@ public class TourOperatorInvitation {
 
     private final UUID id;
     private final UUID tourOperatorId;
-    private final InviteeEmail email;
+    private final Email email;
     // The inviter's label for the invitee (email greeting + pending-list display).
     private final InviteeName name;
     private final MemberRole role;
@@ -50,7 +50,7 @@ public class TourOperatorInvitation {
     /** Issues a brand-new PENDING invitation valid for {@link #VALIDITY}. */
     public static TourOperatorInvitation issue(UUID id,
                                                UUID tourOperatorId,
-                                               InviteeEmail email,
+                                               Email email,
                                                InviteeName name,
                                                MemberRole role,
                                                String tokenHash,
@@ -65,7 +65,7 @@ public class TourOperatorInvitation {
     // Reconstitution from persistence.
     public TourOperatorInvitation(UUID id,
                                   UUID tourOperatorId,
-                                  InviteeEmail email,
+                                  Email email,
                                   InviteeName name,
                                   MemberRole role,
                                   String tokenHash,
@@ -127,7 +127,7 @@ public class TourOperatorInvitation {
 
     public UUID getId() { return id; }
     public UUID getTourOperatorId() { return tourOperatorId; }
-    public InviteeEmail getEmail() { return email; }
+    public Email getEmail() { return email; }
     public InviteeName getName() { return name; }
     public MemberRole getRole() { return role; }
     public String getTokenHash() { return tokenHash; }

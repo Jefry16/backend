@@ -13,7 +13,7 @@ import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.identity.domain.repository.VerificationTokenRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.Password;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.RateLimiterPort;
@@ -62,18 +62,17 @@ public class RegisterUserUseCase {
     }
 
     public void execute(RegisterUserInput input) {
-        // 1. Validate and construct value objects
         Email email = new Email(input.email());
         UserName name = new UserName(input.name());
         Password password = new Password(input.password());
 
-        // 2. Anti-enumeration: an already-registered email gets the SAME
+        // Anti-enumeration: an already-registered email gets the SAME
         //    generic 201 as a fresh one — the truthful answer goes only to the
         //    mailbox owner, by email. The hash below still runs first so the
         //    two paths cost the same (timing parity; BCrypt dominates).
         Optional<User> existing = userRepository.findByEmail(email);
 
-        // 3. Hash password (both paths — see timing note above)
+        // Hash password (both paths — see timing note above)
         String hashedPassword = passwordHasher.hash(password.value());
 
         // 3a. Per-email cooldown (PATTERNS §8a): at most 3 "account already registered"
@@ -96,14 +95,14 @@ public class RegisterUserUseCase {
             return;
         }
 
-        // 4. Build user + verification token. Raw token never persists — only its hash.
+        // Build user + verification token. Raw token never persists — only its hash.
         User user = new User(idGenerator.newId(), email, name, hashedPassword);
         user.changeLanguage(resolveLanguage(input.language()));
         String rawToken = tokenGenerator.generateVerificationToken();
         VerificationToken verificationToken = VerificationToken.issue(
                 idGenerator.newId(), user.getId(), tokenHasher.hash(rawToken));
 
-        // 5. Persist both atomically. DIV can surface at flush/commit inside the tx,
+        // Persist both atomically. DIV can surface at flush/commit inside the tx,
         //    so catch around the whole runner.
         try {
             transactionRunner.run(() -> {
@@ -124,7 +123,7 @@ public class RegisterUserUseCase {
             return;
         }
 
-        // 6. Publish verification email event — AFTER the tx commits, so we don't
+        // Publish verification email event — AFTER the tx commits, so we don't
         //    enqueue an email for a registration that was rolled back.
         eventPublisher.publish(new VerificationEmailRequestedEvent(
                 email.value(), name.value(), rawToken, user.getLanguage()));

@@ -17,7 +17,7 @@ import com.vointika.touroperator.domain.enums.InvitationStatus;
 import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
 import com.vointika.shared.valueobject.Handle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
@@ -96,7 +96,7 @@ class ResendInvitationUseCaseTest {
 
     private TourOperatorInvitation invitationWith(InvitationStatus status) {
         return new TourOperatorInvitation(
-                invitationId, operatorId, new InviteeEmail("teammate@example.com"), new InviteeName("Test Invitee"),
+                invitationId, operatorId, new Email("teammate@example.com"), new InviteeName("Test Invitee"),
                 MemberRole.ADMIN, "old-hash", status, UUID.randomUUID(), "Olive Inviter",
                 Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2020-01-01T00:00:00Z"), null);
     }

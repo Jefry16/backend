@@ -4,7 +4,6 @@ import com.vointika.identity.application.dto.input.ClearAvatarInput;
 import com.vointika.identity.application.port.AvatarStoragePort;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.port.TransactionRunner;
 
 
@@ -26,8 +25,7 @@ public class ClearAvatarUseCase {
     }
 
     public void execute(ClearAvatarInput input) {
-        User user = userRepository.findById(input.userId())
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+        User user = userRepository.requireById(input.userId());
         String oldKey = user.getAvatarKey();
         if (oldKey == null) {
             return; // idempotent — nothing to clear

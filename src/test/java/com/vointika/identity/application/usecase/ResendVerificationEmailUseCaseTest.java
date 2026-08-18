@@ -10,7 +10,7 @@ import com.vointika.identity.domain.entity.VerificationToken;
 import com.vointika.identity.domain.enums.UserStatus;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.identity.domain.repository.VerificationTokenRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.port.TransactionRunner;

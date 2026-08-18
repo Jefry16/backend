@@ -9,7 +9,7 @@ import com.vointika.identity.domain.entity.PasswordResetToken;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.PasswordResetTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.service.IdGenerator;
@@ -50,7 +50,6 @@ public class RequestPasswordResetUseCase {
     }
 
     public void execute(RequestPasswordResetInput input) {
-        // 1. Validate email format
         Email email = new Email(input.email());
 
         // Per-email cooldown (PATTERNS §8a): 3 sends/hour. Dropping silently keeps the
@@ -59,7 +58,7 @@ public class RequestPasswordResetUseCase {
             return;
         }
 
-        // 2. Find user — silently do nothing if not found. Timing parity: do the same
+        // Find user — silently do nothing if not found. Timing parity: do the same
         //    token work + a DB round-trip as the real path first, so response
         //    timing doesn't reveal whether the email is registered.
         Optional<User> maybeUser = userRepository.findByEmail(email);
@@ -69,7 +68,7 @@ public class RequestPasswordResetUseCase {
         }
         User user = maybeUser.get();
 
-        // 3. Expire old tokens + persist new one atomically. Raw token only flows through the event.
+        // Expire old tokens + persist new one atomically. Raw token only flows through the event.
         String rawToken = tokenGenerator.generatePasswordResetToken();
         PasswordResetToken passwordResetToken = PasswordResetToken.issue(
                 idGenerator.newId(), user.getId(), tokenHasher.hash(rawToken));
@@ -79,7 +78,7 @@ public class RequestPasswordResetUseCase {
             passwordResetTokenRepository.save(passwordResetToken);
         });
 
-        // 4. Publish password reset email event — AFTER commit
+        // Publish password reset email event — AFTER commit
         eventPublisher.publish(new PasswordResetEmailRequestedEvent(
                 user.getEmail().value(), user.getName().value(), rawToken, user.getLanguage()));
     }

@@ -1,7 +1,7 @@
 package com.vointika.identity.infrastructure.persistence.mapper;
 
 import com.vointika.identity.domain.entity.User;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.identity.infrastructure.persistence.entity.UserJpaEntity;
 

@@ -14,6 +14,20 @@ import java.util.UUID;
  */
 public interface UserAccountQuery {
 
+    /**
+     * The refusal when an authenticated principal resolves to no account — a token
+     * that verified but whose user is gone.
+     *
+     * <p>It is a 401 rather than a 404 because the failure is the *caller's identity*,
+     * not a missing resource: the right client response is to re-authenticate. Six
+     * sites said it, in two contexts — identity's five self-service use cases and
+     * {@code touroperator}'s create, which reaches a user only through this seam.
+     *
+     * <p>Sameness is not load-bearing here the way the tenant 404's is; nothing can be
+     * enumerated with it. It is one sentence about one condition, so it is written once.
+     */
+    String INVALID_PRINCIPAL = "Invalid authenticated user";
+
     Optional<UUID> findUserIdByEmail(String email);
 
     /**
