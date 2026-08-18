@@ -20,10 +20,21 @@ import static org.mockito.Mockito.when;
  *
  * <p>`PATTERNS.md` §9: Mockito stubs a {@code default} method like any other, and
  * every repository here is mocked in every use-case test — so collapsing the twelve
- * inline {@code orElseThrow}s into these two defaults moved the throw somewhere no
- * existing test could reach. The call sites' assertions were rewritten from stubbing
- * {@code findByIdAndTourOperatorId} to stubbing the default that now wraps it, which
- * proves only that Mockito rethrows what it was told to throw.
+ * inline {@code orElseThrow}s into these two defaults moved the throw somewhere a
+ * mocked repository reaches only if a test asks it to.
+ *
+ * <p><b>This file is the second guard, not the only one.</b> The six use-case
+ * {@code setUp}s call {@code doCallRealMethod()} on the defaults and go on stubbing
+ * the <em>abstract</em> finder, so their {@code unknownExperienceIs404} tests still
+ * run the real branch — which is why inverting both defaults fails five of them as
+ * well as the four here. Stubbing the default at those call sites instead would have
+ * been the easier repair and would have made all five assert only that Mockito
+ * rethrows what it was told to throw. That is the arrangement `touroperator` and
+ * `metafield` still have; PATTERNS §9 records why this one is stronger.
+ *
+ * <p>What this file adds is coverage that does not depend on a caller existing: it
+ * pins both defaults directly, including {@code requireExists}'s true branch, which
+ * no 404 test can reach.
  *
  * <p><b>Mutate the bodies and watch these fail</b>, or they prove nothing. The
  * mutation that matters for {@code requireExists} is inverting its condition: the

@@ -937,6 +937,15 @@ port takes the calling class, so log names still point at the reporter.
   defaults failed **7** tests, 5 of them the pre-existing call-site 404s that would
   otherwise have gone quiet.
 
+  **This is the target, and only `experience` meets it.** `touroperator` and `metafield`
+  stub the default at the call site in **47** places (24 and 23), because their passes
+  landed before this was understood — `BrandUseCasesTest` is the named example, stubbing
+  `requireById` to throw and then asserting it threw. Their defaults *are* covered, by
+  their own `TenantScopedLookupTest`, so nothing is unguarded; what is missing is the
+  call-site half, and those 47 assertions currently prove only that Mockito works.
+  Converting them is listed in `MAP.md` as open. Do not read this paragraph as a
+  description of the repo — it describes where the repo is going.
+
 - **The read-only column guard** — a table whose columns are mapped
   `insertable/updatable = false` gets a test asserting a column is writable
   **exactly while the domain can carry it**, as a biconditional. Three tables

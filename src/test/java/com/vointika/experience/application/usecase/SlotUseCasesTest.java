@@ -254,4 +254,47 @@ class SlotUseCasesTest {
                 List.of(new UpdateSlotInput.TierCapacity(AUD, 2)))))
                 .isInstanceOf(InvalidFieldException.class);
     }
+
+    /**
+     * <b>An unchanged tier is not rewritten.</b> The editor resends the whole tier
+     * list on every save, so without this the common case — touch one tier of five —
+     * issues five UPDATEs, four of them writing the value already there.
+     *
+     * <p>Only the refusal paths were pinned before, with {@code never()}. Nothing
+     * asserted the save count on a successful edit, so moving the write back outside
+     * its guard left the suite green.
+     */
+    @Test
+    void updateWritesOnlyTheTiersThatActuallyChanged() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP)).thenReturn(Optional.of(availableSlot()));
+        UUID other = UUID.randomUUID();
+        SlotAudiencePricing unchanged = new SlotAudiencePricing(
+                UUID.randomUUID(), SLOT, AUD, "Adults", new BigDecimal("30.00"), 10, 1, 0);
+        SlotAudiencePricing changing = new SlotAudiencePricing(
+                UUID.randomUUID(), SLOT, other, "Children", new BigDecimal("15.00"), 10, 1, 0);
+        when(pricingRepository.findBySlotId(SLOT)).thenReturn(List.of(unchanged, changing));
+
+        update().execute(OP, SLOT, USER, new UpdateSlotInput(List.of(
+                new UpdateSlotInput.TierCapacity(AUD, 10),     // resent unchanged
+                new UpdateSlotInput.TierCapacity(other, 20)))); // actually edited
+
+        ArgumentCaptor<SlotAudiencePricing> saved = ArgumentCaptor.forClass(SlotAudiencePricing.class);
+        verify(pricingRepository, times(1)).save(saved.capture());
+        assertThat(saved.getValue().audienceId()).isEqualTo(other);
+        assertThat(saved.getValue().capacity()).isEqualTo(20);
+    }
+
+    /** A PATCH that changes nothing writes nothing and records nothing. */
+    @Test
+    void updateThatChangesNoTierWritesNothing() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP)).thenReturn(Optional.of(availableSlot()));
+        when(pricingRepository.findBySlotId(SLOT)).thenReturn(List.of(new SlotAudiencePricing(
+                UUID.randomUUID(), SLOT, AUD, "Adults", new BigDecimal("30.00"), 10, 1, 0)));
+
+        update().execute(OP, SLOT, USER, new UpdateSlotInput(
+                List.of(new UpdateSlotInput.TierCapacity(AUD, 10))));
+
+        verify(pricingRepository, never()).save(any());
+        verify(auditTrailPort, never()).append(any());
+    }
 }

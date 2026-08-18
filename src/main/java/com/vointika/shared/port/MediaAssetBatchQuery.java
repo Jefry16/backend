@@ -25,19 +25,12 @@ import java.util.UUID;
 public interface MediaAssetBatchQuery {
 
     /**
-     * The refusal when an id is not in the operator's library — every consumer's,
-     * since {@code experience} moved onto it.
+     * The refusal when an id is not in the operator's library — every consumer's.
      *
-     * <p><b>This wording won because it fits one image and a batch equally.</b>
-     * {@code experience} said "One or more media ids are not in this operator's
-     * library", which reads wrong on {@code ogImageMediaId}, where there is only
-     * ever one. Neither sentence names the offending id, so neither buys anything
-     * the other does not.
-     *
-     * <p>Only {@code touroperator}'s two 422s are published examples, and they
-     * already said this, so the switch moved no snippet. {@code experience}
-     * publishes no media-refusal example at all — worth adding, and not this
-     * change's job.
+     * <p><b>One wording, because it has to fit one image and a batch equally.</b>
+     * A caller validating a single {@code ogImageMediaId} and one validating a
+     * gallery raise the same refusal, so a sentence like "One or more media ids…"
+     * is wrong half the time. Nothing here names the offending id.
      */
     String NOT_IN_LIBRARY = "Media not found in this operator's library";
 
