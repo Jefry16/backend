@@ -63,11 +63,9 @@ public class UpdateMetaobjectEntryUseCase {
     public void execute(UpdateMetaobjectEntryInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(input.entryId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+                .requireByIdAndTourOperatorId(input.entryId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(entry.getDefinitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .requireByIdAndTourOperatorId(entry.getDefinitionId(), input.tourOperatorId());
 
         List<FieldChange> changes = new ArrayList<>();
 

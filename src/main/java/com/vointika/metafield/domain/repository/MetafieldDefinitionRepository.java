@@ -3,6 +3,7 @@ package com.vointika.metafield.domain.repository;
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.projection.MetafieldDefinitionListItem;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 
@@ -14,6 +15,16 @@ public interface MetafieldDefinitionRepository {
     MetafieldDefinition save(MetafieldDefinition definition);
 
     Optional<MetafieldDefinition> findByIdAndTourOperatorId(UUID definitionId, UUID tourOperatorId);
+
+    /**
+     * The same lookup, or a 404 — the shape every caller wanted. It was written
+     * out at each of them, so the message existed in as many copies as there were
+     * call sites and a rename would have had to find them all.
+     */
+    default MetafieldDefinition requireByIdAndTourOperatorId(UUID definitionId, UUID tourOperatorId) {
+        return findByIdAndTourOperatorId(definitionId, tourOperatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+    }
 
     Optional<MetafieldDefinition> findByIdentity(
             UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key);

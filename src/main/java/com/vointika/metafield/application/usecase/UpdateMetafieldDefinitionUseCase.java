@@ -42,8 +42,7 @@ public class UpdateMetafieldDefinitionUseCase {
     public void execute(UpdateMetafieldDefinitionInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetafieldDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
 
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
         MetafieldDescription description = input.description() == null || input.description().isBlank()

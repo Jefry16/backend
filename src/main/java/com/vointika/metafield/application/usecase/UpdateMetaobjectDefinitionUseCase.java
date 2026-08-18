@@ -42,8 +42,7 @@ public class UpdateMetaobjectDefinitionUseCase {
     public void execute(UpdateMetaobjectDefinitionInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
 
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
         MetafieldDescription description = input.description() == null || input.description().isBlank()

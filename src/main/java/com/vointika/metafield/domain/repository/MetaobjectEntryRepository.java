@@ -3,6 +3,7 @@ package com.vointika.metafield.domain.repository;
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
 import com.vointika.metafield.domain.entity.MetaobjectEntryValue;
 import com.vointika.metafield.domain.projection.MetaobjectEntryListItem;
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 
@@ -16,6 +17,16 @@ public interface MetaobjectEntryRepository {
     MetaobjectEntry save(MetaobjectEntry entry);
 
     Optional<MetaobjectEntry> findByIdAndTourOperatorId(UUID entryId, UUID tourOperatorId);
+
+    /**
+     * The same lookup, or a 404 — the shape every caller wanted. It was written
+     * out at each of them, so the message existed in as many copies as there were
+     * call sites and a rename would have had to find them all.
+     */
+    default MetaobjectEntry requireByIdAndTourOperatorId(UUID entryId, UUID tourOperatorId) {
+        return findByIdAndTourOperatorId(entryId, tourOperatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+    }
 
     boolean existsByDefinitionIdAndHandle(UUID definitionId, String handle);
 

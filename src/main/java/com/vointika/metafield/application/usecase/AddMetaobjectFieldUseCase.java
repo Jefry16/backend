@@ -50,8 +50,7 @@ public class AddMetaobjectFieldUseCase {
     public void execute(AddMetaobjectFieldInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
 
         MetafieldKey key = new MetafieldKey(input.key());
         MetafieldType type = MetafieldType.fromCode(input.type());

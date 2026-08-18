@@ -80,10 +80,10 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
             return null;
         }).when(transactionRunner).run(any());
 
-        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OPERATOR))
-                .thenReturn(Optional.of(new MetaobjectEntry(
+        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OPERATOR))
+                .thenReturn(new MetaobjectEntry(
                         ENTRY, OPERATOR, DEFINITION, new Handle("sea-swallow"),
-                        new MetaobjectEntryName("Sea Swallow"), CALLER)));
+                        new MetaobjectEntryName("Sea Swallow"), CALLER));
         when(definitionRepository.fieldsOf(DEFINITION)).thenReturn(List.of(
                 field(FIELD_NOTES, "notes", MetafieldType.MULTI_LINE_TEXT, 0),
                 field(FIELD_CAPACITY, "capacity", MetafieldType.NUMBER_INTEGER, 1)));
@@ -144,12 +144,18 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
     /**
      * <b>The tenant guard.</b> Another operator's entry id is a 404, not a
      * translated row — the entry is looked up scoped, never by id alone.
+     *
+     * <p>The refusal itself belongs to
+     * {@code MetaobjectEntryRepository.requireByIdAndTourOperatorId} and is pinned
+     * with its message in {@code TenantScopedLookupTest}. What this asserts is that
+     * the use case does not swallow it, so the message is deliberately not repeated
+     * here.
      */
     @Test
     void anotherOperatorsEntryIs404() {
         UUID foreign = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eff");
-        when(entryRepository.findByIdAndTourOperatorId(foreign, OPERATOR))
-                .thenReturn(Optional.empty());
+        when(entryRepository.requireByIdAndTourOperatorId(foreign, OPERATOR))
+                .thenThrow(new ResourceNotFoundException("scoped lookup missed"));
 
         assertThatThrownBy(() -> useCase.execute(new UpsertMetaobjectFieldTranslationsInput(
                 CALLER, OPERATOR, foreign, "en", Map.of("notes", "x"))))

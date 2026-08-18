@@ -47,8 +47,6 @@ public class GetMetaobjectFieldTranslationsUseCase {
     }
 
     private void ensureOwned(UUID metaobjectId, UUID tourOperatorId) {
-        if (entryRepository.findByIdAndTourOperatorId(metaobjectId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Metaobject not found");
-        }
+        entryRepository.requireByIdAndTourOperatorId(metaobjectId, tourOperatorId);
     }
 }

@@ -22,9 +22,7 @@ public class GetMetaobjectDefinitionUseCase {
 
     public MetaobjectDefinitionView execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+        MetaobjectDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
         return new MetaobjectDefinitionView(definition, definitionRepository.fieldsOf(definitionId));
     }
 }

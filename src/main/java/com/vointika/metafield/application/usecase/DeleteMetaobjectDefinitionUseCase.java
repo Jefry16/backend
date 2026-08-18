@@ -48,9 +48,7 @@ public class DeleteMetaobjectDefinitionUseCase {
 
     public void execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+        MetaobjectDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
 
         if (metafieldDefinitionRepository.existsPinningMetaobjectDefinition(definitionId)) {
             throw new ConflictException(

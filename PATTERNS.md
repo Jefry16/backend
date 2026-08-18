@@ -1097,6 +1097,14 @@ purpose: if every owner has every optional field set, nothing shows you what
 
 ## 11. Recurring gotchas (check before you trip)
 
+- **A sub-resource segment must not collide with a sibling's path variable.**
+  `/{owner}/metafields/translations` reads naturally and is wrong: it collides with
+  `/{owner}/metafields/{namespace}/{key}`. `PathPattern` prefers the literal, so the
+  route resolves — and silently makes a namespace called `translations` unreachable.
+  A route that works by tie-break is one nobody remembers is fragile. The four
+  translation mounts are `metafield-translations` and `field-translations` for this
+  reason, and the rationale lived in three controller javadocs verbatim before it
+  came here.
 - Boot 4 autoconfiguration is per-starter: depend on the **Boot starter**
   (`spring-boot-starter-kafka`), not the raw library (`STACK.md` §gotchas).
 - The autoconfigured `KafkaTemplate` is typed `<?, ?>` — inject the **raw**

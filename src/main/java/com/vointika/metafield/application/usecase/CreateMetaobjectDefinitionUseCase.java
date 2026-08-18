@@ -34,6 +34,10 @@ import java.util.UUID;
  */
 public class CreateMetaobjectDefinitionUseCase {
 
+    /** Thrown twice — the pre-check and the index race answer identically. */
+    private static final String DUPLICATE_TYPE =
+            "A metaobject definition with this type already exists";
+
     private final MetaobjectDefinitionRepository definitionRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
@@ -89,8 +93,7 @@ public class CreateMetaobjectDefinitionUseCase {
         }
 
         if (definitionRepository.existsByTourOperatorIdAndType(input.tourOperatorId(), type.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject definition with this type already exists");
+            throw new ResourceAlreadyExistsException(DUPLICATE_TYPE);
         }
         try {
             transactionRunner.run(() -> {
@@ -103,8 +106,7 @@ public class CreateMetaobjectDefinitionUseCase {
                                 "fields", fields.stream().map(f -> f.getKey().value()).toList())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject definition with this type already exists");
+            throw new ResourceAlreadyExistsException(DUPLICATE_TYPE);
         }
         return definition.getId();
     }

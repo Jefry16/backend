@@ -36,9 +36,7 @@ public class DeleteMetafieldDefinitionUseCase {
 
     public void execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetafieldDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+        MetafieldDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
         transactionRunner.run(() -> {
             definitionRepository.delete(definitionId);
             auditTrailPort.append(new NewAuditEntry(

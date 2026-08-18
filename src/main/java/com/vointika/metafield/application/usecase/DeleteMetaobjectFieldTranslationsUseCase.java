@@ -40,9 +40,7 @@ public class DeleteMetaobjectFieldTranslationsUseCase {
 
     public void execute(UUID callerUserId, UUID tourOperatorId, UUID metaobjectId, String rawLocale) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        if (entryRepository.findByIdAndTourOperatorId(metaobjectId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Metaobject not found");
-        }
+        entryRepository.requireByIdAndTourOperatorId(metaobjectId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
 
         transactionRunner.run(() -> {

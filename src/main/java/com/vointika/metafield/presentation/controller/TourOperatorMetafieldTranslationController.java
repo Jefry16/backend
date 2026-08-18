@@ -24,15 +24,9 @@ import java.util.UUID;
 /**
  * Per-locale overlays for the operator's own metafield values — what {@code tourOperator.metafields} serves in a secondary locale.
  *
- * <p><b>The path is {@code metafield-translations}, not
- * {@code metafields/translations}.</b> The latter collides with
- * {@code /metafields/{namespace}/{key}} — {@code PathPattern} prefers the literal
- * so it would resolve, but it silently makes a namespace called
- * {@code translations} unreachable, and a route that works by tie-break is one
- * nobody remembers is fragile.
- *
- * <p>Reads are any member; writes are ADMIN+, enforced in the use case rather
- * than here (LAW: authorization belongs in the use case, not only the router).
+ * <p>{@code metafield-translations} rather than {@code metafields/translations},
+ * which would collide with {@code /metafields/{namespace}/{key}} — PATTERNS §11.
+ * Reads any member, writes ADMIN+, both gated in the use case.
  */
 @RestController
 @RequestMapping("/api/tour-operators/{tourOperatorId}/metafield-translations")

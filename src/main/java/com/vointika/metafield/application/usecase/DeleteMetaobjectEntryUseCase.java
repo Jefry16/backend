@@ -36,9 +36,7 @@ public class DeleteMetaobjectEntryUseCase {
 
     public void execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+        MetaobjectEntry entry = entryRepository.requireByIdAndTourOperatorId(entryId, tourOperatorId);
         // A delete leaves no row to diff — identity rides details.
         transactionRunner.run(() -> {
             // Any metaobject_reference metafield pointing here would go

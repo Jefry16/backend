@@ -26,9 +26,7 @@ public class ListMetaobjectFieldTranslationLocalesUseCase {
 
     public List<String> execute(UUID callerUserId, UUID tourOperatorId, UUID metaobjectId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (entryRepository.findByIdAndTourOperatorId(metaobjectId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Metaobject not found");
-        }
+        entryRepository.requireByIdAndTourOperatorId(metaobjectId, tourOperatorId);
         return translationRepository.findLocalesForEntry(metaobjectId);
     }
 }

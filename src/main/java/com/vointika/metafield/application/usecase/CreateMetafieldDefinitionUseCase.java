@@ -30,6 +30,10 @@ import java.util.UUID;
  */
 public class CreateMetafieldDefinitionUseCase {
 
+    /** Thrown twice — the pre-check and the index race answer identically. */
+    private static final String DUPLICATE_IDENTITY =
+            "A metafield definition with this namespace and key already exists";
+
     private final MetafieldDefinitionRepository definitionRepository;
     private final MetaobjectDefinitionRepository metaobjectDefinitionRepository;
     private final TourOperatorMembershipCheck membershipCheck;
@@ -81,8 +85,7 @@ public class CreateMetafieldDefinitionUseCase {
 
         if (definitionRepository.existsByIdentity(
                 input.tourOperatorId(), ownerType, namespace.value(), key.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A metafield definition with this namespace and key already exists");
+            throw new ResourceAlreadyExistsException(DUPLICATE_IDENTITY);
         }
 
         MetafieldDefinition definition = new MetafieldDefinition(
@@ -101,8 +104,7 @@ public class CreateMetafieldDefinitionUseCase {
                                 "type", type.code())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException(
-                    "A metafield definition with this namespace and key already exists");
+            throw new ResourceAlreadyExistsException(DUPLICATE_IDENTITY);
         }
         return definition.getId();
     }

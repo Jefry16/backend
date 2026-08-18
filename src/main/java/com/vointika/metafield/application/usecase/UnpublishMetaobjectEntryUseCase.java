@@ -33,9 +33,7 @@ public class UnpublishMetaobjectEntryUseCase {
 
     public void execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+        MetaobjectEntry entry = entryRepository.requireByIdAndTourOperatorId(entryId, tourOperatorId);
         entry.unpublish();
         transactionRunner.run(() -> {
             entryRepository.save(entry);

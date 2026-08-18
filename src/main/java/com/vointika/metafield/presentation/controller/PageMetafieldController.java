@@ -22,7 +22,7 @@ import java.util.UUID;
 
 /**
  * A page's metafield values — a thin mount of the owner-generic value
- * use cases with the PAGE owner type (its EXPERIENCE twin serves experiences).
+ * use cases with the PAGE owner type.
  * Reads member; writes ADMIN+.
  */
 @RestController

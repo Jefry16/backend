@@ -70,8 +70,7 @@ public class UpsertMetaobjectFieldTranslationsUseCase {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
 
         MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(input.metaobjectId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+                .requireByIdAndTourOperatorId(input.metaobjectId(), input.tourOperatorId());
 
         LocaleCode locale = new LocaleCode(input.locale());
         if (!operatorLocalesQuery.findSupportedLocales(input.tourOperatorId()).contains(locale.value())) {

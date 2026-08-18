@@ -33,9 +33,7 @@ public class PublishMetaobjectEntryUseCase {
 
     public void execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+        MetaobjectEntry entry = entryRepository.requireByIdAndTourOperatorId(entryId, tourOperatorId);
         entry.publish();
         // Reaching here means the flip is real (a re-publish 409s in the
         // entity), so the diff is always exactly this one field.
