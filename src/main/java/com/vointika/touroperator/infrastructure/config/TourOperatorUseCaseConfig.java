@@ -49,7 +49,7 @@ import com.vointika.touroperator.domain.repository.TourOperatorBrandRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
 import com.vointika.touroperator.application.usecase.UpdateOperatorSeoUseCase;
 import com.vointika.touroperator.application.usecase.GetOperatorSeoUseCase;
@@ -338,12 +338,12 @@ public class TourOperatorUseCaseConfig {
     public UpsertOperatorTranslationUseCase upsertOperatorTranslationUseCase(
             TourOperatorRepository tourOperatorRepository,
             TourOperatorTranslationRepository translationRepository,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertOperatorTranslationUseCase(tourOperatorRepository, translationRepository,
-                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -453,12 +453,12 @@ public class TourOperatorUseCaseConfig {
     public UpsertPolicyTranslationUseCase upsertPolicyTranslationUseCase(
             TourOperatorPolicyRepository policyRepository,
             TourOperatorPolicyTranslationRepository translationRepository,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertPolicyTranslationUseCase(policyRepository, translationRepository,
-                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean

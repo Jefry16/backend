@@ -1,5 +1,6 @@
 package com.vointika.page.presentation.controller;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.page.application.usecase.DeletePageTranslationUseCase;
 import com.vointika.page.application.usecase.GetPageTranslationUseCase;
 import com.vointika.page.application.usecase.ListPageTranslationsUseCase;
@@ -180,7 +181,7 @@ class PageTranslationControllerDocumentationTest {
     @Test
     void unsupportedLocaleIs422() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("Locale 'fr' is not supported by this operator"))
+        doThrow(new InvalidFieldException(OperatorLocaleCheck.refusal("fr")))
                 .when(upsertUseCase).execute(any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/pages/{pageId}/translations/{locale}", OP, PAGE, "fr")

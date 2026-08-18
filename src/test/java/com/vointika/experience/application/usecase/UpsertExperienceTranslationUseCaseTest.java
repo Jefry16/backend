@@ -1,5 +1,6 @@
 package com.vointika.experience.application.usecase;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.experience.domain.valueobject.Description;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.port.NewAuditEntry;
@@ -73,7 +74,7 @@ class UpsertExperienceTranslationUseCaseTest {
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
-                operatorLocalesQuery, new HandleGenerator(), membershipCheck, transactionRunner, auditTrailPort);
+                new OperatorLocaleCheck(operatorLocalesQuery), new HandleGenerator(), membershipCheck, transactionRunner, auditTrailPort);
 
         when(experienceRepository.findByIdAndTourOperatorId(experienceId, operatorId))
                 .thenReturn(Optional.of(mock(Experience.class)));

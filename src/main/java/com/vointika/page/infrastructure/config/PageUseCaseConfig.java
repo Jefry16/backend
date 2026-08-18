@@ -16,7 +16,7 @@ import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.MetafieldValueCleanup;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -106,13 +106,13 @@ public class PageUseCaseConfig {
     public UpsertPageTranslationUseCase upsertPageTranslationUseCase(
             PageRepository pageRepository,
             PageTranslationRepository pageTranslationRepository,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             HandleGenerator handleGenerator,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertPageTranslationUseCase(pageRepository, pageTranslationRepository,
-                operatorLocalesQuery, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package com.vointika.experience.presentation.controller;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.experience.application.dto.output.ExperienceTranslationView;
 import com.vointika.experience.application.usecase.DeleteExperienceTranslationUseCase;
 import com.vointika.experience.application.usecase.GetExperienceTranslationUseCase;
@@ -208,7 +209,7 @@ class ExperienceTranslationControllerDocumentationTest {
     @Test
     void unsupportedLocaleIsUnprocessable() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("Locale 'de' is not supported by this operator"))
+        doThrow(new InvalidFieldException(OperatorLocaleCheck.refusal("de")))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "de")
                         .header("Authorization", "Bearer test-access-token")

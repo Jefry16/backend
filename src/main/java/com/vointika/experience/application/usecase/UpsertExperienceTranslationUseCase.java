@@ -14,7 +14,7 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.HandleGenerator;
@@ -55,7 +55,7 @@ public class UpsertExperienceTranslationUseCase {
 
     private final ExperienceRepository experienceRepository;
     private final ExperienceTranslationRepository translationRepository;
-    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final OperatorLocaleCheck operatorLocaleCheck;
     private final HandleGenerator handleGenerator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
@@ -63,14 +63,14 @@ public class UpsertExperienceTranslationUseCase {
 
     public UpsertExperienceTranslationUseCase(ExperienceRepository experienceRepository,
                                               ExperienceTranslationRepository translationRepository,
-                                              OperatorLocalesQuery operatorLocalesQuery,
+                                              OperatorLocaleCheck operatorLocaleCheck,
                                               HandleGenerator handleGenerator,
                                               TourOperatorMembershipCheck membershipCheck,
                                               TransactionRunner transactionRunner,
                                               AuditTrailPort auditTrailPort) {
         this.experienceRepository = experienceRepository;
         this.translationRepository = translationRepository;
-        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.operatorLocaleCheck = operatorLocaleCheck;
         this.handleGenerator = handleGenerator;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
@@ -85,9 +85,7 @@ public class UpsertExperienceTranslationUseCase {
         if (experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId).isEmpty()) {
             throw new ResourceNotFoundException("Experience not found");
         }
-        if (!operatorLocalesQuery.findSupportedLocales(tourOperatorId).contains(locale.value())) {
-            throw new InvalidFieldException("Locale '" + locale.value() + "' is not supported by this operator");
-        }
+        operatorLocaleCheck.require(tourOperatorId, locale.value());
 
         ExperienceName name = input.name() == null || input.name().isBlank() ? null : new ExperienceName(input.name());
         Description description = blankNull(input.description()) == null ? null : new Description(input.description());

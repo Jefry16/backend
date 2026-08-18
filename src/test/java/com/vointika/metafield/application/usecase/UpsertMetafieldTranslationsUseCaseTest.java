@@ -1,6 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
-import com.vointika.metafield.application.service.OperatorLocaleCheck;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.metafield.application.dto.input.UpsertMetafieldTranslationsInput;
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
 import com.vointika.metafield.application.service.MetafieldValueValidator;

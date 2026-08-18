@@ -1,5 +1,6 @@
 package com.vointika.audience.application.usecase;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.audience.domain.entity.Audience;
 import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.repository.AudienceRepository;
@@ -69,7 +70,7 @@ class AudienceTranslationUseCasesTest {
 
     private UpsertAudienceTranslationUseCase upsert() {
         return new UpsertAudienceTranslationUseCase(
-                audienceRepository, translationRepository, operatorLocalesQuery, membershipCheck,
+                audienceRepository, translationRepository, new OperatorLocaleCheck(operatorLocalesQuery), membershipCheck,
                 transactionRunner, auditTrailPort);
     }
 
