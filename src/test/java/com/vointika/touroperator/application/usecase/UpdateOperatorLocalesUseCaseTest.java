@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,7 +74,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     @Test
     void setsPrimaryAndSupportedWhenAllValid() {
-        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
+        when(operatorRepository.requireById(operatorId)).thenReturn(operator());
 
         useCase.execute(operatorId, "es", List.of("en", "es", "fr"), callerId);
 
@@ -104,7 +103,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     @Test
     void primaryNotInSupportedIs422() {
-        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
+        when(operatorRepository.requireById(operatorId)).thenReturn(operator());
 
         assertThrows(InvalidFieldException.class,
                 () -> useCase.execute(operatorId, "fr", List.of("en", "es"), callerId));
@@ -131,7 +130,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     @Test
     void missingOperatorIs404() {
-        when(operatorRepository.findById(operatorId)).thenReturn(Optional.empty());
+        when(operatorRepository.requireById(operatorId)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
 
         assertThrows(ResourceNotFoundException.class,
                 () -> useCase.execute(operatorId, "en", List.of("en"), callerId));

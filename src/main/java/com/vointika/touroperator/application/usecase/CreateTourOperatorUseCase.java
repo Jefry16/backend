@@ -50,6 +50,15 @@ import java.util.UUID;
  */
 public class CreateTourOperatorUseCase {
 
+    /** Thrown twice — the pre-check and the unique-index race answer identically. */
+    private static String duplicateName(String name) {
+        return "You already have an operator named \"" + name + "\"";
+    }
+
+    /** Thrown twice — the pre-check and the race answer identically. */
+    private static final String INVALID_PRINCIPAL =
+            "Invalid authenticated user";
+
 
     /** Bounded handle-collision retries; each attempt regenerates the handle in a fresh tx. */
     private static final int MAX_HANDLE_ATTEMPTS = 5;
@@ -106,7 +115,7 @@ public class CreateTourOperatorUseCase {
         // still reachable, and it stays a 401 rather than an NPE further down.
         UUID createdBy = input.userId();
         if (createdBy == null) {
-            throw new UnauthorizedException("Invalid authenticated user");
+            throw new UnauthorizedException(INVALID_PRINCIPAL);
         }
 
         // 2. Validate value objects (422 on invalid input).
@@ -141,14 +150,14 @@ public class CreateTourOperatorUseCase {
         //    the DB unique index below.
         if (tourOperatorRepository.existsByOwnerAndName(createdBy, name.value())) {
             throw new ResourceAlreadyExistsException(
-                    "You already have an operator named \"" + name.value() + "\"");
+                    duplicateName(name.value()));
         }
 
         // Resolve the creator's display fields — required to populate the OWNER
         // member row's denormalized name/email. The creator is the authenticated
         // caller, so their account must exist.
         UserContactView ownerContact = userAccountQuery.findContact(createdBy)
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_PRINCIPAL));
 
         // 5. Generate a handle + save operator and OWNER member in one tx. On a
         //    handle collision (DIV at commit) the whole tx rolls back and we retry
@@ -201,7 +210,7 @@ public class CreateTourOperatorUseCase {
                 // rather than burning retries on a collision that never clears.
                 if (tourOperatorRepository.existsByOwnerAndName(createdBy, name.value())) {
                     throw new ResourceAlreadyExistsException(
-                            "You already have an operator named \"" + name.value() + "\"");
+                            duplicateName(name.value()));
                 }
                 // otherwise handle race — regenerate and retry
             }

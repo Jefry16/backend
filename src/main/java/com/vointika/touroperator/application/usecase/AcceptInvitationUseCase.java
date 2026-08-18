@@ -4,7 +4,6 @@ import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.GoneException;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.InvitedUserProvisioning;
 import com.vointika.shared.port.NewAuditEntry;
@@ -49,6 +48,14 @@ import java.util.UUID;
  */
 public class AcceptInvitationUseCase {
 
+    /** Published: the 403 a forwarded invitation link produces. */
+    public static final String WRONG_EMAIL =
+            "This invitation was issued to a different email address";
+
+    /** Thrown 3 times — the pre-check and the race answer identically. */
+    public static final String ACCOUNT_EXISTS =
+            "An account with this email already exists — log in to accept the invitation";
+
     private final TourOperatorInvitationRepository invitationRepository;
     private final TourOperatorMemberRepository memberRepository;
     private final TourOperatorRepository tourOperatorRepository;
@@ -83,24 +90,24 @@ public class AcceptInvitationUseCase {
     public Result execute(String rawToken, UUID authenticatedUserId, String name, String password) {
         TourOperatorInvitation invitation = invitationRepository
                 .findByTokenHash(invitationTokenPort.hash(rawToken))
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
 
         if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
-            throw new ConflictException("This invitation has already been accepted");
+            throw new ConflictException(TourOperatorInvitation.ALREADY_ACCEPTED);
         }
         if (invitation.getStatus() != InvitationStatus.PENDING || invitation.isExpired(Instant.now())) {
             throw new GoneException("This invitation is no longer valid");
         }
 
         TourOperator operator = tourOperatorRepository.findById(invitation.getTourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
         String inviteeEmail = invitation.getEmail().value();
 
         if (authenticatedUserId != null) {
             UserContactView caller = userAccountQuery.findContact(authenticatedUserId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                    .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
             if (!inviteeEmail.equals(caller.email())) {
-                throw new ForbiddenException("This invitation was issued to a different email address");
+                throw new ForbiddenException(WRONG_EMAIL);
             }
             try {
                 transactionRunner.run(() -> complete(
@@ -118,7 +125,7 @@ public class AcceptInvitationUseCase {
         }
         if (userAccountQuery.findUserIdByEmail(inviteeEmail).isPresent()) {
             throw new ConflictException(
-                    "An account with this email already exists — log in to accept the invitation");
+                    ACCOUNT_EXISTS);
         }
 
         SessionTokens tokens;
@@ -129,7 +136,7 @@ public class AcceptInvitationUseCase {
                 if (!provisioned.created()) {
                     // A competing registration committed before this lookup — refuse.
                     throw new ConflictException(
-                            "An account with this email already exists — log in to accept the invitation");
+                            ACCOUNT_EXISTS);
                 }
                 complete(invitation, provisioned.userId(), name, inviteeEmail);
                 return invitedUserProvisioning.issueSession(provisioned.userId());
@@ -137,7 +144,7 @@ public class AcceptInvitationUseCase {
         } catch (UniqueConstraintViolationException e) {
             // Truly-concurrent registration tripped users_email_unique — fail closed with the same 409.
             throw new ConflictException(
-                    "An account with this email already exists — log in to accept the invitation");
+                    ACCOUNT_EXISTS);
         }
         return new Result(operator.getId(), operator.getName().value(), tokens);
     }

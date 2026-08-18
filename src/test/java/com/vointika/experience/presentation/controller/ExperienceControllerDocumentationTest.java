@@ -305,7 +305,7 @@ class ExperienceControllerDocumentationTest {
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/experiences", OP)
                         .header("Authorization", "Bearer test-access-token"))

@@ -22,6 +22,9 @@ import java.util.UUID;
  */
 public class MenuItem {
 
+    /** Stated by the factory and again by the tree walk that runs before it. */
+    public static final String LINK_TYPE_REQUIRED = "Menu item link type is required";
+
     /**
      * How deep a menu tree may nest. <b>Public because it is published</b>: the
      * guide's two item-tree descriptions and the 422's message are all built from
@@ -99,7 +102,7 @@ public class MenuItem {
                     "Menu item title must be at most " + TITLE_MAX_LENGTH + " characters");
         }
         if (linkType == null) {
-            throw new InvalidFieldException("Menu item link type is required");
+            throw new InvalidFieldException(LINK_TYPE_REQUIRED);
         }
         if (position < 0) {
             throw new InvalidFieldException("Menu item position must be non-negative");

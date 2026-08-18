@@ -82,11 +82,11 @@ public class ReplaceMenuItemsUseCase {
         Menu menu = menuRepository.findByIdAndTourOperatorId(input.menuId(), input.tourOperatorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Menu not found"));
 
-        Set<String> supportedLocales = tourOperatorRepository.findById(input.tourOperatorId())
-                .map(operator -> operator.getSupportedLocales().stream()
+        Set<String> supportedLocales =
+                tourOperatorRepository.requireById(input.tourOperatorId())
+                        .getSupportedLocales().stream()
                         .map(LocaleCode::value)
-                        .collect(Collectors.toSet()))
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+                        .collect(Collectors.toSet());
 
         List<MenuItem> items = new ArrayList<>();
         List<MenuItemTranslation> translations = new ArrayList<>();
@@ -171,7 +171,7 @@ public class ReplaceMenuItemsUseCase {
 
     private static MenuItemLinkType parseLinkType(String value) {
         if (value == null || value.isBlank()) {
-            throw new InvalidFieldException("Menu item link type is required");
+            throw new InvalidFieldException(MenuItem.LINK_TYPE_REQUIRED);
         }
         try {
             return MenuItemLinkType.valueOf(value);

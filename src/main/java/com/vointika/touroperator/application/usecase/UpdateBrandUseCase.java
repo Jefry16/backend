@@ -13,7 +13,6 @@ import com.vointika.touroperator.domain.valueobject.BrandSlogan;
 import com.vointika.touroperator.domain.valueobject.HexColor;
 import com.vointika.touroperator.domain.valueobject.SocialUrl;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.NewAuditEntry;
@@ -78,9 +77,7 @@ public class UpdateBrandUseCase {
 
     public void execute(UUID tourOperatorId, UpdateBrandInput input, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
+        tourOperatorRepository.requireById(tourOperatorId);
 
         BrandSlogan slogan = blankNull(input.slogan()) == null
                 ? null : new BrandSlogan(input.slogan());
@@ -126,7 +123,7 @@ public class UpdateBrandUseCase {
         var found = mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, ids);
         for (UUID id : ids) {
             if (!found.containsKey(id)) {
-                throw new InvalidFieldException("Media not found in this operator's library");
+                throw new InvalidFieldException(MediaAssetBatchQuery.NOT_IN_LIBRARY);
             }
         }
     }

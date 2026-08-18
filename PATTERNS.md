@@ -989,6 +989,31 @@ description. **Prove it by mutation** — change the constant, rebuild, and chec
 published output moved. Search `.adoc` as well as `.java`: one probe reported six
 files moved and missed the seventh because it only searched test sources.
 
+**A message whose sameness is load-bearing gets written once and guarded.**
+`"Tour operator not found"` was 20 literals in `src/main` and 16 in tests, said by
+four different causes on purpose. `TenantNotFoundMessageIsWrittenOnceTest` is the
+shape: walk **both** trees, fail on the literal anywhere but the constant's
+declaration, and assert the walk actually visited files — a guard that scans nothing
+passes loudly.
+
+**Be precise about what it buys.** It stops the copies coming back; it does **not**
+stop one site *diverging* to a near-miss sentence, which passes because the literal it
+looks for is gone. Where indistinguishability is a security property, check whether
+the structure already provides it — `TourOperatorMembershipPolicy.ensureMember` throws
+once behind one predicate, so its two causes cannot differ whatever any string says.
+Write the guard for the copies and credit the structure for the property.
+
+**And exempt exactly one assertion, or you make the wording unverifiable.** A guard
+that scans both trees forbids *pinning* the sentence as well as copying it — so after
+the existing assertions are switched to read the constant they all become
+tautological (`hasMessage(CONSTANT)` holds for any value), and a one-word edit changes
+every published body with a green suite. That is strictly weaker than the copies it
+replaced, and it is how it was found: rewording the tenant 404 moved **8 snippets**
+silently. The resolution is one named pinning test exempted beside the declaration
+(`TenantNotFoundIsThisSentenceTest`), asserting the literal once, with a failure
+message saying which published bodies move. Verify the exemption did not widen by
+planting the literal in an ordinary test and watching the guard still fail.
+
 **A published error example must be reachable and must differ from its happy path.**
 `PublishedExamplesAreHonestTest` fails the build on the second and cannot see the
 first. Vary the thing the error turns on — a missing id for a 404, a STAFF token for

@@ -275,7 +275,7 @@ class TeamInvitationControllerDocumentationTest {
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(MISSING_OP)));
 
         mockMvc.perform(post("/api/tour-operators/{id}/invitations", MISSING_OP)

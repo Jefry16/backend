@@ -9,7 +9,6 @@ import com.vointika.touroperator.domain.valueobject.PolicyBody;
 import com.vointika.touroperator.domain.valueobject.PolicyTitle;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -64,9 +63,7 @@ public class CreatePolicyUseCase {
                 .orElseThrow(() -> new InvalidFieldException(
                         "Unknown policy type: " + input.type()));
 
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
+        tourOperatorRepository.requireById(tourOperatorId);
         if (policyRepository.existsByTourOperatorIdAndType(tourOperatorId, type)) {
             throw new ResourceAlreadyExistsException(
                     "A " + type.name() + " policy already exists");

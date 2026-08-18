@@ -3,7 +3,6 @@ package com.vointika.touroperator.application.usecase;
 import com.vointika.touroperator.application.dto.output.OperatorTranslationView;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.List;
@@ -31,9 +30,7 @@ public class ListOperatorTranslationsUseCase {
 
     public List<OperatorTranslationView> execute(UUID tourOperatorId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
+        tourOperatorRepository.requireById(tourOperatorId);
         return translationRepository.findAllByTourOperatorId(tourOperatorId).stream()
                 .map(OperatorTranslationView::from)
                 .toList();

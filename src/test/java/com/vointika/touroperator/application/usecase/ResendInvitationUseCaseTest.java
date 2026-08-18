@@ -83,7 +83,7 @@ class ResendInvitationUseCaseTest {
         when(tokenPort.generate()).thenReturn("fresh-raw");
         when(tokenPort.hash("fresh-raw")).thenReturn("fresh-hash");
         when(invitationRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-        when(tourOperatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
+        when(tourOperatorRepository.requireById(operatorId)).thenReturn(operator());
         when(userAccountQuery.findContact(callerId))
                 .thenReturn(Optional.of(new UserContactView("admin@example.com", "Admin", "es")));
     }

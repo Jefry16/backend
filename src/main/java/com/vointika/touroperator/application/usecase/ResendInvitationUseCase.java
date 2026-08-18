@@ -1,7 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.event.TeamInvitationRequestedEvent;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.EventPublisherPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -66,9 +65,8 @@ public class ResendInvitationUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         TourOperatorInvitation invitation = invitationRepository
                 .findByIdAndTourOperatorId(invitationId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
 
         String rawToken = invitationTokenPort.generate();
         invitation.renew(invitationTokenPort.hash(rawToken));

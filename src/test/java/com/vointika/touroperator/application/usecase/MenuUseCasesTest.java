@@ -86,7 +86,7 @@ class MenuUseCasesTest {
         when(menuRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(menuRepository.findByIdAndTourOperatorId(MENU, OP))
                 .thenReturn(Optional.of(menu()));
-        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
+        when(tourOperatorRepository.requireById(OP)).thenReturn(operator());
         when(experienceOwnershipQuery.existsForTourOperator(EXPERIENCE, OP)).thenReturn(true);
         when(pageOwnershipQuery.existsForTourOperator(PAGE, OP)).thenReturn(true);
     }

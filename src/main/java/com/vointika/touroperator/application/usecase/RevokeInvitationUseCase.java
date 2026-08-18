@@ -1,6 +1,5 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -44,7 +43,7 @@ public class RevokeInvitationUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         TourOperatorInvitation invitation = invitationRepository
                 .findByIdAndTourOperatorId(invitationId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
         invitation.revoke();
         transactionRunner.run(() -> {
             invitationRepository.save(invitation);

@@ -3,8 +3,8 @@ package com.vointika.touroperator.application.usecase;
 import com.vointika.reference.domain.entity.Country;
 import com.vointika.reference.domain.repository.CountryRepository;
 import com.vointika.touroperator.application.dto.output.TourOperatorView;
+import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -36,9 +36,8 @@ public class GetTourOperatorUseCase {
 
     public TourOperatorView execute(UUID tourOperatorId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        return tourOperatorRepository.findById(tourOperatorId)
-                .map(operator -> TourOperatorView.from(operator, country(operator)))
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
+        return TourOperatorView.from(operator, country(operator));
     }
 
     /** Null when the operator has no address yet, which is every operator that predates V15. */

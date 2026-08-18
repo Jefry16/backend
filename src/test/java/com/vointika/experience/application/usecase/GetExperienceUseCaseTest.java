@@ -84,7 +84,7 @@ class GetExperienceUseCaseTest {
 
     @Test
     void nonMemberIs404() {
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(callerId, operatorId);
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(operatorId, experienceId, callerId));
     }

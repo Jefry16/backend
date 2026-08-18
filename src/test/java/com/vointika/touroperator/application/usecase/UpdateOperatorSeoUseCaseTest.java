@@ -20,7 +20,6 @@ import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,7 +61,7 @@ class UpdateOperatorSeoUseCaseTest {
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1", null, "Palma", null, null, UUID.randomUUID()),
                 USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")));
-        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator));
+        when(operatorRepository.requireById(OP)).thenReturn(operator);
     }
 
     private UpdateOperatorSeoUseCase useCase() {

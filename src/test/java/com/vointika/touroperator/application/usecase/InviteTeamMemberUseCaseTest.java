@@ -82,7 +82,7 @@ class InviteTeamMemberUseCaseTest {
         when(idGenerator.newId()).thenReturn(UUID.randomUUID());
         when(tokenPort.generate()).thenReturn("raw");
         when(tokenPort.hash("raw")).thenReturn("hash");
-        when(tourOperatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
+        when(tourOperatorRepository.requireById(operatorId)).thenReturn(operator());
         when(invitationRepository.save(any())).thenAnswer(a -> a.getArgument(0));
         when(userAccountQuery.findContact(inviterId))
                 .thenReturn(Optional.of(new UserContactView("inviter@example.com", "Inviter", "es")));

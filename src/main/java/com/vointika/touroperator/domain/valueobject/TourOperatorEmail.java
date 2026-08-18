@@ -19,6 +19,9 @@ import java.util.Locale;
  */
 public record TourOperatorEmail(String value) {
 
+    /** Three branches reject for the same reason; the caller cannot tell which. */
+    private static final String NOT_AN_ADDRESS = "Email is not a valid address";
+
     public static final int MAX_LENGTH = 320;
 
     public TourOperatorEmail {
@@ -32,13 +35,13 @@ public record TourOperatorEmail(String value) {
         }
         int at = value.indexOf('@');
         if (at <= 0 || at != value.lastIndexOf('@') || at == value.length() - 1) {
-            throw new InvalidFieldException("Email is not a valid address");
+            throw new InvalidFieldException(NOT_AN_ADDRESS);
         }
         if (value.chars().anyMatch(Character::isWhitespace)) {
-            throw new InvalidFieldException("Email is not a valid address");
+            throw new InvalidFieldException(NOT_AN_ADDRESS);
         }
         if (value.indexOf('.', at) < 0) {
-            throw new InvalidFieldException("Email is not a valid address");
+            throw new InvalidFieldException(NOT_AN_ADDRESS);
         }
     }
 }

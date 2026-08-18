@@ -1,5 +1,7 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.touroperator.application.usecase.UpdateStorefrontPasswordUseCase;
+import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -7,7 +9,6 @@ import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.touroperator.application.dto.output.StorefrontPasswordView;
 import com.vointika.touroperator.application.usecase.GetStorefrontPasswordUseCase;
-import com.vointika.touroperator.application.usecase.UpdateStorefrontPasswordUseCase;
 import com.vointika.touroperator.infrastructure.web.WebConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,7 +120,7 @@ class StorefrontPasswordControllerDocumentationTest {
     @Test
     void enablingWithoutPasswordIs422() throws Exception {
         authenticated();
-        Mockito.doThrow(new InvalidFieldException("A password is required to enable password protection"))
+        Mockito.doThrow(new InvalidFieldException(TourOperator.PASSWORD_REQUIRED))
                 .when(updateUseCase).execute(any(), anyBoolean(), any(), any(), any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/storefront-password", OP)

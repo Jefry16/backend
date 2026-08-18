@@ -1,6 +1,5 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.application.dto.output.StorefrontPasswordView;
 import com.vointika.touroperator.domain.entity.TourOperator;
@@ -22,8 +21,7 @@ public class GetStorefrontPasswordUseCase {
 
     public StorefrontPasswordView execute(UUID tourOperatorId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
         return new StorefrontPasswordView(
                 operator.isPasswordEnabled(),
                 operator.getStorefrontPassword(),

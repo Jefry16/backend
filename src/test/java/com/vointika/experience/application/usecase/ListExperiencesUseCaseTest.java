@@ -90,7 +90,7 @@ class ListExperiencesUseCaseTest {
 
     @Test
     void nonMemberIs404BeforeAnyQuery() {
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(callerId, operatorId);
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(query(), callerId));
         verify(repository, never()).list(any());

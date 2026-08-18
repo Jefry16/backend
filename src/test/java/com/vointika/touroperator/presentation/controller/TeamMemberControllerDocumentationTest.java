@@ -173,7 +173,7 @@ class TeamMemberControllerDocumentationTest {
     @Test
     void anAdminCannotChangeTheOwnersRole() throws Exception {
         authenticated();
-        doThrow(new ForbiddenException("Only the owner can change the owner's role"))
+        doThrow(new ForbiddenException(ChangeMemberRoleUseCase.OWNER_ONLY))
                 .when(changeMemberRoleUseCase).execute(any(), any(), any(), any());
 
         mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, OWNER_USER)
@@ -255,7 +255,7 @@ class TeamMemberControllerDocumentationTest {
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(USER)), eq(UUID.fromString(MISSING_OP)));
 
         mockMvc.perform(get("/api/tour-operators/{id}/members", MISSING_OP)

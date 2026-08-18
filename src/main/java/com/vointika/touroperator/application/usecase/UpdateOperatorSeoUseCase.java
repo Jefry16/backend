@@ -6,7 +6,6 @@ import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
 import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.NewAuditEntry;
@@ -56,8 +55,7 @@ public class UpdateOperatorSeoUseCase {
     public void execute(UUID tourOperatorId, String rawSeoTitle, String rawSeoDescription,
                         UUID ogImageMediaId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
 
         OperatorSeoTitle seoTitle = blank(rawSeoTitle) ? null : new OperatorSeoTitle(rawSeoTitle);
         OperatorSeoDescription seoDescription =
@@ -66,7 +64,7 @@ public class UpdateOperatorSeoUseCase {
         if (ogImageMediaId != null
                 && !mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, Set.of(ogImageMediaId))
                         .containsKey(ogImageMediaId)) {
-            throw new InvalidFieldException("Media not found in this operator's library");
+            throw new InvalidFieldException(MediaAssetBatchQuery.NOT_IN_LIBRARY);
         }
 
         Map<String, Object> before = auditSnapshot(operator);

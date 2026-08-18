@@ -1,6 +1,5 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.application.dto.output.InvitationView;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
@@ -35,7 +34,7 @@ public class GetInvitationUseCase {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
         TourOperatorInvitation invitation = invitationRepository
                 .findByIdAndTourOperatorId(invitationId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
         // Inviter name is snapshotted on the invitation — no identity lookup.
         return InvitationView.from(invitation, Instant.now());
     }

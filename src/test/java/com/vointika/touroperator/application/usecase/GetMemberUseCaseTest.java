@@ -62,7 +62,7 @@ class GetMemberUseCaseTest {
 
     @Test
     void nonMemberIs404BeforeAnyLookup() {
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(callerId, operatorId);
 
         assertThrows(ResourceNotFoundException.class,

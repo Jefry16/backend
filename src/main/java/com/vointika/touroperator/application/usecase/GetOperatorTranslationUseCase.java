@@ -4,7 +4,6 @@ import com.vointika.touroperator.application.dto.output.OperatorTranslationView;
 import com.vointika.touroperator.domain.entity.TourOperatorTranslation;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
 
@@ -31,9 +30,7 @@ public class GetOperatorTranslationUseCase {
 
     public OperatorTranslationView execute(UUID tourOperatorId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
+        tourOperatorRepository.requireById(tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
         TourOperatorTranslation translation = translationRepository
                 .findByTourOperatorIdAndLocale(tourOperatorId, locale.value())

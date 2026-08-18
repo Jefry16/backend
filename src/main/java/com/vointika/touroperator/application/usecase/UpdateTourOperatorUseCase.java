@@ -11,7 +11,6 @@ import com.vointika.touroperator.domain.valueobject.TourOperatorEmail;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import com.vointika.touroperator.domain.valueobject.TourOperatorPhone;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -78,8 +77,7 @@ public class UpdateTourOperatorUseCase {
 
     public void execute(UUID tourOperatorId, UpdateTourOperatorInput input, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
 
         Map<String, Object> before = operator.auditSnapshot();
 

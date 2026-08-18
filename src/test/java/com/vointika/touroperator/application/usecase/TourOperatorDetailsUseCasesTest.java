@@ -70,7 +70,7 @@ class TourOperatorDetailsUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
+        when(operatorRepository.requireById(OP)).thenReturn(operator());
         when(timezoneRepository.findById(OTHER_TZ)).thenReturn(Optional.of(mock(Timezone.class)));
         when(timezoneRepository.findById(TZ)).thenReturn(Optional.of(mock(Timezone.class)));
         when(currencyRepository.findById(CUR)).thenReturn(Optional.of(mock(Currency.class)));
@@ -208,7 +208,7 @@ class TourOperatorDetailsUseCasesTest {
 
     @Test
     void updatingAMissingOperatorIs404() {
-        when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
+        when(operatorRepository.requireById(OP)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
         assertThatThrownBy(() -> update().execute(OP, only("+34 611 111 111", null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

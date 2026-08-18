@@ -8,7 +8,6 @@ import com.vointika.touroperator.domain.valueobject.BrandShortDescription;
 import com.vointika.touroperator.domain.valueobject.BrandSlogan;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.service.OperatorLocaleCheck;
@@ -63,9 +62,7 @@ public class UpsertOperatorTranslationUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
 
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
+        tourOperatorRepository.requireById(tourOperatorId);
         operatorLocaleCheck.require(tourOperatorId, locale.value());
 
         OperatorSeoTitle seoTitle = blankNull(input.seoTitle()) == null

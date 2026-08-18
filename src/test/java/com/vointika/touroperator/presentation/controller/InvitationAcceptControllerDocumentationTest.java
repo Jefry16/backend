@@ -153,7 +153,7 @@ class InvitationAcceptControllerDocumentationTest {
     void acceptingAnonymouslyWithAnExistingAccountIs409() throws Exception {
         when(acceptInvitationUseCase.execute(any(), any(), any(), any()))
                 .thenThrow(new ConflictException(
-                        "An account with this email already exists — log in to accept the invitation"));
+                        AcceptInvitationUseCase.ACCOUNT_EXISTS));
 
         mockMvc.perform(post("/api/invitations/{token}/accept", "token-for-an-existing-account")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -186,7 +186,7 @@ class InvitationAcceptControllerDocumentationTest {
                 .thenReturn("550e8400-e29b-41d4-a716-446655440000");
         when(acceptInvitationUseCase.execute(any(), any(), any(), any()))
                 .thenThrow(new ForbiddenException(
-                        "This invitation was issued to a different email address"));
+                        AcceptInvitationUseCase.WRONG_EMAIL));
 
         mockMvc.perform(post("/api/invitations/{token}/accept", "the-token")
                         .header("Authorization", "Bearer test-access-token")
