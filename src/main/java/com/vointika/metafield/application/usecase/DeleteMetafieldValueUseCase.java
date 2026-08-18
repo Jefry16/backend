@@ -53,8 +53,7 @@ public class DeleteMetafieldValueUseCase {
         MetafieldNamespace namespace = new MetafieldNamespace(rawNamespace);
         MetafieldKey key = new MetafieldKey(rawKey);
         var definition = definitionRepository
-                .findByIdentity(tourOperatorId, ownerType, namespace.value(), key.value())
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+                .requireByIdentity(tourOperatorId, ownerType, namespace.value(), key.value());
 
         Optional<MetafieldValue> existing =
                 valueRepository.findByDefinitionIdAndOwnerId(definition.getId(), ownerId);

@@ -8,9 +8,14 @@ import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.UUID;
 
 public interface MetafieldDefinitionRepository {
+
+    /** One message for both lookups — the two differ in how they address a row, not in what is missing. */
+    Supplier<ResourceNotFoundException> NOT_FOUND =
+            () -> new ResourceNotFoundException("Metafield definition not found");
 
     MetafieldDefinition save(MetafieldDefinition definition);
 
@@ -22,12 +27,21 @@ public interface MetafieldDefinitionRepository {
      * call sites and a rename would have had to find them all.
      */
     default MetafieldDefinition requireByIdAndTourOperatorId(UUID definitionId, UUID tourOperatorId) {
-        return findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+        return findByIdAndTourOperatorId(definitionId, tourOperatorId).orElseThrow(NOT_FOUND);
     }
 
     Optional<MetafieldDefinition> findByIdentity(
             UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key);
+
+    /**
+     * The identity lookup, or the same 404 — a value endpoint addresses its
+     * definition by {@code namespace.key} rather than by id, and answers
+     * identically when there is none.
+     */
+    default MetafieldDefinition requireByIdentity(
+            UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key) {
+        return findByIdentity(tourOperatorId, ownerType, namespace, key).orElseThrow(NOT_FOUND);
+    }
 
     boolean existsByIdentity(
             UUID tourOperatorId, MetafieldOwnerType ownerType, String namespace, String key);

@@ -75,8 +75,7 @@ public class UpsertMetafieldValueUseCase {
         MetafieldNamespace namespace = new MetafieldNamespace(input.namespace());
         MetafieldKey key = new MetafieldKey(input.key());
         MetafieldDefinition definition = definitionRepository
-                .findByIdentity(input.tourOperatorId(), input.ownerType(), namespace.value(), key.value())
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+                .requireByIdentity(input.tourOperatorId(), input.ownerType(), namespace.value(), key.value());
 
         String normalized = valueValidator.validateAndNormalize(definition.getType(), input.value());
         // The validator only checks SHAPE for references; the integrity half —
