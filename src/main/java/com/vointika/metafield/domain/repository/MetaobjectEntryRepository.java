@@ -14,6 +14,9 @@ import java.util.UUID;
 /** The entry AGGREGATE: the entry row plus its per-field values. */
 public interface MetaobjectEntryRepository {
 
+    /** The handle is unique per definition; both the pre-check and the index race say so. */
+    String DUPLICATE_HANDLE = "A metaobject with this handle already exists for this type";
+
     MetaobjectEntry save(MetaobjectEntry entry);
 
     Optional<MetaobjectEntry> findByIdAndTourOperatorId(UUID entryId, UUID tourOperatorId);

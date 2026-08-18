@@ -9,10 +9,17 @@ import com.vointika.shared.list.ListQuery;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.UUID;
 
 /** The definition AGGREGATE: the blueprint row plus its ordered fields. */
 public interface MetaobjectDefinitionRepository {
+
+    Supplier<ResourceNotFoundException> NOT_FOUND =
+            () -> new ResourceNotFoundException("Metaobject definition not found");
+
+    Supplier<ResourceNotFoundException> FIELD_NOT_FOUND =
+            () -> new ResourceNotFoundException("Metaobject field not found");
 
     MetaobjectDefinition save(MetaobjectDefinition definition);
 
@@ -31,7 +38,7 @@ public interface MetaobjectDefinitionRepository {
      */
     default MetaobjectDefinition requireByIdAndTourOperatorId(UUID definitionId, UUID tourOperatorId) {
         return findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .orElseThrow(NOT_FOUND);
     }
 
     boolean existsByTourOperatorIdAndType(UUID tourOperatorId, String type);
@@ -47,6 +54,11 @@ public interface MetaobjectDefinitionRepository {
     List<MetaobjectField> fieldsOf(UUID definitionId);
 
     Optional<MetaobjectField> findField(UUID definitionId, String key);
+
+    /** The field, or a 404 — rename and remove both open this way. */
+    default MetaobjectField requireField(UUID definitionId, String key) {
+        return findField(definitionId, key).orElseThrow(FIELD_NOT_FOUND);
+    }
 
     boolean existsField(UUID definitionId, String key);
 

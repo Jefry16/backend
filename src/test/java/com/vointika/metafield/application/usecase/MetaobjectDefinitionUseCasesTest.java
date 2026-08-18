@@ -185,7 +185,7 @@ class MetaobjectDefinitionUseCasesTest {
     @Test
     void renameFieldNoOpRecordsNothing() {
         when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
-        when(repository.findField(DEF, "heading")).thenReturn(Optional.of(field("heading")));
+        when(repository.requireField(DEF, "heading")).thenReturn(field("heading"));
         RenameMetaobjectFieldUseCase useCase = new RenameMetaobjectFieldUseCase(
                 repository, membershipCheck, transactionRunner, auditTrailPort);
 
@@ -197,7 +197,7 @@ class MetaobjectDefinitionUseCasesTest {
     @Test
     void removeLastFieldIs409() {
         when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
-        when(repository.findField(DEF, "heading")).thenReturn(Optional.of(field("heading")));
+        when(repository.requireField(DEF, "heading")).thenReturn(field("heading"));
         when(repository.countFields(DEF)).thenReturn(1L);
         RemoveMetaobjectFieldUseCase useCase = new RemoveMetaobjectFieldUseCase(
                 repository, membershipCheck, transactionRunner, auditTrailPort);

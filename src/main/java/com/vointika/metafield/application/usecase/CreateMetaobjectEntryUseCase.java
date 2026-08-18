@@ -96,8 +96,7 @@ public class CreateMetaobjectEntryUseCase {
         }
 
         if (entryRepository.existsByDefinitionIdAndHandle(definition.getId(), handle.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
         try {
             transactionRunner.run(() -> {
@@ -111,8 +110,7 @@ public class CreateMetaobjectEntryUseCase {
                                 "name", name.value())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
         return entry.getId();
     }

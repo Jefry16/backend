@@ -39,9 +39,7 @@ public class RemoveMetaobjectFieldUseCase {
     public void execute(UUID tourOperatorId, UUID definitionId, String key, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         MetaobjectDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
-        MetaobjectField field = definitionRepository
-                .findField(definition.getId(), key)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject field not found"));
+        MetaobjectField field = definitionRepository.requireField(definition.getId(), key);
 
         if (definitionRepository.countFields(definition.getId()) <= 1) {
             throw new ConflictException("A metaobject definition must keep at least one field");

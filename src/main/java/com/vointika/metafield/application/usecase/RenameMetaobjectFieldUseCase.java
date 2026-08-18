@@ -41,9 +41,7 @@ public class RenameMetaobjectFieldUseCase {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
                 .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
-        MetaobjectField field = definitionRepository
-                .findField(definition.getId(), input.key())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject field not found"));
+        MetaobjectField field = definitionRepository.requireField(definition.getId(), input.key());
 
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
         String before = field.getName().value();

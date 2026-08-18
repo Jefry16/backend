@@ -29,6 +29,10 @@ import java.util.Map;
  */
 public class AddMetaobjectFieldUseCase {
 
+    /** Thrown twice — the pre-check and the index race answer identically. */
+    private static final String DUPLICATE_KEY =
+            "A field with this key already exists on this definition";
+
     private final MetaobjectDefinitionRepository definitionRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
@@ -61,8 +65,7 @@ public class AddMetaobjectFieldUseCase {
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
 
         if (definitionRepository.existsField(definition.getId(), key.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A field with this key already exists on this definition");
+            throw new ResourceAlreadyExistsException(DUPLICATE_KEY);
         }
         // max(position)+1, NOT count+1 — after a removal, count+1 would
         // collide with a surviving field's position and make ordering ties.
@@ -83,8 +86,7 @@ public class AddMetaobjectFieldUseCase {
                                 "fieldType", type.code())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException(
-                    "A field with this key already exists on this definition");
+            throw new ResourceAlreadyExistsException(DUPLICATE_KEY);
         }
     }
 }

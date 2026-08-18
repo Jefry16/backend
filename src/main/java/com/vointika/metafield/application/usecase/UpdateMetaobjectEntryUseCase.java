@@ -77,8 +77,7 @@ public class UpdateMetaobjectEntryUseCase {
         if (!handle.value().equals(entry.getHandle().value())
                 && entryRepository.existsByDefinitionIdAndHandle(
                         entry.getDefinitionId(), handle.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
         if (!name.value().equals(entry.getName().value())) {
             changes.add(new FieldChange("name", entry.getName().value(), name.value()));
@@ -147,8 +146,7 @@ public class UpdateMetaobjectEntryUseCase {
             });
         } catch (UniqueConstraintViolationException e) {
             // Concurrent handle rename past the pre-check.
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
     }
 }
