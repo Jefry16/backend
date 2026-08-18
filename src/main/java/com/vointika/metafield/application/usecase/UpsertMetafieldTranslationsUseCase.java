@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
+import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.metafield.application.dto.input.UpsertMetafieldTranslationsInput;
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
@@ -44,6 +45,11 @@ import java.util.UUID;
  * showed. {@code UpsertOperatorTranslationUseCase} draws the same line.
  */
 public class UpsertMetafieldTranslationsUseCase {
+
+    /** Public because it is published — the documentation test builds its example from it. */
+    public static String notTranslatableMessage(MetafieldType type, String qualifiedKey) {
+        return "A " + type.code() + " metafield cannot be translated: " + qualifiedKey;
+    }
 
     private final MetafieldValueRepository valueRepository;
     private final MetafieldValueTranslationRepository translationRepository;
@@ -160,8 +166,8 @@ public class UpsertMetafieldTranslationsUseCase {
                     "Metafield has no value to translate: " + qualifiedKey);
         }
         if (!target.type().isTranslatable()) {
-            throw new InvalidFieldException("A " + target.type().code()
-                    + " metafield cannot be translated: " + qualifiedKey);
+            throw new InvalidFieldException(
+                    notTranslatableMessage(target.type(), qualifiedKey));
         }
         return target;
     }
