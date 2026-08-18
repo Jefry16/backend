@@ -989,6 +989,20 @@ description. **Prove it by mutation** — change the constant, rebuild, and chec
 published output moved. Search `.adoc` as well as `.java`: one probe reported six
 files moved and missed the seventh because it only searched test sources.
 
+**A message whose sameness is load-bearing gets written once and guarded.**
+`"Tour operator not found"` was 20 literals in `src/main` and 16 in tests, said by
+four different causes on purpose. `TenantNotFoundMessageIsWrittenOnceTest` is the
+shape: walk **both** trees, fail on the literal anywhere but the constant's
+declaration, and assert the walk actually visited files — a guard that scans nothing
+passes loudly.
+
+**Be precise about what it buys.** It stops the copies coming back; it does **not**
+stop one site *diverging* to a near-miss sentence, which passes because the literal it
+looks for is gone. Where indistinguishability is a security property, check whether
+the structure already provides it — `TourOperatorMembershipPolicy.ensureMember` throws
+once behind one predicate, so its two causes cannot differ whatever any string says.
+Write the guard for the copies and credit the structure for the property.
+
 **A published error example must be reachable and must differ from its happy path.**
 `PublishedExamplesAreHonestTest` fails the build on the second and cannot see the
 first. Vary the thing the error turns on — a missing id for a 404, a STAFF token for

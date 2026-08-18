@@ -16,15 +16,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * The tenant-isolation 404 exists once, as a constant, and nowhere as a literal.
  *
- * <p><b>Its sameness is the security property, not a tidiness preference.</b> Four
- * causes must be indistinguishable to a caller — the operator does not exist, you
- * are not a member of it, the id in the URI is malformed, and there is no
- * authenticated principal. If one of them drifts by a word, a caller can tell "not
- * a member" from "no such operator" and enumerate which operators exist.
+ * <p><b>What this enforces: the sentence exists once, so it can be changed once.</b>
+ * It was written out <b>twenty times across nineteen files</b> in {@code src/main}
+ * and sixteen more in tests. This fails the build if it reappears as a literal
+ * anywhere but the constant's own declaration.
  *
- * <p>It was written out <b>twenty times across nineteen files</b> in {@code src/main}
- * and sixteen more in tests, with nothing making them agree. This fails the build if
- * the sentence reappears as a literal anywhere but the constant's own declaration.
+ * <p><b>What this does NOT enforce, and what does.</b> It catches the sentence being
+ * <em>copied</em>, not a site <em>diverging</em>: change one throw to "Tour operator
+ * was not found" and this passes, because the literal it looks for is gone. Caught in
+ * review by exactly that mutation.
+ *
+ * <p>The property that actually protects tenant isolation is structural, not this
+ * test. {@code TourOperatorMembershipPolicy.ensureMember} throws <b>once</b>, behind a
+ * single predicate that is false both when the operator does not exist and when the
+ * caller is not a member — so the two enumeration-relevant causes cannot answer
+ * differently, whatever any string says. The interceptor's malformed-id and
+ * no-principal branches are the ones that could drift, and a caller can already tell a
+ * malformed UUID apart without asking the server.
+ *
+ * <p>So: keep this guard for what it is worth — twenty copies do not come back — and
+ * do not read it as proof that a <em>new</em> throw site is safe.
  *
  * <p><b>Scope is both trees deliberately.</b> A test that hardcodes it is the same
  * defect one step removed: it keeps passing after the constant is reworded, so the

@@ -11,11 +11,14 @@ import java.util.UUID;
 public interface TourOperatorMembershipCheck {
 
     /**
-     * <b>The tenant-isolation answer, in one place because its sameness is the
-     * point.</b> Four causes must be indistinguishable to a caller — the operator
-     * does not exist, you are not a member of it, the id in the URI is malformed,
-     * and there is no authenticated principal — or a caller can enumerate which
-     * operators exist by reading the difference.
+     * <b>The tenant-isolation answer, in one place.</b> Four causes say it — the
+     * operator does not exist, you are not a member of it, the id in the URI is
+     * malformed, and there is no authenticated principal.
+     *
+     * <p>The two that matter for enumeration are indistinguishable <b>by structure</b>:
+     * {@link #ensureMember}'s implementation throws once, behind a predicate that is
+     * false for both. This constant does not create that property — it means the
+     * sentence can be changed in one place rather than nineteen.
      *
      * <p>It was written out as a literal <b>twenty times across nineteen files</b>,
      * plus once in {@code metafield}. Nothing made them agree, so a single reworded
