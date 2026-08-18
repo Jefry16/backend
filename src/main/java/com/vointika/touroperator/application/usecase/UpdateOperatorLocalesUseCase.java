@@ -55,7 +55,7 @@ public class UpdateOperatorLocalesUseCase {
 
         LocaleCode primary = new LocaleCode(rawPrimary);
         if (rawSupported == null || rawSupported.isEmpty()) {
-            throw new InvalidFieldException("At least one supported locale is required");
+            throw new InvalidFieldException(TourOperator.SUPPORTED_LOCALES_REQUIRED);
         }
         Set<LocaleCode> supported = new LinkedHashSet<>();
         for (String raw : rawSupported) {

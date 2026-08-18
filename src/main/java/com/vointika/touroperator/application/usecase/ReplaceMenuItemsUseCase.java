@@ -171,7 +171,7 @@ public class ReplaceMenuItemsUseCase {
 
     private static MenuItemLinkType parseLinkType(String value) {
         if (value == null || value.isBlank()) {
-            throw new InvalidFieldException("Menu item link type is required");
+            throw new InvalidFieldException(MenuItem.LINK_TYPE_REQUIRED);
         }
         try {
             return MenuItemLinkType.valueOf(value);

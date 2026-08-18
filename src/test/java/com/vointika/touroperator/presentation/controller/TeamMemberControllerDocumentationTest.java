@@ -173,7 +173,7 @@ class TeamMemberControllerDocumentationTest {
     @Test
     void anAdminCannotChangeTheOwnersRole() throws Exception {
         authenticated();
-        doThrow(new ForbiddenException("Only the owner can change the owner's role"))
+        doThrow(new ForbiddenException(ChangeMemberRoleUseCase.OWNER_ONLY))
                 .when(changeMemberRoleUseCase).execute(any(), any(), any(), any());
 
         mockMvc.perform(patch("/api/tour-operators/{id}/members/{userId}", OP, OWNER_USER)

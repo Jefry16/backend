@@ -38,7 +38,7 @@ public class GetInvitationPreviewUseCase {
                 .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
 
         if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
-            throw new ConflictException("This invitation has already been accepted");
+            throw new ConflictException(TourOperatorInvitation.ALREADY_ACCEPTED);
         }
         if (invitation.getStatus() != InvitationStatus.PENDING || invitation.isExpired(Instant.now())) {
             throw new GoneException("This invitation is no longer valid");

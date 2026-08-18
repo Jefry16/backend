@@ -48,8 +48,12 @@ import java.util.UUID;
  */
 public class AcceptInvitationUseCase {
 
+    /** Published: the 403 a forwarded invitation link produces. */
+    public static final String WRONG_EMAIL =
+            "This invitation was issued to a different email address";
+
     /** Thrown 3 times — the pre-check and the race answer identically. */
-    private static final String ACCOUNT_EXISTS =
+    public static final String ACCOUNT_EXISTS =
             "An account with this email already exists — log in to accept the invitation";
 
     private final TourOperatorInvitationRepository invitationRepository;
@@ -89,7 +93,7 @@ public class AcceptInvitationUseCase {
                 .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
 
         if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
-            throw new ConflictException("This invitation has already been accepted");
+            throw new ConflictException(TourOperatorInvitation.ALREADY_ACCEPTED);
         }
         if (invitation.getStatus() != InvitationStatus.PENDING || invitation.isExpired(Instant.now())) {
             throw new GoneException("This invitation is no longer valid");
@@ -103,7 +107,7 @@ public class AcceptInvitationUseCase {
             UserContactView caller = userAccountQuery.findContact(authenticatedUserId)
                     .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
             if (!inviteeEmail.equals(caller.email())) {
-                throw new ForbiddenException("This invitation was issued to a different email address");
+                throw new ForbiddenException(WRONG_EMAIL);
             }
             try {
                 transactionRunner.run(() -> complete(

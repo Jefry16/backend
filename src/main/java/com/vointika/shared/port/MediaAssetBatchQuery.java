@@ -24,6 +24,18 @@ import java.util.UUID;
  */
 public interface MediaAssetBatchQuery {
 
+    /**
+     * The refusal when an id is not in the operator's library.
+     *
+     * <p><b>{@code experience} words the same rule differently today</b> —
+     * {@code MediaReferenceValidator} says "One or more media ids are not in this
+     * operator's library" — and both sentences are published 422 bodies. Unifying
+     * them is a contract change for whichever endpoint moves, so it is a decision
+     * rather than a cleanup, and it was deliberately not made when this constant
+     * collapsed {@code touroperator}'s two copies.
+     */
+    String NOT_IN_LIBRARY = "Media not found in this operator's library";
+
     Map<UUID, MediaAsset> findAssetsByIds(UUID tourOperatorId, Set<UUID> mediaIds);
 
     /**

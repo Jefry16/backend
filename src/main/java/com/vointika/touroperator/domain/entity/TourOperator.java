@@ -33,6 +33,14 @@ import java.util.UUID;
  */
 public class TourOperator {
 
+    /** Published: the 422 a client meets enabling the gate with nothing stored. */
+    public static final String PASSWORD_REQUIRED =
+            "A password is required to enable password protection";
+
+    /** The domain invariant, named so the use case's pre-check on raw input cannot drift from it. */
+    public static final String SUPPORTED_LOCALES_REQUIRED =
+            "At least one supported locale is required";
+
     private final UUID id;
     private TourOperatorName name;
     private final Handle handle;
@@ -146,7 +154,7 @@ public class TourOperator {
      */
     public void updateLocales(LocaleCode primary, Set<LocaleCode> supported) {
         if (supported == null || supported.isEmpty()) {
-            throw new InvalidFieldException("At least one supported locale is required");
+            throw new InvalidFieldException(SUPPORTED_LOCALES_REQUIRED);
         }
         if (primary == null || !supported.contains(primary)) {
             throw new InvalidFieldException("The primary locale must be one of the supported locales");
@@ -174,7 +182,7 @@ public class TourOperator {
             this.storefrontPassword = trimmed;
         }
         if (enabled && (this.storefrontPassword == null || this.storefrontPassword.isBlank())) {
-            throw new InvalidFieldException("A password is required to enable password protection");
+            throw new InvalidFieldException(PASSWORD_REQUIRED);
         }
         if (message == null || message.isBlank()) {
             this.passwordMessage = null;

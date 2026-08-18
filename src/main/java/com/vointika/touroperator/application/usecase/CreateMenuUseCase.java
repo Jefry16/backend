@@ -24,7 +24,7 @@ import java.util.UUID;
 public class CreateMenuUseCase {
 
     /** Thrown twice — the pre-check and the race answer identically. */
-    private static final String DUPLICATE_HANDLE =
+    public static final String DUPLICATE_HANDLE =
             "A menu with this handle already exists";
 
     private final MenuRepository menuRepository;

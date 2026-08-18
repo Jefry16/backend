@@ -64,7 +64,7 @@ public class UpdateOperatorSeoUseCase {
         if (ogImageMediaId != null
                 && !mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, Set.of(ogImageMediaId))
                         .containsKey(ogImageMediaId)) {
-            throw new InvalidFieldException("Media not found in this operator's library");
+            throw new InvalidFieldException(MediaAssetBatchQuery.NOT_IN_LIBRARY);
         }
 
         Map<String, Object> before = auditSnapshot(operator);

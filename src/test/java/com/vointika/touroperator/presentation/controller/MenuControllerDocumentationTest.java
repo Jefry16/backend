@@ -142,7 +142,7 @@ class MenuControllerDocumentationTest {
     @Test
     void duplicateHandleIs409() throws Exception {
         authenticated();
-        Mockito.doThrow(new ResourceAlreadyExistsException("A menu with this handle already exists"))
+        Mockito.doThrow(new ResourceAlreadyExistsException(CreateMenuUseCase.DUPLICATE_HANDLE))
                 .when(createUseCase).execute(any());
 
         mockMvc.perform(post("/api/tour-operators/{id}/menus", OP)

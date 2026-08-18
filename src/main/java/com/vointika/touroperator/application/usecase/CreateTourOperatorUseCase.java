@@ -50,6 +50,11 @@ import java.util.UUID;
  */
 public class CreateTourOperatorUseCase {
 
+    /** Thrown twice — the pre-check and the unique-index race answer identically. */
+    private static String duplicateName(String name) {
+        return "You already have an operator named \"" + name + "\"";
+    }
+
     /** Thrown twice — the pre-check and the race answer identically. */
     private static final String INVALID_PRINCIPAL =
             "Invalid authenticated user";
@@ -145,7 +150,7 @@ public class CreateTourOperatorUseCase {
         //    the DB unique index below.
         if (tourOperatorRepository.existsByOwnerAndName(createdBy, name.value())) {
             throw new ResourceAlreadyExistsException(
-                    "You already have an operator named \"" + name.value() + "\"");
+                    duplicateName(name.value()));
         }
 
         // Resolve the creator's display fields — required to populate the OWNER
@@ -205,7 +210,7 @@ public class CreateTourOperatorUseCase {
                 // rather than burning retries on a collision that never clears.
                 if (tourOperatorRepository.existsByOwnerAndName(createdBy, name.value())) {
                     throw new ResourceAlreadyExistsException(
-                            "You already have an operator named \"" + name.value() + "\"");
+                            duplicateName(name.value()));
                 }
                 // otherwise handle race — regenerate and retry
             }

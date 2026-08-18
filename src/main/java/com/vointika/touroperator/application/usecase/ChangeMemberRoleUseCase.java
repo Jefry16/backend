@@ -38,6 +38,10 @@ import java.util.UUID;
  */
 public class ChangeMemberRoleUseCase {
 
+    /** Published: the 403 inside a permission an admin otherwise has. */
+    public static final String OWNER_ONLY =
+            "Only the owner can change the owner's role";
+
     private final TourOperatorMemberRepository memberRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
@@ -95,7 +99,7 @@ public class ChangeMemberRoleUseCase {
             MemberRole callerRole = memberRepository
                     .findRoleByTourOperatorIdAndUserId(tourOperatorId, callerUserId).orElse(null);
             if (callerRole != MemberRole.OWNER) {
-                throw new ForbiddenException("Only the owner can change the owner's role");
+                throw new ForbiddenException(OWNER_ONLY);
             }
             if (soleOwner(tourOperatorId)) {
                 throw new ConflictException(

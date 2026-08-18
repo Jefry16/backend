@@ -123,7 +123,7 @@ public class UpdateBrandUseCase {
         var found = mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, ids);
         for (UUID id : ids) {
             if (!found.containsKey(id)) {
-                throw new InvalidFieldException("Media not found in this operator's library");
+                throw new InvalidFieldException(MediaAssetBatchQuery.NOT_IN_LIBRARY);
             }
         }
     }

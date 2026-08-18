@@ -22,6 +22,12 @@ import java.util.UUID;
  */
 public class TourOperatorInvitation {
 
+    /**
+     * Said by the accept path and by the preview that runs before it — the preview
+     * exists to show this refusal without spending the token, so the two must agree.
+     */
+    public static final String ALREADY_ACCEPTED = "This invitation has already been accepted";
+
     /** An invite link is valid for 7 days; resend renews. */
     public static final Duration VALIDITY = Duration.ofDays(7);
 
