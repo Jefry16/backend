@@ -1022,6 +1022,11 @@ them published `"unsupported"` — a body no request can produce, so a client ma
 `message` never matched. **The probe that proves it is a one-line change to the source
 plus a rebuild**: if no `response-body.adoc` moves, the contract is still copied.
 
+Expect it to move **four** files, not seven: the two `metafield` upserts and one other
+ask the check but publish no locale-422 operation, so they have no body to move. A
+probe that moves fewer files than there are call sites is not evidence of a gap —
+count the published operations, not the callers.
+
 **Errors are documented, not just happy paths.** Use
 `ApiErrorSnippets.errorFields()` (`src/test/java/com/vointika/shared/web/docs/`) —
 the shape is `status`, `error`, `message`, `code`, `timestamp`, there is no `path`,
