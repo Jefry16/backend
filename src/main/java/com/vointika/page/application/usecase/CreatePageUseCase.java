@@ -5,8 +5,8 @@ import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -57,10 +57,10 @@ public class CreatePageUseCase {
         PageTitle title = new PageTitle(input.title());
         Handle handle = new Handle(input.handle());
         PageBody body = new PageBody(input.body());
-        PageSeoTitle seoTitle = input.seoTitle() == null || input.seoTitle().isBlank()
-                ? null : new PageSeoTitle(input.seoTitle());
-        PageSeoDescription seoDescription = input.seoDescription() == null || input.seoDescription().isBlank()
-                ? null : new PageSeoDescription(input.seoDescription());
+        SeoTitle seoTitle = input.seoTitle() == null || input.seoTitle().isBlank()
+                ? null : new SeoTitle(input.seoTitle());
+        SeoDescription seoDescription = input.seoDescription() == null || input.seoDescription().isBlank()
+                ? null : new SeoDescription(input.seoDescription());
 
         if (pageRepository.existsByTourOperatorIdAndHandle(input.tourOperatorId(), handle.value())) {
             throw new ResourceAlreadyExistsException("A page with this handle already exists");

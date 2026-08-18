@@ -1,8 +1,8 @@
 package com.vointika.page.domain.entity;
 
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.shared.valueobject.Handle;
@@ -24,8 +24,8 @@ public record PageTranslation(
         LocaleCode locale,
         PageTitle title,
         PageBody body,
-        PageSeoTitle seoTitle,
-        PageSeoDescription seoDescription,
+        SeoTitle seoTitle,
+        SeoDescription seoDescription,
         Handle handle
 ) {
     public PageTranslation {

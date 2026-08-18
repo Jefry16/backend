@@ -14,7 +14,8 @@ final class SlotScheduling {
             throw new InvalidFieldException("Date must be today or later");
         }
         if (date.isAfter(today.plusMonths(MAX_MONTHS_AHEAD))) {
-            throw new InvalidFieldException("Date can be at most 24 months ahead");
+            throw new InvalidFieldException(
+                    "Date can be at most " + MAX_MONTHS_AHEAD + " months ahead");
         }
     }
 

@@ -3,8 +3,8 @@ package com.vointika.page.infrastructure.persistence.mapper;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.projection.PageListItem;
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.page.infrastructure.persistence.entity.PageJpaEntity;
 import com.vointika.shared.valueobject.Handle;
@@ -20,8 +20,8 @@ public final class PageMapper {
                 page.getTitle().value(),
                 page.getHandle().value(),
                 page.getBody().value(),
-                page.getSeoTitle().map(PageSeoTitle::value).orElse(null),
-                page.getSeoDescription().map(PageSeoDescription::value).orElse(null),
+                page.getSeoTitle().map(SeoTitle::value).orElse(null),
+                page.getSeoDescription().map(SeoDescription::value).orElse(null),
                 page.isPublished(),
                 page.getCreatedBy(),
                 page.getCreatedAt(),
@@ -35,8 +35,8 @@ public final class PageMapper {
                 new PageTitle(e.getTitle()),
                 new Handle(e.getHandle()),
                 new PageBody(e.getBody()),
-                e.getSeoTitle() == null ? null : new PageSeoTitle(e.getSeoTitle()),
-                e.getSeoDescription() == null ? null : new PageSeoDescription(e.getSeoDescription()),
+                e.getSeoTitle() == null ? null : new SeoTitle(e.getSeoTitle()),
+                e.getSeoDescription() == null ? null : new SeoDescription(e.getSeoDescription()),
                 e.isPublished(),
                 e.getCreatedBy(),
                 e.getCreatedAt(),

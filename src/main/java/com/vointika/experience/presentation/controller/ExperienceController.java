@@ -8,7 +8,6 @@ import com.vointika.experience.application.usecase.ListExperiencesUseCase;
 import com.vointika.experience.application.usecase.PublishExperienceUseCase;
 import com.vointika.experience.application.usecase.UnpublishExperienceUseCase;
 import com.vointika.experience.application.usecase.UpdateExperienceUseCase;
-import com.vointika.experience.presentation.request.ExperienceRequest;
 import com.vointika.experience.presentation.response.ExperienceResponse;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
@@ -86,9 +85,9 @@ public class ExperienceController {
     @PostMapping
     public ResponseEntity<Void> create(
             @PathVariable UUID tourOperatorId,
-            @RequestBody ExperienceRequest body,
+            @RequestBody ExperienceInput body,
             @AuthenticationPrincipal UUID userId) {
-        UUID id = createExperienceUseCase.execute(tourOperatorId, userId, toInput(body));
+        UUID id = createExperienceUseCase.execute(tourOperatorId, userId, body);
         return ResponseEntity
                 .created(URI.create("/api/tour-operators/" + tourOperatorId + "/experiences/" + id))
                 .build();
@@ -99,9 +98,9 @@ public class ExperienceController {
     public ResponseEntity<Void> update(
             @PathVariable UUID tourOperatorId,
             @PathVariable UUID experienceId,
-            @RequestBody ExperienceRequest body,
+            @RequestBody ExperienceInput body,
             @AuthenticationPrincipal UUID userId) {
-        updateExperienceUseCase.execute(tourOperatorId, experienceId, userId, toInput(body));
+        updateExperienceUseCase.execute(tourOperatorId, experienceId, userId, body);
         return ResponseEntity.noContent().build();
     }
 
@@ -123,13 +122,5 @@ public class ExperienceController {
             @AuthenticationPrincipal UUID userId) {
         unpublishExperienceUseCase.execute(tourOperatorId, experienceId, userId);
         return ResponseEntity.noContent().build();
-    }
-
-    private static ExperienceInput toInput(ExperienceRequest b) {
-        return new ExperienceInput(
-                b.name(), b.description(), b.longDescription(),
-                Boolean.TRUE.equals(b.featured()),
-                b.mediaIds(), b.thumbnailMediaId(), b.bookingCutoffHours(),
-                b.seoTitle(), b.seoDescription(), b.startingPrice());
     }
 }

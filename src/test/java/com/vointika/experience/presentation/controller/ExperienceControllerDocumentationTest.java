@@ -106,7 +106,7 @@ class ExperienceControllerDocumentationTest {
     }
 
     /**
-     * <b>Every field ExperienceRequest carries.</b> It used to send seven of ten, which
+     * <b>Every field ExperienceInput carries.</b> It used to send seven of ten, which
      * made the published table seven of ten too — strict {@code requestFields} fails on
      * an undocumented field <em>present</em> in the payload, never on a documented field
      * absent from it, so the gap was invisible. A client copying the old table omitted

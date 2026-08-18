@@ -82,7 +82,7 @@ public class CreateExperienceUseCase {
                             || translationRepository.existsByHandleInAnyLocale(tourOperatorId, candidate));
             Experience experience = Experience.create(
                     idGenerator.newId(), tourOperatorId, callerUserId, handle,
-                    name, description, longDescription, input.featured(),
+                    name, description, longDescription, input.isFeatured(),
                     mediaIds, input.thumbnailMediaId(), cutoff,
                     ExperienceInputMapper.seoTitle(input), ExperienceInputMapper.seoDescription(input),
                     ExperienceInputMapper.startingPrice(input));

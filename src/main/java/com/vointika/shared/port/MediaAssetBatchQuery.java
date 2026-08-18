@@ -25,14 +25,12 @@ import java.util.UUID;
 public interface MediaAssetBatchQuery {
 
     /**
-     * The refusal when an id is not in the operator's library.
+     * The refusal when an id is not in the operator's library — every consumer's.
      *
-     * <p><b>{@code experience} words the same rule differently today</b> —
-     * {@code MediaReferenceValidator} says "One or more media ids are not in this
-     * operator's library" — and both sentences are published 422 bodies. Unifying
-     * them is a contract change for whichever endpoint moves, so it is a decision
-     * rather than a cleanup, and it was deliberately not made when this constant
-     * collapsed {@code touroperator}'s two copies.
+     * <p><b>One wording, because it has to fit one image and a batch equally.</b>
+     * A caller validating a single {@code ogImageMediaId} and one validating a
+     * gallery raise the same refusal, so a sentence like "One or more media ids…"
+     * is wrong half the time. Nothing here names the offending id.
      */
     String NOT_IN_LIBRARY = "Media not found in this operator's library";
 

@@ -2,8 +2,8 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.valueobject.AuditChanges;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AuditTrailPort;
@@ -57,9 +57,9 @@ public class UpdateOperatorSeoUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
 
-        OperatorSeoTitle seoTitle = blank(rawSeoTitle) ? null : new OperatorSeoTitle(rawSeoTitle);
-        OperatorSeoDescription seoDescription =
-                blank(rawSeoDescription) ? null : new OperatorSeoDescription(rawSeoDescription);
+        SeoTitle seoTitle = blank(rawSeoTitle) ? null : new SeoTitle(rawSeoTitle);
+        SeoDescription seoDescription =
+                blank(rawSeoDescription) ? null : new SeoDescription(rawSeoDescription);
 
         if (ogImageMediaId != null
                 && !mediaAssetBatchQuery.findAssetsByIds(tourOperatorId, Set.of(ogImageMediaId))

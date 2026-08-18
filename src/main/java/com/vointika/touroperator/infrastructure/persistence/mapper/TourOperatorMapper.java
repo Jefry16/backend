@@ -3,8 +3,8 @@ package com.vointika.touroperator.infrastructure.persistence.mapper;
 import com.vointika.shared.valueobject.LocaleCode;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.shared.valueobject.Handle;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import com.vointika.touroperator.domain.valueobject.TourOperatorPhone;
@@ -72,8 +72,8 @@ public class TourOperatorMapper {
                 jpa.isPasswordEnabled(),
                 jpa.getStorefrontPassword(),
                 jpa.getPasswordMessage(),
-                jpa.getSeoTitle() == null ? null : new OperatorSeoTitle(jpa.getSeoTitle()),
-                jpa.getSeoDescription() == null ? null : new OperatorSeoDescription(jpa.getSeoDescription()),
+                jpa.getSeoTitle() == null ? null : new SeoTitle(jpa.getSeoTitle()),
+                jpa.getSeoDescription() == null ? null : new SeoDescription(jpa.getSeoDescription()),
                 jpa.getOgImageMediaId(),
                 jpa.getPhone() == null ? null : new TourOperatorPhone(jpa.getPhone()),
                 jpa.getEmail() == null ? null : new TourOperatorEmail(jpa.getEmail())

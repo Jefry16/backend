@@ -96,11 +96,13 @@ public class UpdateSlotUseCase {
             if (newCapacity < row.bookedCount()) {
                 throw new InvalidFieldException("Capacity cannot be below the seats already booked");
             }
+            // Unchanged tiers are skipped, not rewritten: a PATCH that resends the
+            // whole tier list unchanged should issue no UPDATE at all.
             if (newCapacity != row.capacity()) {
                 changes.add(new FieldChange("capacity", row.capacity(), newCapacity));
                 changedAudiences.add(row.audienceName());
+                pricingRepository.save(row.withCapacity(newCapacity));
             }
-            pricingRepository.save(row.withCapacity(newCapacity));
         }
     }
 }

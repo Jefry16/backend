@@ -5,8 +5,8 @@ import com.vointika.page.domain.entity.PageTranslation;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.page.domain.valueobject.PageBody;
-import com.vointika.page.domain.valueobject.PageSeoDescription;
-import com.vointika.page.domain.valueobject.PageSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
@@ -80,8 +80,8 @@ public class UpsertPageTranslationUseCase {
                 locale,
                 blank(input.title()) ? null : new PageTitle(input.title()),
                 blank(input.body()) ? null : new PageBody(input.body()),
-                blank(input.seoTitle()) ? null : new PageSeoTitle(input.seoTitle()),
-                blank(input.seoDescription()) ? null : new PageSeoDescription(input.seoDescription()),
+                blank(input.seoTitle()) ? null : new SeoTitle(input.seoTitle()),
+                blank(input.seoDescription()) ? null : new SeoDescription(input.seoDescription()),
                 handle);
 
         if (translation.isEmpty()) {

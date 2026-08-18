@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -93,6 +94,9 @@ class SlotUseCasesTest {
     @BeforeEach
     void setUp() {
         experienceRepository = mock(ExperienceRepository.class);
+        // requireByIdAndTourOperatorId is a default method, so Mockito would
+        // stub it to null and every 404 assertion below would pass vacuously.
+        doCallRealMethod().when(experienceRepository).requireByIdAndTourOperatorId(any(), any());
         slotRepository = mock(SlotRepository.class);
         pricingRepository = mock(SlotAudiencePricingRepository.class);
         pricingResolver = mock(AudiencePricingResolver.class);
@@ -112,7 +116,7 @@ class SlotUseCasesTest {
         when(parent.getName()).thenReturn(new ExperienceName("Sunset Tour"));
         when(parent.getDescription()).thenReturn(new Description("A guided walk"));
         when(experienceRepository.findByIdAndTourOperatorId(EXP, OP)).thenReturn(Optional.of(parent));
-        when(pricingResolver.buildRows(any(), any(), any())).thenReturn(List.of());
+        when(pricingResolver.buildRows(any(), any())).thenReturn(List.of());
     }
 
     private List<AudiencePricingInput> prices() {
@@ -249,5 +253,48 @@ class SlotUseCasesTest {
         assertThatThrownBy(() -> update().execute(OP, SLOT, USER, new UpdateSlotInput(
                 List.of(new UpdateSlotInput.TierCapacity(AUD, 2)))))
                 .isInstanceOf(InvalidFieldException.class);
+    }
+
+    /**
+     * <b>An unchanged tier is not rewritten.</b> The editor resends the whole tier
+     * list on every save, so without this the common case — touch one tier of five —
+     * issues five UPDATEs, four of them writing the value already there.
+     *
+     * <p>Only the refusal paths were pinned before, with {@code never()}. Nothing
+     * asserted the save count on a successful edit, so moving the write back outside
+     * its guard left the suite green.
+     */
+    @Test
+    void updateWritesOnlyTheTiersThatActuallyChanged() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP)).thenReturn(Optional.of(availableSlot()));
+        UUID other = UUID.randomUUID();
+        SlotAudiencePricing unchanged = new SlotAudiencePricing(
+                UUID.randomUUID(), SLOT, AUD, "Adults", new BigDecimal("30.00"), 10, 1, 0);
+        SlotAudiencePricing changing = new SlotAudiencePricing(
+                UUID.randomUUID(), SLOT, other, "Children", new BigDecimal("15.00"), 10, 1, 0);
+        when(pricingRepository.findBySlotId(SLOT)).thenReturn(List.of(unchanged, changing));
+
+        update().execute(OP, SLOT, USER, new UpdateSlotInput(List.of(
+                new UpdateSlotInput.TierCapacity(AUD, 10),     // resent unchanged
+                new UpdateSlotInput.TierCapacity(other, 20)))); // actually edited
+
+        ArgumentCaptor<SlotAudiencePricing> saved = ArgumentCaptor.forClass(SlotAudiencePricing.class);
+        verify(pricingRepository, times(1)).save(saved.capture());
+        assertThat(saved.getValue().audienceId()).isEqualTo(other);
+        assertThat(saved.getValue().capacity()).isEqualTo(20);
+    }
+
+    /** A PATCH that changes nothing writes nothing and records nothing. */
+    @Test
+    void updateThatChangesNoTierWritesNothing() {
+        when(slotRepository.findByIdAndTourOperatorId(SLOT, OP)).thenReturn(Optional.of(availableSlot()));
+        when(pricingRepository.findBySlotId(SLOT)).thenReturn(List.of(new SlotAudiencePricing(
+                UUID.randomUUID(), SLOT, AUD, "Adults", new BigDecimal("30.00"), 10, 1, 0)));
+
+        update().execute(OP, SLOT, USER, new UpdateSlotInput(
+                List.of(new UpdateSlotInput.TierCapacity(AUD, 10))));
+
+        verify(pricingRepository, never()).save(any());
+        verify(auditTrailPort, never()).append(any());
     }
 }

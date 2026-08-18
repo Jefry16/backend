@@ -4,7 +4,6 @@ import com.vointika.experience.application.dto.output.ExperienceTranslationView;
 import com.vointika.experience.domain.entity.ExperienceTranslation;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
 
@@ -31,9 +30,7 @@ public class GetExperienceTranslationUseCase {
 
     public ExperienceTranslationView execute(UUID tourOperatorId, UUID experienceId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Experience not found");
-        }
+        experienceRepository.requireExists(experienceId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
         ExperienceTranslation translation = translationRepository
                 .findByExperienceIdAndLocale(experienceId, locale.value())

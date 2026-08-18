@@ -40,7 +40,7 @@ public class MetafieldOwnerAccess {
         };
         if (!owned) {
             throw new ResourceNotFoundException(switch (ownerType) {
-                case EXPERIENCE -> "Experience not found";
+                case EXPERIENCE -> ExperienceOwnershipQuery.NOT_FOUND;
                 case PAGE -> "Page not found";
                 case TOUR_OPERATOR -> TourOperatorMembershipCheck.TENANT_NOT_FOUND;
             });

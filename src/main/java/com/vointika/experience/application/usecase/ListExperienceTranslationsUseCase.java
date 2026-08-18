@@ -3,7 +3,6 @@ package com.vointika.experience.application.usecase;
 import com.vointika.experience.application.dto.output.ExperienceTranslationView;
 import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.List;
@@ -30,9 +29,7 @@ public class ListExperienceTranslationsUseCase {
 
     public List<ExperienceTranslationView> execute(UUID tourOperatorId, UUID experienceId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (experienceRepository.findByIdAndTourOperatorId(experienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Experience not found");
-        }
+        experienceRepository.requireExists(experienceId, tourOperatorId);
         return translationRepository.findAllByExperienceId(experienceId).stream()
                 .map(ExperienceTranslationView::from)
                 .toList();

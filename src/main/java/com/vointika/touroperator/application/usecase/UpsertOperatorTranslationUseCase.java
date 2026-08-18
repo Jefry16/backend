@@ -6,8 +6,8 @@ import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
 import com.vointika.touroperator.domain.valueobject.BrandShortDescription;
 import com.vointika.touroperator.domain.valueobject.BrandSlogan;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
+import com.vointika.shared.valueobject.SeoDescription;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.service.OperatorLocaleCheck;
@@ -65,10 +65,10 @@ public class UpsertOperatorTranslationUseCase {
         tourOperatorRepository.requireById(tourOperatorId);
         operatorLocaleCheck.require(tourOperatorId, locale.value());
 
-        OperatorSeoTitle seoTitle = blankNull(input.seoTitle()) == null
-                ? null : new OperatorSeoTitle(input.seoTitle());
-        OperatorSeoDescription seoDescription = blankNull(input.seoDescription()) == null
-                ? null : new OperatorSeoDescription(input.seoDescription());
+        SeoTitle seoTitle = blankNull(input.seoTitle()) == null
+                ? null : new SeoTitle(input.seoTitle());
+        SeoDescription seoDescription = blankNull(input.seoDescription()) == null
+                ? null : new SeoDescription(input.seoDescription());
         String passwordMessage = blankNull(input.passwordMessage());
         BrandSlogan slogan = blankNull(input.slogan()) == null
                 ? null : new BrandSlogan(input.slogan());

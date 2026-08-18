@@ -17,7 +17,7 @@ import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorTranslation;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
-import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
+import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.touroperator.domain.valueobject.TourOperatorAddress;
 import com.vointika.touroperator.domain.valueobject.TourOperatorName;
 import org.junit.jupiter.api.BeforeEach;
@@ -167,7 +167,7 @@ class OperatorTranslationUseCasesTest {
         // field is added to the record and not to isEmpty(), this fails.
         assertThat(TourOperatorTranslation.empty(OP, LocaleCode.of("es")).isEmpty()).isTrue();
         assertThat(new TourOperatorTranslation(OP, LocaleCode.of("es"),
-                new OperatorSeoTitle("t"), null, null, null, null).isEmpty()).isFalse();
+                new SeoTitle("t"), null, null, null, null).isEmpty()).isFalse();
     }
 
     @Test
@@ -215,7 +215,7 @@ class OperatorTranslationUseCasesTest {
     void listReturnsOneRowPerTranslatedLocale() {
         when(translationRepository.findAllByTourOperatorId(OP)).thenReturn(List.of(
                 new TourOperatorTranslation(OP, LocaleCode.of("es"),
-                        new OperatorSeoTitle("Título"), null, null, null, null)));
+                        new SeoTitle("Título"), null, null, null, null)));
 
         List<OperatorTranslationView> views = new ListOperatorTranslationsUseCase(
                 operatorRepository, translationRepository, membershipCheck).execute(OP, USER);
