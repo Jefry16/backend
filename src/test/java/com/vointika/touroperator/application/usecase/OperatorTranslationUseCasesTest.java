@@ -68,7 +68,7 @@ class OperatorTranslationUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
+        when(operatorRepository.requireById(OP)).thenReturn(operator());
         when(operatorLocalesQuery.findSupportedLocales(OP)).thenReturn(Set.of("en", "es"));
     }
 
@@ -189,7 +189,7 @@ class OperatorTranslationUseCasesTest {
 
     @Test
     void upsertOfAMissingOperatorIs404() {
-        when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
+        when(operatorRepository.requireById(OP)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
         assertThatThrownBy(() -> upsert().execute(OP, "es",
                 new UpsertOperatorTranslationInput("t", null, null, null, null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);

@@ -2,7 +2,6 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.GoneException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import com.vointika.touroperator.domain.entity.TourOperator;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
@@ -36,7 +35,7 @@ public class GetInvitationPreviewUseCase {
     public Preview execute(String rawToken) {
         TourOperatorInvitation invitation = invitationRepository
                 .findByTokenHash(invitationTokenPort.hash(rawToken))
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
 
         if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
             throw new ConflictException("This invitation has already been accepted");
@@ -46,7 +45,7 @@ public class GetInvitationPreviewUseCase {
         }
 
         TourOperator operator = tourOperatorRepository.findById(invitation.getTourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(TourOperatorInvitationRepository.NOT_FOUND);
 
         return new Preview(operator.getName().value(), invitation.getEmail().value());
     }

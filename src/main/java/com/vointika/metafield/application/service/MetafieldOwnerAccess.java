@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.service;
 
+import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.ExperienceOwnershipQuery;
@@ -41,7 +42,7 @@ public class MetafieldOwnerAccess {
             throw new ResourceNotFoundException(switch (ownerType) {
                 case EXPERIENCE -> "Experience not found";
                 case PAGE -> "Page not found";
-                case TOUR_OPERATOR -> "Tour operator not found";
+                case TOUR_OPERATOR -> TourOperatorMembershipCheck.TENANT_NOT_FOUND;
             });
         }
     }

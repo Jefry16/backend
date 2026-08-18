@@ -42,6 +42,10 @@ import java.util.UUID;
  */
 public class InviteTeamMemberUseCase {
 
+    /** Thrown twice — the pre-check and the race answer identically. */
+    private static final String PENDING_EXISTS =
+            "A pending invitation for this email already exists";
+
     private final TourOperatorInvitationRepository invitationRepository;
     private final TourOperatorMemberRepository memberRepository;
     private final TourOperatorRepository tourOperatorRepository;
@@ -81,8 +85,7 @@ public class InviteTeamMemberUseCase {
         InviteeEmail email = new InviteeEmail(rawEmail);
         InviteeName name = new InviteeName(rawName);
         MemberRole role = parseRole(rawRole);
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
 
         Optional<UUID> existingUserId = userAccountQuery.findUserIdByEmail(email.value());
         if (existingUserId.isPresent()
@@ -90,7 +93,7 @@ public class InviteTeamMemberUseCase {
             throw new ResourceAlreadyExistsException("This email already belongs to a team member");
         }
         if (invitationRepository.existsPendingByTourOperatorIdAndEmail(tourOperatorId, email.value())) {
-            throw new ResourceAlreadyExistsException("A pending invitation for this email already exists");
+            throw new ResourceAlreadyExistsException(PENDING_EXISTS);
         }
 
         // The inviter's contact: their name is snapshotted on the invitation, and
@@ -113,7 +116,7 @@ public class InviteTeamMemberUseCase {
             });
         } catch (UniqueConstraintViolationException e) {
             // A concurrent invite committed first — the partial unique index fired.
-            throw new ResourceAlreadyExistsException("A pending invitation for this email already exists");
+            throw new ResourceAlreadyExistsException(PENDING_EXISTS);
         }
 
         eventPublisher.publish(new TeamInvitationRequestedEvent(

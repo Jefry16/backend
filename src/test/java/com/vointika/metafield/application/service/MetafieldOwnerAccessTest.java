@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.service;
 
+import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.ExperienceOwnershipQuery;
@@ -57,7 +58,7 @@ class MetafieldOwnerAccessTest {
     void anotherOperatorsIdIsNotOwned() {
         assertThatThrownBy(() -> access.ensureOwned(MetafieldOwnerType.TOUR_OPERATOR, OTHER, OPERATOR))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Tour operator not found");
+                .hasMessage(TourOperatorMembershipCheck.TENANT_NOT_FOUND);
     }
 
     /** No seam is consulted, which is the whole reason this owner type was cheap. */

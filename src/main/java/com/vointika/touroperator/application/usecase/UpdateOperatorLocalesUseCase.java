@@ -2,7 +2,6 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.reference.domain.repository.LanguageRepository;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -67,8 +66,7 @@ public class UpdateOperatorLocalesUseCase {
             supported.add(code);
         }
 
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
         // Domain enforces non-empty + primary ∈ supported. Since every supported
         // code is master-list-validated above and primary must be one of them,
         // the primary is validated transitively.

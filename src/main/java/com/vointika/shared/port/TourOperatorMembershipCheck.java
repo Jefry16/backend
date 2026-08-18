@@ -11,8 +11,23 @@ import java.util.UUID;
 public interface TourOperatorMembershipCheck {
 
     /**
+     * <b>The tenant-isolation answer, in one place because its sameness is the
+     * point.</b> Four causes must be indistinguishable to a caller — the operator
+     * does not exist, you are not a member of it, the id in the URI is malformed,
+     * and there is no authenticated principal — or a caller can enumerate which
+     * operators exist by reading the difference.
+     *
+     * <p>It was written out as a literal <b>twenty times across nineteen files</b>,
+     * plus once in {@code metafield}. Nothing made them agree, so a single reworded
+     * copy would have leaked the isolation with a green build.
+     * {@code TenantNotFoundMessageIsWrittenOnceTest} fails the build if the sentence
+     * reappears as a literal.
+     */
+    String TENANT_NOT_FOUND = "Tour operator not found";
+
+    /**
      * Throws {@link com.vointika.shared.exception.ResourceNotFoundException}
-     * ("Tour operator not found") if the user is not a member of the operator —
+     * ({@link #TENANT_NOT_FOUND}) if the user is not a member of the operator —
      * or the operator does not exist. Identical responses preserve tenant isolation.
      */
     void ensureMember(UUID userId, UUID tourOperatorId);

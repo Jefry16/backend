@@ -23,6 +23,10 @@ import java.util.UUID;
  */
 public class CreateMenuUseCase {
 
+    /** Thrown twice — the pre-check and the race answer identically. */
+    private static final String DUPLICATE_HANDLE =
+            "A menu with this handle already exists";
+
     private final MenuRepository menuRepository;
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
@@ -49,7 +53,7 @@ public class CreateMenuUseCase {
                 handle, input.title(), input.callerUserId());
 
         if (menuRepository.existsByTourOperatorIdAndHandle(input.tourOperatorId(), handle.value())) {
-            throw new ResourceAlreadyExistsException("A menu with this handle already exists");
+            throw new ResourceAlreadyExistsException(DUPLICATE_HANDLE);
         }
         try {
             transactionRunner.run(() -> {
@@ -60,7 +64,7 @@ public class CreateMenuUseCase {
                         Map.of("handle", handle.value(), "title", menu.getTitle())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("A menu with this handle already exists");
+            throw new ResourceAlreadyExistsException(DUPLICATE_HANDLE);
         }
         return menu.getId();
     }

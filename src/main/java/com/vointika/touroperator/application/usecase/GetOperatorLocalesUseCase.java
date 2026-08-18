@@ -1,6 +1,5 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.touroperator.application.dto.output.OperatorLocalesView;
 import com.vointika.touroperator.domain.entity.TourOperator;
@@ -26,8 +25,7 @@ public class GetOperatorLocalesUseCase {
 
     public OperatorLocalesView execute(UUID tourOperatorId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
         return OperatorLocalesView.from(operator);
     }
 }

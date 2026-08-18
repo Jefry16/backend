@@ -188,7 +188,7 @@ class AuditLogControllerDocumentationTest {
      *
      * <p><b>This is not the non-member 404.</b> A non-member is rejected by
      * {@code TourOperatorMembershipInterceptor} before the controller runs and
-     * gets {@code "Tour operator not found"}; this one comes from the use case
+     * gets {@code TourOperatorMembershipCheck.TENANT_NOT_FOUND}; this one comes from the use case
      * and says {@code "Audit log entry not found"}. Status and shape match, but
      * {@code message} differs and {@code message} is documented, so a caller can
      * tell them apart.

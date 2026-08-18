@@ -86,7 +86,7 @@ public class ReplaceMenuItemsUseCase {
                 .map(operator -> operator.getSupportedLocales().stream()
                         .map(LocaleCode::value)
                         .collect(Collectors.toSet()))
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
 
         List<MenuItem> items = new ArrayList<>();
         List<MenuItemTranslation> translations = new ArrayList<>();

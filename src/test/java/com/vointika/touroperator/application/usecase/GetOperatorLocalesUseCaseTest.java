@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +49,7 @@ class GetOperatorLocalesUseCaseTest {
 
     @Test
     void returnsPrimaryAndSortedSupportedForAnyMember() {
-        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
+        when(operatorRepository.requireById(operatorId)).thenReturn(operator());
 
         OperatorLocalesView view = useCase.execute(operatorId, callerId);
 
@@ -61,7 +60,7 @@ class GetOperatorLocalesUseCaseTest {
 
     @Test
     void nonMemberIs404() {
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(callerId, operatorId);
 
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(operatorId, callerId));
@@ -69,7 +68,7 @@ class GetOperatorLocalesUseCaseTest {
 
     @Test
     void missingOperatorIs404() {
-        when(operatorRepository.findById(operatorId)).thenReturn(Optional.empty());
+        when(operatorRepository.requireById(operatorId)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(operatorId, callerId));
     }
 }

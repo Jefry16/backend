@@ -50,6 +50,10 @@ import java.util.UUID;
  */
 public class CreateTourOperatorUseCase {
 
+    /** Thrown twice — the pre-check and the race answer identically. */
+    private static final String INVALID_PRINCIPAL =
+            "Invalid authenticated user";
+
 
     /** Bounded handle-collision retries; each attempt regenerates the handle in a fresh tx. */
     private static final int MAX_HANDLE_ATTEMPTS = 5;
@@ -106,7 +110,7 @@ public class CreateTourOperatorUseCase {
         // still reachable, and it stays a 401 rather than an NPE further down.
         UUID createdBy = input.userId();
         if (createdBy == null) {
-            throw new UnauthorizedException("Invalid authenticated user");
+            throw new UnauthorizedException(INVALID_PRINCIPAL);
         }
 
         // 2. Validate value objects (422 on invalid input).
@@ -148,7 +152,7 @@ public class CreateTourOperatorUseCase {
         // member row's denormalized name/email. The creator is the authenticated
         // caller, so their account must exist.
         UserContactView ownerContact = userAccountQuery.findContact(createdBy)
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_PRINCIPAL));
 
         // 5. Generate a handle + save operator and OWNER member in one tx. On a
         //    handle collision (DIV at commit) the whole tx rolls back and we retry

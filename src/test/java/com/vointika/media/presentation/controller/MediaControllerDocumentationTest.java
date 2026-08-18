@@ -260,7 +260,7 @@ class MediaControllerDocumentationTest {
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticatedAsStaff();
-        doThrow(new com.vointika.shared.exception.ResourceNotFoundException("Tour operator not found"))
+        doThrow(new com.vointika.shared.exception.ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OPERATOR_ID)));
 
         mockMvc.perform(get("/api/tour-operators/{id}/media", OPERATOR_ID)

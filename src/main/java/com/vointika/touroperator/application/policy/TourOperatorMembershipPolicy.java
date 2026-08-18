@@ -26,7 +26,7 @@ public class TourOperatorMembershipPolicy implements TourOperatorMembershipCheck
     public void ensureMember(UUID userId, UUID tourOperatorId) {
         if (userId == null || tourOperatorId == null
                 || !memberRepository.existsByTourOperatorIdAndUserId(tourOperatorId, userId)) {
-            throw new ResourceNotFoundException("Tour operator not found");
+            throw new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND);
         }
     }
 

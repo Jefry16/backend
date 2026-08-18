@@ -67,7 +67,7 @@ class BrandUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
+        when(operatorRepository.requireById(OP)).thenReturn(operator());
         when(brandRepository.findByTourOperatorId(OP)).thenReturn(Optional.empty());
         when(mediaAssetBatchQuery.findAssetsByIds(OP, Set.of(LOGO)))
                 .thenReturn(Map.of(LOGO, new MediaAssetBatchQuery.MediaAsset("media/logo.png", null, null, null)));
@@ -219,7 +219,7 @@ class BrandUseCasesTest {
 
     @Test
     void updateOfAMissingOperatorIs404() {
-        when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
+        when(operatorRepository.requireById(OP)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
         assertThatThrownBy(() -> update().execute(OP, input(null, null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

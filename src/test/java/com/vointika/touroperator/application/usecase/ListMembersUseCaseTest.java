@@ -56,7 +56,7 @@ class ListMembersUseCaseTest {
 
     @Test
     void nonMemberGets404_memberOnly() {
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(caller), eq(op));
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(query(), caller));
         verify(memberRepository, never()).list(any());

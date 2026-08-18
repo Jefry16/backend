@@ -174,7 +174,7 @@ class TourOperatorLocalesControllerDocumentationTest {
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticated();
-        doThrow(new ResourceNotFoundException("Tour operator not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(USER_ID)), eq(UUID.fromString(MISSING_OP)));
 
         mockMvc.perform(get("/api/tour-operators/{id}/locales", MISSING_OP)

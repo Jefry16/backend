@@ -1,6 +1,5 @@
 package com.vointika.touroperator.application.usecase;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -46,8 +45,7 @@ public class UpdateStorefrontPasswordUseCase {
     public void execute(UUID tourOperatorId, boolean enabled, String password, String message,
                         UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        TourOperator operator = tourOperatorRepository.findById(tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tour operator not found"));
+        TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);
 
         Map<String, Object> before = auditSnapshot(operator);
         boolean passwordChanged = password != null && !password.isBlank()

@@ -2,7 +2,6 @@ package com.vointika.touroperator.application.usecase;
 
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -39,9 +38,7 @@ public class DeleteOperatorTranslationUseCase {
 
     public void execute(UUID tourOperatorId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        if (tourOperatorRepository.findById(tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Tour operator not found");
-        }
+        tourOperatorRepository.requireById(tourOperatorId);
         String locale = new LocaleCode(rawLocale).value();
         // Probe first: an idempotent delete that removes nothing records nothing.
         if (translationRepository.findByTourOperatorIdAndLocale(tourOperatorId, locale).isEmpty()) {

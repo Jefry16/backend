@@ -52,7 +52,7 @@ public class TourOperatorMembershipInterceptor implements HandlerInterceptor {
         try {
             return UUID.fromString(raw);
         } catch (IllegalArgumentException e) {
-            throw new ResourceNotFoundException("Tour operator not found");
+            throw new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND);
         }
     }
 
@@ -65,7 +65,7 @@ public class TourOperatorMembershipInterceptor implements HandlerInterceptor {
     private static UUID principalUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof UUID userId)) {
-            throw new ResourceNotFoundException("Tour operator not found");
+            throw new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND);
         }
         return userId;
     }
