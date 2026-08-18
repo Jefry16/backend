@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
+import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.metafield.application.dto.input.UpsertMetafieldTranslationsInput;
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
@@ -13,7 +14,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.metafield.application.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
@@ -45,11 +46,16 @@ import java.util.UUID;
  */
 public class UpsertMetafieldTranslationsUseCase {
 
+    /** Public because it is published — the documentation test builds its example from it. */
+    public static String notTranslatableMessage(MetafieldType type, String qualifiedKey) {
+        return "A " + type.code() + " metafield cannot be translated: " + qualifiedKey;
+    }
+
     private final MetafieldValueRepository valueRepository;
     private final MetafieldValueTranslationRepository translationRepository;
     private final MetafieldOwnerAccess ownerAccess;
     private final MetafieldValueValidator valueValidator;
-    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final OperatorLocaleCheck operatorLocaleCheck;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
@@ -58,7 +64,7 @@ public class UpsertMetafieldTranslationsUseCase {
                                               MetafieldValueTranslationRepository translationRepository,
                                               MetafieldOwnerAccess ownerAccess,
                                               MetafieldValueValidator valueValidator,
-                                              OperatorLocalesQuery operatorLocalesQuery,
+                                              OperatorLocaleCheck operatorLocaleCheck,
                                               TourOperatorMembershipCheck membershipCheck,
                                               TransactionRunner transactionRunner,
                                               AuditTrailPort auditTrailPort) {
@@ -66,7 +72,7 @@ public class UpsertMetafieldTranslationsUseCase {
         this.translationRepository = translationRepository;
         this.ownerAccess = ownerAccess;
         this.valueValidator = valueValidator;
-        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.operatorLocaleCheck = operatorLocaleCheck;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -76,11 +82,7 @@ public class UpsertMetafieldTranslationsUseCase {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         ownerAccess.ensureOwned(input.ownerType(), input.ownerId(), input.tourOperatorId());
 
-        LocaleCode locale = new LocaleCode(input.locale());
-        if (!operatorLocalesQuery.findSupportedLocales(input.tourOperatorId()).contains(locale.value())) {
-            throw new InvalidFieldException(
-                    "Locale '" + locale.value() + "' is not supported by this operator");
-        }
+        LocaleCode locale = operatorLocaleCheck.require(input.tourOperatorId(), input.locale());
 
         Map<String, String> submitted = input.values() == null ? Map.of() : input.values();
         List<MetafieldValueTranslation> toWrite = new ArrayList<>();
@@ -164,8 +166,8 @@ public class UpsertMetafieldTranslationsUseCase {
                     "Metafield has no value to translate: " + qualifiedKey);
         }
         if (!target.type().isTranslatable()) {
-            throw new InvalidFieldException("A " + target.type().code()
-                    + " metafield cannot be translated: " + qualifiedKey);
+            throw new InvalidFieldException(
+                    notTranslatableMessage(target.type(), qualifiedKey));
         }
         return target;
     }

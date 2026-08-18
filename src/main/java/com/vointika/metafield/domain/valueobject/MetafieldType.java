@@ -93,6 +93,17 @@ public enum MetafieldType {
         return this != METAOBJECT_REFERENCE;
     }
 
+    /**
+     * The refusal, with the excluded set derived rather than spelled — the predicate
+     * above is written as a predicate so a second type can be excluded, and a
+     * hardcoded name would keep publishing only the first.
+     */
+    public static String notAMetaobjectFieldTypeMessage() {
+        String excluded = Arrays.stream(values()).filter(t -> !t.allowedAsMetaobjectField())
+                .map(MetafieldType::code).collect(Collectors.joining(", "));
+        return "Metaobject fields cannot use the " + excluded + " type";
+    }
+
     /** The codes a metaobject field may declare — derived, because it is published. */
     public static String metaobjectFieldCodes() {
         return Arrays.stream(values()).filter(MetafieldType::allowedAsMetaobjectField)

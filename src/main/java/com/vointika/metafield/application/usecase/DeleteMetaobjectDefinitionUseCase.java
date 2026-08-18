@@ -4,7 +4,6 @@ import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.shared.exception.ConflictException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -48,9 +47,7 @@ public class DeleteMetaobjectDefinitionUseCase {
 
     public void execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+        MetaobjectDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
 
         if (metafieldDefinitionRepository.existsPinningMetaobjectDefinition(definitionId)) {
             throw new ConflictException(

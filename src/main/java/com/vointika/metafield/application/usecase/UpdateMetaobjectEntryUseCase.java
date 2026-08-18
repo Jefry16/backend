@@ -11,7 +11,6 @@ import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.valueobject.MetaobjectEntryName;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -63,11 +62,9 @@ public class UpdateMetaobjectEntryUseCase {
     public void execute(UpdateMetaobjectEntryInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(input.entryId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+                .requireByIdAndTourOperatorId(input.entryId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(entry.getDefinitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .requireByIdAndTourOperatorId(entry.getDefinitionId(), input.tourOperatorId());
 
         List<FieldChange> changes = new ArrayList<>();
 
@@ -79,8 +76,7 @@ public class UpdateMetaobjectEntryUseCase {
         if (!handle.value().equals(entry.getHandle().value())
                 && entryRepository.existsByDefinitionIdAndHandle(
                         entry.getDefinitionId(), handle.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
         if (!name.value().equals(entry.getName().value())) {
             changes.add(new FieldChange("name", entry.getName().value(), name.value()));
@@ -149,8 +145,7 @@ public class UpdateMetaobjectEntryUseCase {
             });
         } catch (UniqueConstraintViolationException e) {
             // Concurrent handle rename past the pre-check.
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
     }
 }

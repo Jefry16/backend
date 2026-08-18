@@ -161,8 +161,8 @@ class TourOperatorMetafieldTranslationControllerDocumentationTest {
      */
     @Test
     void translatingANonTextTypeIs422() throws Exception {
-        doThrow(new InvalidFieldException("A " + MetafieldType.BOOLEAN.code()
-                + " metafield cannot be translated: custom.is-featured"))
+        doThrow(new InvalidFieldException(UpsertMetafieldTranslationsUseCase.notTranslatableMessage(
+                MetafieldType.BOOLEAN, "custom.is-featured")))
                 .when(upsertUseCase).execute(any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/metafield-translations/{locale}", OP, "fr")

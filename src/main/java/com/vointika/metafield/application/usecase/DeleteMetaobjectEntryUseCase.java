@@ -3,7 +3,6 @@ package com.vointika.metafield.application.usecase;
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -36,9 +35,7 @@ public class DeleteMetaobjectEntryUseCase {
 
     public void execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+        MetaobjectEntry entry = entryRepository.requireByIdAndTourOperatorId(entryId, tourOperatorId);
         // A delete leaves no row to diff — identity rides details.
         transactionRunner.run(() -> {
             // Any metaobject_reference metafield pointing here would go

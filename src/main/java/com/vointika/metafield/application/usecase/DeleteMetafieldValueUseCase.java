@@ -7,7 +7,6 @@ import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
 import com.vointika.metafield.domain.valueobject.MetafieldOwnerType;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -53,8 +52,7 @@ public class DeleteMetafieldValueUseCase {
         MetafieldNamespace namespace = new MetafieldNamespace(rawNamespace);
         MetafieldKey key = new MetafieldKey(rawKey);
         var definition = definitionRepository
-                .findByIdentity(tourOperatorId, ownerType, namespace.value(), key.value())
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+                .requireByIdentity(tourOperatorId, ownerType, namespace.value(), key.value());
 
         Optional<MetafieldValue> existing =
                 valueRepository.findByDefinitionIdAndOwnerId(definition.getId(), ownerId);

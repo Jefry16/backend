@@ -5,7 +5,6 @@ import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.entity.MetaobjectField;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -40,11 +39,8 @@ public class RenameMetaobjectFieldUseCase {
     public void execute(RenameMetaobjectFieldInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
-        MetaobjectField field = definitionRepository
-                .findField(definition.getId(), input.key())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject field not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
+        MetaobjectField field = definitionRepository.requireField(definition.getId(), input.key());
 
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
         String before = field.getName().value();

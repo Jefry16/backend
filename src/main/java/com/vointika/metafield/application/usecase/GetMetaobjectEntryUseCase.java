@@ -6,7 +6,6 @@ import com.vointika.metafield.domain.entity.MetaobjectEntryValue;
 import com.vointika.metafield.domain.entity.MetaobjectField;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.ArrayList;
@@ -35,9 +34,7 @@ public class GetMetaobjectEntryUseCase {
 
     public MetaobjectEntryView execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+        MetaobjectEntry entry = entryRepository.requireByIdAndTourOperatorId(entryId, tourOperatorId);
 
         Map<UUID, String> valuesByFieldId = new HashMap<>();
         for (MetaobjectEntryValue value : entryRepository.valuesOf(entry.getId())) {

@@ -151,7 +151,7 @@ class MetafieldDefinitionControllerDocumentationTest {
     void createDuplicateIs409() throws Exception {
         authenticated();
         when(createUseCase.execute(any())).thenThrow(
-                new ResourceAlreadyExistsException("A metafield definition with this namespace and key already exists"));
+                new ResourceAlreadyExistsException(CreateMetafieldDefinitionUseCase.DUPLICATE_IDENTITY));
 
         mockMvc.perform(post("/api/tour-operators/{id}/metafield-definitions", OP)
                         .header("Authorization", BEARER)

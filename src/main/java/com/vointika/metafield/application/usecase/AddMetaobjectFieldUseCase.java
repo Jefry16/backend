@@ -9,7 +9,6 @@ import com.vointika.metafield.domain.valueobject.MetafieldKey;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -28,6 +27,10 @@ import java.util.Map;
  * field unset.
  */
 public class AddMetaobjectFieldUseCase {
+
+    /** Thrown twice — the pre-check and the index race answer identically. */
+    private static final String DUPLICATE_KEY =
+            "A field with this key already exists on this definition";
 
     private final MetaobjectDefinitionRepository definitionRepository;
     private final TourOperatorMembershipCheck membershipCheck;
@@ -50,20 +53,17 @@ public class AddMetaobjectFieldUseCase {
     public void execute(AddMetaobjectFieldInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
 
         MetafieldKey key = new MetafieldKey(input.key());
         MetafieldType type = MetafieldType.fromCode(input.type());
         if (!type.allowedAsMetaobjectField()) {
-            throw new InvalidFieldException(
-                    "Metaobject fields cannot use the metaobject_reference type");
+            throw new InvalidFieldException(MetafieldType.notAMetaobjectFieldTypeMessage());
         }
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
 
         if (definitionRepository.existsField(definition.getId(), key.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A field with this key already exists on this definition");
+            throw new ResourceAlreadyExistsException(DUPLICATE_KEY);
         }
         // max(position)+1, NOT count+1 — after a removal, count+1 would
         // collide with a surviving field's position and make ordering ties.
@@ -84,8 +84,7 @@ public class AddMetaobjectFieldUseCase {
                                 "fieldType", type.code())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException(
-                    "A field with this key already exists on this definition");
+            throw new ResourceAlreadyExistsException(DUPLICATE_KEY);
         }
     }
 }

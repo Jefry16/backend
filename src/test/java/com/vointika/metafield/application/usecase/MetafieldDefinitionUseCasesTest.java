@@ -127,7 +127,7 @@ class MetafieldDefinitionUseCasesTest {
 
     @Test
     void updateChangesNameAndAuditsTheDiff() {
-        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
+        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
 
         update().execute(new UpdateMetafieldDefinitionInput(USER, OP, DEF, "Sub-heading", "Shown under the title"));
 
@@ -137,7 +137,7 @@ class MetafieldDefinitionUseCasesTest {
 
     @Test
     void noOpUpdateSavesButRecordsNothing() {
-        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
+        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
 
         update().execute(new UpdateMetafieldDefinitionInput(USER, OP, DEF, "Subtitle", null));
 
@@ -147,7 +147,7 @@ class MetafieldDefinitionUseCasesTest {
 
     @Test
     void deleteRemovesAndRecordsTheIdentity() {
-        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
+        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
 
         new DeleteMetafieldDefinitionUseCase(repository, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, DEF, USER);

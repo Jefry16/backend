@@ -3,7 +3,6 @@ package com.vointika.metafield.application.usecase;
 import com.vointika.metafield.application.dto.output.MetaobjectDefinitionView;
 import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -22,9 +21,7 @@ public class GetMetaobjectDefinitionUseCase {
 
     public MetaobjectDefinitionView execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+        MetaobjectDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
         return new MetaobjectDefinitionView(definition, definitionRepository.fieldsOf(definitionId));
     }
 }

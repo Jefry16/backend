@@ -13,7 +13,6 @@ import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -75,8 +74,7 @@ public class UpsertMetafieldValueUseCase {
         MetafieldNamespace namespace = new MetafieldNamespace(input.namespace());
         MetafieldKey key = new MetafieldKey(input.key());
         MetafieldDefinition definition = definitionRepository
-                .findByIdentity(input.tourOperatorId(), input.ownerType(), namespace.value(), key.value())
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+                .requireByIdentity(input.tourOperatorId(), input.ownerType(), namespace.value(), key.value());
 
         String normalized = valueValidator.validateAndNormalize(definition.getType(), input.value());
         // The validator only checks SHAPE for references; the integrity half —

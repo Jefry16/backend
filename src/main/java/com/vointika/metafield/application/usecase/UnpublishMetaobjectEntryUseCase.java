@@ -2,7 +2,6 @@ package com.vointika.metafield.application.usecase;
 
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -33,9 +32,7 @@ public class UnpublishMetaobjectEntryUseCase {
 
     public void execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetaobjectEntry entry = entryRepository
-                .findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject not found"));
+        MetaobjectEntry entry = entryRepository.requireByIdAndTourOperatorId(entryId, tourOperatorId);
         entry.unpublish();
         transactionRunner.run(() -> {
             entryRepository.save(entry);

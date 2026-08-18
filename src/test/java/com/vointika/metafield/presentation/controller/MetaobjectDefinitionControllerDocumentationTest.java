@@ -168,7 +168,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
     void createDuplicateTypeIs409() throws Exception {
         authenticated();
         when(createUseCase.execute(any())).thenThrow(
-                new ResourceAlreadyExistsException("A metaobject definition with this type already exists"));
+                new ResourceAlreadyExistsException(CreateMetaobjectDefinitionUseCase.DUPLICATE_TYPE));
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobject-definitions", OP)
                         .header("Authorization", BEARER)
@@ -331,7 +331,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
     @Test
     void removingTheLastFieldIs409() throws Exception {
         authenticated();
-        doThrow(new ConflictException("A metaobject definition must keep at least one field"))
+        doThrow(new ConflictException(RemoveMetaobjectFieldUseCase.LAST_FIELD))
                 .when(removeFieldUseCase).execute(any(), any(), any(), any());
 
         mockMvc.perform(delete("/api/tour-operators/{id}/metaobject-definitions/{definitionId}/fields/{key}",

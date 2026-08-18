@@ -887,6 +887,23 @@ port takes the calling class, so log names still point at the reporter.
   It is an instance of a general rule: **a documentation test's request is a
   published example, so anything added to make the test pass is added to the
   contract.**
+- **A `default` method on a mocked interface is never executed.** Mockito stubs a
+  default like any other method, so its body does not run in any test that mocks the
+  interface — and every repository here is mocked in every use-case test. Collapsing
+  twenty inline `orElseThrow`s into `MetafieldDefinitionRepository.requireByIdentity`
+  moved that throw somewhere no existing test could reach: the assertions that used to
+  exercise it had been rewritten into stubs of the method that now contains it.
+
+  Two of the five `require*` methods ended up executed by nothing at all, and the
+  suite was green. Caught in review by mutation — `orElseThrow(...)` → `orElse(null)`,
+  still green — where production would have NPE'd into a 500 on the path that
+  publishes a 404.
+
+  The fix is a test that mocks the interface, stubs the **abstract** method, and calls
+  `doCallRealMethod()` on the default: `TenantScopedLookupTest`. **Mutate the default's
+  body and watch it fail**, or the guard is proving only that the mock returns what it
+  was told.
+
 - **The read-only column guard** — a table whose columns are mapped
   `insertable/updatable = false` gets a test asserting a column is writable
   **exactly while the domain can carry it**, as a biconditional. Three tables
@@ -1097,6 +1114,14 @@ purpose: if every owner has every optional field set, nothing shows you what
 
 ## 11. Recurring gotchas (check before you trip)
 
+- **A sub-resource segment must not collide with a sibling's path variable.**
+  `/{owner}/metafields/translations` reads naturally and is wrong: it collides with
+  `/{owner}/metafields/{namespace}/{key}`. `PathPattern` prefers the literal, so the
+  route resolves — and silently makes a namespace called `translations` unreachable.
+  A route that works by tie-break is one nobody remembers is fragile. The four
+  translation mounts are `metafield-translations` and `field-translations` for this
+  reason, and the rationale lived in three controller javadocs verbatim before it
+  came here.
 - Boot 4 autoconfiguration is per-starter: depend on the **Boot starter**
   (`spring-boot-starter-kafka`), not the raw library (`STACK.md` §gotchas).
 - The autoconfigured `KafkaTemplate` is typed `<?, ?>` — inject the **raw**

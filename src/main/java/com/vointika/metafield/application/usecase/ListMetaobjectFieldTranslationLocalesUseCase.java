@@ -2,7 +2,6 @@ package com.vointika.metafield.application.usecase;
 
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryValueTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.List;
@@ -26,9 +25,7 @@ public class ListMetaobjectFieldTranslationLocalesUseCase {
 
     public List<String> execute(UUID callerUserId, UUID tourOperatorId, UUID metaobjectId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (entryRepository.findByIdAndTourOperatorId(metaobjectId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Metaobject not found");
-        }
+        entryRepository.requireByIdAndTourOperatorId(metaobjectId, tourOperatorId);
         return translationRepository.findLocalesForEntry(metaobjectId);
     }
 }

@@ -11,7 +11,6 @@ import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.valueobject.MetaobjectEntryName;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -62,8 +61,7 @@ public class CreateMetaobjectEntryUseCase {
     public UUID execute(CreateMetaobjectEntryInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetaobjectDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metaobject definition not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
 
         Handle handle = new Handle(input.handle());
         MetaobjectEntryName name = new MetaobjectEntryName(input.name());
@@ -97,8 +95,7 @@ public class CreateMetaobjectEntryUseCase {
         }
 
         if (entryRepository.existsByDefinitionIdAndHandle(definition.getId(), handle.value())) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
         try {
             transactionRunner.run(() -> {
@@ -112,8 +109,7 @@ public class CreateMetaobjectEntryUseCase {
                                 "name", name.value())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException(
-                    "A metaobject with this handle already exists for this type");
+            throw new ResourceAlreadyExistsException(MetaobjectEntryRepository.DUPLICATE_HANDLE);
         }
         return entry.getId();
     }

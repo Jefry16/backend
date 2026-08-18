@@ -5,7 +5,6 @@ import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
 import com.vointika.metafield.domain.valueobject.MetafieldDescription;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -42,8 +41,7 @@ public class UpdateMetafieldDefinitionUseCase {
     public void execute(UpdateMetafieldDefinitionInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
         MetafieldDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+                .requireByIdAndTourOperatorId(input.definitionId(), input.tourOperatorId());
 
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
         MetafieldDescription description = input.description() == null || input.description().isBlank()

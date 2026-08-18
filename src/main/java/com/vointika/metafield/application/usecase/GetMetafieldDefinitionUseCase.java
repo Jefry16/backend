@@ -2,7 +2,6 @@ package com.vointika.metafield.application.usecase;
 
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -21,7 +20,6 @@ public class GetMetafieldDefinitionUseCase {
 
     public MetafieldDefinition execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        return definitionRepository.findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+        return definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
     }
 }

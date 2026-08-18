@@ -2,7 +2,6 @@ package com.vointika.metafield.application.usecase;
 
 import com.vointika.metafield.domain.entity.MetafieldDefinition;
 import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -36,9 +35,7 @@ public class DeleteMetafieldDefinitionUseCase {
 
     public void execute(UUID tourOperatorId, UUID definitionId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        MetafieldDefinition definition = definitionRepository
-                .findByIdAndTourOperatorId(definitionId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Metafield definition not found"));
+        MetafieldDefinition definition = definitionRepository.requireByIdAndTourOperatorId(definitionId, tourOperatorId);
         transactionRunner.run(() -> {
             definitionRepository.delete(definitionId);
             auditTrailPort.append(new NewAuditEntry(
