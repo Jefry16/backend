@@ -11,7 +11,6 @@ import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.valueobject.MetaobjectEntryName;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;

@@ -13,7 +13,6 @@ import com.vointika.metafield.domain.valueobject.MetafieldNamespace;
 import com.vointika.metafield.domain.valueobject.MetafieldType;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;

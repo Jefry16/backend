@@ -2,7 +2,6 @@ package com.vointika.metafield.application.usecase;
 
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryValueTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.List;

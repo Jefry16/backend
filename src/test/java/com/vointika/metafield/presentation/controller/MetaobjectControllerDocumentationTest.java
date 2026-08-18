@@ -247,7 +247,7 @@ class MetaobjectControllerDocumentationTest {
     @Test
     void publishTwiceIs409() throws Exception {
         authenticated();
-        Mockito.doThrow(new ConflictException("Metaobject is already published"))
+        Mockito.doThrow(new ConflictException(MetaobjectEntry.ALREADY_PUBLISHED))
                 .when(publishUseCase).execute(any(), any(), any());
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobjects/{metaobjectId}/publish", OP, LIVE_ENTRY)
@@ -271,7 +271,7 @@ class MetaobjectControllerDocumentationTest {
     @Test
     void unpublishingWhatIsNotLiveIs409() throws Exception {
         authenticated();
-        Mockito.doThrow(new ConflictException("Metaobject is not published"))
+        Mockito.doThrow(new ConflictException(MetaobjectEntry.NOT_PUBLISHED))
                 .when(unpublishUseCase).execute(any(), any(), any());
 
         mockMvc.perform(post("/api/tour-operators/{id}/metaobjects/{metaobjectId}/unpublish", OP, DRAFT_ENTRY)

@@ -5,7 +5,6 @@ import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.entity.MetaobjectField;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.valueobject.MetafieldDefinitionName;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;

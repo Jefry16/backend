@@ -3,7 +3,6 @@ package com.vointika.metafield.application.usecase;
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
 import com.vointika.metafield.domain.repository.MetafieldValueRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;

@@ -34,8 +34,8 @@ import java.util.UUID;
  */
 public class CreateMetaobjectDefinitionUseCase {
 
-    /** Thrown twice — the pre-check and the index race answer identically. */
-    private static final String DUPLICATE_TYPE =
+    /** Thrown twice — the pre-check and the index race answer identically. Public because it is published. */
+    public static final String DUPLICATE_TYPE =
             "A metaobject definition with this type already exists";
 
     private final MetaobjectDefinitionRepository definitionRepository;

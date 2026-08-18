@@ -1,5 +1,6 @@
 package com.vointika.metafield.presentation.controller;
 
+import com.vointika.metafield.domain.repository.MetafieldDefinitionRepository;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.metafield.application.usecase.DeleteMetafieldValueUseCase;
 import com.vointika.metafield.application.usecase.ListMetafieldValuesUseCase;
@@ -166,7 +167,7 @@ class ExperienceMetafieldControllerDocumentationTest {
     @Test
     void unknownDefinitionIs404() throws Exception {
         authenticated();
-        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Metafield definition not found"))
+        org.mockito.Mockito.doThrow(MetafieldDefinitionRepository.NOT_FOUND.get())
                 .when(upsertUseCase).execute(any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/metafields/{namespace}/{key}",

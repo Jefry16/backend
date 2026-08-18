@@ -6,7 +6,6 @@ import com.vointika.metafield.domain.entity.MetaobjectEntryValue;
 import com.vointika.metafield.domain.entity.MetaobjectField;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.ArrayList;

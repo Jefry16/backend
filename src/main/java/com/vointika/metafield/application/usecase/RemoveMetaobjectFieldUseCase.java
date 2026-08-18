@@ -4,7 +4,6 @@ import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.entity.MetaobjectField;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
 import com.vointika.shared.exception.ConflictException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -20,6 +19,9 @@ import java.util.UUID;
  * be removed (a type with no fields can hold no content) — 409.
  */
 public class RemoveMetaobjectFieldUseCase {
+
+    /** Public because it is published. */
+    public static final String LAST_FIELD = "A metaobject definition must keep at least one field";
 
     private final MetaobjectDefinitionRepository definitionRepository;
     private final TourOperatorMembershipCheck membershipCheck;
@@ -42,7 +44,7 @@ public class RemoveMetaobjectFieldUseCase {
         MetaobjectField field = definitionRepository.requireField(definition.getId(), key);
 
         if (definitionRepository.countFields(definition.getId()) <= 1) {
-            throw new ConflictException("A metaobject definition must keep at least one field");
+            throw new ConflictException(LAST_FIELD);
         }
         transactionRunner.run(() -> {
             definitionRepository.deleteField(field.getId());

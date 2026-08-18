@@ -17,6 +17,10 @@ import java.util.UUID;
  */
 public class MetaobjectEntry {
 
+    /** Public because both are published: publishing and unpublishing are each refused from the wrong state. */
+    public static final String ALREADY_PUBLISHED = "Metaobject is already published";
+    public static final String NOT_PUBLISHED = "Metaobject is not published";
+
     private final UUID id;
     private final UUID tourOperatorId;
     private final UUID definitionId;
@@ -75,7 +79,7 @@ public class MetaobjectEntry {
 
     public void publish() {
         if (published) {
-            throw new ConflictException("Metaobject is already published");
+            throw new ConflictException(ALREADY_PUBLISHED);
         }
         this.published = true;
         this.updatedAt = Instant.now();
@@ -83,7 +87,7 @@ public class MetaobjectEntry {
 
     public void unpublish() {
         if (!published) {
-            throw new ConflictException("Metaobject is not published");
+            throw new ConflictException(NOT_PUBLISHED);
         }
         this.published = false;
         this.updatedAt = Instant.now();

@@ -30,8 +30,8 @@ import java.util.UUID;
  */
 public class CreateMetafieldDefinitionUseCase {
 
-    /** Thrown twice — the pre-check and the index race answer identically. */
-    private static final String DUPLICATE_IDENTITY =
+    /** Thrown twice — the pre-check and the index race answer identically. Public because it is published. */
+    public static final String DUPLICATE_IDENTITY =
             "A metafield definition with this namespace and key already exists";
 
     private final MetafieldDefinitionRepository definitionRepository;

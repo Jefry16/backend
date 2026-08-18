@@ -3,7 +3,6 @@ package com.vointika.metafield.application.usecase;
 import com.vointika.metafield.application.dto.output.MetaobjectDefinitionView;
 import com.vointika.metafield.domain.entity.MetaobjectDefinition;
 import com.vointika.metafield.domain.repository.MetaobjectDefinitionRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
