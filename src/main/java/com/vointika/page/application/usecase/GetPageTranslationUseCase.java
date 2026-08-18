@@ -3,7 +3,6 @@ package com.vointika.page.application.usecase;
 import com.vointika.page.domain.entity.PageTranslation;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
 
@@ -30,9 +29,7 @@ public class GetPageTranslationUseCase {
 
     public PageTranslation execute(UUID tourOperatorId, UUID pageId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Page not found");
-        }
+        pageRepository.requireExists(pageId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
         return translationRepository.find(pageId, locale)
                 .orElseGet(() -> PageTranslation.empty(pageId, tourOperatorId, locale));

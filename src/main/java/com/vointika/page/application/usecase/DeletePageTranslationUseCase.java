@@ -2,7 +2,6 @@ package com.vointika.page.application.usecase;
 
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -36,9 +35,7 @@ public class DeletePageTranslationUseCase {
 
     public void execute(UUID tourOperatorId, UUID pageId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        if (pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Page not found");
-        }
+        pageRepository.requireExists(pageId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
         if (translationRepository.find(pageId, locale).isEmpty()) {
             return;

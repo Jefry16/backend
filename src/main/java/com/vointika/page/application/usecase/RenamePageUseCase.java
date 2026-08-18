@@ -1,10 +1,10 @@
 package com.vointika.page.application.usecase;
 
+import com.vointika.page.application.service.PageHandleAvailability;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -30,17 +30,20 @@ public class RenamePageUseCase {
 
     private final PageRepository pageRepository;
     private final PageTranslationRepository translationRepository;
+    private final PageHandleAvailability handleAvailability;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public RenamePageUseCase(PageRepository pageRepository,
                              PageTranslationRepository translationRepository,
+                             PageHandleAvailability handleAvailability,
                              TourOperatorMembershipCheck membershipCheck,
                              TransactionRunner transactionRunner,
                              AuditTrailPort auditTrailPort) {
         this.pageRepository = pageRepository;
         this.translationRepository = translationRepository;
+        this.handleAvailability = handleAvailability;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -48,21 +51,14 @@ public class RenamePageUseCase {
 
     public void execute(UUID tourOperatorId, UUID pageId, String newHandle, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        Page page = pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
+        Page page = pageRepository
+.requireByIdAndTourOperatorId(pageId, tourOperatorId);
 
         Handle handle = new Handle(newHandle);
         if (page.getHandle().value().equals(handle.value())) {
             return;
         }
-        if (pageRepository.existsByTourOperatorIdAndHandle(tourOperatorId, handle.value())) {
-            throw new ResourceAlreadyExistsException("A page with this handle already exists");
-        }
-        if (translationRepository.existsByHandleInAnyLocale(
-                tourOperatorId, handle.value(), pageId)) {
-            throw new ResourceAlreadyExistsException(
-                    "A page already uses this handle as a localized handle");
-        }
+        handleAvailability.requireFree(tourOperatorId, handle.value(), pageId);
 
         Map<String, Object> before = page.auditSnapshot();
         page.rename(handle);
@@ -75,7 +71,7 @@ public class RenamePageUseCase {
                         AuditChanges.diff(before, page.auditSnapshot())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("A page with this handle already exists");
+            throw new ResourceAlreadyExistsException(PageHandleAvailability.CANONICAL_TAKEN);
         }
     }
 }

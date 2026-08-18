@@ -1,5 +1,6 @@
 package com.vointika.page.infrastructure.config;
 
+import com.vointika.page.application.service.PageHandleAvailability;
 import com.vointika.page.application.usecase.CreatePageUseCase;
 import com.vointika.page.application.usecase.DeletePageTranslationUseCase;
 import com.vointika.page.application.usecase.DeletePageUseCase;
@@ -31,12 +32,13 @@ public class PageUseCaseConfig {
     public CreatePageUseCase createPageUseCase(
             PageRepository pageRepository,
             PageTranslationRepository pageTranslationRepository,
+            PageHandleAvailability handleAvailability,
             TourOperatorMembershipCheck membershipCheck,
             IdGenerator idGenerator,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new CreatePageUseCase(pageRepository, pageTranslationRepository, membershipCheck,
-                idGenerator, transactionRunner, auditTrailPort);
+        return new CreatePageUseCase(pageRepository, pageTranslationRepository, handleAvailability,
+                membershipCheck, idGenerator, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -84,11 +86,19 @@ public class PageUseCaseConfig {
     public RenamePageUseCase renamePageUseCase(
             PageRepository pageRepository,
             PageTranslationRepository pageTranslationRepository,
+            PageHandleAvailability handleAvailability,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
-        return new RenamePageUseCase(pageRepository, pageTranslationRepository, membershipCheck,
-                transactionRunner, auditTrailPort);
+        return new RenamePageUseCase(pageRepository, pageTranslationRepository, handleAvailability,
+                membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public PageHandleAvailability pageHandleAvailability(
+            PageRepository pageRepository,
+            PageTranslationRepository pageTranslationRepository) {
+        return new PageHandleAvailability(pageRepository, pageTranslationRepository);
     }
 
     @Bean

@@ -17,6 +17,7 @@ import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
+import com.vointika.shared.port.PageOwnershipQuery;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
@@ -292,7 +293,7 @@ class PageControllerDocumentationTest {
     void getUnknownIs404() throws Exception {
         authenticated();
         when(getPageUseCase.execute(any(), any(), any()))
-                .thenThrow(new ResourceNotFoundException("Page not found"));
+                .thenThrow(new ResourceNotFoundException(PageOwnershipQuery.NOT_FOUND));
 
         mockMvc.perform(get("/api/tour-operators/{id}/pages/{pageId}", OP, MISSING_PAGE)
                         .header("Authorization", BEARER))

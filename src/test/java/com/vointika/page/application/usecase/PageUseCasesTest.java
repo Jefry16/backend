@@ -1,6 +1,7 @@
 package com.vointika.page.application.usecase;
 
 import com.vointika.page.application.dto.input.CreatePageInput;
+import com.vointika.page.application.service.PageHandleAvailability;
 import com.vointika.page.application.dto.input.UpdatePageInput;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
@@ -25,6 +26,7 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -51,6 +53,11 @@ class PageUseCasesTest {
     @BeforeEach
     void setUp() {
         repository = mock(PageRepository.class);
+        // requireByIdAndTourOperatorId / requireExists are default methods, so
+        // Mockito would stub them to null and every 404 assertion below would
+        // pass without running the branch (PATTERNS §9).
+        doCallRealMethod().when(repository).requireByIdAndTourOperatorId(any(), any());
+        doCallRealMethod().when(repository).requireExists(any(), any());
         translationRepository = mock(PageTranslationRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
@@ -263,9 +270,18 @@ class PageUseCasesTest {
         verify(repository, never()).save(any());
     }
 
+    /**
+     * A real {@link PageHandleAvailability} over the two mocks, not a mock of it —
+     * the handle-conflict tests below assert its refusals, and mocking it would make
+     * them assert only that Mockito throws what it was told to.
+     */
+    private PageHandleAvailability handleAvailability() {
+        return new PageHandleAvailability(repository, translationRepository);
+    }
+
     private CreatePageUseCase create() {
-        return new CreatePageUseCase(repository, translationRepository, membershipCheck,
-                idGenerator, transactionRunner, auditTrailPort);
+        return new CreatePageUseCase(repository, translationRepository, handleAvailability(),
+                membershipCheck, idGenerator, transactionRunner, auditTrailPort);
     }
 
     private UpdatePageUseCase update() {
@@ -273,7 +289,7 @@ class PageUseCasesTest {
     }
 
     private RenamePageUseCase rename() {
-        return new RenamePageUseCase(repository, translationRepository, membershipCheck,
-                transactionRunner, auditTrailPort);
+        return new RenamePageUseCase(repository, translationRepository, handleAvailability(),
+                membershipCheck, transactionRunner, auditTrailPort);
     }
 }
