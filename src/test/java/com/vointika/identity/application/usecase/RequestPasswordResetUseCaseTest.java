@@ -10,7 +10,7 @@ import com.vointika.identity.domain.entity.User;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.identity.domain.repository.PasswordResetTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.port.TransactionRunner;

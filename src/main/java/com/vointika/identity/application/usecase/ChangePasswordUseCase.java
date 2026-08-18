@@ -36,35 +36,29 @@ public class ChangePasswordUseCase {
     }
 
     public void execute(ChangePasswordInput input) {
-        // 1. Validate new password rules
         Password newPassword = new Password(input.newPassword());
 
-        // 2. Find user
-        User user = userRepository
-                .findById(input.userId())
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+        User user = userRepository.requireById(input.userId());
 
-        // 3. Verify current password
         if (!passwordHasher.matches(input.currentPassword(), user.getHashedPassword())) {
             throw new UnauthorizedException("Current password is incorrect");
         }
 
-        // 4. Guard — new password must differ from current
+        // Guard — new password must differ from current
         if (passwordHasher.matches(newPassword.value(), user.getHashedPassword())) {
             throw new InvalidFieldException("New password must be different from current password");
         }
 
-        // 5. Hash new password and update user
         String hashedNewPassword = passwordHasher.hash(newPassword.value());
         user.changePassword(hashedNewPassword);
 
-        // 6. Save user + revoke all refresh tokens atomically
+        // Save user + revoke all refresh tokens atomically
         transactionRunner.run(() -> {
             userRepository.save(user);
             refreshTokenRepository.revokeAllByUserId(user.getId());
         });
 
-        // 7. Publish password changed event — AFTER commit
+        // Publish password changed event — AFTER commit
         eventPublisher.publish(new PasswordChangedEvent(
                 user.getEmail().value(), user.getName().value(), user.getLanguage()));
     }

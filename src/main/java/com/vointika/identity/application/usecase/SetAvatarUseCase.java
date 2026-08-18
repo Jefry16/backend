@@ -6,7 +6,6 @@ import com.vointika.identity.application.port.AvatarStoragePort;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
 
@@ -73,7 +72,6 @@ public class SetAvatarUseCase {
     }
 
     public SetAvatarOutput execute(SetAvatarInput input) {
-        // 1. Validate content type and size
         String contentType = normalizeContentType(input.contentType());
         String extension = EXTENSION_BY_CONTENT_TYPE.get(contentType);
         if (extension == null) {
@@ -86,22 +84,21 @@ public class SetAvatarUseCase {
             throw new InvalidFieldException(tooLargeMessage());
         }
 
-        User user = userRepository.findById(input.userId())
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+        User user = userRepository.requireById(input.userId());
         String oldKey = user.getAvatarKey();
 
-        // 2. Unique key per upload, so a changed avatar is never served from a
+        // Unique key per upload, so a changed avatar is never served from a
         // stale browser cache of the previous URL.
         String newKey = "users/" + user.getId() + "/" + idGenerator.newId() + "-avatar." + extension;
 
-        // 3. Upload OUTSIDE the transaction — it can't roll back anyway (a
+        // Upload OUTSIDE the transaction — it can't roll back anyway (a
         // failed save strands the object, never a row without an object).
         avatarStoragePort.putObject(newKey, contentType, input.sizeBytes(), input.body());
 
         user.changeAvatar(newKey);
         transactionRunner.run(() -> userRepository.save(user));
 
-        // 4. AFTER commit: best-effort cleanup of the replaced object.
+        // AFTER commit: best-effort cleanup of the replaced object.
         deleteQuietly(oldKey);
 
         return new SetAvatarOutput(newKey);

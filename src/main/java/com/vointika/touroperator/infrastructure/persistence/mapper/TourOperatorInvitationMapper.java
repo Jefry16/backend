@@ -1,7 +1,7 @@
 package com.vointika.touroperator.infrastructure.persistence.mapper;
 
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
-import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
 import com.vointika.touroperator.infrastructure.persistence.entity.TourOperatorInvitationJpaEntity;
 
@@ -28,7 +28,7 @@ public class TourOperatorInvitationMapper {
         return new TourOperatorInvitation(
                 jpa.getId(),
                 jpa.getTourOperatorId(),
-                new InviteeEmail(jpa.getEmail()),
+                new Email(jpa.getEmail()),
                 new InviteeName(jpa.getName()),
                 jpa.getRole(),
                 jpa.getTokenHash(),

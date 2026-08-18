@@ -44,39 +44,35 @@ public class ResetPasswordUseCase {
     }
 
     public void execute(ResetPasswordInput input) {
-        // 1. Validate new password rules
         Password newPassword = new Password(input.newPassword());
 
-        // 2. Find reset token (hash incoming raw value)
         PasswordResetToken passwordResetToken = passwordResetTokenRepository
                 .findByTokenHash(tokenHasher.hash(input.token()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid password reset token"));
 
-        // 3. Validate token — domain enforces its own rules
+        // Validate token — domain enforces its own rules
         passwordResetToken.use();
 
-        // 4. Find user
         User user = userRepository
                 .findById(passwordResetToken.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid password reset token"));
 
-        // 5. Guard — new password must differ from current
+        // Guard — new password must differ from current
         if (passwordHasher.matches(newPassword.value(), user.getHashedPassword())) {
             throw new InvalidFieldException("New password must be different from current password");
         }
 
-        // 6. Hash new password and update user
         String hashedNewPassword = passwordHasher.hash(newPassword.value());
         user.changePassword(hashedNewPassword);
 
-        // 7. Persist token, user, and revoke all refresh tokens atomically
+        // Persist token, user, and revoke all refresh tokens atomically
         transactionRunner.run(() -> {
             passwordResetTokenRepository.save(passwordResetToken);
             userRepository.save(user);
             refreshTokenRepository.revokeAllByUserId(user.getId());
         });
 
-        // 8. Publish password changed event — AFTER commit
+        // Publish password changed event — AFTER commit
         eventPublisher.publish(new PasswordChangedEvent(
                 user.getEmail().value(), user.getName().value(), user.getLanguage()));
     }

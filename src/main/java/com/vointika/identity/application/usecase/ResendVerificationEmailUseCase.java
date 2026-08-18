@@ -9,7 +9,7 @@ import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.entity.VerificationToken;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.identity.domain.repository.VerificationTokenRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.port.RateLimiterPort;
 import com.vointika.shared.service.IdGenerator;
@@ -50,7 +50,6 @@ public class ResendVerificationEmailUseCase {
     }
 
     public void execute(ResendVerificationEmailInput input) {
-        // 1. Validate email format
         Email email = new Email(input.email());
 
         // Per-email cooldown (PATTERNS §8a): 3 sends/hour. Dropping silently keeps the
@@ -59,7 +58,7 @@ public class ResendVerificationEmailUseCase {
             return;
         }
 
-        // 2. Silently no-op if user doesn't exist or is already verified
+        // Silently no-op if user doesn't exist or is already verified
         //    (prevents account enumeration). Timing parity: both no-op paths first do
         //    the same token work + a DB round-trip as the real path, so
         //    response timing doesn't reveal which case was hit.
@@ -74,7 +73,7 @@ public class ResendVerificationEmailUseCase {
             return;
         }
 
-        // 3. Expire old + persist new atomically. Raw token only flows through the event.
+        // Expire old + persist new atomically. Raw token only flows through the event.
         String rawToken = tokenGenerator.generateVerificationToken();
         VerificationToken verificationToken = VerificationToken.issue(
                 idGenerator.newId(), user.getId(), tokenHasher.hash(rawToken));
@@ -84,7 +83,7 @@ public class ResendVerificationEmailUseCase {
             verificationTokenRepository.save(verificationToken);
         });
 
-        // 4. Publish verification email event — AFTER commit
+        // Publish verification email event — AFTER commit
         eventPublisher.publish(new VerificationEmailRequestedEvent(
                 user.getEmail().value(), user.getName().value(), rawToken, user.getLanguage()));
     }

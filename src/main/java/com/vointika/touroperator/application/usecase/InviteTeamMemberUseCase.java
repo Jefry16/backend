@@ -20,7 +20,7 @@ import com.vointika.touroperator.domain.enums.MemberRole;
 import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorMemberRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorRepository;
-import com.vointika.touroperator.domain.valueobject.InviteeEmail;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.touroperator.domain.valueobject.InviteeName;
 import com.vointika.shared.exception.UniqueConstraintViolationException;
 
@@ -82,7 +82,7 @@ public class InviteTeamMemberUseCase {
     public UUID execute(UUID tourOperatorId, UUID invitedByUserId,
                         String rawEmail, String rawName, String rawRole) {
         membershipCheck.ensureAdmin(invitedByUserId, tourOperatorId);
-        InviteeEmail email = new InviteeEmail(rawEmail);
+        Email email = new Email(rawEmail);
         InviteeName name = new InviteeName(rawName);
         MemberRole role = parseRole(rawRole);
         TourOperator operator = tourOperatorRepository.requireById(tourOperatorId);

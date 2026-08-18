@@ -6,7 +6,7 @@ import com.vointika.identity.application.port.AvatarStoragePort;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.enums.UserStatus;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.UnauthorizedException;
@@ -50,6 +50,10 @@ class SetAvatarUseCaseTest {
 
     @BeforeEach
     void setUp() {
+        // requireById is a default method: Mockito would stub it to null and every
+        // "invalid principal" assertion below would pass without running the branch.
+        // lenient() because not every test in this class reaches the lookup.
+        lenient().doCallRealMethod().when(userRepository).requireById(any());
         useCase = new SetAvatarUseCase(userRepository, avatarStoragePort, idGenerator, transactionRunner);
         userId = UUID.randomUUID();
         generatedId = UUID.randomUUID();

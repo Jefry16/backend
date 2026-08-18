@@ -10,7 +10,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.RefreshTokenRepository;
 import com.vointika.identity.domain.repository.UserRepository;
-import com.vointika.identity.domain.valueobject.Email;
+import com.vointika.shared.valueobject.Email;
 import com.vointika.identity.domain.valueobject.UserName;
 import com.vointika.shared.port.TransactionRunner;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +45,10 @@ class ChangePasswordUseCaseTest {
 
     @BeforeEach
     void setUp() {
+        // requireById is a default method: Mockito would stub it to null and every
+        // "invalid principal" assertion below would pass without running the branch.
+        // lenient() because not every test in this class reaches the lookup.
+        lenient().doCallRealMethod().when(userRepository).requireById(any());
         useCase = new ChangePasswordUseCase(userRepository, refreshTokenRepository, passwordHasher, eventPublisher, transactionRunner);
         userId = UUID.randomUUID();
     }

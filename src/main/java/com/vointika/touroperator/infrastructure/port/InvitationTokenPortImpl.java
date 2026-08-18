@@ -1,14 +1,11 @@
 package com.vointika.touroperator.infrastructure.port;
 
+import com.vointika.shared.service.TokenDigest;
 import com.vointika.touroperator.application.port.InvitationTokenPort;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.HexFormat;
 
 /**
  * 32 random bytes, base64url without padding on the wire; SHA-256 hex (64 chars)
@@ -30,12 +27,6 @@ public class InvitationTokenPortImpl implements InvitationTokenPort {
 
     @Override
     public String hash(String rawToken) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(bytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 not available", e);
-        }
+        return TokenDigest.hexOf(rawToken);
     }
 }

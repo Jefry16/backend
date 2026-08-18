@@ -3,7 +3,6 @@ package com.vointika.identity.application.usecase;
 import com.vointika.identity.application.dto.input.GetProfileInput;
 import com.vointika.identity.application.dto.output.GetProfileOutput;
 import com.vointika.identity.domain.entity.User;
-import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.port.UserTourOperatorMembershipsQuery;
 
@@ -20,8 +19,7 @@ public class GetProfileUseCase {
     }
 
     public GetProfileOutput execute(GetProfileInput input) {
-        User user = userRepository.findById(input.userId())
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+        User user = userRepository.requireById(input.userId());
         return new GetProfileOutput(
                 user.getId(),
                 user.getName().value(),

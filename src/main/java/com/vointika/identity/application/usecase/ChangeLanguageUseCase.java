@@ -4,7 +4,6 @@ import com.vointika.identity.application.dto.input.ChangeLanguageInput;
 import com.vointika.identity.domain.entity.User;
 import com.vointika.identity.domain.repository.UserRepository;
 import com.vointika.shared.exception.InvalidFieldException;
-import com.vointika.shared.exception.UnauthorizedException;
 import com.vointika.shared.port.TransactionRunner;
 
 import java.util.Locale;
@@ -36,8 +35,7 @@ public class ChangeLanguageUseCase {
                     + "': supported " + String.join(", ", supportedLanguages));
         }
 
-        User user = userRepository.findById(input.userId())
-                .orElseThrow(() -> new UnauthorizedException("Invalid authenticated user"));
+        User user = userRepository.requireById(input.userId());
         if (language.equals(user.getLanguage())) {
             return; // idempotent — already set
         }

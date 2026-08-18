@@ -749,6 +749,18 @@ Two things to settle before moving one, in order:
 The counterweight is §2.4: a constant with one caller is not a kernel type. Two
 independent statements of the same rule is the threshold.
 
+**Two copies of one rule can pin opposite behaviour, with both suites green.**
+`identity.Email` and `touroperator.InviteeEmail` stated the same rule; identity's test
+asserted `"  user@example.com  "` is *rejected*, touroperator's asserted it is
+*accepted and trimmed*. Neither was wrong about its own record, so nothing failed —
+and the same human input succeeded on the invitation path and 422'd on registration.
+
+So when you merge N copies, **diff their tests, not just their code**. Identical
+implementations can still have contradictory expectations attached, and the merge
+forces a choice that a reader of either file alone would not know was open. Record
+which way it went and why in the surviving test, because that test now silently
+contradicts a deleted one.
+
 ## 7. Event flow (Kafka)
 
 - **Publish:** a use case calls `EventPublisherPort.publish(new FooEvent(...))`.
