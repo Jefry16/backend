@@ -4,11 +4,10 @@ import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
@@ -34,20 +33,20 @@ public class UpsertAudienceTranslationUseCase {
 
     private final AudienceRepository audienceRepository;
     private final AudienceTranslationRepository translationRepository;
-    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final OperatorLocaleCheck operatorLocaleCheck;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public UpsertAudienceTranslationUseCase(AudienceRepository audienceRepository,
                                             AudienceTranslationRepository translationRepository,
-                                            OperatorLocalesQuery operatorLocalesQuery,
+                                            OperatorLocaleCheck operatorLocaleCheck,
                                             TourOperatorMembershipCheck membershipCheck,
                                             TransactionRunner transactionRunner,
                                             AuditTrailPort auditTrailPort) {
         this.audienceRepository = audienceRepository;
         this.translationRepository = translationRepository;
-        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.operatorLocaleCheck = operatorLocaleCheck;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -61,9 +60,7 @@ public class UpsertAudienceTranslationUseCase {
         if (audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId).isEmpty()) {
             throw new ResourceNotFoundException("Audience not found");
         }
-        if (!operatorLocalesQuery.findSupportedLocales(tourOperatorId).contains(locale.value())) {
-            throw new InvalidFieldException("Locale '" + locale.value() + "' is not supported by this operator");
-        }
+        operatorLocaleCheck.require(tourOperatorId, locale.value());
 
         AudienceName translated = (name == null || name.isBlank()) ? null : new AudienceName(name);
 

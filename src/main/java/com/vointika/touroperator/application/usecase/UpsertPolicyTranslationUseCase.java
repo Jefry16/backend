@@ -7,11 +7,10 @@ import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorPolicyTranslationRepository;
 import com.vointika.touroperator.domain.valueobject.PolicyBody;
 import com.vointika.touroperator.domain.valueobject.PolicyTitle;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
@@ -25,7 +24,7 @@ import java.util.UUID;
  *
  * <p>Guards: caller not ADMIN+ → 403; a policy id that is unknown <em>or belongs
  * to another operator</em> → 404, since the lookup is tenant-scoped; a locale
- * outside the operator's supported set → 422 ({@link OperatorLocalesQuery}). A
+ * outside the operator's supported set → 422 ({@link com.vointika.shared.service.OperatorLocaleCheck}). A
  * blank field is treated as untranslated (null → falls back to the canonical
  * policy).
  *
@@ -39,20 +38,20 @@ public class UpsertPolicyTranslationUseCase {
 
     private final TourOperatorPolicyRepository policyRepository;
     private final TourOperatorPolicyTranslationRepository translationRepository;
-    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final OperatorLocaleCheck operatorLocaleCheck;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
 
     public UpsertPolicyTranslationUseCase(TourOperatorPolicyRepository policyRepository,
                                           TourOperatorPolicyTranslationRepository translationRepository,
-                                          OperatorLocalesQuery operatorLocalesQuery,
+                                          OperatorLocaleCheck operatorLocaleCheck,
                                           TourOperatorMembershipCheck membershipCheck,
                                           TransactionRunner transactionRunner,
                                           AuditTrailPort auditTrailPort) {
         this.policyRepository = policyRepository;
         this.translationRepository = translationRepository;
-        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.operatorLocaleCheck = operatorLocaleCheck;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -69,10 +68,7 @@ public class UpsertPolicyTranslationUseCase {
         PolicyType type = policyRepository.findByIdAndTourOperatorId(policyId, tourOperatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Policy not found"))
                 .type();
-        if (!operatorLocalesQuery.findSupportedLocales(tourOperatorId).contains(locale.value())) {
-            throw new InvalidFieldException(
-                    "Locale '" + locale.value() + "' is not supported by this operator");
-        }
+        operatorLocaleCheck.require(tourOperatorId, locale.value());
 
         PolicyTitle title = blankNull(input.title()) == null
                 ? null : new PolicyTitle(input.title());

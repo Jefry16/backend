@@ -1,5 +1,6 @@
 package com.vointika.touroperator.application.usecase;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
@@ -116,7 +117,7 @@ class PolicyUseCasesTest {
 
     private UpsertPolicyTranslationUseCase upsertTranslation() {
         return new UpsertPolicyTranslationUseCase(policyRepository, translationRepository,
-                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+                new OperatorLocaleCheck(operatorLocalesQuery), membershipCheck, transactionRunner, auditTrailPort);
     }
 
 

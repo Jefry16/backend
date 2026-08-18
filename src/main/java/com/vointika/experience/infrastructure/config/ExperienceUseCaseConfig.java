@@ -27,7 +27,7 @@ import com.vointika.experience.domain.repository.ExperienceRepository;
 import com.vointika.experience.domain.repository.ExperienceTranslationRepository;
 import com.vointika.shared.media.MediaUrlBatchResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -110,13 +110,13 @@ public class ExperienceUseCaseConfig {
     public UpsertExperienceTranslationUseCase upsertExperienceTranslationUseCase(
             ExperienceRepository experienceRepository,
             ExperienceTranslationRepository translationRepository,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             HandleGenerator handleGenerator,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertExperienceTranslationUseCase(experienceRepository, translationRepository,
-                operatorLocalesQuery, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean

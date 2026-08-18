@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -191,7 +192,7 @@ class OperatorTranslationControllerDocumentationTest {
     @Test
     void anUnsupportedLocaleIsUnprocessable() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("Locale 'fr' is not supported by this operator"))
+        doThrow(new InvalidFieldException(OperatorLocaleCheck.refusal("fr")))
                 .when(upsertUseCase).execute(any(), any(), any(), any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/translations/{locale}", OPERATOR_ID, "fr")

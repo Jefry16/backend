@@ -1,5 +1,6 @@
 package com.vointika.audience.presentation.controller;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.audience.application.usecase.DeleteAudienceTranslationUseCase;
 import com.vointika.audience.application.usecase.GetAudienceTranslationUseCase;
 import com.vointika.audience.application.usecase.ListAudienceTranslationsUseCase;
@@ -212,7 +213,7 @@ class AudienceTranslationControllerDocumentationTest {
     @Test
     void unsupportedLocaleIs422() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("unsupported"))
+        doThrow(new InvalidFieldException(OperatorLocaleCheck.refusal("fr")))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "fr")
                         .header("Authorization", BEARER)

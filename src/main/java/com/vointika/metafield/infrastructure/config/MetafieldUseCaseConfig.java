@@ -1,7 +1,7 @@
 package com.vointika.metafield.infrastructure.config;
 
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
-import com.vointika.metafield.application.service.OperatorLocaleCheck;
+
 import com.vointika.metafield.application.port.JsonSyntaxPort;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
 import com.vointika.metafield.application.usecase.CreateMetafieldDefinitionUseCase;
@@ -29,7 +29,7 @@ import com.vointika.metafield.domain.repository.MetaobjectEntryRepository;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.ExperienceOwnershipQuery;
 import com.vointika.shared.port.PageOwnershipQuery;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.IdGenerator;
@@ -44,10 +44,6 @@ public class MetafieldUseCaseConfig {
         return new MetafieldValueValidator(jsonSyntax);
     }
 
-    @Bean
-    public OperatorLocaleCheck operatorLocaleCheck(OperatorLocalesQuery operatorLocalesQuery) {
-        return new OperatorLocaleCheck(operatorLocalesQuery);
-    }
 
     @Bean
     public MetafieldOwnerAccess metafieldOwnerAccess(

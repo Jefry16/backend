@@ -1,5 +1,6 @@
 package com.vointika.page.application.usecase;
 
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.page.application.dto.input.UpsertPageTranslationInput;
 import com.vointika.page.domain.entity.Page;
@@ -72,7 +73,7 @@ class PageTranslationUseCasesTest {
 
     private UpsertPageTranslationUseCase upsert() {
         return new UpsertPageTranslationUseCase(pageRepository, translationRepository,
-                operatorLocalesQuery, handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
+                new OperatorLocaleCheck(operatorLocalesQuery), handleGenerator, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     private UpsertPageTranslationInput input(String title, String handle) {

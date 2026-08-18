@@ -8,12 +8,11 @@ import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.service.HandleGenerator;
@@ -43,7 +42,7 @@ public class UpsertPageTranslationUseCase {
 
     private final PageRepository pageRepository;
     private final PageTranslationRepository translationRepository;
-    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final OperatorLocaleCheck operatorLocaleCheck;
     private final HandleGenerator handleGenerator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
@@ -51,14 +50,14 @@ public class UpsertPageTranslationUseCase {
 
     public UpsertPageTranslationUseCase(PageRepository pageRepository,
                                         PageTranslationRepository translationRepository,
-                                        OperatorLocalesQuery operatorLocalesQuery,
+                                        OperatorLocaleCheck operatorLocaleCheck,
                                         HandleGenerator handleGenerator,
                                         TourOperatorMembershipCheck membershipCheck,
                                         TransactionRunner transactionRunner,
                                         AuditTrailPort auditTrailPort) {
         this.pageRepository = pageRepository;
         this.translationRepository = translationRepository;
-        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.operatorLocaleCheck = operatorLocaleCheck;
         this.handleGenerator = handleGenerator;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
@@ -72,10 +71,7 @@ public class UpsertPageTranslationUseCase {
         }
 
         LocaleCode locale = new LocaleCode(input.locale());
-        if (!operatorLocalesQuery.findSupportedLocales(input.tourOperatorId()).contains(locale.value())) {
-            throw new InvalidFieldException(
-                    "Locale '" + locale.value() + "' is not supported by this operator");
-        }
+        operatorLocaleCheck.require(input.tourOperatorId(), locale.value());
 
         Handle handle = resolveHandle(input, locale);
         PageTranslation translation = new PageTranslation(

@@ -11,7 +11,7 @@ import com.vointika.audience.application.usecase.UpdateAudienceUseCase;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
 import com.vointika.shared.port.AuditTrailPort;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.SlotAudienceSnapshotPropagator;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
@@ -80,12 +80,12 @@ public class AudienceUseCaseConfig {
     public UpsertAudienceTranslationUseCase upsertAudienceTranslationUseCase(
             AudienceRepository audienceRepository,
             AudienceTranslationRepository audienceTranslationRepository,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertAudienceTranslationUseCase(audienceRepository, audienceTranslationRepository,
-                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
