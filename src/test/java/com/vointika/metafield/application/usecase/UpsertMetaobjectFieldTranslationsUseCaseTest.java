@@ -1,5 +1,6 @@
 package com.vointika.metafield.application.usecase;
 
+import com.vointika.metafield.application.service.OperatorLocaleCheck;
 import com.vointika.metafield.application.dto.input.UpsertMetaobjectFieldTranslationsInput;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
 import com.vointika.metafield.domain.entity.MetaobjectEntry;
@@ -94,7 +95,7 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
         useCase = new UpsertMetaobjectFieldTranslationsUseCase(
                 entryRepository, definitionRepository, translationRepository,
                 new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper())),
-                operatorLocalesQuery, mock(TourOperatorMembershipCheck.class),
+                new OperatorLocaleCheck(operatorLocalesQuery), mock(TourOperatorMembershipCheck.class),
                 transactionRunner, auditTrailPort);
     }
 

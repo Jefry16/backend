@@ -13,7 +13,7 @@ import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
-import com.vointika.shared.port.OperatorLocalesQuery;
+import com.vointika.metafield.application.service.OperatorLocaleCheck;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.port.TransactionRunner;
 import com.vointika.shared.valueobject.AuditActor;
@@ -42,7 +42,7 @@ public class UpsertMetaobjectFieldTranslationsUseCase {
     private final MetaobjectDefinitionRepository definitionRepository;
     private final MetaobjectEntryValueTranslationRepository translationRepository;
     private final MetafieldValueValidator valueValidator;
-    private final OperatorLocalesQuery operatorLocalesQuery;
+    private final OperatorLocaleCheck operatorLocaleCheck;
     private final TourOperatorMembershipCheck membershipCheck;
     private final TransactionRunner transactionRunner;
     private final AuditTrailPort auditTrailPort;
@@ -52,7 +52,7 @@ public class UpsertMetaobjectFieldTranslationsUseCase {
             MetaobjectDefinitionRepository definitionRepository,
             MetaobjectEntryValueTranslationRepository translationRepository,
             MetafieldValueValidator valueValidator,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
@@ -60,7 +60,7 @@ public class UpsertMetaobjectFieldTranslationsUseCase {
         this.definitionRepository = definitionRepository;
         this.translationRepository = translationRepository;
         this.valueValidator = valueValidator;
-        this.operatorLocalesQuery = operatorLocalesQuery;
+        this.operatorLocaleCheck = operatorLocaleCheck;
         this.membershipCheck = membershipCheck;
         this.transactionRunner = transactionRunner;
         this.auditTrailPort = auditTrailPort;
@@ -72,11 +72,7 @@ public class UpsertMetaobjectFieldTranslationsUseCase {
         MetaobjectEntry entry = entryRepository
                 .requireByIdAndTourOperatorId(input.metaobjectId(), input.tourOperatorId());
 
-        LocaleCode locale = new LocaleCode(input.locale());
-        if (!operatorLocalesQuery.findSupportedLocales(input.tourOperatorId()).contains(locale.value())) {
-            throw new InvalidFieldException(
-                    "Locale '" + locale.value() + "' is not supported by this operator");
-        }
+        LocaleCode locale = operatorLocaleCheck.require(input.tourOperatorId(), input.locale());
 
         Map<String, MetaobjectField> fieldsByKey = new LinkedHashMap<>();
         for (MetaobjectField field : definitionRepository.fieldsOf(entry.getDefinitionId())) {

@@ -59,8 +59,7 @@ public class AddMetaobjectFieldUseCase {
         MetafieldKey key = new MetafieldKey(input.key());
         MetafieldType type = MetafieldType.fromCode(input.type());
         if (!type.allowedAsMetaobjectField()) {
-            throw new InvalidFieldException(
-                    "Metaobject fields cannot use the metaobject_reference type");
+            throw new InvalidFieldException(MetafieldType.NOT_A_METAOBJECT_FIELD_TYPE);
         }
         MetafieldDefinitionName name = new MetafieldDefinitionName(input.name());
 

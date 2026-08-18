@@ -1,6 +1,7 @@
 package com.vointika.metafield.infrastructure.config;
 
 import com.vointika.metafield.application.service.MetafieldOwnerAccess;
+import com.vointika.metafield.application.service.OperatorLocaleCheck;
 import com.vointika.metafield.application.port.JsonSyntaxPort;
 import com.vointika.metafield.application.service.MetafieldValueValidator;
 import com.vointika.metafield.application.usecase.CreateMetafieldDefinitionUseCase;
@@ -41,6 +42,11 @@ public class MetafieldUseCaseConfig {
     @Bean
     public MetafieldValueValidator metafieldValueValidator(JsonSyntaxPort jsonSyntax) {
         return new MetafieldValueValidator(jsonSyntax);
+    }
+
+    @Bean
+    public OperatorLocaleCheck operatorLocaleCheck(OperatorLocalesQuery operatorLocalesQuery) {
+        return new OperatorLocaleCheck(operatorLocalesQuery);
     }
 
     @Bean
@@ -119,13 +125,13 @@ public class MetafieldUseCaseConfig {
             MetaobjectDefinitionRepository metaobjectDefinitionRepository,
             MetaobjectEntryValueTranslationRepository translationRepository,
             MetafieldValueValidator metafieldValueValidator,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertMetaobjectFieldTranslationsUseCase(entryRepository,
                 metaobjectDefinitionRepository, translationRepository, metafieldValueValidator,
-                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -163,13 +169,13 @@ public class MetafieldUseCaseConfig {
             MetafieldValueTranslationRepository translationRepository,
             MetafieldOwnerAccess metafieldOwnerAccess,
             MetafieldValueValidator metafieldValueValidator,
-            OperatorLocalesQuery operatorLocalesQuery,
+            OperatorLocaleCheck operatorLocaleCheck,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpsertMetafieldTranslationsUseCase(valueRepository,
                 translationRepository, metafieldOwnerAccess, metafieldValueValidator,
-                operatorLocalesQuery, membershipCheck, transactionRunner, auditTrailPort);
+                operatorLocaleCheck, membershipCheck, transactionRunner, auditTrailPort);
     }
 
     @Bean
