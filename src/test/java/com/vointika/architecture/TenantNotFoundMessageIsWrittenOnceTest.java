@@ -37,15 +37,29 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>So: keep this guard for what it is worth — twenty copies do not come back — and
  * do not read it as proof that a <em>new</em> throw site is safe.
  *
- * <p><b>Scope is both trees deliberately.</b> A test that hardcodes it is the same
- * defect one step removed: it keeps passing after the constant is reworded, so the
- * suite would report agreement that no longer exists.
+ * <p><b>Scope is both trees deliberately</b>, with exactly two exemptions: the
+ * constant's declaration, and {@link TenantNotFoundIsThisSentenceTest}, which is the
+ * single assertion allowed to spell the sentence. An ordinary test that hardcodes it
+ * is the same defect one step removed — it keeps passing after a reword, so the suite
+ * reports agreement that no longer exists — but with <em>no</em> exemption the wording
+ * is pinned nowhere at all, which is worse than the copies this replaced.
  */
 class TenantNotFoundMessageIsWrittenOnceTest {
 
     private static final Path DECLARATION =
             Path.of("src", "main", "java", "com", "vointika", "shared", "port",
                     "TourOperatorMembershipCheck.java");
+
+    /**
+     * The one assertion allowed to spell the sentence. Without it the wording is
+     * pinned nowhere: every other test now reads the constant, which makes those
+     * assertions tautological, and this guard forbids re-pinning it anywhere else.
+     * A reword then changes eight published 404 bodies with a green suite — which is
+     * how it was found.
+     */
+    private static final Path PIN =
+            Path.of("src", "test", "java", "com", "vointika", "architecture",
+                    "TenantNotFoundIsThisSentenceTest.java");
 
     private static final String LITERAL = '"' + TourOperatorMembershipCheck.TENANT_NOT_FOUND + '"';
 
@@ -59,7 +73,7 @@ class TenantNotFoundMessageIsWrittenOnceTest {
             try (Stream<Path> files = Files.walk(root)) {
                 for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
                     scanned++;
-                    if (file.equals(DECLARATION)) {
+                    if (file.equals(DECLARATION) || file.equals(PIN)) {
                         continue;
                     }
                     if (Files.readString(file).contains(LITERAL)) {

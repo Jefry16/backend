@@ -1,5 +1,6 @@
 package com.vointika.touroperator.presentation.controller;
 
+import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AccessTokenValidatorPort;
@@ -130,7 +131,7 @@ class OperatorSeoControllerDocumentationTest {
     @Test
     void aForeignOgImageIsUnprocessable() throws Exception {
         authenticated();
-        doThrow(new InvalidFieldException("Media not found in this operator's library"))
+        doThrow(new InvalidFieldException(MediaAssetBatchQuery.NOT_IN_LIBRARY))
                 .when(updateOperatorSeoUseCase).execute(any(), any(), any(), any(), any());
 
         mockMvc.perform(put("/api/tour-operators/{id}/seo", OPERATOR_ID)

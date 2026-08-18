@@ -82,11 +82,11 @@ public class ReplaceMenuItemsUseCase {
         Menu menu = menuRepository.findByIdAndTourOperatorId(input.menuId(), input.tourOperatorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Menu not found"));
 
-        Set<String> supportedLocales = tourOperatorRepository.findById(input.tourOperatorId())
-                .map(operator -> operator.getSupportedLocales().stream()
+        Set<String> supportedLocales =
+                tourOperatorRepository.requireById(input.tourOperatorId())
+                        .getSupportedLocales().stream()
                         .map(LocaleCode::value)
-                        .collect(Collectors.toSet()))
-                .orElseThrow(() -> new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
+                        .collect(Collectors.toSet());
 
         List<MenuItem> items = new ArrayList<>();
         List<MenuItemTranslation> translations = new ArrayList<>();

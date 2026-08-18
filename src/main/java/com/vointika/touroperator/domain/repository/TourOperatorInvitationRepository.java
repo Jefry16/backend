@@ -1,12 +1,10 @@
 package com.vointika.touroperator.domain.repository;
 
-import com.vointika.touroperator.domain.repository.TourOperatorInvitationRepository;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.list.ListQuery;
 import com.vointika.touroperator.domain.entity.TourOperatorInvitation;
 
 import com.vointika.shared.exception.ResourceNotFoundException;
-
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.UUID;
