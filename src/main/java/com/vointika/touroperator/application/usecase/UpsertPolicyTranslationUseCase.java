@@ -7,7 +7,6 @@ import com.vointika.touroperator.domain.repository.TourOperatorPolicyRepository;
 import com.vointika.touroperator.domain.repository.TourOperatorPolicyTranslationRepository;
 import com.vointika.touroperator.domain.valueobject.PolicyBody;
 import com.vointika.touroperator.domain.valueobject.PolicyTitle;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -25,7 +24,7 @@ import java.util.UUID;
  *
  * <p>Guards: caller not ADMIN+ → 403; a policy id that is unknown <em>or belongs
  * to another operator</em> → 404, since the lookup is tenant-scoped; a locale
- * outside the operator's supported set → 422 ({@link OperatorLocalesQuery}). A
+ * outside the operator's supported set → 422 ({@link com.vointika.shared.service.OperatorLocaleCheck}). A
  * blank field is treated as untranslated (null → falls back to the canonical
  * policy).
  *

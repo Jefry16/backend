@@ -1010,8 +1010,17 @@ it was written and wrong somewhere else: metaobject fields are keyed bare, not
 its own endpoint.
 
 **A `{locale}` path variable does not mean the locale is validated.** Only the
-`Upsert*` use cases consult `OperatorLocalesQuery`; reads answer `{}` and deletes
-204. Say the 422 on the upsert and nothing on the others — per verb, not per section.
+`Upsert*` use cases ask — seven of them, all through
+`shared.service.OperatorLocaleCheck`; reads answer `{}` and deletes 204. Say the 422
+on the upsert and nothing on the others — per verb, not per section.
+
+**And publish its message from `OperatorLocaleCheck.refusal(...)`.** Centralising the
+*rule* is not centralising the *contract*: after the seven use cases were collapsed
+onto one service, changing the message moved nothing in the guide, because five
+documentation tests across five contexts each spelled the sentence themselves. One of
+them published `"unsupported"` — a body no request can produce, so a client matching on
+`message` never matched. **The probe that proves it is a one-line change to the source
+plus a rebuild**: if no `response-body.adoc` moves, the contract is still copied.
 
 **Errors are documented, not just happy paths.** Use
 `ApiErrorSnippets.errorFields()` (`src/test/java/com/vointika/shared/web/docs/`) —

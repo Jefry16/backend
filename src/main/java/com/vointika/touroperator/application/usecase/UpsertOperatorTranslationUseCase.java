@@ -8,7 +8,6 @@ import com.vointika.touroperator.domain.valueobject.BrandShortDescription;
 import com.vointika.touroperator.domain.valueobject.BrandSlogan;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoDescription;
 import com.vointika.touroperator.domain.valueobject.OperatorSeoTitle;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
@@ -27,7 +26,7 @@ import java.util.UUID;
  * by the interceptor.
  *
  * <p>Guards: caller not ADMIN+ → 403; operator missing → 404; a locale outside
- * the operator's supported set → 422 ({@link OperatorLocalesQuery}). A blank
+ * the operator's supported set → 422 ({@link com.vointika.shared.service.OperatorLocaleCheck}). A blank
  * field is treated as untranslated (null → falls back to canonical).
  *
  * <p><b>Blanking every field deletes the row rather than storing one.</b> An

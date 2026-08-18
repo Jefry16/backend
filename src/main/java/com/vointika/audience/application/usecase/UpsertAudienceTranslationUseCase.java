@@ -4,7 +4,6 @@ import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;

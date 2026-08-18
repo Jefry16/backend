@@ -11,7 +11,6 @@ import com.vointika.experience.domain.valueobject.SeoDescription;
 import com.vointika.experience.domain.valueobject.SeoTitle;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.service.OperatorLocaleCheck;
@@ -33,7 +32,7 @@ import java.util.function.Function;
  *
  * <p>Guards: caller not ADMIN+ → 403; experience not under this operator → 404;
  * bad-shape or unsupported locale → 422 (the locale must be in the operator's
- * supported set — {@link OperatorLocalesQuery}); an explicit localized handle
+ * supported set — {@link com.vointika.shared.service.OperatorLocaleCheck}); an explicit localized handle
  * already used by another experience — as a localized handle in this locale, or as
  * its canonical handle — → 409. A blank field is treated as untranslated (null →
  * falls back to canonical).

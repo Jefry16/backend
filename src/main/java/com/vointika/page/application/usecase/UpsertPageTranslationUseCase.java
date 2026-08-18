@@ -8,7 +8,6 @@ import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageSeoDescription;
 import com.vointika.page.domain.valueobject.PageSeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
-import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
