@@ -1003,6 +1003,17 @@ the structure already provides it — `TourOperatorMembershipPolicy.ensureMember
 once behind one predicate, so its two causes cannot differ whatever any string says.
 Write the guard for the copies and credit the structure for the property.
 
+**And exempt exactly one assertion, or you make the wording unverifiable.** A guard
+that scans both trees forbids *pinning* the sentence as well as copying it — so after
+the existing assertions are switched to read the constant they all become
+tautological (`hasMessage(CONSTANT)` holds for any value), and a one-word edit changes
+every published body with a green suite. That is strictly weaker than the copies it
+replaced, and it is how it was found: rewording the tenant 404 moved **8 snippets**
+silently. The resolution is one named pinning test exempted beside the declaration
+(`TenantNotFoundIsThisSentenceTest`), asserting the literal once, with a failure
+message saying which published bodies move. Verify the exemption did not widen by
+planting the literal in an ordinary test and watching the guard still fail.
+
 **A published error example must be reachable and must differ from its happy path.**
 `PublishedExamplesAreHonestTest` fails the build on the second and cannot see the
 first. Vary the thing the error turns on — a missing id for a 404, a STAFF token for
