@@ -1142,6 +1142,16 @@ sentence. The tell is a lower-case one-word message in a `doThrow`; four are sti
 published at the time of writing (`experience` ×1, `pickup` ×3), and a guard forbidding
 short lower-case literals in documentation-test `doThrow`s is the obvious gate.
 
+**Fixing one is where it goes wrong: check which throw the stub stands in for, not which
+noun the endpoint is about.** `audiences/list-not-found` stubs `ensureMember`, so its 404
+is the *tenant* 404; reaching for `AudienceOwnershipQuery.NOT_FOUND` there published
+"Audience not found" for a non-member. That is unproducible **and** worse than the
+placeholder it replaced, because it confirms the operator resolved and the caller reached
+the audience collection — the enumeration property `TENANT_NOT_FOUND` exists to protect.
+`"not found"` is visibly fake; an authoritative-looking wrong sentence is not. The
+siblings are the check: `media/list-not-found` and `tour-operators/members/list-not-found`
+both publish `"Tour operator not found"`.
+
 **A published error example must be reachable and must differ from its happy path.**
 `PublishedExamplesAreHonestTest` fails the build on the second and cannot see the
 first. Vary the thing the error turns on — a missing id for a 404, a STAFF token for

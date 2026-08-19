@@ -1,6 +1,5 @@
 package com.vointika.audience.presentation.controller;
 
-import com.vointika.shared.port.AudienceOwnershipQuery;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.application.usecase.CreateAudienceUseCase;
 import com.vointika.audience.application.usecase.GetAudienceUseCase;
@@ -242,7 +241,9 @@ class AudienceControllerDocumentationTest {
     @Test
     void nonMemberGets404() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ResourceNotFoundException(AudienceOwnershipQuery.NOT_FOUND))
+        // ensureMember raises the TENANT 404, not the audience one — the point of this
+        // endpoint's 404 is that it says nothing about whether the operator exists.
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", STAFF_BEARER))

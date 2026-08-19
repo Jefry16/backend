@@ -26,11 +26,17 @@ public interface AudienceRepository {
      * The same 404 for callers that only need the audience to exist — the four
      * translation endpoints, which work off the overlay table afterwards.
      *
-     * <p><b>It deliberately reuses the same query rather than adding an {@code exists}
-     * one.</b> `experience` and `page` gained a separate existence check because their
-     * aggregates carry a media list and a body; an {@code Audience} is six scalar
-     * columns, so a second query and its JPA method would cost more to keep than the
-     * read it saves (LAW §2.4). What is centralised here is the message, not the plan.
+     * <p><b>This one still reads the row, unlike its siblings in `experience` and
+     * `page`, and the name does not say so.</b> Read it as "require that it exists",
+     * not as "check existence cheaply": there is no {@code existsByIdAndTourOperatorId}
+     * on this repository and none is wanted. Those two contexts earned a separate
+     * existence query because their aggregates carry a media list and a body; an
+     * {@code Audience} is six scalar columns, so a second query plus its JPA method
+     * would cost more to keep true than the read it saves (LAW §2.4).
+     *
+     * <p>So `PATTERNS.md` §9's pair — *"check which callers use the row they just
+     * loaded"* — <b>was</b> applied here; the answer was that the read is cheap enough
+     * to keep. If an {@code Audience} ever grows a collection, revisit this first.
      */
     default void requireExists(UUID id, UUID tourOperatorId) {
         requireByIdAndTourOperatorId(id, tourOperatorId);
