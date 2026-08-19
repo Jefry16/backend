@@ -51,7 +51,8 @@ public class TourOperatorMembershipPolicy implements TourOperatorMembershipCheck
                 : memberRepository.findRoleByTourOperatorIdAndUserId(tourOperatorId, userId)
                         .orElse(null);
         if (role == null || !role.atLeast(minimum)) {
-            throw new ForbiddenException("This action requires " + minimum + " privileges");
+            throw new ForbiddenException(
+                    TourOperatorMembershipCheck.requiresRoleMessage(minimum.name()));
         }
     }
 }

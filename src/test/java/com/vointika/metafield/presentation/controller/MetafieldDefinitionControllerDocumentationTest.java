@@ -208,7 +208,7 @@ class MetafieldDefinitionControllerDocumentationTest {
     void aStaffMemberCannotDefineAMetafield() throws Exception {
         when(accessTokenValidator.isValid("staff-access-token")).thenReturn(true);
         when(accessTokenValidator.extractUserId("staff-access-token")).thenReturn(STAFF_USER);
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(createUseCase).execute(any());
 
         mockMvc.perform(post("/api/tour-operators/{id}/metafield-definitions", OP)

@@ -218,7 +218,7 @@ class PickupLocationControllerDocumentationTest {
     @Test
     void staffCannotCreate() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("This action requires ADMIN privileges")).when(createPickupLocationUseCase).execute(any(), any(), any());
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN"))).when(createPickupLocationUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))

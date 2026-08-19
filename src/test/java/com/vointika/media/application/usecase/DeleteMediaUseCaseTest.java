@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -54,6 +55,9 @@ class DeleteMediaUseCaseTest {
     @BeforeEach
     void setUp() {
         mediaRepository = mock(MediaRepository.class);
+        // requireByIdAndTourOperatorId is a default method: Mockito would stub it to
+        // null and the 404 assertions below would pass without running the branch.
+        doCallRealMethod().when(mediaRepository).requireByIdAndTourOperatorId(any(), any());
         mediaStoragePort = mock(MediaStoragePort.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new DeleteMediaUseCase(mediaRepository, mediaStoragePort, membershipCheck, transactionRunner, auditTrailPort);
@@ -89,7 +93,7 @@ class DeleteMediaUseCaseTest {
 
     @Test
     void nonAdminIsRejectedBeforeAnyLookup() {
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(membershipCheck).ensureAdmin(callerId, operatorId);
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(operatorId, mediaId, callerId));

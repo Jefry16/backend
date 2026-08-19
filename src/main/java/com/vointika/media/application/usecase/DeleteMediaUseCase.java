@@ -3,7 +3,6 @@ package com.vointika.media.application.usecase;
 import com.vointika.media.application.port.MediaStoragePort;
 import com.vointika.media.domain.entity.Media;
 import com.vointika.media.domain.repository.MediaRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -47,8 +46,7 @@ public class DeleteMediaUseCase {
 
     public void execute(UUID tourOperatorId, UUID mediaId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        Media media = mediaRepository.findByIdAndTourOperatorId(mediaId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
+        Media media = mediaRepository.requireByIdAndTourOperatorId(mediaId, tourOperatorId);
 
         transactionRunner.run(() -> {
             mediaRepository.deleteByIdAndTourOperatorId(mediaId, tourOperatorId);

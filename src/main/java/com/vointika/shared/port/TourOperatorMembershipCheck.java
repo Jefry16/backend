@@ -29,6 +29,27 @@ public interface TourOperatorMembershipCheck {
     String TENANT_NOT_FOUND = "Tour operator not found";
 
     /**
+     * The 403 an insufficient tier gets, built the way the policy builds it.
+     *
+     * <p><b>The one published message this series could not collapse the usual way</b>,
+     * because production <em>interpolates</em> it — {@code "This action requires " +
+     * minimum + " privileges"} — so there was no constant to point at and fifteen test
+     * files across seven contexts spelled the sentence out instead, eight of them
+     * publishing it.
+     *
+     * <p>That is also why no per-context pass ever fixed it: {@code media}'s pass owns
+     * three of the fifteen, {@code touroperator}'s four, and the sentence only becomes
+     * one fact if something outside all of them owns it. A worklist item that no pass
+     * owns is one that never gets done.
+     *
+     * <p>Takes the role's name rather than {@code MemberRole}, which is
+     * {@code touroperator}'s enum and cannot cross into {@code shared}.
+     */
+    static String requiresRoleMessage(String roleName) {
+        return "This action requires " + roleName + " privileges";
+    }
+
+    /**
      * Throws {@link com.vointika.shared.exception.ResourceNotFoundException}
      * ({@link #TENANT_NOT_FOUND}) if the user is not a member of the operator —
      * or the operator does not exist. Identical responses preserve tenant isolation.

@@ -208,7 +208,7 @@ class ContactMessageControllerDocumentationTest {
     @Test
     void deleteAsStaffIs403() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(deleteUseCase).execute(any(), any(), any());
 
         mockMvc.perform(delete("/api/tour-operators/{id}/contact-messages/{messageId}", OP, MSG)

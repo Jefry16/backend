@@ -294,7 +294,7 @@ class ExperienceControllerDocumentationTest {
     @Test
     void staffCannotCreate() throws Exception {
         authenticated();
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(createExperienceUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/experiences", OP)
                         .header("Authorization", "Bearer test-access-token")

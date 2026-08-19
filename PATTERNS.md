@@ -749,6 +749,38 @@ Two things to settle before moving one, in order:
 The counterweight is §2.4: a constant with one caller is not a kernel type. Two
 independent statements of the same rule is the threshold.
 
+**Two questions decide it, and they are not the same question: does it have a home, and
+does it have an owner?** The ADMIN 403 sat un-collapsed through six passes because each
+one asked only the first. Fifteen test files across **seven** contexts spelled out
+`"This action requires ADMIN privileges"`, eight of them publishing it, while production
+*interpolated* it — so there was no constant to reference, and every pass could truthfully
+say the other fourteen files were not its to fix. **A duplication that spans more contexts
+than any pass covers has no owner, and deferring it is deciding never to do it.** Its home
+was obvious once looked for: the shared port that already holds `TENANT_NOT_FOUND`.
+
+The mirror case is the one to leave alone. `"File is empty"` is an identical guard in
+`media` and `identity`, and it stays duplicated: two callers, and the only shared home
+would be a new class holding one `if`. `"Content type is required"` looks like the same
+find and is not — media's is a **domain value object's invariant**, identity's a **use-case
+precondition**, so they are different statements that share a sentence. Ask which layer
+each lives in before calling two copies one fact.
+
+**And a published message is collapsed only when one assertion still holds its wording
+— see §9a.** This is the half that gets skipped, because the collapse feels finished when
+the build goes green. It is not: the copies you removed were failing assertions, and
+replacing all of them with calls to the new helper makes every one of them hold for any
+value. The ADMIN 403 shipped that way in the same PR that wrote this paragraph — reword
+the helper and **eight** published bodies change with a green suite, which is strictly
+weaker than the fifteen literals it replaced.
+
+**Pin it against whatever the message is built from, not against a copy of its output.**
+`TENANT_NOT_FOUND` is a constant, so a literal pin is the whole story. A message built
+from an argument has a second joint: production passes `minimum.name()` while every stub
+hardcodes `"ADMIN"`, so renaming the enum constant reworders production while all fifteen
+stubs keep agreeing with themselves. `theInsufficientRoleMessageReadsThisWay` asserts the
+literal against `MemberRole.ADMIN.name()` and fails on **both** the reword and the rename;
+a pin written against `"ADMIN"` catches only the first.
+
 **Two copies of one rule can pin opposite behaviour, with both suites green.**
 `identity.Email` and `touroperator.InviteeEmail` stated the same rule; identity's test
 asserted `"  user@example.com  "` is *rejected*, touroperator's asserted it is

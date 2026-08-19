@@ -283,7 +283,7 @@ class PolicyControllerDocumentationTest {
     void aStaffMemberCannotWriteAPolicy() throws Exception {
         when(accessTokenValidator.isValid("staff-access-token")).thenReturn(true);
         when(accessTokenValidator.extractUserId("staff-access-token")).thenReturn(STAFF_USER_ID);
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(createUseCase).execute(any(), any(), any());
 
         mockMvc.perform(post("/api/tour-operators/{id}/policies", OPERATOR_ID)
