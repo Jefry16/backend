@@ -1131,6 +1131,14 @@ nobody checks.
 So the three ways one scan has been wrong, all scope and never logic: too long a
 minimum, the wrong tree, and one occurrence per file. Print the per-file count.
 
+**And a fourth, which points the other way: a verification scan looser than the claim it
+checks manufactures false corrections.** Checking "audit is the only test hand-rolling the
+error envelope" with `fieldWithPath("status").description` returned two more files — an
+invitation's lifecycle `status` and a slot's `status`, neither an error field. The claim
+was true; the check that appeared to refute it was the sloppy one, and acting on it would
+have rewritten a correct statement into a wrong one. Match on something only the target
+has (here: `status` *and* `error` *and* `timestamp` together).
+
 **A message whose sameness is load-bearing gets written once and guarded.**
 `"Tour operator not found"` was 20 literals in `src/main` and 16 in tests, said by
 four different causes on purpose. `TenantNotFoundMessageIsWrittenOnceTest` is the

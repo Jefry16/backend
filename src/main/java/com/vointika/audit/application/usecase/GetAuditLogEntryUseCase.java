@@ -13,6 +13,16 @@ import java.util.UUID;
  */
 public class GetAuditLogEntryUseCase {
 
+    /**
+     * The 404 for an entry id this operator does not own.
+     *
+     * <p>Thrown once, so this is not a duplication fix — it exists so the
+     * documentation test can <b>derive</b> the body it publishes. It hardcoded the
+     * sentence, which meant rewording the throw moved nothing in the guide: the
+     * §9a defect where centralising the rule is not centralising the contract.
+     */
+    public static final String NOT_FOUND = "Audit log entry not found";
+
     private final AuditLogEntryRepository auditLogEntryRepository;
     private final TourOperatorMembershipCheck membershipCheck;
 
@@ -25,6 +35,6 @@ public class GetAuditLogEntryUseCase {
     public AuditLogListItem execute(UUID tourOperatorId, UUID entryId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
         return auditLogEntryRepository.findByIdAndTourOperatorId(entryId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Audit log entry not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(NOT_FOUND));
     }
 }

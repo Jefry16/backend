@@ -1,5 +1,6 @@
 package com.vointika.audit.presentation.controller;
 
+import com.vointika.shared.web.docs.ApiErrorSnippets;
 import com.vointika.audit.application.usecase.GetAuditLogEntryUseCase;
 import com.vointika.audit.application.usecase.ListAuditLogUseCase;
 import com.vointika.audit.domain.projection.AuditLogListItem;
@@ -201,22 +202,21 @@ class AuditLogControllerDocumentationTest {
     void getUnknownIs404() throws Exception {
         authenticated();
         when(getAuditLogEntryUseCase.execute(any(), any(), any()))
-                .thenThrow(new ResourceNotFoundException("Audit log entry not found"));
+                .thenThrow(new ResourceNotFoundException(GetAuditLogEntryUseCase.NOT_FOUND));
 
         mockMvc.perform(get("/api/tour-operators/{id}/audit-log/{entryId}", OP, MISSING_ENTRY)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNotFound())
+                // The one assertion holding this sentence. The stub above now derives it
+                // from production so the guide follows a reword — but that alone makes the
+                // wording unpinned, and this body IS published (PATTERNS §9a, and the
+                // loosening #189 shipped). Spell it out here, once.
+                .andExpect(jsonPath("$.message").value("Audit log entry not found"))
                 .andDo(document("audit-log/get-not-found",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
                                 parameterWithName("id").description("The tour operator id"),
                                 parameterWithName("entryId").description("An entry id that does not exist, or belongs to another operator")),
-                        responseFields(
-                                fieldWithPath("status").description("The HTTP status code"),
-                                fieldWithPath("error").description("The status reason phrase"),
-                                fieldWithPath("message").description("Human-readable detail"),
-                                fieldWithPath("code").type(JsonFieldType.STRING)
-                                        .description("Machine-readable error code; absent when the throw site supplied none — as here").optional(),
-                                fieldWithPath("timestamp").description("When the error was produced"))));
+                        responseFields(ApiErrorSnippets.errorFields())));
     }
 }
