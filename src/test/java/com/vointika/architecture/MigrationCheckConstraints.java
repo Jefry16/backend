@@ -49,9 +49,21 @@ public final class MigrationCheckConstraints {
      * <p>The column name is matched on a boundary, which {@code type} is what
      * forced: an unanchored match reads {@code link_type IN (…)} from the menus
      * migration as this column's constraint.
+     *
+     * <p><b>Scoped to {@code table}, because a column name is not unique within a
+     * context.</b> Each match is attributed to the nearest {@code CREATE TABLE} or
+     * {@code ALTER TABLE} above it, and anything on another table is skipped. Without
+     * that, {@code experience} already answers wrongly today — {@code status} is a
+     * CHECK on {@code experiences} in V1 and on {@code slots} in V4, so last-wins
+     * returned the slots values for either question, and the failure message named the
+     * table the caller asked about rather than the one it had read. The parameter was
+     * accepted and used only in that message.
      */
-    static Set<String> allowedValues(Path migrations, String column) throws IOException {
+    static Set<String> allowedValues(Path migrations, String column, String table) throws IOException {
         Pattern check = Pattern.compile("(?<![A-Za-z0-9_])" + column + "\\s+IN\\s*\\(([^)]*)\\)",
+                Pattern.CASE_INSENSITIVE);
+        Pattern owner = Pattern.compile(
+                "(?:CREATE|ALTER)\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Za-z0-9_.\"]+)",
                 Pattern.CASE_INSENSITIVE);
         List<Path> files;
         try (Stream<Path> paths = Files.list(migrations)) {
@@ -62,10 +74,13 @@ public final class MigrationCheckConstraints {
 
         Set<String> latest = new LinkedHashSet<>();
         for (Path file : files) {
-            Matcher matcher = check.matcher(Files.readString(file, StandardCharsets.UTF_8));
+            String sql = Files.readString(file, StandardCharsets.UTF_8);
+            Matcher matcher = check.matcher(sql);
             List<String> inThisFile = new ArrayList<>();
             while (matcher.find()) {
-                inThisFile.add(matcher.group(1));
+                if (table.equalsIgnoreCase(owningTable(sql, matcher.start(), owner))) {
+                    inThisFile.add(matcher.group(1));
+                }
             }
             if (!inThisFile.isEmpty()) {
                 latest.clear();
@@ -87,7 +102,7 @@ public final class MigrationCheckConstraints {
     public static void assertEnumMatches(String context, String column,
                                         Class<? extends Enum<?>> type, String table) throws IOException {
         Path migrations = Path.of("src/main/resources/db/migration", context);
-        Set<String> allowed = allowedValues(migrations, column);
+        Set<String> allowed = allowedValues(migrations, column, table);
 
         assertThat(allowed)
                 .withFailMessage("No %s CHECK found in %s — this test cannot see the constraint it "
@@ -110,6 +125,21 @@ public final class MigrationCheckConstraints {
                                 + "Ship the migration and the enum change together.",
                         type.getSimpleName(), declared, table, column, allowed)
                 .containsExactlyInAnyOrderElementsOf(declared);
+    }
+
+    /**
+     * The table of the nearest {@code CREATE}/{@code ALTER TABLE} above
+     * {@code position}, unqualified — every migration here writes
+     * {@code CREATE TABLE audit.audit_log}, and callers name the bare table.
+     */
+    private static String owningTable(String sql, int position, Pattern owner) {
+        Matcher matcher = owner.matcher(sql);
+        String current = null;
+        while (matcher.find() && matcher.start() < position) {
+            String name = matcher.group(1).replace("\"", "");
+            current = name.substring(name.lastIndexOf('.') + 1);
+        }
+        return current;
     }
 
     private static int version(Path migration) {
