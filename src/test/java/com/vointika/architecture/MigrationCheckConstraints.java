@@ -23,9 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * checking.
  *
  * <p>It moved here from {@code touroperator}'s test tree when {@code metafield}
- * needed it too — three callers now, in two contexts, so it takes the migration
- * folder rather than naming one. The ordering rule below is why this is one
- * helper rather than a copy per context.
+ * needed it too, and is now <b>six call sites across three contexts</b>
+ * ({@code touroperator} 4, {@code audit} 1, {@code metafield} 1), so it takes the
+ * migration folder rather than naming one. The ordering rule below is why this is one
+ * helper rather than a copy per context — {@code audit} kept a 119-line copy until
+ * 2026-08-19, and the copy had drifted into asserting only one direction.
  */
 public final class MigrationCheckConstraints {
 
@@ -104,9 +106,16 @@ public final class MigrationCheckConstraints {
         Path migrations = Path.of("src/main/resources/db/migration", context);
         Set<String> allowed = allowedValues(migrations, column, table);
 
+        // Two causes since the lookup was scoped by table, and the newer one — a table
+        // name that matches no CREATE/ALTER TABLE — is the likelier. Naming only the
+        // parser sends a reader to debug working code for an argument they mistyped.
         assertThat(allowed)
-                .withFailMessage("No %s CHECK found in %s — this test cannot see the constraint it "
-                        + "exists to track. Fix the parser, do not delete the test.", column, migrations)
+                .withFailMessage("No %s CHECK for table '%s' in %s. Two causes:%n"
+                        + "  the table name matches no CREATE/ALTER TABLE in these migrations — it "
+                        + "is compared unqualified, so pass '%s', not '%s.%s'%n"
+                        + "  or the parser cannot see a constraint that is really there%n"
+                        + "Check the argument first. If the table is right, fix the parser — do not "
+                        + "delete the test.", column, table, migrations, table, context, table)
                 .isNotEmpty();
 
         Set<String> declared = Arrays.stream(type.getEnumConstants())
@@ -131,6 +140,14 @@ public final class MigrationCheckConstraints {
      * The table of the nearest {@code CREATE}/{@code ALTER TABLE} above
      * {@code position}, unqualified — every migration here writes
      * {@code CREATE TABLE audit.audit_log}, and callers name the bare table.
+     *
+     * <p><b>Nearest-statement-above is textual, so a comment counts.</b> A migration
+     * whose header prose says "ALTER TABLE slots …" above an unrelated CHECK would
+     * attribute that constraint to {@code slots}. No migration does today — checked
+     * across all of them — but explanatory headers are a convention here, so this is a
+     * shape to know rather than a bug to fix now. An unmatched table yields an empty
+     * set, which trips the guard in {@link #assertEnumMatches} rather than asserting
+     * against another table's values.
      */
     private static String owningTable(String sql, int position, Pattern owner) {
         Matcher matcher = owner.matcher(sql);
