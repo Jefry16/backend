@@ -74,8 +74,8 @@ public class AudienceUseCaseConfig {
         return new ListAudienceTranslationsUseCase(audienceRepository, audienceTranslationRepository, membershipCheck);
     }
 
-    // Was MISSING entirely (the import existed, the bean did not) — a boot-time
-    // failure for any context containing AudienceTranslationController.
+    // A use case with an import here but no @Bean compiles and then fails at boot,
+    // for every context that loads AudienceTranslationController. This one did.
     @Bean
     public UpsertAudienceTranslationUseCase upsertAudienceTranslationUseCase(
             AudienceRepository audienceRepository,

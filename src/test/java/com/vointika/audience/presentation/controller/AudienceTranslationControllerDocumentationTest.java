@@ -180,7 +180,7 @@ class AudienceTranslationControllerDocumentationTest {
     @Test
     void staffCannotUpsert() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("admin"))
+        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/audiences/{audienceId}/translations/{locale}", OP, AUD, "es")
                         .header("Authorization", STAFF_BEARER)

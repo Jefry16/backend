@@ -2,7 +2,6 @@ package com.vointika.audience.application.usecase;
 
 import com.vointika.audience.domain.entity.Audience;
 import com.vointika.audience.domain.repository.AudienceRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -24,7 +23,6 @@ public class GetAudienceUseCase {
 
     public Audience execute(UUID tourOperatorId, UUID audienceId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        return audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Audience not found"));
+        return audienceRepository.requireByIdAndTourOperatorId(audienceId, tourOperatorId);
     }
 }

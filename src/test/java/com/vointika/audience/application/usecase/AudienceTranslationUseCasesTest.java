@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -51,6 +52,11 @@ class AudienceTranslationUseCasesTest {
     @BeforeEach
     void setUp() {
         audienceRepository = mock(AudienceRepository.class);
+        // Both are default methods, and requireExists delegates to the other, so
+        // both need calling for real — otherwise Mockito returns null from each and
+        // every 404 assertion below passes without running the branch (PATTERNS §9).
+        doCallRealMethod().when(audienceRepository).requireByIdAndTourOperatorId(any(), any());
+        doCallRealMethod().when(audienceRepository).requireExists(any(), any());
         translationRepository = mock(AudienceTranslationRepository.class);
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);

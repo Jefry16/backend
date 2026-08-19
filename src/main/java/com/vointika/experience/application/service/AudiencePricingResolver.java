@@ -59,7 +59,7 @@ public class AudiencePricingResolver {
             Capacity capacity = new Capacity(ap.capacity());
             resolved.add(new PricedAudience(
                     audienceOwnershipQuery.findForTourOperator(ap.audienceId(), tourOperatorId)
-                            .orElseThrow(() -> new ResourceNotFoundException("Audience not found")),
+                            .orElseThrow(() -> new ResourceNotFoundException(AudienceOwnershipQuery.NOT_FOUND)),
                     price, capacity));
         }
         return resolved;

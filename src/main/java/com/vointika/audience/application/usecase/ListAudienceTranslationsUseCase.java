@@ -3,7 +3,6 @@ package com.vointika.audience.application.usecase;
 import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.List;
@@ -26,9 +25,7 @@ public class ListAudienceTranslationsUseCase {
 
     public List<AudienceTranslation> execute(UUID tourOperatorId, UUID audienceId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Audience not found");
-        }
+        audienceRepository.requireExists(audienceId, tourOperatorId);
         return translationRepository.findAllByAudienceId(audienceId);
     }
 }

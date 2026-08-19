@@ -1124,6 +1124,34 @@ silently. The resolution is one named pinning test exempted beside the declarati
 message saying which published bodies move. Verify the exemption did not widen by
 planting the literal in an ordinary test and watching the guard still fail.
 
+**A stubbed placeholder becomes the published body.** `doThrow(new
+ResourceAlreadyExistsException("exists"))` in a documentation test reads as throwaway
+scaffolding and is not: the guide then tells clients a name conflict answers
+`{"message": "exists"}`, and a missing row `"not found"`. `audience` published three
+such bodies — `"exists"`, `"admin"`, `"not found"` — none of which any request can
+produce, so a client matching on `message` never matched.
+
+It also silently defeats centralising the message: the sentinel probe for
+`AudienceOwnershipQuery.NOT_FOUND` reached **zero** snippets while the placeholder was
+there, and two the moment the stub derived from the constant. **A stub that invents its
+own message hides both defects at once** — the wrong contract, and the constant that
+never arrives.
+
+Stub what production actually throws: the constant where there is one, else the real
+sentence. The tell is a lower-case one-word message in a `doThrow`; four are still
+published at the time of writing (`experience` ×1, `pickup` ×3), and a guard forbidding
+short lower-case literals in documentation-test `doThrow`s is the obvious gate.
+
+**Fixing one is where it goes wrong: check which throw the stub stands in for, not which
+noun the endpoint is about.** `audiences/list-not-found` stubs `ensureMember`, so its 404
+is the *tenant* 404; reaching for `AudienceOwnershipQuery.NOT_FOUND` there published
+"Audience not found" for a non-member. That is unproducible **and** worse than the
+placeholder it replaced, because it confirms the operator resolved and the caller reached
+the audience collection — the enumeration property `TENANT_NOT_FOUND` exists to protect.
+`"not found"` is visibly fake; an authoritative-looking wrong sentence is not. The
+siblings are the check: `media/list-not-found` and `tour-operators/members/list-not-found`
+both publish `"Tour operator not found"`.
+
 **A published error example must be reachable and must differ from its happy path.**
 `PublishedExamplesAreHonestTest` fails the build on the second and cannot see the
 first. Vary the thing the error turns on — a missing id for a 404, a STAFF token for
