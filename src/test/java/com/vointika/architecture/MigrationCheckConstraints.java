@@ -109,13 +109,20 @@ public final class MigrationCheckConstraints {
         // Two causes since the lookup was scoped by table, and the newer one — a table
         // name that matches no CREATE/ALTER TABLE — is the likelier. Naming only the
         // parser sends a reader to debug working code for an argument they mistyped.
+        //
+        // The suggestion is built from the UNQUALIFIED form, by the same rule the parser
+        // uses. Building it from `table` instead made the advice recommend whatever the
+        // caller passed: a schema-qualified argument rendered as "pass
+        // 'touroperator.x', not 'touroperator.touroperator.x'" — the input echoed back
+        // as the fix, for the one mistake this line exists to catch.
+        String bare = unqualified(table);
         assertThat(allowed)
                 .withFailMessage("No %s CHECK for table '%s' in %s. Two causes:%n"
                         + "  the table name matches no CREATE/ALTER TABLE in these migrations — it "
                         + "is compared unqualified, so pass '%s', not '%s.%s'%n"
                         + "  or the parser cannot see a constraint that is really there%n"
                         + "Check the argument first. If the table is right, fix the parser — do not "
-                        + "delete the test.", column, table, migrations, table, context, table)
+                        + "delete the test.", column, table, migrations, bare, context, bare)
                 .isNotEmpty();
 
         Set<String> declared = Arrays.stream(type.getEnumConstants())
@@ -153,10 +160,21 @@ public final class MigrationCheckConstraints {
         Matcher matcher = owner.matcher(sql);
         String current = null;
         while (matcher.find() && matcher.start() < position) {
-            String name = matcher.group(1).replace("\"", "");
-            current = name.substring(name.lastIndexOf('.') + 1);
+            current = unqualified(matcher.group(1).replace("\"", ""));
         }
         return current;
+    }
+
+    /**
+     * {@code audit.audit_log} → {@code audit_log}.
+     *
+     * <p>Used by both the comparison and the advice in {@link #assertEnumMatches}'s
+     * failure message, deliberately: when the message built its suggestion separately it
+     * suggested the caller's own qualified input. Sharing the rule keeps the advice true
+     * by construction if the rule ever changes.
+     */
+    private static String unqualified(String name) {
+        return name.substring(name.lastIndexOf('.') + 1);
     }
 
     private static int version(Path migration) {
