@@ -346,7 +346,7 @@ class SlotControllerDocumentationTest {
     @Test
     void staffCannotCreate() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("admin")).when(createSlotUseCase).execute(any());
+        doThrow(new ForbiddenException("This action requires ADMIN privileges")).when(createSlotUseCase).execute(any());
         mockMvc.perform(post("/api/tour-operators/{id}/experiences/{eid}/slot", OP, EXP)
                         .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(SINGLE_BODY))

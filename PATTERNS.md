@@ -1138,9 +1138,19 @@ own message hides both defects at once** — the wrong contract, and the constan
 never arrives.
 
 Stub what production actually throws: the constant where there is one, else the real
-sentence. The tell is a lower-case one-word message in a `doThrow`; four are still
-published at the time of writing (`experience` ×1, `pickup` ×3), and a guard forbidding
-short lower-case literals in documentation-test `doThrow`s is the obvious gate.
+sentence. **`PublishedErrorBodiesAreSentencesTest` now fails the build on it** — a
+stubbed message in a `*DocumentationTest` must start with a capital.
+
+That rule is a proxy and says so. The real requirement is "is what production throws",
+which cannot be checked mechanically: four real messages are *interpolated* and appear
+nowhere in `src/main` verbatim (`"This action requires " + minimum + " privileges"` and
+three more), so a verbatim-in-source check flags them all and is unusable. Every genuine
+message here is a sentence and every placeholder was a bare token, so the initial capital
+separated them exactly — it flagged the four real offenders and nothing else.
+
+**Know what it does not catch.** A plausible-looking wrong sentence passes: replacing a
+placeholder with the wrong real constant published "Audience not found" for a non-member,
+and this guard would have waved it through. That one needs the rule below.
 
 **Fixing one is where it goes wrong: check which throw the stub stands in for, not which
 noun the endpoint is about.** `audiences/list-not-found` stubs `ensureMember`, so its 404

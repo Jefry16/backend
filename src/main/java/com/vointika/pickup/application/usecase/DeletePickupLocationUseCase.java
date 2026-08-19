@@ -2,7 +2,6 @@ package com.vointika.pickup.application.usecase;
 
 import com.vointika.pickup.domain.entity.PickupLocation;
 import com.vointika.pickup.domain.repository.PickupLocationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -36,8 +35,7 @@ public class DeletePickupLocationUseCase {
     public void execute(UUID tourOperatorId, UUID pickupLocationId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         PickupLocation pickupLocation = pickupLocationRepository
-                .findByIdAndTourOperatorId(pickupLocationId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Pickup location not found"));
+                .requireByIdAndTourOperatorId(pickupLocationId, tourOperatorId);
         // The deleted row's identity rides details — after the delete, the
         // trail is the only place its name survives.
         transactionRunner.run(() -> {
