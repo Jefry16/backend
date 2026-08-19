@@ -1082,10 +1082,19 @@ inverts the priority, because **within-file repetition is where load-bearing sam
 lives**. `RefreshAccessTokenUseCase` throws `"Invalid refresh token"` four times, for
 the unknown token, the replayed one, the missing user and the rotation-race loser: four
 causes this API makes indistinguishable on purpose, with nothing holding them together
-but four identical literals. It is the `TENANT_NOT_FOUND` case exactly — and the scan
-that was supposed to find it printed `[5x]` across five *files* and read as ordinary
-spread-out duplication. Its 21 characters cleared the length threshold; the file-level
-count is what hid it.
+but four identical literals. It is the `TENANT_NOT_FOUND` case exactly.
+
+Its 21 characters cleared the length threshold, so the scan *did* surface it — and the
+shape it printed is why that did not help. **Two different fives coincide here, and
+conflating them is the whole trap.** Over both trees, file-deduplicated, it printed
+`[5x]`: five *files*, three of them tests, which reads as thin duplication spread
+across a context. The production truth is five *occurrences* in **two** files, four of
+them in one method chain. Restrict the broken scan to `src/main` and it prints `[2x]` —
+the number that shows how little a file count sees.
+
+Label every count with its scope and its unit. A total that means files in one place
+and occurrences in another will eventually agree by accident, and that is the reading
+nobody checks.
 
 So the three ways one scan has been wrong, all scope and never logic: too long a
 minimum, the wrong tree, and one occurrence per file. Print the per-file count.
