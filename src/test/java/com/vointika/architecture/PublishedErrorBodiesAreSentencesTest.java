@@ -44,6 +44,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * non-member, and this guard would have waved it through; for that, `PATTERNS.md` §9a,
  * check which throw the stub stands in for, not which noun the endpoint is about.
  *
+ * <p><b>It reads only string literals, and that is the point rather than a gap.</b>
+ * Roughly half the stubs in these tests never hand over a literal at all — they pass a
+ * production constant, an accessor, or in one case the real exception itself
+ * ({@code MediaControllerDocumentationTest.refusalFor} constructs a {@code ContentType},
+ * catches the {@code InvalidFieldException} production raises, and rethrows <em>that</em>,
+ * with an {@code AssertionError} if the type ever joins the allowlist). None of those can
+ * carry a placeholder, because their message is not theirs to invent. <b>A placeholder can
+ * only be written as a literal, and every literal is scanned</b> — so the blind spot lines
+ * up with the risk instead of cutting across it.
+ *
  * <p><b>What looks like a second hole is closed by the exception API, not by luck.</b>
  * The pattern only reads the constructor's first argument — but all thirteen
  * constructors in {@code shared.exception} take {@code String message} first, so
