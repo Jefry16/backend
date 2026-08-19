@@ -6,7 +6,6 @@ import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
 import com.vointika.audience.domain.valueobject.PaxPerUnit;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.SlotAudienceSnapshotPropagator;
@@ -51,8 +50,7 @@ public class UpdateAudienceUseCase {
     public void execute(UUID tourOperatorId, UUID audienceId, UUID callerUserId, AudienceInput input) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
 
-        Audience audience = audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Audience not found"));
+        Audience audience = audienceRepository.requireByIdAndTourOperatorId(audienceId, tourOperatorId);
 
         Map<String, Object> before = audience.auditSnapshot();
         boolean changed = false;
@@ -64,7 +62,7 @@ public class UpdateAudienceUseCase {
             if (!newName.value().equals(audience.getName().value())) {
                 if (audienceRepository.existsByTourOperatorIdAndNameExcluding(
                         tourOperatorId, newName.value(), audienceId)) {
-                    throw new ResourceAlreadyExistsException("An audience with this name already exists");
+                    throw new ResourceAlreadyExistsException(AudienceRepository.NAME_TAKEN);
                 }
                 audience.rename(newName);
                 changed = true;
@@ -83,21 +81,20 @@ public class UpdateAudienceUseCase {
             return;
         }
 
-        Audience toSave = audience;
         List<FieldChange> changes = AuditChanges.diff(before, audience.auditSnapshot());
         try {
             // The slot-snapshot propagation is part of this edit — it rides the
             // one audience.updated entry, no entry of its own.
             transactionRunner.run(() -> {
-                audienceRepository.save(toSave);
+                audienceRepository.save(audience);
                 slotAudienceSnapshotPropagator.propagate(
-                        toSave.getId(), toSave.getName().value(), toSave.getPaxPerUnit().value());
+                        audience.getId(), audience.getName().value(), audience.getPaxPerUnit().value());
                 auditTrailPort.append(new NewAuditEntry(
                         tourOperatorId, AuditActor.user(callerUserId),
                         "AUDIENCE", audienceId, "audience.updated", null, changes));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("An audience with this name already exists");
+            throw new ResourceAlreadyExistsException(AudienceRepository.NAME_TAKEN);
         }
     }
 }

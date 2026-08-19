@@ -3,7 +3,6 @@ package com.vointika.audience.application.usecase;
 import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 import com.vointika.shared.valueobject.LocaleCode;
 
@@ -30,9 +29,7 @@ public class GetAudienceTranslationUseCase {
     public AudienceTranslation execute(UUID tourOperatorId, UUID audienceId,
                                        String rawLocale, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Audience not found");
-        }
+        audienceRepository.requireExists(audienceId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
         return translationRepository.findByAudienceIdAndLocale(audienceId, locale.value())
                 .orElseGet(() -> AudienceTranslation.empty(audienceId, tourOperatorId, locale));

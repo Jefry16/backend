@@ -4,7 +4,6 @@ import com.vointika.audience.domain.entity.AudienceTranslation;
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
 import com.vointika.audience.domain.valueobject.AudienceName;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.service.OperatorLocaleCheck;
@@ -57,9 +56,7 @@ public class UpsertAudienceTranslationUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         LocaleCode locale = new LocaleCode(rawLocale);
 
-        if (audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Audience not found");
-        }
+        audienceRepository.requireExists(audienceId, tourOperatorId);
         operatorLocaleCheck.require(tourOperatorId, locale.value());
 
         AudienceName translated = (name == null || name.isBlank()) ? null : new AudienceName(name);

@@ -2,7 +2,6 @@ package com.vointika.audience.application.usecase;
 
 import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.domain.repository.AudienceTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -36,9 +35,7 @@ public class DeleteAudienceTranslationUseCase {
 
     public void execute(UUID tourOperatorId, UUID audienceId, String rawLocale, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        if (audienceRepository.findByIdAndTourOperatorId(audienceId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Audience not found");
-        }
+        audienceRepository.requireExists(audienceId, tourOperatorId);
         String locale = new LocaleCode(rawLocale).value();
         // Probe first: an idempotent delete that removes nothing records nothing.
         if (translationRepository.findByAudienceIdAndLocale(audienceId, locale).isEmpty()) {

@@ -1,5 +1,7 @@
 package com.vointika.audience.presentation.controller;
 
+import com.vointika.shared.port.AudienceOwnershipQuery;
+import com.vointika.audience.domain.repository.AudienceRepository;
 import com.vointika.audience.application.usecase.CreateAudienceUseCase;
 import com.vointika.audience.application.usecase.GetAudienceUseCase;
 import com.vointika.audience.application.usecase.ListAudiencesUseCase;
@@ -209,7 +211,7 @@ class AudienceControllerDocumentationTest {
     @Test
     void staffCannotCreate() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("admin")).when(createAudienceUseCase).execute(any(), any(), any());
+        doThrow(new ForbiddenException("This action requires ADMIN privileges")).when(createAudienceUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -224,7 +226,7 @@ class AudienceControllerDocumentationTest {
     void duplicateNameIsConflict() throws Exception {
         authenticated();
         // Send the name that clashes, not the one that succeeds two sections above.
-        doThrow(new ResourceAlreadyExistsException("exists"))
+        doThrow(new ResourceAlreadyExistsException(AudienceRepository.NAME_TAKEN))
                 .when(createAudienceUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", BEARER)
@@ -240,7 +242,7 @@ class AudienceControllerDocumentationTest {
     @Test
     void nonMemberGets404() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ResourceNotFoundException("not found"))
+        doThrow(new ResourceNotFoundException(AudienceOwnershipQuery.NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", STAFF_BEARER))

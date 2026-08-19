@@ -48,7 +48,7 @@ public class CreateAudienceUseCase {
         PaxPerUnit paxPerUnit = new PaxPerUnit(input.paxPerUnit());
 
         if (audienceRepository.existsByTourOperatorIdAndName(tourOperatorId, name.value())) {
-            throw new ResourceAlreadyExistsException("An audience with this name already exists");
+            throw new ResourceAlreadyExistsException(AudienceRepository.NAME_TAKEN);
         }
 
         Audience audience = new Audience(idGenerator.newId(), tourOperatorId, name, paxPerUnit, callerUserId);
@@ -61,7 +61,7 @@ public class CreateAudienceUseCase {
                 return saved;
             }).getId();
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("An audience with this name already exists");
+            throw new ResourceAlreadyExistsException(AudienceRepository.NAME_TAKEN);
         }
     }
 }
