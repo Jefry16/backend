@@ -1,6 +1,5 @@
 package com.vointika.experience.presentation.controller;
 
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.experience.application.dto.output.SlotView;
 import com.vointika.experience.application.usecase.CancelSlotUseCase;
 import com.vointika.experience.application.usecase.CreateSlotUseCase;
@@ -12,6 +11,7 @@ import com.vointika.experience.domain.valueobject.SlotStatus;
 import com.vointika.shared.exception.ConflictException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.shared.exception.InvalidFieldException;
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -197,7 +197,7 @@ class SlotControllerDocumentationTest {
     void createRecurringRejectsAPatternThatMatchesNothing() throws Exception {
         // Sends the pattern that matches nothing, not the one that produces slots.
         authenticated();
-        doThrow(new com.vointika.shared.exception.InvalidFieldException(
+        doThrow(new InvalidFieldException(
                 "No date in the validity window falls on the selected days"))
                 .when(createSlotsUseCase).execute(any());
 
@@ -417,7 +417,7 @@ class SlotControllerDocumentationTest {
     @Test
     void unknownSlotIs404() throws Exception {
         authenticated();
-        doThrow(new com.vointika.shared.exception.ResourceNotFoundException("Slot not found"))
+        doThrow(new ResourceNotFoundException("Slot not found"))
                 .when(getSlotUseCase).execute(any(), any(), any());
 
         mockMvc.perform(get("/api/tour-operators/{id}/slots/{slotId}", OP, MISSING_SLOT)

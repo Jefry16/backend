@@ -39,13 +39,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the scan root keeps them out of reach. Placeholders were bare lower-case tokens, so
  * the initial capital separates them exactly.
  *
- * <p><b>Two things it cannot see.</b> A plausible-looking wrong sentence passes —
- * replacing a placeholder with the wrong real constant published "Audience not found"
- * for a non-member, and this guard would have waved it through; for that, `PATTERNS.md`
- * §9a, check which throw the stub stands in for, not which noun the endpoint is about.
- * And the literal must be the constructor's <b>first</b> argument, so
- * {@code new InvalidFieldException(field, "message")} would slip past. Nothing in the
- * repository does that today.
+ * <p><b>What it cannot see.</b> A plausible-looking wrong sentence passes — replacing a
+ * placeholder with the wrong real constant published "Audience not found" for a
+ * non-member, and this guard would have waved it through; for that, `PATTERNS.md` §9a,
+ * check which throw the stub stands in for, not which noun the endpoint is about.
+ *
+ * <p><b>What looks like a second hole is closed by the exception API, not by luck.</b>
+ * The pattern only reads the constructor's first argument — but all thirteen
+ * constructors in {@code shared.exception} take {@code String message} first, so
+ * {@code new InvalidFieldException(field, "message")} is not a shape this hierarchy
+ * admits. That is the property to preserve: adding a constructor that puts anything
+ * before the message is what would reopen it. ("Nothing does that today" was the earlier
+ * wording, and it was checked against call sites rather than signatures — which reads as
+ * a standing gap and invites widening the regex to close a hole that is not there.)
  */
 class PublishedErrorBodiesAreSentencesTest {
 
@@ -56,10 +62,14 @@ class PublishedErrorBodiesAreSentencesTest {
      * constructor is invisible: {@code \w} is {@code [a-zA-Z0-9_]}. The first version of
      * this guard used {@code \w*} and reported the repository clean while
      * {@code new com.vointika.shared.exception.ResourceNotFoundException("not found")}
-     * was still publishing {@code slots/list-not-found}. Every other stub imports its
-     * exception, so the one site that did not was the one that escaped — <b>and the
-     * census that claimed "four offenders" was taken with this same pattern, so it
-     * inherited the blind spot it was measuring with.</b>
+     * was still publishing {@code slots/list-not-found}.
+     *
+     * <p><b>It was blind to four stub sites, and only one of them happened to hold a
+     * placeholder</b> — the other three carried real sentences, so nothing else was
+     * published wrong by luck rather than by structure. <b>The census that claimed "four
+     * offenders" was taken with this same pattern, so it inherited the blind spot it was
+     * measuring with.</b> A guard used to sweep for its own class cannot also be the
+     * evidence that the class is empty: plant the form you doubt and watch it fail.
      */
     private static final Pattern STUBBED_MESSAGE =
             Pattern.compile("new\\s+[\\w.]*(?:Exception|Error)\\s*\\(\\s*\"([^\"\\\\\\n]*)\"");
