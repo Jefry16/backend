@@ -1,5 +1,6 @@
 package com.vointika.experience.presentation.controller;
 
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.experience.application.dto.output.SlotView;
 import com.vointika.experience.application.usecase.CancelSlotUseCase;
 import com.vointika.experience.application.usecase.CreateSlotUseCase;
@@ -376,7 +377,9 @@ class SlotControllerDocumentationTest {
     @Test
     void nonMemberGets404() throws Exception {
         authenticatedAsStaff();
-        doThrow(new com.vointika.shared.exception.ResourceNotFoundException("not found"))
+        // ensureMember raises the TENANT 404, not a slot one — this endpoint's 404
+        // deliberately says nothing about whether the operator exists.
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/slots", OP)
                         .header("Authorization", STAFF_BEARER))

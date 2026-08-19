@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>What this catches.</b> {@code doThrow(new ResourceAlreadyExistsException("exists"))}
  * reads as throwaway scaffolding and is not: the guide then tells clients that a name
- * clash answers {@code {"message": "exists"}}. Four such bodies shipped — {@code "admin"}
- * twice, {@code "exists"}, {@code "not found"} — across {@code pickup} and
+ * clash answers {@code {"message": "exists"}}. Five such bodies shipped — {@code "admin"}
+ * twice, {@code "exists"}, {@code "not found"} twice — across {@code pickup} and
  * {@code experience}. None is producible, so a client matching on {@code message} never
  * matched.
  *
@@ -31,19 +31,38 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code "This action requires " + minimum + " privileges"}, and there are three more
  * like it. A verbatim-in-{@code src/main} check flags all of those and is unusable.
  *
- * <p>Every genuine message in this repository is a sentence and every placeholder was a
- * bare lower-case token, so the initial capital separates them exactly: it flagged the
- * four real offenders and nothing else. <b>It will not catch a plausible-looking wrong
- * sentence</b> — replacing a placeholder with the wrong real constant published
- * "Audience not found" for a non-member and this guard would have passed it. For that,
- * `PATTERNS.md` §9a: check which throw the stub stands in for, not which noun the
- * endpoint is about.
+ * <p><b>Every message that reaches a client is a sentence</b> — that, not "every message
+ * in the repository", is the claim this rests on, and three production messages are
+ * lower-case ({@code ListSchema:123}, {@code SortSpec:24}, {@code JwtProperties:24}).
+ * All three are {@code IllegalState}/{@code IllegalArgument} raised at wiring or parse
+ * time, never mapped to a response body and never stubbed in a documentation test, so
+ * the scan root keeps them out of reach. Placeholders were bare lower-case tokens, so
+ * the initial capital separates them exactly.
+ *
+ * <p><b>Two things it cannot see.</b> A plausible-looking wrong sentence passes —
+ * replacing a placeholder with the wrong real constant published "Audience not found"
+ * for a non-member, and this guard would have waved it through; for that, `PATTERNS.md`
+ * §9a, check which throw the stub stands in for, not which noun the endpoint is about.
+ * And the literal must be the constructor's <b>first</b> argument, so
+ * {@code new InvalidFieldException(field, "message")} would slip past. Nothing in the
+ * repository does that today.
  */
 class PublishedErrorBodiesAreSentencesTest {
 
-    /** A string literal handed straight to an exception constructor. */
+    /**
+     * A string literal handed straight to an exception constructor.
+     *
+     * <p><b>The character class must allow {@code .}</b>, or a fully-qualified
+     * constructor is invisible: {@code \w} is {@code [a-zA-Z0-9_]}. The first version of
+     * this guard used {@code \w*} and reported the repository clean while
+     * {@code new com.vointika.shared.exception.ResourceNotFoundException("not found")}
+     * was still publishing {@code slots/list-not-found}. Every other stub imports its
+     * exception, so the one site that did not was the one that escaped — <b>and the
+     * census that claimed "four offenders" was taken with this same pattern, so it
+     * inherited the blind spot it was measuring with.</b>
+     */
     private static final Pattern STUBBED_MESSAGE =
-            Pattern.compile("new\\s+\\w*(?:Exception|Error)\\s*\\(\\s*\"([^\"\\\\\\n]*)\"");
+            Pattern.compile("new\\s+[\\w.]*(?:Exception|Error)\\s*\\(\\s*\"([^\"\\\\\\n]*)\"");
 
     @Test
     @DisplayName("a documentation test never publishes a placeholder for an error body")
