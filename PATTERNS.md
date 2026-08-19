@@ -765,6 +765,22 @@ find and is not — media's is a **domain value object's invariant**, identity's
 precondition**, so they are different statements that share a sentence. Ask which layer
 each lives in before calling two copies one fact.
 
+**And a published message is collapsed only when one assertion still holds its wording
+— see §9a.** This is the half that gets skipped, because the collapse feels finished when
+the build goes green. It is not: the copies you removed were failing assertions, and
+replacing all of them with calls to the new helper makes every one of them hold for any
+value. The ADMIN 403 shipped that way in the same PR that wrote this paragraph — reword
+the helper and **eight** published bodies change with a green suite, which is strictly
+weaker than the fifteen literals it replaced.
+
+**Pin it against whatever the message is built from, not against a copy of its output.**
+`TENANT_NOT_FOUND` is a constant, so a literal pin is the whole story. A message built
+from an argument has a second joint: production passes `minimum.name()` while every stub
+hardcodes `"ADMIN"`, so renaming the enum constant reworders production while all fifteen
+stubs keep agreeing with themselves. `theInsufficientRoleMessageReadsThisWay` asserts the
+literal against `MemberRole.ADMIN.name()` and fails on **both** the reword and the rename;
+a pin written against `"ADMIN"` catches only the first.
+
 **Two copies of one rule can pin opposite behaviour, with both suites green.**
 `identity.Email` and `touroperator.InviteeEmail` stated the same rule; identity's test
 asserted `"  user@example.com  "` is *rejected*, touroperator's asserted it is
