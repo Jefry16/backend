@@ -1076,6 +1076,20 @@ Run both: the length threshold for prose duplicated in descriptions and javadoc,
 one for refusals. A threshold chosen to cut noise is a threshold that decides what you
 are allowed to find.
 
+**And count occurrences, not files.** The scan de-duplicated within a file, so a class
+saying one sentence four times reported as one hit. That is not a rounding error — it
+inverts the priority, because **within-file repetition is where load-bearing sameness
+lives**. `RefreshAccessTokenUseCase` throws `"Invalid refresh token"` four times, for
+the unknown token, the replayed one, the missing user and the rotation-race loser: four
+causes this API makes indistinguishable on purpose, with nothing holding them together
+but four identical literals. It is the `TENANT_NOT_FOUND` case exactly — and the scan
+that was supposed to find it printed `[5x]` across five *files* and read as ordinary
+spread-out duplication. Its 21 characters cleared the length threshold; the file-level
+count is what hid it.
+
+So the three ways one scan has been wrong, all scope and never logic: too long a
+minimum, the wrong tree, and one occurrence per file. Print the per-file count.
+
 **A message whose sameness is load-bearing gets written once and guarded.**
 `"Tour operator not found"` was 20 literals in `src/main` and 16 in tests, said by
 four different causes on purpose. `TenantNotFoundMessageIsWrittenOnceTest` is the
