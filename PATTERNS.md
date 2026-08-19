@@ -949,6 +949,14 @@ port takes the calling class, so log names still point at the reporter.
   defaults failed **7** tests, 5 of them the pre-existing call-site 404s that would
   otherwise have gone quiet.
 
+  **The pair to add is `requireX` *and* `requireExists`.** Three contexts have now
+  landed the same second finding: the endpoints that only need the row to *exist* were
+  calling `findByIdAndTourOperatorId(...).isEmpty()`, reading a whole aggregate — an
+  experience with its media list, a page with its body — to answer a boolean. It is
+  four sites in `experience` and four in `page`, always the translation endpoints,
+  because they work entirely off the overlay table afterwards. When you collapse the
+  `orElseThrow`s, check which callers use the row they just loaded.
+
   **This is the target, and only `experience` meets it.** `touroperator` and `metafield`
   stub the default at the call site instead, because their passes landed before this was
   understood — `BrandUseCasesTest` is the named example, stubbing `requireById` to throw
@@ -1048,6 +1056,48 @@ an inlined `== METAOBJECT_REFERENCE` in two use cases *and* a hand-written eight
 description. **Prove it by mutation** — change the constant, rebuild, and check the
 published output moved. Search `.adoc` as well as `.java`: one probe reported six
 files moved and missed the seventh because it only searched test sources.
+
+**Scan for refusals by where they are used, not by how long they are.** The duplicate-
+literal scan these passes run had a `len >= 20` threshold, added because a short
+fragment matched everything. It silently drops the single most duplicated shape in the
+repo: `"Page not found"` is 14 characters, and so are `"Slot not found"` and
+`"Menu not found"`. Three passes reported their context clean while carrying 3–5 copies
+each; `page`'s eleven were only found because they had been noted by hand a pass
+earlier.
+
+The filter that works is semantic — any literal handed to an exception constructor,
+**no length bound**:
+
+```
+grep -rEo 'new [A-Za-z]*(Exception|Error)\("[^"]{4,}"' src/main --include='*.java'
+```
+
+Run both: the length threshold for prose duplicated in descriptions and javadoc, this
+one for refusals. A threshold chosen to cut noise is a threshold that decides what you
+are allowed to find.
+
+**And count occurrences, not files.** The scan de-duplicated within a file, so a class
+saying one sentence four times reported as one hit. That is not a rounding error — it
+inverts the priority, because **within-file repetition is where load-bearing sameness
+lives**. `RefreshAccessTokenUseCase` throws `"Invalid refresh token"` four times, for
+the unknown token, the replayed one, the missing user and the rotation-race loser: four
+causes this API makes indistinguishable on purpose, with nothing holding them together
+but four identical literals. It is the `TENANT_NOT_FOUND` case exactly.
+
+Its 21 characters cleared the length threshold, so the scan *did* surface it — and the
+shape it printed is why that did not help. **Two different fives coincide here, and
+conflating them is the whole trap.** Over both trees, file-deduplicated, it printed
+`[5x]`: five *files*, three of them tests, which reads as thin duplication spread
+across a context. The production truth is five *occurrences* in **two** files, four of
+them in one method chain. Restrict the broken scan to `src/main` and it prints `[2x]` —
+the number that shows how little a file count sees.
+
+Label every count with its scope and its unit. A total that means files in one place
+and occurrences in another will eventually agree by accident, and that is the reading
+nobody checks.
+
+So the three ways one scan has been wrong, all scope and never logic: too long a
+minimum, the wrong tree, and one occurrence per file. Print the per-file count.
 
 **A message whose sameness is load-bearing gets written once and guarded.**
 `"Tour operator not found"` was 20 literals in `src/main` and 16 in tests, said by

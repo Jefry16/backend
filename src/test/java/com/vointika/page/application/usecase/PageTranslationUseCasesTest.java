@@ -3,11 +3,9 @@ package com.vointika.page.application.usecase;
 import com.vointika.shared.service.OperatorLocaleCheck;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.page.application.dto.input.UpsertPageTranslationInput;
-import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.entity.PageTranslation;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
-import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.InvalidFieldException;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
@@ -29,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,6 +54,11 @@ class PageTranslationUseCasesTest {
     @BeforeEach
     void setUp() {
         pageRepository = mock(PageRepository.class);
+        // requireByIdAndTourOperatorId / requireExists are default methods, so
+        // Mockito would stub them to null and every 404 assertion below would
+        // pass without running the branch (PATTERNS §9).
+        doCallRealMethod().when(pageRepository).requireByIdAndTourOperatorId(any(), any());
+        doCallRealMethod().when(pageRepository).requireExists(any(), any());
         translationRepository = mock(PageTranslationRepository.class);
         operatorLocalesQuery = mock(OperatorLocalesQuery.class);
         handleGenerator = mock(HandleGenerator.class);
@@ -65,9 +69,7 @@ class PageTranslationUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(pageRepository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.of(
-                new Page(PAGE, OP, new PageTitle("About us"), new Handle("about-us"),
-                        new PageBody("<p>Hello</p>"), null, null, USER)));
+        when(pageRepository.existsByIdAndTourOperatorId(PAGE, OP)).thenReturn(true);
         when(operatorLocalesQuery.findSupportedLocales(OP)).thenReturn(Set.of("en", "es"));
     }
 
@@ -194,7 +196,7 @@ class PageTranslationUseCasesTest {
 
     @Test
     void upsertMissingPageIs404() {
-        when(pageRepository.findByIdAndTourOperatorId(PAGE, OP)).thenReturn(Optional.empty());
+        when(pageRepository.existsByIdAndTourOperatorId(PAGE, OP)).thenReturn(false);
         assertThatThrownBy(() -> upsert().execute(input("X", null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

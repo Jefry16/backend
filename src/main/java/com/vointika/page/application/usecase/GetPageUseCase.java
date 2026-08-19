@@ -2,7 +2,6 @@ package com.vointika.page.application.usecase;
 
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -21,7 +20,7 @@ public class GetPageUseCase {
 
     public Page execute(UUID tourOperatorId, UUID pageId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        return pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
+        return pageRepository
+.requireByIdAndTourOperatorId(pageId, tourOperatorId);
     }
 }

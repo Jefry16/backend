@@ -3,7 +3,6 @@ package com.vointika.page.application.usecase;
 import com.vointika.page.domain.entity.PageTranslation;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.List;
@@ -26,9 +25,7 @@ public class ListPageTranslationsUseCase {
 
     public List<PageTranslation> execute(UUID tourOperatorId, UUID pageId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        if (pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId).isEmpty()) {
-            throw new ResourceNotFoundException("Page not found");
-        }
+        pageRepository.requireExists(pageId, tourOperatorId);
         return translationRepository.findAllByPageId(pageId);
     }
 }

@@ -1,6 +1,7 @@
 package com.vointika.page.application.usecase;
 
 import com.vointika.page.application.dto.input.CreatePageInput;
+import com.vointika.page.application.service.PageHandleAvailability;
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
 import com.vointika.page.domain.repository.PageTranslationRepository;
@@ -32,6 +33,7 @@ public class CreatePageUseCase {
 
     private final PageRepository pageRepository;
     private final PageTranslationRepository translationRepository;
+    private final PageHandleAvailability handleAvailability;
     private final TourOperatorMembershipCheck membershipCheck;
     private final IdGenerator idGenerator;
     private final TransactionRunner transactionRunner;
@@ -39,12 +41,14 @@ public class CreatePageUseCase {
 
     public CreatePageUseCase(PageRepository pageRepository,
                              PageTranslationRepository translationRepository,
+                             PageHandleAvailability handleAvailability,
                              TourOperatorMembershipCheck membershipCheck,
                              IdGenerator idGenerator,
                              TransactionRunner transactionRunner,
                              AuditTrailPort auditTrailPort) {
         this.pageRepository = pageRepository;
         this.translationRepository = translationRepository;
+        this.handleAvailability = handleAvailability;
         this.membershipCheck = membershipCheck;
         this.idGenerator = idGenerator;
         this.transactionRunner = transactionRunner;
@@ -62,14 +66,7 @@ public class CreatePageUseCase {
         SeoDescription seoDescription = input.seoDescription() == null || input.seoDescription().isBlank()
                 ? null : new SeoDescription(input.seoDescription());
 
-        if (pageRepository.existsByTourOperatorIdAndHandle(input.tourOperatorId(), handle.value())) {
-            throw new ResourceAlreadyExistsException("A page with this handle already exists");
-        }
-        if (translationRepository.existsByHandleInAnyLocale(
-                input.tourOperatorId(), handle.value(), null)) {
-            throw new ResourceAlreadyExistsException(
-                    "A page already uses this handle as a localized handle");
-        }
+        handleAvailability.requireFree(input.tourOperatorId(), handle.value(), null);
 
         Page page = new Page(
                 idGenerator.newId(), input.tourOperatorId(),
@@ -84,7 +81,7 @@ public class CreatePageUseCase {
                         Map.of("title", title.value(), "handle", handle.value())));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("A page with this handle already exists");
+            throw new ResourceAlreadyExistsException(PageHandleAvailability.CANONICAL_TAKEN);
         }
         return page.getId();
     }

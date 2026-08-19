@@ -7,7 +7,6 @@ import com.vointika.page.domain.valueobject.PageBody;
 import com.vointika.shared.valueobject.SeoDescription;
 import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -48,8 +47,8 @@ public class UpdatePageUseCase {
     public void execute(UpdatePageInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
 
-        Page page = pageRepository.findByIdAndTourOperatorId(input.pageId(), input.tourOperatorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
+        Page page = pageRepository
+.requireByIdAndTourOperatorId(input.pageId(), input.tourOperatorId());
 
         PageTitle title = new PageTitle(input.title());
         PageBody body = new PageBody(input.body());

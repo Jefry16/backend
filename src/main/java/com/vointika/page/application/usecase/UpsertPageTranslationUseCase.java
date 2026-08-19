@@ -9,7 +9,6 @@ import com.vointika.shared.valueobject.SeoDescription;
 import com.vointika.shared.valueobject.SeoTitle;
 import com.vointika.page.domain.valueobject.PageTitle;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.service.OperatorLocaleCheck;
@@ -66,9 +65,7 @@ public class UpsertPageTranslationUseCase {
 
     public void execute(UpsertPageTranslationInput input) {
         membershipCheck.ensureAdmin(input.callerUserId(), input.tourOperatorId());
-        if (pageRepository.findByIdAndTourOperatorId(input.pageId(), input.tourOperatorId()).isEmpty()) {
-            throw new ResourceNotFoundException("Page not found");
-        }
+        pageRepository.requireExists(input.pageId(), input.tourOperatorId());
 
         LocaleCode locale = new LocaleCode(input.locale());
         operatorLocaleCheck.require(input.tourOperatorId(), locale.value());

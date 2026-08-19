@@ -2,7 +2,6 @@ package com.vointika.page.application.usecase;
 
 import com.vointika.page.domain.entity.Page;
 import com.vointika.page.domain.repository.PageRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -33,8 +32,8 @@ public class UnpublishPageUseCase {
 
     public void execute(UUID tourOperatorId, UUID pageId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        Page page = pageRepository.findByIdAndTourOperatorId(pageId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found"));
+        Page page = pageRepository
+.requireByIdAndTourOperatorId(pageId, tourOperatorId);
         page.unpublish();
         transactionRunner.run(() -> {
             pageRepository.save(page);
