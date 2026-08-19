@@ -242,7 +242,7 @@ class MediaControllerDocumentationTest {
     @Test
     void staffCannotUpload() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(uploadMediaUseCase).execute(any(), any(), any(),
                         org.mockito.ArgumentMatchers.anyLong(), any(), any());
 

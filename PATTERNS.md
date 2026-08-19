@@ -749,6 +749,22 @@ Two things to settle before moving one, in order:
 The counterweight is §2.4: a constant with one caller is not a kernel type. Two
 independent statements of the same rule is the threshold.
 
+**Two questions decide it, and they are not the same question: does it have a home, and
+does it have an owner?** The ADMIN 403 sat un-collapsed through six passes because each
+one asked only the first. Fifteen test files across **seven** contexts spelled out
+`"This action requires ADMIN privileges"`, eight of them publishing it, while production
+*interpolated* it — so there was no constant to reference, and every pass could truthfully
+say the other fourteen files were not its to fix. **A duplication that spans more contexts
+than any pass covers has no owner, and deferring it is deciding never to do it.** Its home
+was obvious once looked for: the shared port that already holds `TENANT_NOT_FOUND`.
+
+The mirror case is the one to leave alone. `"File is empty"` is an identical guard in
+`media` and `identity`, and it stays duplicated: two callers, and the only shared home
+would be a new class holding one `if`. `"Content type is required"` looks like the same
+find and is not — media's is a **domain value object's invariant**, identity's a **use-case
+precondition**, so they are different statements that share a sentence. Ask which layer
+each lives in before calling two copies one fact.
+
 **Two copies of one rule can pin opposite behaviour, with both suites green.**
 `identity.Email` and `touroperator.InviteeEmail` stated the same rule; identity's test
 asserted `"  user@example.com  "` is *rejected*, touroperator's asserted it is

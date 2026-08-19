@@ -14,6 +14,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +34,9 @@ class GetMediaUseCaseTest {
     @BeforeEach
     void setUp() {
         mediaRepository = mock(MediaRepository.class);
+        // requireByIdAndTourOperatorId is a default method: Mockito would stub it to
+        // null and the 404 assertions below would pass without running the branch.
+        doCallRealMethod().when(mediaRepository).requireByIdAndTourOperatorId(any(), any());
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new GetMediaUseCase(mediaRepository, membershipCheck);
     }

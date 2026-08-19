@@ -126,7 +126,7 @@ class UploadMediaUseCaseTest {
 
     @Test
     void nonAdminIsRejectedBeforeAnyStorage() {
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(membershipCheck).ensureAdmin(callerId, operatorId);
 
         assertThrows(ForbiddenException.class,

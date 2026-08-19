@@ -198,7 +198,7 @@ class ExperienceTranslationControllerDocumentationTest {
     @Test
     void staffCannotUpsert() throws Exception {
         authenticated();
-        doThrow(new ForbiddenException("This action requires ADMIN privileges"))
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN")))
                 .when(upsertUseCase).execute(any(), any(), any(), any(), any());
         mockMvc.perform(put("/api/tour-operators/{id}/experiences/{experienceId}/translations/{locale}", OP, EXP, "es")
                         .header("Authorization", "Bearer test-access-token")

@@ -3,7 +3,6 @@ package com.vointika.media.application.usecase;
 import com.vointika.media.application.dto.output.MediaView;
 import com.vointika.media.domain.entity.Media;
 import com.vointika.media.domain.repository.MediaRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -27,8 +26,7 @@ public class GetMediaUseCase {
 
     public MediaView execute(UUID tourOperatorId, UUID mediaId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        Media media = mediaRepository.findByIdAndTourOperatorId(mediaId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
+        Media media = mediaRepository.requireByIdAndTourOperatorId(mediaId, tourOperatorId);
         // Uploader name is snapshotted on the row — no identity lookup.
         return MediaView.from(media);
     }

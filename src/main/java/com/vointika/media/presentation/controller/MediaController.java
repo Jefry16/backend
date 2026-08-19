@@ -82,7 +82,7 @@ public class MediaController {
                     try {
                         return file.getInputStream();
                     } catch (IOException e) {
-                        throw new InvalidFieldException("Unable to read uploaded file");
+                        throw new InvalidFieldException(UploadMediaUseCase.UNREADABLE_UPLOAD);
                     }
                 });
         return ResponseEntity

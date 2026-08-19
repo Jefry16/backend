@@ -53,6 +53,18 @@ public class UploadMediaUseCase {
      * 25, with a green build. The documentation test publishes this same method, so the
      * example in the guide is the application's own sentence.
      */
+    /**
+     * Raised wherever reading the client's multipart fails — twice here (the bytes are
+     * read once to measure and once to store) and once in the controller's supplier.
+     *
+     * <p>{@code identity}'s avatar upload says the same sentence for the same reason and
+     * <b>keeps its own copy</b>: one occurrence is not duplication, and the two upload
+     * paths share no structure to hold a constant. Its stream is read once, so it passes
+     * an {@code InputStream} and wraps the whole call; this one needs a
+     * {@code Supplier<InputStream>} because it reads twice.
+     */
+    public static final String UNREADABLE_UPLOAD = "Unable to read uploaded file";
+
     public static String tooLargeMessage() {
         return "File too large: max " + MAX_BYTES / (1024 * 1024) + " MB";
     }
@@ -121,7 +133,7 @@ public class UploadMediaUseCase {
         try (InputStream toMeasure = body.get()) {
             dimensions = imageDimensionsPort.measure(toMeasure, contentType.value());
         } catch (IOException e) {
-            throw new InvalidFieldException("Unable to read uploaded file");
+            throw new InvalidFieldException(UNREADABLE_UPLOAD);
         }
 
         // Store BEFORE persisting: a failed save strands an object, never a row
@@ -129,7 +141,7 @@ public class UploadMediaUseCase {
         try (InputStream toStore = body.get()) {
             mediaStoragePort.putObject(key, contentType.value(), sizeBytes, toStore);
         } catch (IOException e) {
-            throw new InvalidFieldException("Unable to read uploaded file");
+            throw new InvalidFieldException(UNREADABLE_UPLOAD);
         }
 
         String fileName = normalizeName(originalName, contentType);

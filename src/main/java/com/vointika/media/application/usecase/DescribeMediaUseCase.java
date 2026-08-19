@@ -4,7 +4,6 @@ import com.vointika.media.application.dto.input.DescribeMediaInput;
 import com.vointika.media.domain.entity.Media;
 import com.vointika.media.domain.repository.MediaRepository;
 import com.vointika.media.domain.valueobject.MediaAlt;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -48,8 +47,7 @@ public class DescribeMediaUseCase {
     public void execute(UUID tourOperatorId, UUID mediaId,
                         DescribeMediaInput input, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
-        Media media = mediaRepository.findByIdAndTourOperatorId(mediaId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
+        Media media = mediaRepository.requireByIdAndTourOperatorId(mediaId, tourOperatorId);
 
         MediaAlt alt = input.alt() == null || input.alt().isBlank()
                 ? null : new MediaAlt(input.alt());

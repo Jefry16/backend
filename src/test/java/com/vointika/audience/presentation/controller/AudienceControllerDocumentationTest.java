@@ -210,7 +210,7 @@ class AudienceControllerDocumentationTest {
     @Test
     void staffCannotCreate() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("This action requires ADMIN privileges")).when(createAudienceUseCase).execute(any(), any(), any());
+        doThrow(new ForbiddenException(TourOperatorMembershipCheck.requiresRoleMessage("ADMIN"))).when(createAudienceUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/audiences", OP)
                         .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
