@@ -1138,9 +1138,30 @@ own message hides both defects at once** — the wrong contract, and the constan
 never arrives.
 
 Stub what production actually throws: the constant where there is one, else the real
-sentence. The tell is a lower-case one-word message in a `doThrow`; four are still
-published at the time of writing (`experience` ×1, `pickup` ×3), and a guard forbidding
-short lower-case literals in documentation-test `doThrow`s is the obvious gate.
+sentence. **`PublishedErrorBodiesAreSentencesTest` now fails the build on it** — a
+stubbed message in a `*DocumentationTest` must start with a capital.
+
+That rule is a proxy and says so. The real requirement is "is what production throws",
+which cannot be checked mechanically: four real messages are *interpolated* and appear
+nowhere in `src/main` verbatim (`"This action requires " + minimum + " privileges"` and
+three more), so a verbatim-in-source check flags them all and is unusable. **Every
+message that reaches a client** is a sentence — not every message in the repo, three of
+which are lower-case `IllegalState`/`IllegalArgument` raised at wiring time — and every
+placeholder was a bare token, so the initial capital separates them exactly.
+
+**A guard's reach must match its claim, and this one's did not.** The first version
+matched `new \w*Exception\("..."` — and `\w` excludes `.`, so a fully-qualified
+constructor was invisible. It reported the repository clean while
+`new com.vointika.shared.exception.ResourceNotFoundException("not found")` still
+published `slots/list-not-found`. **The census that said "four offenders" had been taken
+with the same pattern, so it inherited the blind spot it was measuring with** — and the
+PR that added the guard edited that very file thirty lines above the survivor, trusting
+the guard for the sweep. That is what a guard is for, and exactly why its reach has to be
+proven, not assumed: plant the form you doubt and watch it fail.
+
+**Know what it does not catch.** A plausible-looking wrong sentence passes: replacing a
+placeholder with the wrong real constant published "Audience not found" for a non-member,
+and this guard would have waved it through. That one needs the rule below.
 
 **Fixing one is where it goes wrong: check which throw the stub stands in for, not which
 noun the endpoint is about.** `audiences/list-not-found` stubs `ensureMember`, so its 404

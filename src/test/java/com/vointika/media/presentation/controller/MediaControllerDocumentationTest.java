@@ -6,6 +6,7 @@ import com.vointika.media.application.usecase.GetMediaUseCase;
 import com.vointika.media.application.usecase.ListMediaUseCase;
 import com.vointika.media.application.usecase.DescribeMediaUseCase;
 import com.vointika.media.application.usecase.UploadMediaUseCase;
+import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.exception.ForbiddenException;
 import com.vointika.media.domain.valueobject.ContentType;
 import com.vointika.shared.list.CursorPage;
@@ -260,7 +261,7 @@ class MediaControllerDocumentationTest {
     @Test
     void nonMemberGets404FromTheInterceptor() throws Exception {
         authenticatedAsStaff();
-        doThrow(new com.vointika.shared.exception.ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OPERATOR_ID)));
 
         mockMvc.perform(get("/api/tour-operators/{id}/media", OPERATOR_ID)

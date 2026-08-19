@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,6 +50,9 @@ class PickupLocationUseCasesTest {
     @BeforeEach
     void setUp() {
         repository = mock(PickupLocationRepository.class);
+        // requireByIdAndTourOperatorId is a default method: Mockito would stub it to
+        // null and every 404 assertion below would pass without running the branch.
+        doCallRealMethod().when(repository).requireByIdAndTourOperatorId(any(), any());
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         idGenerator = mock(IdGenerator.class);
@@ -75,6 +79,10 @@ class PickupLocationUseCasesTest {
         return new UpdatePickupLocationUseCase(repository, membershipCheck, transactionRunner, auditTrailPort);
     }
 
+    private GetPickupLocationUseCase get() {
+        return new GetPickupLocationUseCase(repository, membershipCheck);
+    }
+
     private DeletePickupLocationUseCase delete() {
         return new DeletePickupLocationUseCase(repository, membershipCheck, transactionRunner, auditTrailPort);
     }
@@ -96,7 +104,12 @@ class PickupLocationUseCasesTest {
         when(repository.existsByTourOperatorIdAndName(OP, "Old Port")).thenReturn(true);
 
         assertThatThrownBy(() -> create().execute(OP, USER, new PickupLocationInput("Old Port", "09:30")))
-                .isInstanceOf(ResourceAlreadyExistsException.class);
+                .isInstanceOf(ResourceAlreadyExistsException.class)
+                // The one assertion that spells this sentence. Every throw site now reads
+                // PickupLocationRepository.NAME_TAKEN, which makes those assertions hold for
+                // any value — so without this line a reword would move the published
+                // pickup-locations/create-conflict body with a green suite (PATTERNS §9a).
+                .hasMessage("A pickup location with this name already exists");
         verify(repository, never()).save(any());
     }
 
@@ -151,6 +164,30 @@ class PickupLocationUseCasesTest {
         assertThatThrownBy(() -> update().execute(OP, PICKUP, USER, new PickupLocationInput("Marina", null)))
                 .isInstanceOf(ResourceAlreadyExistsException.class);
         verify(repository, never()).save(any());
+    }
+
+    /**
+     * The read path was the one call site of {@code requireByIdAndTourOperatorId} that
+     * no test reached, so the §9 mutation covered two of three. Without this, breaking
+     * the default returns null here, {@code PickupLocationResponse.from(null)} NPEs in
+     * the controller, and a GET on a missing id answers <b>500 where the isolation 404
+     * belongs</b> — with the suite green.
+     */
+    @Test
+    void getMissingIs404() {
+        when(repository.findByIdAndTourOperatorId(PICKUP, OP)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> get().execute(OP, PICKUP, USER))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getReturnsTheLocationForAnyMember() {
+        PickupLocation existing = pickup("Old Port", LocalTime.of(9, 30));
+        when(repository.findByIdAndTourOperatorId(PICKUP, OP)).thenReturn(Optional.of(existing));
+
+        assertThat(get().execute(OP, PICKUP, USER)).isSameAs(existing);
+        verify(membershipCheck).ensureMember(USER, OP);
     }
 
     @Test

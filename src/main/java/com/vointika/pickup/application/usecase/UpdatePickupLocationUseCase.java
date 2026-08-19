@@ -6,7 +6,6 @@ import com.vointika.pickup.domain.repository.PickupLocationRepository;
 import com.vointika.pickup.domain.valueobject.PickupLocationName;
 import com.vointika.pickup.domain.valueobject.PickupLocationTime;
 import com.vointika.shared.exception.ResourceAlreadyExistsException;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -49,8 +48,7 @@ public class UpdatePickupLocationUseCase {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
 
         PickupLocation pickupLocation = pickupLocationRepository
-                .findByIdAndTourOperatorId(pickupLocationId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Pickup location not found"));
+                .requireByIdAndTourOperatorId(pickupLocationId, tourOperatorId);
 
         Map<String, Object> before = pickupLocation.auditSnapshot();
         boolean changed = false;
@@ -60,8 +58,7 @@ public class UpdatePickupLocationUseCase {
             if (!newName.value().equals(pickupLocation.getName().value())) {
                 if (pickupLocationRepository.existsByTourOperatorIdAndNameExcluding(
                         tourOperatorId, newName.value(), pickupLocationId)) {
-                    throw new ResourceAlreadyExistsException(
-                            "A pickup location with this name already exists");
+                    throw new ResourceAlreadyExistsException(PickupLocationRepository.NAME_TAKEN);
                 }
                 pickupLocation.rename(newName);
                 changed = true;
@@ -89,7 +86,7 @@ public class UpdatePickupLocationUseCase {
                         "PICKUP_LOCATION", pickupLocationId, "pickup_location.updated", null, changes));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
+            throw new ResourceAlreadyExistsException(PickupLocationRepository.NAME_TAKEN);
         }
     }
 }

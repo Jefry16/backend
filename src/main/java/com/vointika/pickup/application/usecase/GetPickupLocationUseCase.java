@@ -2,7 +2,6 @@ package com.vointika.pickup.application.usecase;
 
 import com.vointika.pickup.domain.entity.PickupLocation;
 import com.vointika.pickup.domain.repository.PickupLocationRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -21,7 +20,6 @@ public class GetPickupLocationUseCase {
 
     public PickupLocation execute(UUID tourOperatorId, UUID pickupLocationId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        return pickupLocationRepository.findByIdAndTourOperatorId(pickupLocationId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Pickup location not found"));
+        return pickupLocationRepository.requireByIdAndTourOperatorId(pickupLocationId, tourOperatorId);
     }
 }

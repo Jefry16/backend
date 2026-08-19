@@ -49,7 +49,7 @@ public class CreatePickupLocationUseCase {
         PickupLocationTime time = new PickupLocationTime(input.time());
 
         if (pickupLocationRepository.existsByTourOperatorIdAndName(tourOperatorId, name.value())) {
-            throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
+            throw new ResourceAlreadyExistsException(PickupLocationRepository.NAME_TAKEN);
         }
 
         PickupLocation pickupLocation = new PickupLocation(
@@ -62,7 +62,7 @@ public class CreatePickupLocationUseCase {
                         "PICKUP_LOCATION", pickupLocation.getId(), "pickup_location.created", null));
             });
         } catch (UniqueConstraintViolationException e) {
-            throw new ResourceAlreadyExistsException("A pickup location with this name already exists");
+            throw new ResourceAlreadyExistsException(PickupLocationRepository.NAME_TAKEN);
         }
         return pickupLocation.getId();
     }

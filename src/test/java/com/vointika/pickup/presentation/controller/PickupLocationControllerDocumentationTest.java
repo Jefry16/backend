@@ -1,5 +1,6 @@
 package com.vointika.pickup.presentation.controller;
 
+import com.vointika.pickup.domain.repository.PickupLocationRepository;
 import com.vointika.pickup.application.usecase.CreatePickupLocationUseCase;
 import com.vointika.pickup.application.usecase.DeletePickupLocationUseCase;
 import com.vointika.pickup.application.usecase.GetPickupLocationUseCase;
@@ -217,7 +218,7 @@ class PickupLocationControllerDocumentationTest {
     @Test
     void staffCannotCreate() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ForbiddenException("admin")).when(createPickupLocationUseCase).execute(any(), any(), any());
+        doThrow(new ForbiddenException("This action requires ADMIN privileges")).when(createPickupLocationUseCase).execute(any(), any(), any());
         mockMvc.perform(post("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", STAFF_BEARER)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -231,7 +232,7 @@ class PickupLocationControllerDocumentationTest {
     @Test
     void duplicateNameIsConflict() throws Exception {
         authenticated();
-        doThrow(new ResourceAlreadyExistsException("exists"))
+        doThrow(new ResourceAlreadyExistsException(PickupLocationRepository.NAME_TAKEN))
                 .when(createPickupLocationUseCase).execute(any(), any(), any());
         // The published example has to send the name that clashes, not the one that
         // succeeds two sections above it.
@@ -249,7 +250,7 @@ class PickupLocationControllerDocumentationTest {
     @Test
     void nonMemberGets404() throws Exception {
         authenticatedAsStaff();
-        doThrow(new ResourceNotFoundException("not found"))
+        doThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND))
                 .when(membershipCheck).ensureMember(eq(UUID.fromString(STAFF_USER)), eq(UUID.fromString(OP)));
         mockMvc.perform(get("/api/tour-operators/{id}/pickup-locations", OP)
                         .header("Authorization", STAFF_BEARER))
