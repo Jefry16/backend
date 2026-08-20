@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Read these first
 
-**Nothing loads these for you.** Four javadoc comments name `PATTERNS.md` and `STACK.md`, so the code knows they exist — but no import pulls one in and no build step reads one. Load them yourself:
+**Nothing loads these for you.** A handful of javadoc comments name `PATTERNS.md` and `STACK.md`, so the code knows they exist — but no import pulls one in and no build step reads one. Load them yourself:
 
 | Document | Location | What it is |
 |---|---|---|
@@ -111,7 +111,7 @@ Constrain the variable, and define the pattern **once** (`StorefrontRoutes.LOCAL
 
 That is harmless on a JSON API nobody HEADs and wrong on a public page: crawlers, link checkers, uptime monitors and CDNs all send HEAD. `storefront` shipped without it because every test and curl used GET. It took a request against the built stack to find.
 
-`servesHeadAsWellAsGet` in `StorefrontPlaceholderControllerTest` pins it, and walks every address, because the entry is per route as well as per method.
+`servesHeadAsWellAsGet` pins it, in three tests covering **seven of the nine** addresses — the entry is per route as well as per method, so coverage is per route too. `StorefrontPlaceholderControllerTest.EVERY_ADDRESS` is named wider than it reaches: it walks the four placeholder addresses, and the home and CMS tests add three more. **`/{locale}/pages/{handle}` and `/password` have no HEAD test.** Both are registered correctly, so nothing is broken today.
 
 Counting the `@GetMapping`, **a page route is registered in three places** — four while the password gate exists, since its interceptor needs every page pattern too. Define the pattern once in `application/policy` (PATTERNS §11).
 
