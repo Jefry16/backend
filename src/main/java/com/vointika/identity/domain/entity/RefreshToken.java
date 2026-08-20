@@ -6,6 +6,32 @@ import java.util.UUID;
 
 public class RefreshToken {
 
+    /**
+     * The 401 for a refresh token this server will not act on.
+     *
+     * <p><b>Four causes answer with it and must stay byte-identical.</b> In
+     * {@code RefreshAccessTokenUseCase} they are: a hash matching no row (unknown or
+     * forged), a row already revoked (<b>reuse — a probable theft, which also kills the
+     * family</b>), a token whose user no longer exists, and the loser of a concurrent
+     * rotation race. {@code LogoutUserUseCase} adds a fifth for an unknown token.
+     *
+     * <p><b>Unlike the tenant 404, no structure enforces this.</b>
+     * {@code TourOperatorMembershipPolicy.ensureMember} throws once behind one
+     * predicate, so its causes cannot differ whatever any string says; here there are
+     * five separate {@code throw} statements, and only identical literals held them
+     * together. A one-word edit to the reuse branch would tell an attacker that the
+     * token they replayed was <em>recognised</em> — the single thing this endpoint must
+     * not reveal, and the reason the family revocation happens silently.
+     *
+     * <p>Expiry is deliberately <em>not</em> folded in: {@code "Refresh token has
+     * expired"} is a distinct, safe answer, because an expired token tells an attacker
+     * only what the clock already tells them.
+     *
+     * <p>{@code RefreshTokenMessageIsWrittenOnceTest} fails the build if the sentence
+     * reappears as a literal anywhere but here and its one pinning assertion.
+     */
+    public static final String INVALID = "Invalid refresh token";
+
     private static final int EXPIRATION_DAYS = 30;
 
     private final UUID id;

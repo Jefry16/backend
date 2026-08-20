@@ -105,7 +105,7 @@ class RefreshAccessTokenUseCaseTest {
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
                 () -> useCase.execute(new RefreshAccessTokenInput("raw-old")));
-        assertEquals("Invalid refresh token", ex.getMessage());
+        assertEquals(RefreshToken.INVALID, ex.getMessage());
 
         verify(refreshTokenRepository, never()).save(any());                 // no child minted
         verify(refreshTokenRepository, never()).revokeAllByFamilyId(any());  // family NOT nuked
@@ -118,7 +118,28 @@ class RefreshAccessTokenUseCaseTest {
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
                 () -> useCase.execute(new RefreshAccessTokenInput("bad-token")));
-        assertEquals("Invalid refresh token", ex.getMessage());
+        assertEquals(RefreshToken.INVALID, ex.getMessage());
+    }
+
+    /**
+     * The fourth cause, and the one that had no test: a live token whose user is gone.
+     *
+     * <p>All four answer {@link RefreshToken#INVALID} on purpose, so each needs a test
+     * or the constant can drift on the untested branch alone — and this endpoint's whole
+     * property is that the four are indistinguishable.
+     */
+    @Test
+    void shouldThrowWhenTheTokensUserNoLongerExists() {
+        UUID userId = UUID.randomUUID();
+        RefreshToken orphaned = RefreshToken.newRoot(UUID.randomUUID(), userId, "h");
+
+        when(tokenHasher.hash("raw")).thenReturn("h");
+        when(refreshTokenRepository.findByTokenHash("h")).thenReturn(Optional.of(orphaned));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                () -> useCase.execute(new RefreshAccessTokenInput("raw")));
+        assertEquals(RefreshToken.INVALID, ex.getMessage());
     }
 
     @Test
@@ -136,6 +157,12 @@ class RefreshAccessTokenUseCaseTest {
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
                 () -> useCase.execute(new RefreshAccessTokenInput("stolen-raw")));
+        // THE pin: the one assertion allowed to spell this sentence, and it sits on
+        // the reuse branch on purpose. Every other site now reads RefreshToken.INVALID,
+        // which makes those assertions hold for any value — and this is the branch
+        // whose sameness is the security property: a reworded reuse message tells an
+        // attacker their replayed token was recognised. RefreshTokenMessageIsWrittenOnceTest
+        // exempts this line by name.
         assertEquals("Invalid refresh token", ex.getMessage());
 
         verify(refreshTokenRepository).revokeAllByFamilyId(revoked.getFamilyId());

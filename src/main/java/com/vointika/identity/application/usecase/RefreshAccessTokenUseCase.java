@@ -50,7 +50,7 @@ public class RefreshAccessTokenUseCase {
 
         RefreshToken presented = refreshTokenRepository
                 .findByTokenHash(presentedHash)
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+                .orElseThrow(() -> new UnauthorizedException(RefreshToken.INVALID));
 
         // Reuse detection: a revoked-but-existing token presented again is a strong
         // theft signal — kill the entire family so the attacker (and any legitimate
@@ -59,7 +59,7 @@ public class RefreshAccessTokenUseCase {
             diagnosticLog.warn(getClass(), "Refresh token reuse detected; revoking family. userId={} familyId={}",
                     presented.getUserId(), presented.getFamilyId());
             refreshTokenRepository.revokeAllByFamilyId(presented.getFamilyId());
-            throw new UnauthorizedException("Invalid refresh token");
+            throw new UnauthorizedException(RefreshToken.INVALID);
         }
 
         if (Instant.now().isAfter(presented.getExpiresAt())) {
@@ -68,7 +68,7 @@ public class RefreshAccessTokenUseCase {
 
         User user = userRepository
                 .findById(presented.getUserId())
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+                .orElseThrow(() -> new UnauthorizedException(RefreshToken.INVALID));
 
         // 403 (not 401), consistent with login: the refresh token authenticated
         // the caller, so an unverified account is authenticated-but-forbidden.
@@ -91,7 +91,7 @@ public class RefreshAccessTokenUseCase {
             // 401, not reuse-detection: a concurrent double-submit of a *valid*
             // token must not nuke the whole family.)
             if (!refreshTokenRepository.revokeForRotation(presented.getId(), newId)) {
-                throw new UnauthorizedException("Invalid refresh token");
+                throw new UnauthorizedException(RefreshToken.INVALID);
             }
             refreshTokenRepository.save(rotated);
         });

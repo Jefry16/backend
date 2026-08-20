@@ -24,7 +24,7 @@ public class LogoutUserUseCase {
 
         RefreshToken refreshToken = refreshTokenRepository
                 .findByTokenHash(tokenHasher.hash(input.refreshToken()))
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+                .orElseThrow(() -> new UnauthorizedException(RefreshToken.INVALID));
 
         if (!refreshToken.getUserId().equals(userId)) {
             throw new ForbiddenException("Refresh token does not belong to the authenticated user");
