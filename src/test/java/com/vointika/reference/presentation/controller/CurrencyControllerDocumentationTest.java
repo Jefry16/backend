@@ -83,7 +83,7 @@ class CurrencyControllerDocumentationTest {
                         ),
                         responseFields(
                                 fieldWithPath("[].id").description("The currency's UUID"),
-                                fieldWithPath("[].context").description("The entity's collection (always 'currencies')"),
+                                fieldWithPath("[].context").description("The entity's collection: \"currencies\""),
                                 fieldWithPath("[].code").description("ISO 4217 alpha-3 currency code (e.g. USD, EUR, DOP)"),
                                 fieldWithPath("[].name").description("Human-readable currency name"),
                                 fieldWithPath("[].symbol").description("Currency symbol for UI display")
