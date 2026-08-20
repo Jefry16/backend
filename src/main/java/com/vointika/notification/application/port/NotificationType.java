@@ -1,5 +1,7 @@
 package com.vointika.notification.application.port;
 
+import java.util.Locale;
+
 /**
  * The emails this platform sends. One constant per template pair on the classpath.
  *
@@ -30,8 +32,17 @@ public enum NotificationType {
     TOUR_OPERATOR_WELCOME_EMAIL,
     TEAM_INVITATION_EMAIL;
 
-    /** {@code VERIFICATION_EMAIL} → {@code verification-email}, the templates' filename stem. */
+    /**
+     * {@code VERIFICATION_EMAIL} → {@code verification-email}, the templates' filename stem.
+     *
+     * <p><b>{@link Locale#ROOT}, never the JVM default</b> (PATTERNS §11). Every constant
+     * here contains {@code EMAIL}, so every one has an {@code I} to lose: under a Turkish
+     * default this folds to {@code verıfıcatıon-emaıl} — dotless — and no template file
+     * matches. All six, measured rather than reasoned. The eager loader turns that into a
+     * refuses-to-start rather than a silent non-send, but it is invisible on every machine
+     * anyone develops or runs CI on, which is what makes it a deployment landmine.
+     */
     public String fileBase() {
-        return name().toLowerCase().replace('_', '-');
+        return name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.time.Instant;
 
 /**
@@ -29,8 +30,11 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         String contentType = request.getContentType();
+        // Locale.ROOT: MULTIPART has an I, and a Turkish default folds it to a dotless ı,
+        // so a client sending "Multipart/form-data" stops being recognised and its upload
+        // gets the JSON cap instead. Fails closed, and only on a host you did not pick.
         boolean isMultipart = contentType != null
-                && contentType.toLowerCase().startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
+                && contentType.toLowerCase(Locale.ROOT).startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
 
         if (!isMultipart) {
             long contentLength = request.getContentLengthLong();
