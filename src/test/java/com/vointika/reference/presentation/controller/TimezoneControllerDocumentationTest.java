@@ -94,14 +94,14 @@ class TimezoneControllerDocumentationTest {
                         ),
                         responseFields(
                                 fieldWithPath("[].id").description("The timezone's UUID"),
-                                fieldWithPath("[].context").description("The entity's collection (always 'timezones')"),
+                                fieldWithPath("[].context").description("The entity's collection: \"timezones\""),
                                 fieldWithPath("[].name").description("IANA timezone identifier (e.g. Europe/Madrid)"),
                                 fieldWithPath("[].cityName").description("Human-readable city label"),
                                 fieldWithPath("[].country.id").description("The country's UUID"),
-                                fieldWithPath("[].country.context").description("The entity's collection (always 'countries')"),
-                                fieldWithPath("[].country.code").description("ISO 3166-1 alpha-2 country code"),
+                                fieldWithPath("[].country.context").description("The entity's collection: \"countries\""),
+                                fieldWithPath("[].country.code").description("ISO 3166-1 alpha-2 country code (e.g. ES, US, DO)"),
                                 fieldWithPath("[].country.name").description("Human-readable country name"),
-                                fieldWithPath("[].country.flagUrl").description("Resolved URL of the country's flag image")
+                                fieldWithPath("[].country.flagUrl").description("Resolved URL of the country's flag image, or null — only ES, US and DO carry a flag key today, so it is null for the other 246 countries").optional()
                         )));
     }
 }

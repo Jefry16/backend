@@ -94,7 +94,7 @@ class CountryControllerDocumentationTest {
                                 fieldWithPath("[].context").description("The entity's collection: \"countries\""),
                                 fieldWithPath("[].code").description("ISO 3166-1 alpha-2 country code (e.g. ES, US, DO)"),
                                 fieldWithPath("[].name").description("Human-readable country name"),
-                                fieldWithPath("[].flagUrl").description("Resolved URL of the country's flag image, or null — no flag assets are uploaded yet, so this is null for every country but the three that predate the full ISO list").optional()
+                                fieldWithPath("[].flagUrl").description("Resolved URL of the country's flag image, or null — only ES, US and DO carry a flag key today, so it is null for the other 246 countries").optional()
                         )));
     }
 }
