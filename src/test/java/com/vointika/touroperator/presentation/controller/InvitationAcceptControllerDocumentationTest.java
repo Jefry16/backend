@@ -88,7 +88,7 @@ class InvitationAcceptControllerDocumentationTest {
                 .andDo(document("invitations/preview",
                         pathParameters(parameterWithName("token").description("The raw token from the invitation email; it is the capability, so anyone holding it may read this")),
                         responseFields(
-                                fieldWithPath("context").description("The entity's collection (always 'invitation-previews')"),
+                                fieldWithPath("context").description("The entity's collection: \"invitation-previews\""),
                                 fieldWithPath("operatorName").description("The operator that invited you"),
                                 fieldWithPath("email").description("The email the invitation was issued to"))));
     }
@@ -116,7 +116,7 @@ class InvitationAcceptControllerDocumentationTest {
                                 fieldWithPath("password").description("New user's password (anonymous accept only)")),
                         responseFields(
                                 fieldWithPath("id").description("The operator joined"),
-                                fieldWithPath("context").description("The entity's collection (always 'tour-operators')"),
+                                fieldWithPath("context").description("The entity's collection: \"tour-operators\""),
                                 fieldWithPath("operatorName").description("The operator's display name"),
                                 fieldWithPath("accessToken").description("Access token for a newly provisioned user; null when already authenticated"))));
     }

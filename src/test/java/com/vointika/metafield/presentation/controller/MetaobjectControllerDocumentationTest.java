@@ -164,7 +164,7 @@ class MetaobjectControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The entry id"),
-                                fieldWithPath("data[].context").description("\"metaobjects\""),
+                                fieldWithPath("data[].context").description("The entity's collection: \"metaobjects\""),
                                 fieldWithPath("data[].definitionId").description("The definition this entry belongs to"),
                                 fieldWithPath("data[].handle").description("The entry's handle"),
                                 fieldWithPath("data[].name").description("Display name"),
@@ -192,7 +192,7 @@ class MetaobjectControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The entry id"),
-                                fieldWithPath("context").description("\"metaobjects\""),
+                                fieldWithPath("context").description("The entity's collection: \"metaobjects\""),
                                 fieldWithPath("definitionId").description("The definition this entry belongs to"),
                                 fieldWithPath("handle").description("The entry's handle"),
                                 fieldWithPath("name").description("Display name"),

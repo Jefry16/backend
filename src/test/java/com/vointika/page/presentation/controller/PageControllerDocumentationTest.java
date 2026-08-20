@@ -167,7 +167,7 @@ class PageControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id"), parameterWithName("pageId").description("The page id")),
                         responseFields(
                                 fieldWithPath("id").description("The page id"),
-                                fieldWithPath("context").description("\"pages\""),
+                                fieldWithPath("context").description("The entity's collection: \"pages\""),
                                 fieldWithPath("title").description("Display title"),
                                 fieldWithPath("handle").description("URL segment, unique per operator"),
                                 fieldWithPath("body").description("Operator-authored raw HTML (stored verbatim; escaping is the renderer's concern)"),

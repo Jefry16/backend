@@ -202,7 +202,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The definition id"),
-                                fieldWithPath("data[].context").description("\"metaobject-definitions\""),
+                                fieldWithPath("data[].context").description("The entity's collection: \"metaobject-definitions\""),
                                 fieldWithPath("data[].type").description("The type identifier"),
                                 fieldWithPath("data[].name").description("Display name"),
                                 fieldWithPath("data[].createdAt").description("When created"),
@@ -228,7 +228,7 @@ class MetaobjectDefinitionControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The definition id"),
-                                fieldWithPath("context").description("\"metaobject-definitions\""),
+                                fieldWithPath("context").description("The entity's collection: \"metaobject-definitions\""),
                                 fieldWithPath("type").description("The type identifier (immutable)"),
                                 fieldWithPath("name").description("Display name"),
                                 fieldWithPath("description").type("String").description("Help text, or null").optional(),
