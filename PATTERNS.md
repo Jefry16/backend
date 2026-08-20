@@ -448,9 +448,19 @@ Canonical: `CurrencyResponse` (`id`, `context:"currencies"`), `MemberResponse`
 
 ## 4b. Paginated list endpoints (cursor + filter + sort)
 
-Any list over **tenant or growable data** — members, bookings, orders, audit —
+Any list that **grows with business activity** — members, bookings, orders, audit —
 MUST use the shared list framework. **Never an unbounded array.** The roster
 shipped that way once, and this recipe is what came of fixing it.
+
+**Tenant-scoped is not the test, and this used to read "tenant *or* growable"** — a
+disjunction that twelve shipped endpoints contradict. Every `/translations` read
+returns a bare `List<>` and is right to: it is capped by the operator's enabled
+locales, a closed set of six, and a cursor over six rows is machinery for nothing.
+The question is whether the collection has a ceiling the operator cannot raise by
+using the product. **`/metafields` is the honest edge** — bounded only by how many
+definitions the operator creates, so it is on the array side by assumption rather
+than by argument, and is the first thing to move if an operator ever defines enough
+of them to notice.
 
 1. **Schema** — a `public static final ListSchema SCHEMA` on the use case:
    `.tenantScoped()` (scopes to the entity's `tourOperatorId`), `.set/text/number/
@@ -681,8 +691,19 @@ written.** Its items are not editable individually: the whole tree is POSTed and
 rebuilt with fresh ids. So translations ride inline in that payload, have no
 endpoints of their own, and are cleared by being left out.
 
-It is also the only one without a `tour_operator_id`. Items are always reached
-through their menu, so adding one would be a migration for a join nobody needs.
+**Three of the eight carry no `tour_operator_id`, and all three for the same
+reason: their parent has none either.** `menu_item_translations` hangs off
+`menu_items`, which is reached through its `menus` row and takes the tenant from
+there. The two row-shaped metafield overlays hang off `metafield_values` /
+`metaobject_entry_values`, which are **owner-generic by design** — a bare
+`owner_id` with no FK, so there is no tenant column to inherit (the *definitions*
+are tenant-scoped; the values are not). Adding one to any of the three would be a
+migration for a join nobody needs.
+
+*This said "the only one" until 2026-08-20.* It was true when written and stopped
+being true when #151/#152 added the two metafield overlays — and it was then
+**restated** in a later edit that did not recheck it, which is the failure worth
+noticing: a sentence can be reworded long after it goes false.
 
 **Still not generalising, and the arithmetic is now the reason rather than the
 excuse.** The column-shaped six each overlay in their own storefront query
