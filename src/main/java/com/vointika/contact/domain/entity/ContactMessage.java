@@ -45,10 +45,21 @@ public class ContactMessage {
     /**
      * A message arriving from a storefront contact form.
      *
-     * <p>The value objects validate on the way in — this is the first writer the
-     * inbox has ever had, which is why they exist now and did not before. It
-     * arrives unread: the whole point of the inbox is that someone still has to
-     * look at it.
+     * <p><b>Nothing calls this yet.</b> The storefront contact form is not built, so
+     * `contact`'s HTTP surface is read-and-delete only and {@code ContactMessageMapper}
+     * rehydrates rows through the other constructor. Verified by deleting this method:
+     * the tree compiles and the suite is unchanged.
+     *
+     * <p>That matters to a reader comparing {@link ContactEmail} against the operator and
+     * identity address rules: those two govern live traffic, this one governs nothing
+     * until the form lands. {@link ContactSummary} and {@link ContactContent} reach the
+     * tree only through this signature too. Kept rather than deleted because the write
+     * slice is a known next step, not because it might one day be useful (LAW §6.3) — and
+     * the value objects are what the slice will validate with.
+     *
+     * <p>The value objects validate on the way in, which is why they exist now and did
+     * not before. A message arrives unread: the whole point of the inbox is that someone
+     * still has to look at it.
      *
      * <p>{@code name} is required — {@link ContactName} refuses a blank one, so
      * every row names whoever wrote it.
