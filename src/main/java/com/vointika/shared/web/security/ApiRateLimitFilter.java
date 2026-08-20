@@ -6,8 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,7 +14,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -32,8 +29,9 @@ import java.util.UUID;
  * cookie), so this app-side filter is the only place such a cap can live.
  *
  * <p>Scoped to JWT-authenticated requests only: unauthenticated and public
- * routes pass through untouched. Same fail-open posture and 429 shape as
- * {@link EndpointRateLimitFilter}.
+ * routes pass through untouched. Same fail-open posture as
+ * {@link EndpointRateLimitFilter}, and literally the same 429 —
+ * {@link RateLimitRefusal}.
  */
 public class ApiRateLimitFilter extends OncePerRequestFilter {
 
@@ -70,14 +68,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
         }
 
         if (!limiter.tryAcquire("rl:api:user:" + userId, LIMIT, WINDOW)) {
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding("UTF-8");
-            // ASCII-only: bypasses Jackson (see EndpointRateLimitFilter).
-            String body = "{\"status\":429,\"error\":\"Too Many Requests\","
-                    + "\"message\":\"Too many requests, try again later\","
-                    + "\"timestamp\":\"" + Instant.now() + "\"}";
-            response.getWriter().write(body);
+            RateLimitRefusal.write(response);
             return;
         }
         filterChain.doFilter(request, response);

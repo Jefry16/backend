@@ -120,12 +120,21 @@ public class ListQueryParser {
         return parsed;
     }
 
-    /** The grammar lives on {@link SortSpec}; this only restates the failure as a 422. */
+    /**
+     * The grammar lives on {@link SortSpec}; this only restates the failure as a 422.
+     *
+     * <p><b>The message is carried over, not re-spelled.</b> {@code SortSpec.parse}
+     * refuses for two reasons, and this used to hardcode one of them — correct only
+     * because {@link #parseSort} returns the default for an empty token four lines
+     * up, so the other branch is unreachable from here. That is a copy kept true by
+     * a guard in a different method; passing the cause through is true by
+     * construction.
+     */
     private static SortSpec parseSortToken(String token) {
         try {
             return SortSpec.parse(token);
         } catch (IllegalArgumentException e) {
-            throw new InvalidFieldException("Invalid sort: missing field");
+            throw new InvalidFieldException(e.getMessage());
         }
     }
 

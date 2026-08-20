@@ -8,8 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.server.PathContainer;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -18,7 +16,6 @@ import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -38,7 +35,9 @@ import java.util.List;
  * <p>The limiter is resolved lazily via {@link ObjectProvider}: with no
  * {@code RateLimiterPort} bean (sliced tests) the filter passes everything
  * through, and the Redis implementation fails open when the store is down — rate
- * limiting never breaks a request. 429s use the §6.1 error shape, written directly.
+ * limiting never breaks a request. The 429 itself is {@link RateLimitRefusal}, shared
+ * with {@link ApiRateLimitFilter} so the two cannot answer the same condition
+ * differently.
  *
  * <p>{@code getRemoteAddr()} is the client IP only when the app terminates the
  * connection; behind a proxy/LB, configure {@code server.forward-headers-strategy}
@@ -88,15 +87,7 @@ public class EndpointRateLimitFilter extends OncePerRequestFilter {
         String key = "rl:ip:" + rule.method().name() + ":" + rule.patternText()
                 + ":" + request.getRemoteAddr();
         if (!limiter.tryAcquire(key, rule.limit(), rule.window())) {
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding("UTF-8");
-            // ASCII-only message: this body bypasses Jackson, so it must not
-            // depend on the container's default writer charset.
-            String body = "{\"status\":429,\"error\":\"Too Many Requests\","
-                    + "\"message\":\"Too many requests, try again later\","
-                    + "\"timestamp\":\"" + Instant.now() + "\"}";
-            response.getWriter().write(body);
+            RateLimitRefusal.write(response);
             return;
         }
         filterChain.doFilter(request, response);

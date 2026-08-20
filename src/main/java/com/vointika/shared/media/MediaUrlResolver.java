@@ -38,8 +38,11 @@ public class MediaUrlResolver {
     /**
      * The host-independent relative key: strips a leading {@code scheme://host}
      * (and any leading slash) so only the object path remains.
+     *
+     * <p>Private: {@link #toUrl} is the only caller and no context has ever wanted
+     * the bare key. It was public without one (LAW §2.4 — name the caller).
      */
-    public String toKey(String stored) {
+    private String toKey(String stored) {
         if (stored == null || stored.isBlank()) {
             return stored;
         }

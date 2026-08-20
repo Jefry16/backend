@@ -32,12 +32,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  * like it. A verbatim-in-{@code src/main} check flags all of those and is unusable.
  *
  * <p><b>Every message that reaches a client is a sentence</b> — that, not "every message
- * in the repository", is the claim this rests on, and three production messages are
- * lower-case ({@code ListSchema:123}, {@code SortSpec:24}, {@code JwtProperties:24}).
- * All three are {@code IllegalState}/{@code IllegalArgument} raised at wiring or parse
- * time, never mapped to a response body and never stubbed in a documentation test, so
- * the scan root keeps them out of reach. Placeholders were bare lower-case tokens, so
- * the initial capital separates them exactly.
+ * in the repository", is the claim this rests on, and two production messages are
+ * lower-case ({@code ListSchema:123}, {@code JwtProperties:24}). Both are
+ * {@code IllegalState}/{@code IllegalArgument} raised at wiring time, never mapped to a
+ * response body and never stubbed in a documentation test, so the scan root keeps them
+ * out of reach. Placeholders were bare lower-case tokens, so the initial capital
+ * separates them exactly.
+ *
+ * <p><b>{@code SortSpec:24} was the third, and is capitalised now (#197).</b> It is
+ * raised at <em>parse</em> time rather than wiring time, and {@code ListQueryParser}
+ * translates whatever {@code SortSpec.parse} throws into a 422 — so what kept it off
+ * the wire was not its type but a {@code isEmpty()} guard in a different method
+ * (`ListQueryParser:113`), which is a copy of a rule held true somewhere else. That is
+ * exactly what #197 was removing elsewhere in the same file. An initial capital costs
+ * one character and puts this back on "true by construction" whichever way the guard
+ * goes; {@code treatsAnEmptySortParamAsTheDefaultSort} pins the guard itself.
  *
  * <p><b>What it cannot see.</b> A plausible-looking wrong sentence passes — replacing a
  * placeholder with the wrong real constant published "Audience not found" for a
