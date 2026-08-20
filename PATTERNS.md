@@ -225,10 +225,17 @@ tourOperator  id, name, address, phone, email, url, description, passwordMessage
               policies [ { type, title, url } ],
               cancellationPolicy, privacyPolicy, termsOfService, legalNotice,
               currency { code, symbol }, timezone { name, city }
-page          title, description, ogImageUrl, path
+(top level)   pageTitle, pageDescription, ogImageUrl, canonicalUrl, pageType
+page          id, handle, title, body, url   -- /pages/{handle} only, NON_NULL
 routes        root, experiences
-localization  locale, languages [ { code, current, url } ]
+localization  language, languages [ { code, name, endonymName, primary, url } ]
 ```
+
+**This block is a summary of the rules above, so it has to move when they do.** It
+carried `page title, description, ogImageUrl, path` and `localization locale, …
+current` until 2026-08-20 — the shape from before the rules that reassigned `page`
+to the CMS page and renamed the served locale. A reader reaching the block first
+gets the replaced answer with nothing marking it as old.
 
 **A named accessor beside a list is Shopify's shape and is worth copying.**
 `tourOperator.policies` iterates. `tourOperator.cancellationPolicy` is the one a
@@ -635,7 +642,7 @@ columns falling back per field:
 
 | | owner key | content columns | overlaid by | clearing |
 |---|---|---|---|---|
-| `experience_translations` | single id | 9, nullable | `StorefrontExperienceQueryImpl` | blank → null |
+| `experience_translations` | single id | 6, nullable | `StorefrontExperienceQueryImpl` | blank → null |
 | `tour_operator_translations` | single id (the operator) | 5, nullable | `StorefrontTourOperatorQueryImpl` | blank → null |
 | `tour_operator_policy_translations` | **composite** `(operator, type)` | 2, nullable | `StorefrontTourOperatorQueryImpl` | blank → null |
 | `page_translations` | single id | 5, nullable | `StorefrontPageQueryImpl` | blank → null |
@@ -662,9 +669,12 @@ half shipped first" looks like. The admin deliberately returns *every* locale
 rather than a resolved one — `GetMenuUseCase` hands back a locale→title map —
 which is what an editor needs.
 
-Same one level down: only **3 of experience's 9** translatable columns are read
+Same one level down: only **3 of experience's 6** translatable columns are read
 (`handle`, `name`, `description`), because the listing card is the only consumer.
-The rest are stored and never rendered in any locale.
+The rest are stored and never rendered in any locale — and that gap is what
+experience/V11 and V12 acted on, dropping `highlights`, `included` and
+`not_included` from the owner and its overlay together once it was clear no
+reader was coming. It was 9 until then.
 
 **Two shapes, and the split is the number of content columns.** The nullable rule
 exists so a partial translation can be expressed. With one column there is no
