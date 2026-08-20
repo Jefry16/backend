@@ -1413,11 +1413,16 @@ purpose: if every owner has every optional field set, nothing shows you what
   both had to be fixed to (the first is deleted, the second carries the comment).
 
   **`CaseFoldingUsesLocaleRootTest` now fails the build on it**, because writing the rule
-  down did not stop it happening three times. The third and fourth were found together in
-  #194: `NotificationType.fileBase()` — every constant contains `EMAIL`, so all six folded
+  down did not stop it happening in four places. The third and fourth were found together
+  in #194 — and the fourth only because the third prompted a sweep: `NotificationType.fileBase()` — every constant contains `EMAIL`, so all six folded
   to dotless and the template loader would refuse to start — and
-  `RequestSizeLimitFilter`, where `MULTIPART` has an `I`, so a client sending
-  `Multipart/form-data` stops being recognised and its upload gets the 1 MB JSON cap.
+  `RequestSizeLimitFilter`, where a client sending `MULTIPART/FORM-DATA` — legal, since
+  RFC 9110 makes media types case-insensitive — stops being recognised and its upload gets
+  the 1 MB JSON cap. (`Multipart/form-data` is fine: only *uppercase* `I` folds.)
+
+  **The two are different kinds of exposure**, which is what to carry to the next case: a
+  `SCREAMING_CASE` constant folds *by construction*, so no caller can avoid it; a header
+  folds only for the casings a caller happens to send in caps.
 
   Both fail *closed* and both are invisible on every machine anyone develops or runs CI
   on, which is the whole shape of this bug: it is not caught by being careful, it is

@@ -17,19 +17,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * No production code case-folds with the JVM's default locale.
  *
- * <p>`PATTERNS.md` §11 has said this for a long time, and it has now been broken three
- * times: {@code LocaleResolver} and {@code TenantHandleResolver} were fixed for it, and
- * {@code NotificationType.fileBase()} arrived with it in 2026-08. A written rule that
- * fails three times is a rule that wants a build gate.
+ * <p>`PATTERNS.md` §11 has said this for a long time and has been broken in <b>four</b>
+ * places: {@code LocaleResolver} and {@code TenantHandleResolver}, fixed earlier, then
+ * {@code NotificationType.fileBase()} and {@code RequestSizeLimitFilter} — the second of
+ * which had been sitting there and was only found by sweeping for the first. A written
+ * rule broken four times is a rule that wants a build gate.
  *
- * <p><b>Why it matters.</b> Turkish folds {@code I} to a dotless {@code ı}, so on a host
- * whose default locale is {@code tr} the same string produces different text — and the
- * failures are invisible on every machine anyone develops or runs CI on:
+ * <p><b>Why it matters.</b> Turkish folds <b>uppercase</b> {@code I} to a dotless
+ * {@code ı} — a lowercase {@code i} passes through untouched — so on a host whose default
+ * locale is {@code tr} the same string can produce different text, invisibly to every
+ * machine anyone develops or runs CI on. The two live cases are <b>different kinds of
+ * exposure</b>, which is the useful thing to carry to the next one:
  * <ul>
- *   <li>{@code "VERIFICATION_EMAIL".toLowerCase()} → {@code verıfıcatıon-emaıl}: no
- *       template file matches, and the eager catalog loader refuses to start.</li>
- *   <li>{@code "Multipart/form-data".toLowerCase()} → {@code multıpart/...}: the
- *       size-limit filter stops recognising uploads and caps them at the JSON limit.</li>
+ *   <li><b>Certain, by construction.</b> {@code "VERIFICATION_EMAIL".toLowerCase()} →
+ *       {@code verıfıcatıon-emaıl}. The value is {@code SCREAMING_CASE} by definition, so
+ *       every {@code I} in it is uppercase and no caller can pick a casing that avoids it.
+ *       All six constants fold; the eager catalog loader then refuses to start.</li>
+ *   <li><b>Conditional, on what a caller sends.</b> {@code "MULTIPART/FORM-DATA"} →
+ *       {@code multıpart/...} and the size-limit filter stops recognising the upload, which
+ *       then gets the JSON cap. {@code "Multipart/form-data"} is <em>fine</em> — its
+ *       {@code i} is already lowercase. RFC 9110 makes media types case-insensitive, so the
+ *       all-caps form is legal to receive and cannot be assumed away.</li>
  * </ul>
  *
  * <p><b>Scope is {@code src/main} only.</b> A test folding case in a fixture is not
@@ -74,10 +82,10 @@ class CaseFoldingUsesLocaleRootTest {
                 .withFailMessage("""
                         %d case-fold(s) use the JVM default locale:
                         %s
-                        Under a Turkish default, I folds to a dotless ı — so the same string \
-                        produces different text on a host whose locale you did not choose, and \
-                        nothing on your machine or in CI will show it. Use toLowerCase(Locale.ROOT) \
-                        (PATTERNS §11).""", offenders.size(), String.join("\n", offenders))
+                        Under a Turkish default, UPPERCASE I folds to a dotless ı (lowercase i \
+                        is untouched) — so the same string produces different text on a host whose \
+                        locale you did not choose, and nothing on your machine or in CI will show \
+                        it. Use toLowerCase(Locale.ROOT) (PATTERNS §11).""", offenders.size(), String.join("\n", offenders))
                 .isEmpty();
     }
 
