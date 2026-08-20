@@ -63,6 +63,35 @@ class TenantNotFoundMessageIsWrittenOnceTest {
 
     private static final String LITERAL = '"' + TourOperatorMembershipCheck.TENANT_NOT_FOUND + '"';
 
+    /**
+     * <b>The exemption can neither widen nor evaporate.</b> Exempting a file by path —
+     * which is all the walk above does — leaves both ends open, and I checked both rather
+     * than reasoning about them: a <em>second</em> literal planted in the pin file passes,
+     * and so does replacing the pin's own literal with the constant, which turns
+     * {@code isEqualTo(TENANT_NOT_FOUND)} against {@code TENANT_NOT_FOUND} into a
+     * tautology. The second is the dangerous one, because it reads like tidying a literal
+     * away and it is how the #183 defect regenerates itself — green suite, sentence pinned
+     * nowhere, <b>eight published bodies</b> free to move.
+     *
+     * <p>Added 2026-08-20, from the guard modelled on this one
+     * ({@code RefreshTokenMessageIsWrittenOnceTest}) turning out to be the stronger of the
+     * two. `PATTERNS.md` §9a carries the rule.
+     */
+    @Test
+    void exactlyOneAssertionSpellsTheSentence() throws IOException {
+        long inPin = Files.readString(PIN).split(java.util.regex.Pattern.quote(LITERAL), -1).length - 1;
+
+        assertThat(inPin)
+                .withFailMessage("""
+                        %s appears %d time(s) in the exempted pin; it must be exactly once.
+                        None -> every other assertion reads the constant, so they hold for any \
+                        value and the wording is pinned nowhere: a reword moves the 404 body of \
+                        eight published operations with the suite green.
+                        More than one -> the exemption has widened, and "written once" is no \
+                        longer what the other assertion promises.""", LITERAL, inPin)
+                .isEqualTo(1);
+    }
+
     @Test
     @DisplayName("the tenant 404 is a constant, never a literal")
     void theMessageIsWrittenOnce() throws IOException {

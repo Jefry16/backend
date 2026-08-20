@@ -1,5 +1,6 @@
 package com.vointika.identity.presentation.controller;
 
+import com.vointika.identity.domain.entity.RefreshToken;
 import com.vointika.identity.application.dto.output.LoginUserOutput;
 import com.vointika.identity.application.dto.output.GetProfileOutput;
 import com.vointika.identity.application.dto.output.RefreshAccessTokenOutput;
@@ -463,7 +464,7 @@ class AuthControllerDocumentationTest {
     @Test
     void aReplayedRefreshTokenIs401AndEndsEverySession() throws Exception {
         when(refreshAccessTokenUseCase.execute(any()))
-                .thenThrow(new UnauthorizedException("Invalid refresh token"));
+                .thenThrow(new UnauthorizedException(RefreshToken.INVALID));
 
         mockMvc.perform(post("/api/auth/refresh")
                         .cookie(new Cookie(REFRESH_COOKIE_NAME, "already-rotated-refresh-token")))

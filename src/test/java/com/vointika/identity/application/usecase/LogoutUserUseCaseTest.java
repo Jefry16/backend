@@ -50,7 +50,7 @@ class LogoutUserUseCaseTest {
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
                 () -> useCase.execute(new LogoutUserInput(UUID.randomUUID(), "bad")));
-        assertEquals("Invalid refresh token", ex.getMessage());
+        assertEquals(RefreshToken.INVALID, ex.getMessage());
     }
 
     @Test
