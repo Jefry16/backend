@@ -39,6 +39,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -78,9 +79,13 @@ class MetaobjectEntryUseCasesTest {
         when(idGenerator.newId()).thenReturn(UUID.randomUUID());
         when(entryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(entryRepository.saveValue(any())).thenAnswer(i -> i.getArgument(0));
-        when(definitionRepository.requireByIdAndTourOperatorId(DEF, OP))
-                .thenReturn(definition());
+        when(definitionRepository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         when(definitionRepository.fieldsOf(DEF)).thenReturn(List.of(headingField()));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(definitionRepository).requireByIdAndTourOperatorId(any(), any());
+        doCallRealMethod().when(entryRepository).requireByIdAndTourOperatorId(any(), any());
     }
 
     private MetaobjectDefinition definition() {
@@ -148,7 +153,7 @@ class MetaobjectEntryUseCasesTest {
 
     @Test
     void updateDiffsValuesByFieldKey() {
-        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OP)).thenReturn(entry());
+        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OP)).thenReturn(Optional.of(entry()));
         when(entryRepository.findValue(ENTRY, FIELD)).thenReturn(Optional.of(
                 new MetaobjectEntryValue(UUID.randomUUID(), ENTRY, FIELD, "Old heading", USER)));
 
@@ -166,7 +171,7 @@ class MetaobjectEntryUseCasesTest {
 
     @Test
     void updateClearsWithNullAndSkipsNoOps() {
-        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OP)).thenReturn(entry());
+        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OP)).thenReturn(Optional.of(entry()));
         MetaobjectEntryValue stored =
                 new MetaobjectEntryValue(UUID.randomUUID(), ENTRY, FIELD, "Old heading", USER);
         when(entryRepository.findValue(ENTRY, FIELD)).thenReturn(Optional.of(stored));
@@ -186,7 +191,7 @@ class MetaobjectEntryUseCasesTest {
 
     @Test
     void updateToTakenHandleIs409() {
-        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OP)).thenReturn(entry());
+        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OP)).thenReturn(Optional.of(entry()));
         when(entryRepository.existsByDefinitionIdAndHandle(DEF, "taken")).thenReturn(true);
 
         assertThatThrownBy(() -> updateUseCase().execute(new UpdateMetaobjectEntryInput(
@@ -197,7 +202,7 @@ class MetaobjectEntryUseCasesTest {
     @Test
     void publishFlipsOnceThen409s() {
         MetaobjectEntry entry = entry();
-        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OP)).thenReturn(entry);
+        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OP)).thenReturn(Optional.of(entry));
         PublishMetaobjectEntryUseCase useCase = new PublishMetaobjectEntryUseCase(
                 entryRepository, membershipCheck, transactionRunner, auditTrailPort);
 
@@ -213,7 +218,7 @@ class MetaobjectEntryUseCasesTest {
 
     @Test
     void deleteAuditsWithIdentityInDetails() {
-        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OP)).thenReturn(entry());
+        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OP)).thenReturn(Optional.of(entry()));
         DeleteMetaobjectEntryUseCase useCase = new DeleteMetaobjectEntryUseCase(
                 entryRepository, metafieldValueRepository, membershipCheck,
                 transactionRunner, auditTrailPort);

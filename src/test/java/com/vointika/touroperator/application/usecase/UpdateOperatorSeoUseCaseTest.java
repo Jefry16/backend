@@ -21,10 +21,12 @@ import org.mockito.ArgumentCaptor;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -61,7 +63,11 @@ class UpdateOperatorSeoUseCaseTest {
                 UUID.randomUUID(), UUID.randomUUID(), new TourOperatorAddress("Somewhere 1", null, "Palma", null, null, UUID.randomUUID()),
                 USER, Instant.now(), Instant.now(),
                 LocaleCode.of("en"), Set.of(LocaleCode.of("en")));
-        when(operatorRepository.requireById(OP)).thenReturn(operator);
+        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(operatorRepository).requireById(any());
     }
 
     private UpdateOperatorSeoUseCase useCase() {

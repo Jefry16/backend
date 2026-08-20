@@ -989,17 +989,22 @@ port takes the calling class, so log names still point at the reporter.
   because they work entirely off the overlay table afterwards. When you collapse the
   `orElseThrow`s, check which callers use the row they just loaded.
 
-  **This is the target, and only `experience` meets it.** `touroperator` and `metafield`
-  stub the default at the call site instead, because their passes landed before this was
-  understood — `BrandUseCasesTest` is the named example, stubbing `requireById` to throw
-  and then asserting it threw. Their defaults *are* covered, by their own
-  `TenantScopedLookupTest`, so nothing is unguarded; what is missing is the call-site
-  half, and those assertions currently prove only that Mockito works. `MAP.md` holds the
-  worklist. Do not read this paragraph as a description of the repo — it describes where
-  the repo is going.
+  **The repo meets this everywhere as of 2026-08-20** — the last 47 call-site stubs, in
+  `touroperator` (24) and `metafield` (23), were converted in one change. Before that they
+  stubbed the default directly: `BrandUseCasesTest` told `requireById` to throw and then
+  asserted it threw.
 
-  Count it before believing any number, including this one — **47 on 2026-08-18**
-  (`touroperator` 24, `metafield` 23, `experience` 0). A stub is `when(mock.requireX(…))`
+  **What the conversion bought, measured both ways.** Breaking the defaults' *empty*
+  branch went from 35 failures to 42 — exactly the 7 sites that asserted a 404, which were
+  the tautological ones. Breaking the defaults' body outright went from 22 classes
+  noticing to **37**, which is what the other 40 happy-path stubs bought: they had
+  bypassed the default entirely, so its body could have been anything.
+
+  That split is worth knowing before doing this elsewhere: converting a `thenThrow` stub
+  fixes a tautology, converting a `thenReturn` one closes a blind spot. Neither is
+  visible from the diff.
+
+  Count before believing any number, including these. A stub is `when(mock.requireX(…))`
   or `doThrow(…).when(mock).requireX(…)`; `doCallRealMethod().when(mock).requireX(…)` is
   the *fix* and must not be counted, which is how the same question got answered 32, 47
   and 54 in one review round.

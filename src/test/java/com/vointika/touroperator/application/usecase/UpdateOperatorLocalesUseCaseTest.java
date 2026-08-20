@@ -17,10 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -65,6 +67,10 @@ class UpdateOperatorLocalesUseCaseTest {
         when(languageRepository.existsByCode("en")).thenReturn(true);
         when(languageRepository.existsByCode("es")).thenReturn(true);
         when(languageRepository.existsByCode("fr")).thenReturn(true);
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(operatorRepository).requireById(any());
     }
 
     private TourOperator operator() {
@@ -74,7 +80,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     @Test
     void setsPrimaryAndSupportedWhenAllValid() {
-        when(operatorRepository.requireById(operatorId)).thenReturn(operator());
+        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
 
         useCase.execute(operatorId, "es", List.of("en", "es", "fr"), callerId);
 
@@ -103,7 +109,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     @Test
     void primaryNotInSupportedIs422() {
-        when(operatorRepository.requireById(operatorId)).thenReturn(operator());
+        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
 
         assertThrows(InvalidFieldException.class,
                 () -> useCase.execute(operatorId, "fr", List.of("en", "es"), callerId));
@@ -130,7 +136,7 @@ class UpdateOperatorLocalesUseCaseTest {
 
     @Test
     void missingOperatorIs404() {
-        when(operatorRepository.requireById(operatorId)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
+        when(operatorRepository.findById(operatorId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
                 () -> useCase.execute(operatorId, "en", List.of("en"), callerId));

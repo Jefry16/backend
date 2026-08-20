@@ -30,9 +30,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -80,10 +82,9 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
             return null;
         }).when(transactionRunner).run(any());
 
-        when(entryRepository.requireByIdAndTourOperatorId(ENTRY, OPERATOR))
-                .thenReturn(new MetaobjectEntry(
+        when(entryRepository.findByIdAndTourOperatorId(ENTRY, OPERATOR)).thenReturn(Optional.of(new MetaobjectEntry(
                         ENTRY, OPERATOR, DEFINITION, new Handle("sea-swallow"),
-                        new MetaobjectEntryName("Sea Swallow"), CALLER));
+                        new MetaobjectEntryName("Sea Swallow"), CALLER)));
         when(definitionRepository.fieldsOf(DEFINITION)).thenReturn(List.of(
                 field(FIELD_NOTES, "notes", MetafieldType.MULTI_LINE_TEXT, 0),
                 field(FIELD_CAPACITY, "capacity", MetafieldType.NUMBER_INTEGER, 1)));
@@ -96,6 +97,10 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
                 new MetafieldValueValidator(new JacksonJsonSyntaxPort(new ObjectMapper())),
                 new OperatorLocaleCheck(operatorLocalesQuery), mock(TourOperatorMembershipCheck.class),
                 transactionRunner, auditTrailPort);
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(entryRepository).requireByIdAndTourOperatorId(any(), any());
     }
 
     /** The bare field key, because a metaobject field has no namespace. */
@@ -154,8 +159,7 @@ class UpsertMetaobjectFieldTranslationsUseCaseTest {
     @Test
     void anotherOperatorsEntryIs404() {
         UUID foreign = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3eff");
-        when(entryRepository.requireByIdAndTourOperatorId(foreign, OPERATOR))
-                .thenThrow(MetaobjectEntryRepository.NOT_FOUND.get());
+        when(entryRepository.findByIdAndTourOperatorId(foreign, OPERATOR)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new UpsertMetaobjectFieldTranslationsInput(
                 CALLER, OPERATOR, foreign, "en", Map.of("notes", "x"))))
