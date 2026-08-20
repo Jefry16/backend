@@ -2,7 +2,6 @@ package com.vointika.contact.application.usecase;
 
 import com.vointika.contact.domain.entity.ContactMessage;
 import com.vointika.contact.domain.repository.ContactMessageRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
 
 import java.util.UUID;
@@ -21,7 +20,6 @@ public class GetContactMessageUseCase {
 
     public ContactMessage execute(UUID tourOperatorId, UUID messageId, UUID callerUserId) {
         membershipCheck.ensureMember(callerUserId, tourOperatorId);
-        return messageRepository.findByIdAndTourOperatorId(messageId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Contact message not found"));
+        return messageRepository.requireByIdAndTourOperatorId(messageId, tourOperatorId);
     }
 }
