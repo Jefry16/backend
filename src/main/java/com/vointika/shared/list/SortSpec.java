@@ -21,7 +21,7 @@ public record SortSpec(String field, SortDirection direction) {
      */
     public static SortSpec parse(String token) {
         if (token == null || token.isEmpty()) {
-            throw new IllegalArgumentException("sort token must not be empty");
+            throw new IllegalArgumentException("Sort token must not be empty");
         }
         if (token.charAt(0) == '-') {
             String field = token.substring(1);

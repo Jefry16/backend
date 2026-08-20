@@ -94,7 +94,13 @@ class EndpointRateLimitFilterTest {
 
         assertEquals(429, response.getStatus());
         assertTrue(response.getContentType().startsWith(MediaType.APPLICATION_JSON_VALUE));
-        assertTrue(response.getContentAsString().contains("Too Many Requests"));
+        // Was contains("Too Many Requests"), which matches the `error` field and so passes
+        // against almost any 429 — including one whose message had drifted.
+        assertEquals("{\"status\":429,\"error\":\"Too Many Requests\","
+                        + "\"message\":\"Too many requests, try again later\","
+                        + "\"timestamp\":\"<stamped>\"}",
+                response.getContentAsString()
+                        .replaceAll("\"timestamp\":\"[^\"]+\"", "\"timestamp\":\"<stamped>\""));
         verifyNoInteractions(chain);
     }
 
