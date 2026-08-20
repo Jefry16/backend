@@ -1169,8 +1169,14 @@ also only checked one direction: a written-once guard that exempts a *file* lets
 copy in through the back door, and "written once" becomes quietly false while the build
 stays green. `RefreshTokenMessageIsWrittenOnceTest` closes both ends by counting
 occurrences **inside** the exempted file and requiring exactly one — 0 means the wording
-is pinned nowhere, 2 means the exemption widened. Prefer that arrangement for the next
-message that needs this treatment.
+is pinned nowhere, 2 means the exemption widened.
+
+**Both guards have it now, because the older one had the hole this describes.** The
+tenant-404 guard exempted its pin by path and never looked inside, so replacing that pin's
+literal with `TENANT_NOT_FOUND` — an edit that reads like tidying a literal away — left
+`isEqualTo(TENANT_NOT_FOUND)` asserted against `TENANT_NOT_FOUND`, green, with eight
+published bodies unpinned. That is the #183 defect regenerating itself. Written as an
+instruction, this rule did not stop it; written as a test, it does.
 
 **A stubbed placeholder becomes the published body.** `doThrow(new
 ResourceAlreadyExistsException("exists"))` in a documentation test reads as throwaway
