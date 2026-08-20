@@ -106,7 +106,7 @@ port or an event (never a direct import).
 >   `name` is one value per *pair* of languages.
 > - **There is no key-side copy of the operator.** The use case carries the shared
 >   port's `TourOperatorView` directly; a field-for-field application DTO beside it would
->   be the identical-pair shape MAP already carries as debt.
+>   be the identical-pair shape §4c leaves undecided.
 > - **`canonicalUrl` and `pageType` are top-level** (2026-08-13). Shopify writes
 >   the head itself through `content_for_header`; nothing writes ours, so the
 >   values a theme needs for `<link rel="canonical">` and JSON-LD are served
@@ -311,8 +311,17 @@ lives (the locale code, and whether it is the one that serves bare), `presentati
 says *what its URL is*. **The language switcher does not do this yet, and that is a
 live gap on a shipped route.** Every `Language.url` is built as `/` or `/{code}`
 in `StorefrontGlobalsResponse`. So switching language from `/pages/about` sends
-the visitor to the home page, not to that page in that language. Fixing it needs
-each locale's handle, which no query answers today. See MAP's backlog.
+the visitor to the home page, not to that page in that language.
+
+**The blocker is the data, not the plumbing.** A page's handle is translated, so
+the switcher needs that page's handle *in each locale*, and no query answers that:
+`StorefrontPageQuery.findByHandle` resolves one handle in one locale, and
+`StorefrontExperienceQuery` is the same shape. **Do not capture the current page's
+handle and repeat it under every prefix** — English prefix, Spanish slug, 404.
+
+So it lands with the experience detail page: decide how per-locale handles arrive
+(all locales on the detail query, or one call per language), then build the URL
+from the resolved handle. One slice, a real caller.
 
 **Renaming a component here is a breaking change** once operators author themes.
 Decide the shape while there are four records to change, not forty templates.
@@ -567,6 +576,20 @@ presentation DTO — the shapes have genuinely diverged.
 Responses are the mirror image: `LoginUserOutput` carries `accessToken` *and*
 `refreshToken`, `LoginUserResponse` carries only the access token because the refresh
 token leaves in an httpOnly cookie. That pair stays.
+
+**An *identical* output pair is still undecided, and this rule does not reach it.**
+`OperatorLocalesView`/`OperatorLocalesResponse` and
+`StorefrontPasswordView`/`StorefrontPasswordResponse` are field-for-field identical
+with copy-only mapping. The rule above collapses identical pairs on the **input**
+side, and keeps the one output pair it names because those two genuinely *differ*.
+
+The asymmetry is why it stayed open. Collapsing an input pair means the controller
+binds its body to the application record. Collapsing an output pair means **the
+application record becomes the serialized wire contract** — so renaming a field
+inside the application layer is an API break, and the usual escape hatch is barred,
+because the allowlist forbids putting `@JsonProperty` on it to decouple them.
+Decide it, then either collapse both or write the exemption here. Until then, do
+not collapse an identical output pair on the strength of the input rule.
 
 ## 4d. Two namespaces read as one must be validated as one
 
@@ -840,11 +863,40 @@ contradicts a deleted one.
 
 > **Fire-and-forget is non-critical-only.** This shape suits *drop-tolerant*
 > notifications — recoverable by the user, and the SES adapter already retries
-> transient failures. A **must-not-drop** event (payment, refund, booking state)
-> must **not** log-and-swallow: it needs a different shape — at-least-once +
-> idempotent consumer + retry/DLQ — whose decided direction is in the **MAP
-> backlog** ("Critical-event delivery"). Build that shape when the first such event
-> lands, not before (§2.3).
+> transient failures. A **must-not-drop** event (payment captured, refund issued,
+> booking cancelled, order placed) must **not** log-and-swallow. **Build the shape
+> below when the first such event lands, not before (§2.3)** — it is recorded here
+> so it is not improvised then.
+
+### 7a. Critical-event delivery — decided, unbuilt
+
+The direction only. The exact Spring Kafka 4 mechanism (`DefaultErrorHandler` +
+`DeadLetterPublishingRecoverer`, ack modes, outbox) is **verified against the
+pinned docs at build time** (LAW §4), never from this list.
+
+- **At-least-once** — the consumer commits the offset only *after* the side effect
+  succeeds (manual ack), never before.
+- **Idempotent consumer** — redelivery is expected, so dedupe: an event-id key
+  checked and inserted in the same tx as the effect, or a naturally idempotent
+  domain operation (refund-by-id). No double charge or refund on replay.
+- **Retry + DLQ** — transient failures retry with backoff, then land on
+  `<topic>.DLT` for inspection and replay. Never swallowed, never blocking the
+  partition — the opposite of fire-and-forget.
+- **Key by aggregate id**, not by recipient, so per-aggregate events stay ordered.
+- **Durable publish** — *open sub-decision*: transactional outbox (publish in the
+  DB tx, relay to Kafka) versus `acks=all` and tolerating the dual-write window.
+  Decide when the first critical producer lands.
+
+**A sweep rides with this slice.** Configuring a container-level error handler lets
+the *fire-and-forget* factory own log-and-swallow too, which collapses the **six
+identical try/catch blocks in `notification`'s consumers** — one per email, each
+catching `Exception`, logging and carrying on so a bad record cannot block the
+partition. They are duplicated deliberately: changing how the app behaves on
+failure needs the pinned docs and a running broker, so it belongs here rather than
+to a subtraction pass. **None of those six consumers has a test**, so whatever
+replaces the try/catch is the first thing to verify their wiring at all.
+
+**Trigger:** the first payment, sales or booking-state event.
 
 ## 8. Config-driven capability (grow by config, not code)
 

@@ -52,8 +52,8 @@ Verified 2026-08-16, so you do not have to rediscover it:
 
 ## Read before you start
 
-- `../CONSTITUTION.md` (LAW) and `../MAP.md` — MAP's header lists what is already
-  open. Do not present any of it as a discovery.
+- `../CONSTITUTION.md` (LAW), and `CLAUDE.md`'s *Open work* — it lists what is
+  already known to be open. Do not present any of it as a discovery.
 - `CLAUDE.md` for the auth model and the test traps, `PATTERNS.md` §4a, §4b and §9
   for the response and documentation-test conventions.
 - **`PATTERNS.md` §9a — what a documentation test publishes.** Every rule the
@@ -195,8 +195,9 @@ Every finding comes from something you ran or read. This is LAW §4 and it is ab
 - **A list endpoint declares no `@RequestParam`.** That is `ListQueryParser`'s design.
 - **Reference and ui-language lists return plain arrays.** Curated and bounded,
   exempt from §4b by decision.
-- **The 19 body-returning endpoints with no field table.** Already in MAP's Debt, and
-  listed by name in the current report.
+- **The 19 body-returning endpoints with no field table.** Closed as of 2026-08-17 —
+  the count went 19 → 0 across the series, `metafield` taking the last one. The scan
+  that keeps it true is `PATTERNS.md` §9a.
 
 ## Output
 
@@ -211,7 +212,8 @@ Write it to `API-DOCS-AUDIT.md`. **The file does not exist between passes** — 
 eleven-context series closed on 2026-08-17 and its report was deleted once its durable
 half reached `PATTERNS.md` §9a. Create it for the pass, commit it on the branch that
 produces it, and delete it in the same PR that lands the fixes. Anything that outlives
-one context belongs in §9a or `../MAP.md`, not in a report nobody re-reads.
+one context belongs in §9a or `CLAUDE.md`'s *Open work*, not in a report nobody
+re-reads.
 
 **The report is tracked** — stage explicit paths, `git add -- API-DOCS-AUDIT.md src …`,
 **never `git add -A`**.
