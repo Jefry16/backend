@@ -69,9 +69,9 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 
   A best-effort side effect — a storage delete, a broker publish — logs in the adapter that fails. A use case with something of its own to report uses `DiagnosticLogPort`.
 - **Every operator-facing mutation appends to the audit trail inside the same transaction** as the mutation (PATTERNS §8b). No unaudited mutation.
-- **Any list over tenant or growable data uses the shared list framework** — keyset cursor, typed filters, `ListSchema` (PATTERNS §4b). Never return an unbounded array; that mistake has already been made and fixed once.
-- **URLs are never stored.** Store a storage key, resolve to a URL at read time.
-- **Responses identify themselves with `id` + `context`** — never `userId`/`tourOperatorId`, never `type` (PATTERNS §4a).
+- **Any list that grows with business activity uses the shared list framework** — keyset cursor, typed filters, `ListSchema` (PATTERNS §4b). Members, bookings, orders, audit. Never return an unbounded array for one of those; that mistake has already been made and fixed once. **Tenant-scoped is not by itself the test** — twelve tenant-scoped endpoints return a bare `List<>` today because a closed set does not page (the `/translations` reads are capped by the operator's enabled locales). `/metafields` is the one to watch: it is bounded only by how many definitions the operator creates.
+- **Our own asset URLs are never stored.** Store a bucket-relative storage key, resolve to a URL at read time, so changing the bucket or domain needs no data migration (PATTERNS §5). This is about *our* objects: a URL the operator typed at an address we do not host — a menu's `EXTERNAL_URL`, a brand social link — is stored as given, because there is no key to store instead.
+- **Responses identify themselves with `id` + `context`** — never `userId`/`tourOperatorId`, and the discriminator is **not** called `type` (PATTERNS §4a). The ban is on *that* use of the name, not the name. `MetaobjectDefinitionResponse` is the illustration: it carries `id` + `context:"metaobject-definitions"` per the rule, **and** a `type` naming the metaobject's own kind, **and** a nested `FieldResponse.type` holding a field's data type. Three `type`s, none of them the discriminator, all fine.
 
 ### One API surface, one auth model
 
@@ -81,7 +81,7 @@ A modular monolith: `com.vointika.<context>`, one package per bounded context, e
 
 **The contract is `PATTERNS.md` §2a and the render path is §2b. That is the whole record; nowhere else carries a copy.** What belongs here is the shape of the code.
 
-`storefront` resolves the tenant from the host and owns **eight addresses**: `/`, `/{locale}`, `/experiences`, `/{locale}/experiences`, `/policies/{type}`, `/{locale}/policies/{type}`, `/pages/{handle}`, `/{locale}/pages/{handle}`. Four of them serve real data — `/`, `/{locale}` and both `/pages/{handle}` forms. The other four answer `{"handle","status"}`.
+`storefront` resolves the tenant from the host and owns **nine addresses**. Eight are pages: `/`, `/{locale}`, `/experiences`, `/{locale}/experiences`, `/policies/{type}`, `/{locale}/policies/{type}`, `/pages/{handle}`, `/{locale}/pages/{handle}`. Four of those serve real data — `/`, `/{locale}` and both `/pages/{handle}` forms; the other four answer `{"handle","status"}`. The ninth is **`/password`**, the gate — `GET` renders it, `POST` submits it, and it is a route like any other, which is why `PasswordPageController` is one of the four controllers below.
 
 There are **four controllers**: `StorefrontHomeController`, `StorefrontCmsPageController`, `StorefrontPlaceholderController`, `PasswordPageController`. The tenant seam is `TenantHandleResolver` plus `StorefrontTourOperatorQuery`. There is no `StorefrontTenantQuery` — it was never rebuilt under that name. The password gate is back in full.
 
