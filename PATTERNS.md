@@ -691,8 +691,19 @@ written.** Its items are not editable individually: the whole tree is POSTed and
 rebuilt with fresh ids. So translations ride inline in that payload, have no
 endpoints of their own, and are cleared by being left out.
 
-It is also the only one without a `tour_operator_id`. Items are always reached
-through their menu, so adding one would be a migration for a join nobody needs.
+**Three of the eight carry no `tour_operator_id`, and all three for the same
+reason: their parent has none either.** `menu_item_translations` hangs off
+`menu_items`, which is reached through its `menus` row and takes the tenant from
+there. The two row-shaped metafield overlays hang off `metafield_values` /
+`metaobject_entry_values`, which are **owner-generic by design** — a bare
+`owner_id` with no FK, so there is no tenant column to inherit (the *definitions*
+are tenant-scoped; the values are not). Adding one to any of the three would be a
+migration for a join nobody needs.
+
+*This said "the only one" until 2026-08-20.* It was true when written and stopped
+being true when #151/#152 added the two metafield overlays — and it was then
+**restated** in a later edit that did not recheck it, which is the failure worth
+noticing: a sentence can be reworded long after it goes false.
 
 **Still not generalising, and the arithmetic is now the reason rather than the
 excuse.** The column-shaped six each overlay in their own storefront query
