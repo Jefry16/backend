@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -79,8 +80,11 @@ class MetafieldValueUseCasesTest {
         when(valueRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(pageOwnershipQuery.existsForTourOperator(OWNER, OP)).thenReturn(true);
         when(experienceOwnershipQuery.existsForTourOperator(OWNER, OP)).thenReturn(true);
-        when(definitionRepository.requireByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle"))
-                .thenReturn(definition());
+        when(definitionRepository.findByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle")).thenReturn(Optional.of(definition()));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(definitionRepository).requireByIdentity(any(), any(), any(), any());
     }
 
     private MetafieldDefinition definition() {
@@ -141,11 +145,10 @@ class MetafieldValueUseCasesTest {
     void referenceValueMustBeAnEntryOfThePinnedType() {
         UUID pin = UUID.fromString("cccccccc-0000-4000-8000-0000000000aa");
         UUID entry = UUID.fromString("cccccccc-0000-4000-8000-0000000000bb");
-        when(definitionRepository.requireByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle"))
-                .thenReturn(new MetafieldDefinition(DEF, OP, MetafieldOwnerType.PAGE,
+        when(definitionRepository.findByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle")).thenReturn(Optional.of(new MetafieldDefinition(DEF, OP, MetafieldOwnerType.PAGE,
                         new MetafieldNamespace("custom"), new MetafieldKey("subtitle"),
                         MetafieldType.METAOBJECT_REFERENCE, pin,
-                        new MetafieldDefinitionName("Size chart"), null, USER));
+                        new MetafieldDefinitionName("Size chart"), null, USER)));
         when(valueRepository.findByDefinitionIdAndOwnerId(DEF, OWNER)).thenReturn(Optional.empty());
 
         // Not a UUID at all → 422 from the validator.
@@ -174,8 +177,7 @@ class MetafieldValueUseCasesTest {
 
     @Test
     void unknownDefinitionIs404() {
-        when(definitionRepository.requireByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle"))
-                .thenThrow(MetafieldDefinitionRepository.NOT_FOUND.get());
+        when(definitionRepository.findByIdentity(OP, MetafieldOwnerType.PAGE, "custom", "subtitle")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> upsert().execute(input("x")))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

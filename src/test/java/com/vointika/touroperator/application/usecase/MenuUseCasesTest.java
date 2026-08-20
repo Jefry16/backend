@@ -42,6 +42,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -86,9 +87,13 @@ class MenuUseCasesTest {
         when(menuRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(menuRepository.findByIdAndTourOperatorId(MENU, OP))
                 .thenReturn(Optional.of(menu()));
-        when(tourOperatorRepository.requireById(OP)).thenReturn(operator());
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
         when(experienceOwnershipQuery.existsForTourOperator(EXPERIENCE, OP)).thenReturn(true);
         when(pageOwnershipQuery.existsForTourOperator(PAGE, OP)).thenReturn(true);
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(tourOperatorRepository).requireById(any());
     }
 
     private Menu menu() {

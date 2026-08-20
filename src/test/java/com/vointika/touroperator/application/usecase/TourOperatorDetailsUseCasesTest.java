@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -70,10 +71,14 @@ class TourOperatorDetailsUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(operatorRepository.requireById(OP)).thenReturn(operator());
+        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
         when(timezoneRepository.findById(OTHER_TZ)).thenReturn(Optional.of(mock(Timezone.class)));
         when(timezoneRepository.findById(TZ)).thenReturn(Optional.of(mock(Timezone.class)));
         when(currencyRepository.findById(CUR)).thenReturn(Optional.of(mock(Currency.class)));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(operatorRepository).requireById(any());
     }
 
     private TourOperator operator() {
@@ -208,7 +213,7 @@ class TourOperatorDetailsUseCasesTest {
 
     @Test
     void updatingAMissingOperatorIs404() {
-        when(operatorRepository.requireById(OP)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
+        when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> update().execute(OP, only("+34 611 111 111", null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

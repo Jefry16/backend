@@ -25,10 +25,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -65,6 +67,11 @@ class MetaobjectDefinitionUseCasesTest {
         when(idGenerator.newId()).thenReturn(UUID.randomUUID());
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(repository.saveField(any())).thenAnswer(i -> i.getArgument(0));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(repository).requireByIdAndTourOperatorId(any(), any());
+        doCallRealMethod().when(repository).requireField(any(), any());
     }
 
     private MetaobjectDefinition definition() {
@@ -132,7 +139,7 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void updateDiffsOnlyRealChanges() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         UpdateMetaobjectDefinitionUseCase useCase = new UpdateMetaobjectDefinitionUseCase(
                 repository, membershipCheck, transactionRunner, auditTrailPort);
 
@@ -149,7 +156,7 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void addFieldDuplicateKeyIs409() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         when(repository.existsField(DEF, "heading")).thenReturn(true);
         AddMetaobjectFieldUseCase useCase = new AddMetaobjectFieldUseCase(
                 repository, membershipCheck, idGenerator, transactionRunner, auditTrailPort);
@@ -161,7 +168,7 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void addFieldAppendsAfterTheHighestPositionNotTheCount() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         // Two surviving fields at positions 1 and 4 (2 and 3 were removed):
         // the next position must be 5, not count+1=3 (which would collide).
         MetaobjectField last = new MetaobjectField(UUID.randomUUID(), DEF,
@@ -183,8 +190,8 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void renameFieldNoOpRecordsNothing() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
-        when(repository.requireField(DEF, "heading")).thenReturn(field("heading"));
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
+        when(repository.findField(DEF, "heading")).thenReturn(Optional.of(field("heading")));
         RenameMetaobjectFieldUseCase useCase = new RenameMetaobjectFieldUseCase(
                 repository, membershipCheck, transactionRunner, auditTrailPort);
 
@@ -195,8 +202,8 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void removeLastFieldIs409() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
-        when(repository.requireField(DEF, "heading")).thenReturn(field("heading"));
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
+        when(repository.findField(DEF, "heading")).thenReturn(Optional.of(field("heading")));
         when(repository.countFields(DEF)).thenReturn(1L);
         RemoveMetaobjectFieldUseCase useCase = new RemoveMetaobjectFieldUseCase(
                 repository, membershipCheck, transactionRunner, auditTrailPort);
@@ -208,7 +215,7 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void deleteIsRefusedWhileAReferenceMetafieldPinsTheType() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         when(metafieldDefinitionRepository.existsPinningMetaobjectDefinition(DEF)).thenReturn(true);
         DeleteMetaobjectDefinitionUseCase useCase = new DeleteMetaobjectDefinitionUseCase(
                 repository, metafieldDefinitionRepository, membershipCheck, transactionRunner, auditTrailPort);
@@ -226,7 +233,7 @@ class MetaobjectDefinitionUseCasesTest {
 
     @Test
     void deleteAuditsWithIdentityInDetails() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
         DeleteMetaobjectDefinitionUseCase useCase = new DeleteMetaobjectDefinitionUseCase(
                 repository, metafieldDefinitionRepository, membershipCheck, transactionRunner, auditTrailPort);
 

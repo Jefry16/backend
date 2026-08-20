@@ -19,10 +19,12 @@ import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -51,6 +53,10 @@ class StorefrontPasswordUseCasesTest {
             return null;
         }).when(transactionRunner).run(any());
         when(tourOperatorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(tourOperatorRepository).requireById(any());
     }
 
     private TourOperator operator(boolean enabled, String password, String message) {
@@ -68,8 +74,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void getReturnsSettingsToAnyMember() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(true, "secret", "Launching soon"));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(true, "secret", "Launching soon")));
         GetStorefrontPasswordUseCase useCase =
                 new GetStorefrontPasswordUseCase(tourOperatorRepository, membershipCheck);
 
@@ -83,8 +88,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void enableWithPasswordSavesAndAuditsEnabledFlagOnly() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(false, null, null));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(false, null, null)));
 
         updateUseCase().execute(OP, true, "sunset2026", "We open in August", USER);
 
@@ -107,8 +111,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void enableWithoutAnyPasswordIs422() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(false, null, null));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(false, null, null)));
 
         assertThatThrownBy(() -> updateUseCase().execute(OP, true, "  ", null, USER))
                 .isInstanceOf(InvalidFieldException.class)
@@ -118,8 +121,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void blankPasswordKeepsStoredOneSoReEnablingWorks() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(false, "kept-secret", "msg"));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(false, "kept-secret", "msg")));
 
         updateUseCase().execute(OP, true, null, "msg", USER);
 
@@ -131,8 +133,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void disableKeepsPasswordAndMessage() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(true, "secret", "Launching soon"));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(true, "secret", "Launching soon")));
 
         updateUseCase().execute(OP, false, null, "Launching soon", USER);
 
@@ -145,8 +146,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void passwordOnlyChangeAuditsAsBareEventWithoutChanges() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(true, "old-secret", null));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(true, "old-secret", null)));
 
         updateUseCase().execute(OP, true, "new-secret", null, USER);
 
@@ -157,8 +157,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void trueNoOpRecordsNothing() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(true, "secret", "msg"));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(true, "secret", "msg")));
 
         updateUseCase().execute(OP, true, "secret", "msg", USER);
 
@@ -168,8 +167,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void blankMessageClears() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(true, "secret", "old message"));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(true, "secret", "old message")));
 
         updateUseCase().execute(OP, true, null, "  ", USER);
 
@@ -180,8 +178,7 @@ class StorefrontPasswordUseCasesTest {
 
     @Test
     void overlongPasswordIs422() {
-        when(tourOperatorRepository.requireById(OP))
-                .thenReturn(operator(false, null, null));
+        when(tourOperatorRepository.findById(OP)).thenReturn(Optional.of(operator(false, null, null)));
 
         assertThatThrownBy(() -> updateUseCase().execute(OP, true, "x".repeat(101), null, USER))
                 .isInstanceOf(InvalidFieldException.class)

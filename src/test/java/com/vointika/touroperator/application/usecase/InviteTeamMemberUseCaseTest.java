@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -82,10 +83,14 @@ class InviteTeamMemberUseCaseTest {
         when(idGenerator.newId()).thenReturn(UUID.randomUUID());
         when(tokenPort.generate()).thenReturn("raw");
         when(tokenPort.hash("raw")).thenReturn("hash");
-        when(tourOperatorRepository.requireById(operatorId)).thenReturn(operator());
+        when(tourOperatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
         when(invitationRepository.save(any())).thenAnswer(a -> a.getArgument(0));
         when(userAccountQuery.findContact(inviterId))
                 .thenReturn(Optional.of(new UserContactView("inviter@example.com", "Inviter", "es")));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(tourOperatorRepository).requireById(any());
     }
 
     private TourOperator operator() {

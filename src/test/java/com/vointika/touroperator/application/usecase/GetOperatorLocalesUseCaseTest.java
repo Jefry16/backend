@@ -14,10 +14,13 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -37,6 +40,10 @@ class GetOperatorLocalesUseCaseTest {
         operatorRepository = mock(TourOperatorRepository.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         useCase = new GetOperatorLocalesUseCase(operatorRepository, membershipCheck);
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(operatorRepository).requireById(any());
     }
 
     private TourOperator operator() {
@@ -49,7 +56,7 @@ class GetOperatorLocalesUseCaseTest {
 
     @Test
     void returnsPrimaryAndSortedSupportedForAnyMember() {
-        when(operatorRepository.requireById(operatorId)).thenReturn(operator());
+        when(operatorRepository.findById(operatorId)).thenReturn(Optional.of(operator()));
 
         OperatorLocalesView view = useCase.execute(operatorId, callerId);
 
@@ -68,7 +75,7 @@ class GetOperatorLocalesUseCaseTest {
 
     @Test
     void missingOperatorIs404() {
-        when(operatorRepository.requireById(operatorId)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
+        when(operatorRepository.findById(operatorId)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> useCase.execute(operatorId, callerId));
     }
 }

@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -67,11 +68,15 @@ class BrandUseCasesTest {
             ((Runnable) i.getArgument(0)).run();
             return null;
         }).when(transactionRunner).run(any());
-        when(operatorRepository.requireById(OP)).thenReturn(operator());
+        when(operatorRepository.findById(OP)).thenReturn(Optional.of(operator()));
         when(brandRepository.findByTourOperatorId(OP)).thenReturn(Optional.empty());
         when(mediaAssetBatchQuery.findAssetsByIds(OP, Set.of(LOGO)))
                 .thenReturn(Map.of(LOGO, new MediaAssetBatchQuery.MediaAsset("media/logo.png", null, null, null)));
         when(mediaAssetBatchQuery.findAssetsByIds(OP, Set.of(FOREIGN))).thenReturn(Map.of());
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(operatorRepository).requireById(any());
     }
 
     private TourOperator operator() {
@@ -219,7 +224,7 @@ class BrandUseCasesTest {
 
     @Test
     void updateOfAMissingOperatorIs404() {
-        when(operatorRepository.requireById(OP)).thenThrow(new ResourceNotFoundException(TourOperatorMembershipCheck.TENANT_NOT_FOUND));
+        when(operatorRepository.findById(OP)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> update().execute(OP, input(null, null), USER))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -60,6 +61,10 @@ class MetafieldDefinitionUseCasesTest {
         }).when(transactionRunner).run(any());
         when(idGenerator.newId()).thenReturn(DEF);
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+        // Run the real default: Mockito stubs a `default` like any other method,
+        // so stubbing require* directly would make the assertions below hold for
+        // any value (PATTERNS §9).
+        doCallRealMethod().when(repository).requireByIdAndTourOperatorId(any(), any());
     }
 
     private MetafieldDefinition definition() {
@@ -127,7 +132,7 @@ class MetafieldDefinitionUseCasesTest {
 
     @Test
     void updateChangesNameAndAuditsTheDiff() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
 
         update().execute(new UpdateMetafieldDefinitionInput(USER, OP, DEF, "Sub-heading", "Shown under the title"));
 
@@ -137,7 +142,7 @@ class MetafieldDefinitionUseCasesTest {
 
     @Test
     void noOpUpdateSavesButRecordsNothing() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
 
         update().execute(new UpdateMetafieldDefinitionInput(USER, OP, DEF, "Subtitle", null));
 
@@ -147,7 +152,7 @@ class MetafieldDefinitionUseCasesTest {
 
     @Test
     void deleteRemovesAndRecordsTheIdentity() {
-        when(repository.requireByIdAndTourOperatorId(DEF, OP)).thenReturn(definition());
+        when(repository.findByIdAndTourOperatorId(DEF, OP)).thenReturn(Optional.of(definition()));
 
         new DeleteMetafieldDefinitionUseCase(repository, membershipCheck, transactionRunner, auditTrailPort)
                 .execute(OP, DEF, USER);
