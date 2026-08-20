@@ -201,7 +201,7 @@ class TourOperatorControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
                                 fieldWithPath("id").description("The tour operator id"),
-                                fieldWithPath("context").description("Always \"tour-operators\""),
+                                fieldWithPath("context").description("The entity's collection: \"tour-operators\""),
                                 fieldWithPath("name").description("The business name"),
                                 fieldWithPath("handle").description(
                                         "The storefront subdomain — immutable, not editable"),

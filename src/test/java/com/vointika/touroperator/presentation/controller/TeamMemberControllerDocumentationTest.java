@@ -112,7 +112,7 @@ class TeamMemberControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The member's user id"),
-                                fieldWithPath("data[].context").description("The entity's collection — \"users\""),
+                                fieldWithPath("data[].context").description("The entity's collection: \"users\""),
                                 fieldWithPath("data[].role").description("OWNER, ADMIN, or STAFF"),
                                 fieldWithPath("data[].joinedAt").description("When they joined"),
                                 fieldWithPath("data[].name").description("Display name (best-effort; may be null)"),
@@ -139,7 +139,7 @@ class TeamMemberControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The member's user id"),
-                                fieldWithPath("context").description("The entity's collection — \"users\""),
+                                fieldWithPath("context").description("The entity's collection: \"users\""),
                                 fieldWithPath("role").description("OWNER, ADMIN, or STAFF"),
                                 fieldWithPath("joinedAt").description("When they joined"),
                                 fieldWithPath("name").description("Display name (best-effort; may be null)"),

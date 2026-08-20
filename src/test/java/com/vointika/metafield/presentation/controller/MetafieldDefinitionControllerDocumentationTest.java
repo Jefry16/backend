@@ -186,7 +186,7 @@ class MetafieldDefinitionControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The definition id"),
-                                fieldWithPath("data[].context").description("\"metafield-definitions\""),
+                                fieldWithPath("data[].context").description("The entity's collection: \"metafield-definitions\""),
                                 fieldWithPath("data[].ownerType").description(
                                         "Which resource kind: " + MetafieldOwnerType.codes()),
                                 fieldWithPath("data[].namespace").description("Namespace half of the identifier"),
@@ -242,7 +242,7 @@ class MetafieldDefinitionControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The definition id"),
-                                fieldWithPath("context").description("\"metafield-definitions\""),
+                                fieldWithPath("context").description("The entity's collection: \"metafield-definitions\""),
                                 fieldWithPath("ownerType").description(
                                         "Which resource kind: " + MetafieldOwnerType.codes()),
                                 fieldWithPath("namespace").description("Namespace half of the identifier"),

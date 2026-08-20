@@ -176,7 +176,7 @@ class MenuControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The menu id"),
-                                fieldWithPath("data[].context").description("\"menus\""),
+                                fieldWithPath("data[].context").description("The entity's collection: \"menus\""),
                                 fieldWithPath("data[].handle").description("The theme-facing identifier"),
                                 fieldWithPath("data[].title").description("Display title"),
                                 fieldWithPath("data[].createdAt").description("When created"),
@@ -199,7 +199,7 @@ class MenuControllerDocumentationTest {
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         responseFields(
                                 fieldWithPath("id").description("The menu id"),
-                                fieldWithPath("context").description("\"menus\""),
+                                fieldWithPath("context").description("The entity's collection: \"menus\""),
                                 fieldWithPath("handle").description("The theme-facing identifier"),
                                 fieldWithPath("title").description("Display title"),
                                 subsectionWithPath("items").description("The item tree: each node has id, title, linkType (HOME | EXPERIENCE_LIST | EXPERIENCE | PAGE | EXTERNAL_URL), resourceId/url per type, titleTranslations (locale → title) and children, position-ordered, max "

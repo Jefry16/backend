@@ -361,7 +361,7 @@ class AuthControllerDocumentationTest {
                         ),
                         responseFields(
                                 fieldWithPath("id").description("The user's unique identifier"),
-                                fieldWithPath("context").description("The entity's collection (always 'users')"),
+                                fieldWithPath("context").description("The entity's collection: \"users\""),
                                 fieldWithPath("name").description("The user's display name"),
                                 fieldWithPath("avatarUrl").description("Public URL of the user's avatar image (nullable; resolved at read time from the stored storage key)"),
                                 fieldWithPath("language").description("The user's admin-UI language — a lowercase locale code (currently `en` or `es`)"),

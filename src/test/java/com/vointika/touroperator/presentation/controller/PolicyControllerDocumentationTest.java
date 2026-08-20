@@ -130,7 +130,7 @@ class PolicyControllerDocumentationTest {
                         pathParameters(parameterWithName("id").description("The tour operator id")),
                         responseFields(
                                 fieldWithPath("data[].id").description("The policy id"),
-                                fieldWithPath("data[].context").description("Always \"policies\""),
+                                fieldWithPath("data[].context").description("The entity's collection: \"policies\""),
                                 fieldWithPath("data[].type").description(
                                         "CANCELLATION, PRIVACY, TERMS or LEGAL_NOTICE"),
                                 fieldWithPath("data[].title")
@@ -161,7 +161,7 @@ class PolicyControllerDocumentationTest {
                                         "The policy id; one belonging to another operator is a 404")),
                         responseFields(
                                 fieldWithPath("id").description("The policy id"),
-                                fieldWithPath("context").description("Always \"policies\""),
+                                fieldWithPath("context").description("The entity's collection: \"policies\""),
                                 fieldWithPath("type").description("The policy type"),
                                 fieldWithPath("title").description("The document's heading, and its title tag"),
                                 fieldWithPath("body").description("Raw HTML, stored and returned verbatim"),
