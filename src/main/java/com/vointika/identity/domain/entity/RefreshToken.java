@@ -20,8 +20,13 @@ public class RefreshToken {
      * predicate, so its causes cannot differ whatever any string says; here there are
      * five separate {@code throw} statements, and only identical literals held them
      * together. A one-word edit to the reuse branch would tell an attacker that the
-     * token they replayed was <em>recognised</em> — the single thing this endpoint must
-     * not reveal, and the reason the family revocation happens silently.
+     * token they replayed was <em>recognised</em>.
+     *
+     * <p>The claim is about the <b>response body</b>, not the endpoint: replay also logs
+     * and revokes the family before throwing, so it is slower than the unknown-hash
+     * branch and can be sampled repeatedly. Identical text is what this constant buys;
+     * timing is not something a string can hide. Acceptable because reaching that branch
+     * means holding a real token whose family is already dead.
      *
      * <p>Expiry is deliberately <em>not</em> folded in: {@code "Refresh token has
      * expired"} is a distinct, safe answer, because an expired token tells an attacker

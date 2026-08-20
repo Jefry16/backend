@@ -1161,8 +1161,16 @@ every published body with a green suite. That is strictly weaker than the copies
 replaced, and it is how it was found: rewording the tenant 404 moved **8 snippets**
 silently. The resolution is one named pinning test exempted beside the declaration
 (`TenantNotFoundIsThisSentenceTest`), asserting the literal once, with a failure
-message saying which published bodies move. Verify the exemption did not widen by
-planting the literal in an ordinary test and watching the guard still fail.
+message saying which published bodies move.
+
+**Make "did not widen" a test, not an instruction.** The earlier wording here told you to
+plant the literal and watch the guard fail — a thing a human remembers or does not. It
+also only checked one direction: a written-once guard that exempts a *file* lets a second
+copy in through the back door, and "written once" becomes quietly false while the build
+stays green. `RefreshTokenMessageIsWrittenOnceTest` closes both ends by counting
+occurrences **inside** the exempted file and requiring exactly one — 0 means the wording
+is pinned nowhere, 2 means the exemption widened. Prefer that arrangement for the next
+message that needs this treatment.
 
 **A stubbed placeholder becomes the published body.** `doThrow(new
 ResourceAlreadyExistsException("exists"))` in a documentation test reads as throwaway
