@@ -994,11 +994,17 @@ port takes the calling class, so log names still point at the reporter.
   stubbed the default directly: `BrandUseCasesTest` told `requireById` to throw and then
   asserted it threw.
 
-  **What the conversion bought, measured both ways.** Breaking the defaults' *empty*
-  branch went from 35 failures to 42 — exactly the 7 sites that asserted a 404, which were
-  the tautological ones. Breaking the defaults' body outright went from 22 classes
-  noticing to **37**, which is what the other 40 happy-path stubs bought: they had
-  bypassed the default entirely, so its body could have been anything.
+  **What the conversion bought, measured both ways — and the deltas are the claim, not
+  the absolutes.** Breaking the defaults' *empty* branch: **35 → 42** failing tests, i.e.
+  **+7**, exactly the sites that asserted a 404 and were therefore tautological. Breaking
+  the defaults' *body* outright: **+15** test classes now notice, which is what the other
+  40 happy-path stubs bought — they had bypassed the default entirely, so its body could
+  have been anything.
+
+  The absolute figures on that second row depend on how many defaults the mutation guts:
+  22 → 37 over the twelve value-returning ones, 25 → 40 if the three `void`
+  `requireExists` guards go too. **Same +15 either way** — which is why the delta is the
+  number to quote, and a reminder that a count without its scope is half a fact (§9a).
 
   That split is worth knowing before doing this elsewhere: converting a `thenThrow` stub
   fixes a tautology, converting a `thenReturn` one closes a blind spot. Neither is
