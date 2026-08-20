@@ -2,7 +2,6 @@ package com.vointika.contact.application.usecase;
 
 import com.vointika.contact.domain.entity.ContactMessage;
 import com.vointika.contact.domain.repository.ContactMessageRepository;
-import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.AuditTrailPort;
 import com.vointika.shared.port.NewAuditEntry;
 import com.vointika.shared.port.TourOperatorMembershipCheck;
@@ -38,8 +37,7 @@ public class DeleteContactMessageUseCase {
     public void execute(UUID tourOperatorId, UUID messageId, UUID callerUserId) {
         membershipCheck.ensureAdmin(callerUserId, tourOperatorId);
         ContactMessage message = messageRepository
-                .findByIdAndTourOperatorId(messageId, tourOperatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Contact message not found"));
+                .requireByIdAndTourOperatorId(messageId, tourOperatorId);
 
         transactionRunner.run(() -> {
             messageRepository.delete(message.getId());

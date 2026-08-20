@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -41,6 +42,9 @@ class ContactMessageUseCasesTest {
     @BeforeEach
     void setUp() {
         messageRepository = mock(ContactMessageRepository.class);
+        // requireByIdAndTourOperatorId is a default method: Mockito would stub it to
+        // null and the 404 assertions below would pass without running the branch.
+        doCallRealMethod().when(messageRepository).requireByIdAndTourOperatorId(any(), any());
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         auditTrailPort = mock(AuditTrailPort.class);

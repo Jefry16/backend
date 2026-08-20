@@ -1,5 +1,6 @@
 package com.vointika.contact.presentation.controller;
 
+import com.vointika.contact.domain.repository.ContactMessageRepository;
 import com.vointika.contact.application.usecase.DeleteContactMessageUseCase;
 import com.vointika.contact.application.usecase.GetContactMessageUseCase;
 import com.vointika.contact.application.usecase.ListContactMessagesUseCase;
@@ -186,11 +187,15 @@ class ContactMessageControllerDocumentationTest {
     void getUnknownIs404() throws Exception {
         authenticated();
         when(getUseCase.execute(any(), any(), any()))
-                .thenThrow(new ResourceNotFoundException("Contact message not found"));
+                .thenThrow(new ResourceNotFoundException(ContactMessageRepository.NOT_FOUND));
 
         mockMvc.perform(get("/api/tour-operators/{id}/contact-messages/{messageId}", OP, MISSING_MSG)
                         .header("Authorization", BEARER))
                 .andExpect(status().isNotFound())
+                // The one assertion holding this sentence. Both stubs now derive it, so the
+                // guide follows a reword — and that alone leaves the wording pinned nowhere
+                // while two published bodies carry it (PATTERNS §9a).
+                .andExpect(jsonPath("$.message").value("Contact message not found"))
                 .andDo(document("contact-messages/get-not-found",
                         requestHeaders(headerWithName("Authorization").description("Bearer access token")),
                         pathParameters(
@@ -230,7 +235,7 @@ class ContactMessageControllerDocumentationTest {
     @Test
     void deleteUnknownIs404() throws Exception {
         authenticated();
-        doThrow(new ResourceNotFoundException("Contact message not found"))
+        doThrow(new ResourceNotFoundException(ContactMessageRepository.NOT_FOUND))
                 .when(deleteUseCase).execute(any(), any(), any());
 
         mockMvc.perform(delete("/api/tour-operators/{id}/contact-messages/{messageId}", OP, MISSING_MSG)

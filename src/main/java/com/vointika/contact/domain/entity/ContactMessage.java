@@ -45,10 +45,26 @@ public class ContactMessage {
     /**
      * A message arriving from a storefront contact form.
      *
-     * <p>The value objects validate on the way in — this is the first writer the
-     * inbox has ever had, which is why they exist now and did not before. It
-     * arrives unread: the whole point of the inbox is that someone still has to
-     * look at it.
+     * <p><b>Nothing calls this today, and that is a removal rather than an absence.</b>
+     * {@code SubmitContactMessageUseCase} was the only creator and was deleted with the
+     * storefront intake (`60654c6`), leaving `contact` a read-and-delete surface and an
+     * inbox nothing can fill; {@code ContactMessageMapper} rehydrates rows through the
+     * other constructor. Verified by deleting this method: the tree compiles and the
+     * suite is unchanged.
+     *
+     * <p>So this is a <em>first</em> caller taken away, not structure raised ahead of one
+     * — which is the §2.4 line it would otherwise fall foul of. Parked deliberately
+     * because the intake returns and the domain is what makes that cheap (`MAP.md`'s
+     * `contact` row).
+     *
+     * <p>That matters to a reader comparing {@link ContactEmail} against the operator and
+     * identity address rules: those two govern live traffic, this one governs none until
+     * the intake comes back. {@link ContactSummary} and {@link ContactContent} reach the
+     * tree only through this signature too.
+     *
+     * <p>The value objects validate on the way in, which is why they exist now and did
+     * not before. A message arrives unread: the whole point of the inbox is that someone
+     * still has to look at it.
      *
      * <p>{@code name} is required — {@link ContactName} refuses a blank one, so
      * every row names whoever wrote it.
