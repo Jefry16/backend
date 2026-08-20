@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.consumer;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.usecase.SendNotificationUseCase;
 import com.vointika.notification.infrastructure.config.NotificationProperties;
 import com.vointika.shared.event.PasswordResetEmailRequestedEvent;
@@ -35,7 +36,7 @@ public class PasswordResetEmailConsumer {
             Map<String, Object> variables = Map.of(
                     "name", event.name(),
                     "link", notificationProperties.passwordResetBaseUrl() + "?token=" + event.token());
-            sendNotificationUseCase.execute("PASSWORD_RESET_EMAIL", event.email(), variables, event.locale());
+            sendNotificationUseCase.execute(NotificationType.PASSWORD_RESET_EMAIL, event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send password reset email to {}: {}", event.email(), e.getMessage(), e);
         }

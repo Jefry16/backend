@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.time.Instant;
 
 /**
@@ -29,8 +30,13 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         String contentType = request.getContentType();
+        // Locale.ROOT: a Turkish default folds UPPERCASE I to a dotless ı, so
+        // "MULTIPART/FORM-DATA" becomes "multıpart/..." and stops matching — that upload
+        // then gets the 1 MB JSON cap. ("Multipart/form-data" is fine: its i is already
+        // lowercase.) RFC 9110 makes media types case-insensitive, so the all-caps form is
+        // a legal thing to receive. Fails closed, and only on a host you did not pick.
         boolean isMultipart = contentType != null
-                && contentType.toLowerCase().startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
+                && contentType.toLowerCase(Locale.ROOT).startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
 
         if (!isMultipart) {
             long contentLength = request.getContentLengthLong();

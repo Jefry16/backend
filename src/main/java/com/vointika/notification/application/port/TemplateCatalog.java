@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface TemplateCatalog {
 
     /** The template for one (type, locale), or empty when that exact pair doesn't exist. */
-    Optional<EmailTemplate> find(String notificationType, String locale);
+    Optional<EmailTemplate> find(NotificationType notificationType, String locale);
 
     /**
      * One loaded template. {@code locale} is the template's own language (what

@@ -1411,6 +1411,23 @@ purpose: if every owner has every optional field set, nothing shows you what
   handles silently stop matching depending on which machine served the request.
   `LocaleCode` has always done this; `LocaleResolver` and `TenantHandleResolver`
   both had to be fixed to (the first is deleted, the second carries the comment).
+
+  **`CaseFoldingUsesLocaleRootTest` now fails the build on it**, because writing the rule
+  down did not stop it happening in four places. The third and fourth were found together
+  in #194 — and the fourth only because the third prompted a sweep: `NotificationType.fileBase()` — every constant contains `EMAIL`, so all six folded
+  to dotless and the template loader would refuse to start — and
+  `RequestSizeLimitFilter`, where a client sending `MULTIPART/FORM-DATA` — legal, since
+  RFC 9110 makes media types case-insensitive — stops being recognised and its upload gets
+  the 1 MB JSON cap. (`Multipart/form-data` is fine: only *uppercase* `I` folds.)
+
+  **The two are different kinds of exposure**, which is what to carry to the next case: a
+  `SCREAMING_CASE` constant folds *by construction*, so no caller can avoid it; a header
+  folds only for the casings a caller happens to send in caps.
+
+  Both fail *closed* and both are invisible on every machine anyone develops or runs CI
+  on, which is the whole shape of this bug: it is not caught by being careful, it is
+  caught by the host having a locale you did not choose. The guard scans `src/main` only
+  and skips comment lines, so the two places that *explain* the rule are not offenders.
 - **A test whose subject reads the clock in a *stubbed* zone must build its dates
   in that same zone.** `CreateSlotUseCase` judges "is this in the past" against
   `LocalDate.now(zone)` for the **operator's** zone. That is correct: a departure is

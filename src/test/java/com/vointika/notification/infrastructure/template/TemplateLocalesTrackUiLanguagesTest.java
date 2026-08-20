@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.template;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.port.TemplateCatalog;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.env.YamlPropertySourceLoader;
@@ -32,11 +33,8 @@ class TemplateLocalesTrackUiLanguagesTest {
 
     private final ClasspathTemplateCatalog catalog = new ClasspathTemplateCatalog();
 
-    /** Every notification type the catalog declares. */
-    private static final List<String> TYPES = List.of(
-            "VERIFICATION_EMAIL", "PASSWORD_RESET_EMAIL", "PASSWORD_CHANGED_EMAIL",
-            "ACCOUNT_ALREADY_REGISTERED_EMAIL", "TOUR_OPERATOR_WELCOME_EMAIL",
-            "TEAM_INVITATION_EMAIL");
+        /** The declared universe, read from the enum rather than re-listed here. */
+    private static final NotificationType[] TYPES = NotificationType.values();
 
     @Test
     void everyUiLanguageHasAFullSetOfEmailTemplates() throws IOException {
@@ -44,13 +42,13 @@ class TemplateLocalesTrackUiLanguagesTest {
         assertThat(uiLanguages).isNotEmpty();
 
         for (String language : uiLanguages) {
-            for (String type : TYPES) {
+            for (NotificationType type : TYPES) {
                 assertThat(catalog.find(type, language))
                         .withFailMessage(
                                 "app.identity.ui-languages offers '%s' but there is no %s template for it. "
                                         + "Ship templates/email/%s_%s.{html,subject.txt} and add '%s' to "
                                         + "ClasspathTemplateCatalog.LOCALES — otherwise that user is emailed in English.",
-                                language, type, type.toLowerCase().replace('_', '-'), language, language)
+                                language, type, type.fileBase(), language, language)
                         .isPresent();
             }
         }
@@ -81,8 +79,8 @@ class TemplateLocalesTrackUiLanguagesTest {
     void aLanguageWithoutTemplatesWouldSilentlyFallBackToEnglish() {
         // The reason the test above has to exist: the catalog misses, and the use
         // case's exact → subtag → en chain then resolves the English template.
-        assertThat(catalog.find("VERIFICATION_EMAIL", "fr")).isEmpty();
-        assertThat(catalog.find("VERIFICATION_EMAIL", "en"))
+        assertThat(catalog.find(NotificationType.VERIFICATION_EMAIL, "fr")).isEmpty();
+        assertThat(catalog.find(NotificationType.VERIFICATION_EMAIL, "en"))
                 .map(TemplateCatalog.EmailTemplate::locale)
                 .contains("en");
     }

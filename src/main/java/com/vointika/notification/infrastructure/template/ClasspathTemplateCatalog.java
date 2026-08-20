@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.template;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.port.TemplateCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,40 +54,36 @@ public class ClasspathTemplateCatalog implements TemplateCatalog {
      */
     private static final List<String> LOCALES = List.of("en", "es");
 
-    /** The declared template universe: every identity email, in every platform locale. */
-    private static final Map<String, List<String>> KNOWN_TEMPLATES = Map.of(
-            "VERIFICATION_EMAIL", LOCALES,
-            "PASSWORD_RESET_EMAIL", LOCALES,
-            "PASSWORD_CHANGED_EMAIL", LOCALES,
-            "ACCOUNT_ALREADY_REGISTERED_EMAIL", LOCALES,
-            "TOUR_OPERATOR_WELCOME_EMAIL", LOCALES,
-            "TEAM_INVITATION_EMAIL", LOCALES);
-
+    /**
+     * The declared universe is {@link NotificationType#values()}. It used to be a
+     * {@code KNOWN_TEMPLATES} map here, every entry pointing at this same locale list —
+     * so the map's only job was naming the types, which is what the enum does.
+     */
     private final Map<String, EmailTemplate> templates;
 
     public ClasspathTemplateCatalog() {
         Map<String, EmailTemplate> loaded = new HashMap<>();
-        KNOWN_TEMPLATES.forEach((type, locales) -> {
-            for (String locale : locales) {
+        for (NotificationType type : NotificationType.values()) {
+            for (String locale : LOCALES) {
                 loaded.put(key(type, locale), load(type, locale));
             }
-        });
+        }
         this.templates = Map.copyOf(loaded);
         log.info("Loaded {} email templates from the classpath ({} types)",
-                templates.size(), KNOWN_TEMPLATES.size());
+                templates.size(), NotificationType.values().length);
     }
 
     @Override
-    public Optional<EmailTemplate> find(String notificationType, String locale) {
+    public Optional<EmailTemplate> find(NotificationType notificationType, String locale) {
         return Optional.ofNullable(templates.get(key(notificationType, locale)));
     }
 
-    private static String key(String type, String locale) {
-        return type + '#' + locale;
+    private static String key(NotificationType type, String locale) {
+        return type.name() + '#' + locale;
     }
 
-    private static EmailTemplate load(String type, String locale) {
-        String baseName = type.toLowerCase().replace('_', '-') + "_" + locale;
+    private static EmailTemplate load(NotificationType type, String locale) {
+        String baseName = type.fileBase() + "_" + locale;
         String subject = read(BASE_PATH + baseName + ".subject.txt").strip();
         String body = read(BASE_PATH + baseName + ".html").strip();
         if (subject.isEmpty() || body.isEmpty()) {

@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.consumer;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.usecase.SendNotificationUseCase;
 import com.vointika.shared.event.TourOperatorWelcomeEmailRequestedEvent;
 import com.vointika.shared.infrastructure.kafka.EventTopics;
@@ -32,8 +33,7 @@ public class TourOperatorWelcomeEmailConsumer {
             Map<String, Object> variables = Map.of(
                     "name", event.name(),
                     "operatorName", event.operatorName());
-            sendNotificationUseCase.execute(
-                    "TOUR_OPERATOR_WELCOME_EMAIL", event.email(), variables, event.locale());
+            sendNotificationUseCase.execute(NotificationType.TOUR_OPERATOR_WELCOME_EMAIL, event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send welcome email to {}: {}", event.email(), e.getMessage(), e);
         }

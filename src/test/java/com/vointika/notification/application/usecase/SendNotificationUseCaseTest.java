@@ -2,6 +2,7 @@ package com.vointika.notification.application.usecase;
 
 import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.notification.application.port.EmailSenderPort;
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.port.TemplateCatalog;
 import com.vointika.notification.application.port.TemplateCatalog.EmailTemplate;
 import com.vointika.notification.application.port.TemplateRendererPort;
@@ -18,6 +19,11 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SendNotificationUseCaseTest {
+
+    // These used a made-up "ORDER_CONFIRMATION_EMAIL" to show the use case is
+    // template-agnostic — it resolves whatever key it is handed. NotificationType makes
+    // that point better and makes the fictional key unwritable, so they use a real one;
+    // the catalog is mocked, so which constant it is does not matter.
 
     @Mock private TemplateCatalog templateCatalog;
     @Mock private TemplateRendererPort templateRenderer;
@@ -37,75 +43,82 @@ class SendNotificationUseCaseTest {
 
     @Test
     void threeArgOverloadUsesTheEnglishTemplate() {
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "en"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "en"))
                 .thenReturn(Optional.of(template("en", "Hello ${name}")));
         when(templateRenderer.render("Hello ${name}", Map.of("name", "John")))
                 .thenReturn("Hello John");
         when(templateRenderer.render("<p>body</p>", Map.of("name", "John")))
                 .thenReturn("<p>rendered</p>");
 
-        useCase.execute("ORDER_CONFIRMATION_EMAIL", "test@example.com", Map.of("name", "John"));
+        useCase.execute(NotificationType.VERIFICATION_EMAIL, "test@example.com", Map.of("name", "John"));
 
         verify(emailSender).send("test@example.com", "Hello John", "<p>rendered</p>", null, null);
     }
 
     @Test
     void exactLocaleWins() {
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "es"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "es"))
                 .thenReturn(Optional.of(template("es", "Hola")));
         when(templateRenderer.render(any(), any())).thenAnswer(inv -> inv.getArgument(0));
 
-        useCase.execute("ORDER_CONFIRMATION_EMAIL", "t@example.com", Map.of(), "es");
+        useCase.execute(NotificationType.VERIFICATION_EMAIL, "t@example.com", Map.of(), "es");
 
         verify(emailSender).send("t@example.com", "Hola", "<p>body</p>", null, null);
         // The English template is never consulted when the exact locale hits.
-        verify(templateCatalog, never()).find("ORDER_CONFIRMATION_EMAIL", "en");
+        verify(templateCatalog, never()).find(NotificationType.VERIFICATION_EMAIL, "en");
     }
 
     @Test
     void regionalTagFallsBackToItsPrimarySubtag() {
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "pt-br"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "pt-br"))
                 .thenReturn(Optional.empty());
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "pt"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "pt"))
                 .thenReturn(Optional.of(template("pt", "Olá")));
         when(templateRenderer.render(any(), any())).thenAnswer(inv -> inv.getArgument(0));
 
-        useCase.execute("ORDER_CONFIRMATION_EMAIL", "t@example.com", Map.of(), "pt-br");
+        useCase.execute(NotificationType.VERIFICATION_EMAIL, "t@example.com", Map.of(), "pt-br");
 
         verify(emailSender).send("t@example.com", "Olá", "<p>body</p>", null, null);
     }
 
     @Test
     void unknownLocaleFallsBackToEnglish() {
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "xx"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "xx"))
                 .thenReturn(Optional.empty());
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "en"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "en"))
                 .thenReturn(Optional.of(template("en", "Hello")));
         when(templateRenderer.render(any(), any())).thenAnswer(inv -> inv.getArgument(0));
 
-        useCase.execute("ORDER_CONFIRMATION_EMAIL", "t@example.com", Map.of(), "xx");
+        useCase.execute(NotificationType.VERIFICATION_EMAIL, "t@example.com", Map.of(), "xx");
 
         verify(emailSender).send("t@example.com", "Hello", "<p>body</p>", null, null);
     }
 
     @Test
     void senderDisplayNameAndReplyToPassThroughToTheEmailSender() {
-        when(templateCatalog.find("ORDER_CONFIRMATION_EMAIL", "en"))
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "en"))
                 .thenReturn(Optional.of(template("en", "Hello")));
         when(templateRenderer.render(any(), any())).thenAnswer(inv -> inv.getArgument(0));
 
-        useCase.execute("ORDER_CONFIRMATION_EMAIL", "t@example.com", Map.of(), null,
+        useCase.execute(NotificationType.VERIFICATION_EMAIL, "t@example.com", Map.of(), null,
                 "Acme Tours via Vointika", "hello@acme.example");
 
         verify(emailSender).send("t@example.com", "Hello", "<p>body</p>",
                 "Acme Tours via Vointika", "hello@acme.example");
     }
 
+    /**
+     * The catalog answering empty. It used to pass an {@code "UNKNOWN"} type, which
+     * {@link NotificationType} no longer lets anyone write — the guard this test stood
+     * in for is now the compiler's. What remains worth covering is the use case's own
+     * behaviour when a lookup comes back empty: it must not render and must not send.
+     */
     @Test
     void shouldNotSendWhenNoTemplateFound() {
-        when(templateCatalog.find("UNKNOWN", "en")).thenReturn(Optional.empty());
+        when(templateCatalog.find(NotificationType.VERIFICATION_EMAIL, "en"))
+                .thenReturn(Optional.empty());
 
-        useCase.execute("UNKNOWN", "test@example.com", Map.of());
+        useCase.execute(NotificationType.VERIFICATION_EMAIL, "test@example.com", Map.of());
 
         verify(templateRenderer, never()).render(any(), any());
         verify(emailSender, never()).send(any(), any(), any(), any(), any());
