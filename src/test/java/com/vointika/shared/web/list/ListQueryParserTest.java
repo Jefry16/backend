@@ -249,6 +249,36 @@ class ListQueryParserTest {
         assertThat(query.sort().direction()).isEqualTo(SortDirection.DESC);
     }
 
+    /**
+     * A bare {@code -} is the only way into {@code parseSortToken}'s catch, and it had
+     * no test — so the 422 it produces was unpinned while the message was written
+     * twice, once in {@code SortSpec} and once in the catch that translates it.
+     */
+    @Test
+    void rejectsASortTokenThatIsOnlyAMinus() {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setParameter("sort", "-");
+
+        assertThatThrownBy(() -> parser.parse(req, schema, tenantId))
+                .isInstanceOf(InvalidFieldException.class)
+                .hasMessage("Invalid sort: missing field");
+    }
+
+    /**
+     * The guard that makes {@code SortSpec}'s other refusal unreachable from here:
+     * an empty {@code sort} is the default order, not a 422.
+     */
+    @Test
+    void treatsAnEmptySortParamAsTheDefaultSort() {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setParameter("sort", "");
+
+        ListQuery query = parser.parse(req, schema, tenantId);
+
+        assertThat(query.sort().field()).isEqualTo("id");
+        assertThat(query.sort().direction()).isEqualTo(SortDirection.DESC);
+    }
+
     @Test
     void rejectsUnknownFilterField() {
         MockHttpServletRequest req = new MockHttpServletRequest();

@@ -105,6 +105,14 @@ class ApiRateLimitFilterTest {
         enabledFilter().doFilter(request, response, chain);
 
         assertEquals(429, response.getStatus());
+        // The body was asserted nowhere until this — only the status was, which is how
+        // both filters could carry the same nine hand-written lines and drift apart
+        // unnoticed. Both answer through RateLimitRefusal now; this pins the bytes.
+        assertEquals("{\"status\":429,\"error\":\"Too Many Requests\","
+                        + "\"message\":\"Too many requests, try again later\","
+                        + "\"timestamp\":\"<stamped>\"}",
+                response.getContentAsString()
+                        .replaceAll("\"timestamp\":\"[^\"]+\"", "\"timestamp\":\"<stamped>\""));
         verifyNoInteractions(chain);
     }
 }
