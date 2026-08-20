@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.template;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.port.TemplateCatalog.EmailTemplate;
 import org.junit.jupiter.api.Test;
 
@@ -19,15 +20,13 @@ class ClasspathTemplateCatalogTest {
 
     private final ClasspathTemplateCatalog catalog = new ClasspathTemplateCatalog();
 
-    private static final List<String> TYPES = List.of(
-            "VERIFICATION_EMAIL", "PASSWORD_RESET_EMAIL", "PASSWORD_CHANGED_EMAIL",
-            "ACCOUNT_ALREADY_REGISTERED_EMAIL", "TOUR_OPERATOR_WELCOME_EMAIL",
-            "TEAM_INVITATION_EMAIL");
+    /** The declared universe, read from the enum rather than re-listed here. */
+    private static final NotificationType[] TYPES = NotificationType.values();
     private static final List<String> LOCALES = List.of("en", "es");
 
     @Test
     void loadsEveryIdentityTemplateInEveryPlatformLocale() {
-        for (String type : TYPES) {
+        for (NotificationType type : TYPES) {
             for (String locale : LOCALES) {
                 EmailTemplate t = catalog.find(type, locale)
                         .orElseThrow(() -> new AssertionError(type + "/" + locale + " missing"));
@@ -41,13 +40,12 @@ class ClasspathTemplateCatalogTest {
         // The exact→subtag→en chain lives in SendNotificationUseCase; the catalog
         // itself is a plain keyed read. A locale we don't ship, or an unknown type,
         // misses here.
-        assertFalse(catalog.find("VERIFICATION_EMAIL", "fr").isPresent());
-        assertFalse(catalog.find("UNKNOWN_TYPE", "en").isPresent());
+        assertFalse(catalog.find(NotificationType.VERIFICATION_EMAIL, "fr").isPresent());
     }
 
     @Test
     void everyTemplateHasANonBlankSubjectAndAnHtmlBody() {
-        for (String type : TYPES) {
+        for (NotificationType type : TYPES) {
             for (String locale : LOCALES) {
                 EmailTemplate t = catalog.find(type, locale).orElseThrow();
                 assertFalse(t.subject().isBlank(), type + "/" + locale + " subject");

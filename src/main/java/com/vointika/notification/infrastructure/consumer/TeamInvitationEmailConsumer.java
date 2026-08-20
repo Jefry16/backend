@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.consumer;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.usecase.SendNotificationUseCase;
 import com.vointika.notification.infrastructure.config.NotificationProperties;
 import com.vointika.shared.event.TeamInvitationRequestedEvent;
@@ -39,8 +40,7 @@ public class TeamInvitationEmailConsumer {
                     "operatorName", event.operatorName(),
                     "role", event.role(),
                     "link", notificationProperties.invitationAcceptBaseUrl() + "?token=" + event.token());
-            sendNotificationUseCase.execute(
-                    "TEAM_INVITATION_EMAIL", event.email(), variables, event.locale());
+            sendNotificationUseCase.execute(NotificationType.TEAM_INVITATION_EMAIL, event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send team invitation email to {}: {}", event.email(), e.getMessage(), e);
         }

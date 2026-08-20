@@ -1,5 +1,6 @@
 package com.vointika.notification.infrastructure.consumer;
 
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.usecase.SendNotificationUseCase;
 import com.vointika.notification.infrastructure.config.NotificationProperties;
 import com.vointika.shared.event.VerificationEmailRequestedEvent;
@@ -36,7 +37,7 @@ public class VerificationEmailConsumer {
             Map<String, Object> variables = Map.of(
                     "name", event.name(),
                     "link", notificationProperties.verificationBaseUrl() + "?token=" + event.token());
-            sendNotificationUseCase.execute("VERIFICATION_EMAIL", event.email(), variables, event.locale());
+            sendNotificationUseCase.execute(NotificationType.VERIFICATION_EMAIL, event.email(), variables, event.locale());
         } catch (Exception e) {
             log.warn("Failed to send verification email to {}: {}", event.email(), e.getMessage(), e);
         }

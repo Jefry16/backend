@@ -2,6 +2,7 @@ package com.vointika.notification.application.usecase;
 
 import com.vointika.shared.port.DiagnosticLogPort;
 import com.vointika.notification.application.port.EmailSenderPort;
+import com.vointika.notification.application.port.NotificationType;
 import com.vointika.notification.application.port.TemplateCatalog;
 import com.vointika.notification.application.port.TemplateRendererPort;
 
@@ -29,7 +30,7 @@ public class SendNotificationUseCase {
     }
 
     /** English-template overload — the operator/identity emails, which stay untranslated. */
-    public void execute(String notificationType, String recipientEmail, Map<String, Object> templateVariables) {
+    public void execute(NotificationType notificationType, String recipientEmail, Map<String, Object> templateVariables) {
         execute(notificationType, recipientEmail, templateVariables, null);
     }
 
@@ -39,7 +40,7 @@ public class SendNotificationUseCase {
      * unknown locale is never an error — the English base template always
      * resolves for a known type.
      */
-    public void execute(String notificationType, String recipientEmail,
+    public void execute(NotificationType notificationType, String recipientEmail,
                         Map<String, Object> templateVariables, String locale) {
         execute(notificationType, recipientEmail, templateVariables, locale, null, null);
     }
@@ -50,7 +51,7 @@ public class SendNotificationUseCase {
      * (nullable) into the Reply-To header — both pass straight through to
      * {@link EmailSenderPort}; both null = the platform-branded send.
      */
-    public void execute(String notificationType, String recipientEmail,
+    public void execute(NotificationType notificationType, String recipientEmail,
                         Map<String, Object> templateVariables, String locale,
                         String senderDisplayName, String replyTo) {
         var template = candidateLocales(locale).stream()
