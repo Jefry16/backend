@@ -1242,8 +1242,10 @@ has (here: `status` *and* `error` *and* `timestamp` together).
 that goes unchecked.** Two rounds of the category-FK review landed here rather than on
 the design, which is what makes it a pattern and not an anecdote. First a javadoc said
 a constraint-naming convention was "what every drop in this repository uses" — there
-were five drops, none of them a foreign key, so the corpus held no instance of the case
-at all. Then the sentence written to correct that one said "each mutation alone leaves
+are six drops: five **static** ones, none of them a foreign key, and one foreign-key
+drop built at runtime from `pg_constraint`, which no static reader can see. So the
+corpus held no instance the convention could have been checked against. Then the
+sentence written to correct that one said "each mutation alone leaves
 all ten green", when one of the two mutations was caught on its own — and the very next
 clause said so.
 
