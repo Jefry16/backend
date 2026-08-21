@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **LAW** | `../CONSTITUTION.md` (the parent directory — its own git repo) | The rules. Short, read whole, every session. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
-| **OPEN-WORK** | `OPEN-WORK.md` (in repo) | What is owed, wanted, settled and still open. Split out of this file 2026-08-21 — it is the half that moves every slice. |
+| **OPEN-WORK** | `OPEN-WORK.md` (in repo) | What is owed, wanted, settled and still open. Split out of this file 2026-08-21 — it is the half that moves every slice. **Imported by this file**, so unlike the rows above it arrives on its own (LAW §3). |
 | **API-DOCS-SYNC** | `API-DOCS-SYNC.md` (in repo) | The playbook for checking one context's API against the REST Docs guide, for a context built from here on. The eleven-context series it was written for closed 2026-08-17 (`storefront` excluded by decision); what it settled is `PATTERNS.md` §9a. |
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
@@ -189,10 +189,18 @@ The working rules are LAW: §2.4 never over-engineer · §3 the landing ritual �
 
 ## Open work
 
-**Moved to [`OPEN-WORK.md`](./OPEN-WORK.md)** — debt, backlog, settled decisions and
-the open ones. It left this file because it is the half that changes every slice
-while the rest describes a shape that mostly holds, and because a doc with two
-homes drifts in both (LAW §3).
+Debt, backlog, settled decisions and the open ones live in `OPEN-WORK.md`, which is
+**imported below, so it is in context from the first message of every session** —
+the same mechanism the root uses for LAW. LAW §3 requires that: a repo may split
+its state across files, and every one of them must be auto-loaded, because
+auto-loading is the property that matters and not the filename.
+
+It left this file because it is the half that changes every slice while the rest
+describes a shape that mostly holds. **Splitting it without the import is the
+failure mode** — the load-bearing half goes unread while every pointer to it still
+reads correctly, which is what #204 review caught before this line existed.
+
+@OPEN-WORK.md
 
 ## Working rhythm
 
@@ -203,3 +211,5 @@ End any session that changed something with the landing ritual (LAW §3): make t
 **This file and `OPEN-WORK.md` are the only reason the next session knows where things stand.** They took that job from `MAP.md`, deleted 2026-08-20 — *what is built* here, *what is owed or decided* there — so a claim in either is load-bearing in a way the rest of the prose is not, and goes stale the same way MAP's did. Grep the claim, not the file you happen to be reading.
 
 **A move falsifies more than the pointers into it.** This paragraph said "this file is the only reason" and named *owed or decided* as its own, and both halves stopped being true the moment the ledger left — while the sweep for stale references correctly found nothing, because a claim about what a file is *complete for* leaves no link behind to grep. So when something moves out of a doc, re-read what the doc says about itself, not only what points at it.
+
+**And re-read what the docs above it say about it.** LAW §3 named this file as the home for decisions and gave auto-loading as the reason, so the split falsified LAW too — in a different git repo, where no grep of this one reaches. That took a LAW amendment (v0.6.1) and the import above, not a wording fix here. The rule that generalises: a doc's scope is asserted in three places — in itself, in what points at it, and in whatever governs it — and only the middle one is greppable from where you are standing.
