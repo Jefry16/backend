@@ -110,6 +110,15 @@ class SwitcherUrlsRoundTripThroughLocaleRuleTest {
      * routes, {@code ListSchemaScanner} feeds the API-guide and tenant-scoping
      * guards. A guard whose coverage is a literal covers whatever the literal
      * happens to say.
+     *
+     * <p><b>What it cannot see:</b> the scan is scoped to
+     * {@code StorefrontGlobalsResponse.class}, so a route factory written in some
+     * other class is invisible to it and its urls would go unchecked. Every
+     * factory has lived here since the type existed and #203's naming convention
+     * points the next one here too, so this is reach worth stating rather than
+     * exposure worth widening for — the same footing
+     * {@code MigrationForeignKeys}' two named blind spots are on. Widening it to
+     * a package walk would also start matching test fixtures.
      */
     @Test
     void everyFactoryIsCovered() {
