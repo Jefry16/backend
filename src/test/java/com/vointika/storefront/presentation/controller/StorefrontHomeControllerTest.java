@@ -155,6 +155,22 @@ class StorefrontHomeControllerTest {
      * right behind a proxy. The port rides along when it is not the scheme's
      * default, or every dev URL would be unreachable.
      */
+    /**
+     * The listing's object is absent here, as {@code page} is. Liquid's model: a
+     * template gets the globals plus its own object, and the others are not
+     * defined — {@code featuredExperiences} is the home page's rail and a different
+     * thing from the listing's page of results.
+     */
+    @Test
+    void theHomePageCarriesNeitherPageNorExperiences() throws Exception {
+        served(null, globals("en", "en", List.of("en")));
+
+        mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.page").doesNotExist())
+                .andExpect(jsonPath("$.experiences").doesNotExist())
+                .andExpect(jsonPath("$.featuredExperiences").isArray());
+    }
+
     @Test
     void theOperatorUrlIsTheRequestsOrigin() throws Exception {
         served(null, globals("es", "es", List.of("es")));

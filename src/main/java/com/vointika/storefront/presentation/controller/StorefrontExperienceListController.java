@@ -3,10 +3,10 @@ package com.vointika.storefront.presentation.controller;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
-import com.vointika.storefront.application.dto.output.StorefrontGlobals;
+import com.vointika.storefront.application.dto.output.StorefrontExperienceListOutput;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
-import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
+import com.vointika.storefront.application.usecase.GetStorefrontExperienceListUseCase;
 import com.vointika.storefront.presentation.response.StorefrontGlobalsResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
@@ -44,18 +44,45 @@ import java.util.UUID;
 public class StorefrontExperienceListController {
 
     private final TenantHandleResolver tenantHandleResolver;
-    private final GetStorefrontGlobalsUseCase getStorefrontGlobals;
+    private final GetStorefrontExperienceListUseCase getStorefrontExperienceList;
     private final MediaAssetBatchQuery mediaAssetBatchQuery;
     private final MediaUrlResolver mediaUrlResolver;
 
     public StorefrontExperienceListController(TenantHandleResolver tenantHandleResolver,
-                                              GetStorefrontGlobalsUseCase getStorefrontGlobals,
+                                              GetStorefrontExperienceListUseCase getStorefrontExperienceList,
                                               MediaAssetBatchQuery mediaAssetBatchQuery,
                                               MediaUrlResolver mediaUrlResolver) {
         this.tenantHandleResolver = tenantHandleResolver;
-        this.getStorefrontGlobals = getStorefrontGlobals;
+        this.getStorefrontExperienceList = getStorefrontExperienceList;
         this.mediaAssetBatchQuery = mediaAssetBatchQuery;
         this.mediaUrlResolver = mediaUrlResolver;
+    }
+
+    /**
+     * The listing reads {@code cursor} and ignores every other parameter.
+     *
+     * <p><b>Not {@code ListQueryParser}, and this is the one place the storefront
+     * cannot reuse the admin's list plumbing.</b> That parser answers <b>422</b> to
+     * any parameter it does not recognise (#134), which is right for an API and
+     * wrong for a public page: `?utm_source=`, `fbclid`, `gclid` and every other
+     * tracking parameter ride on links we do not control, so a strict parser turns
+     * a newsletter click into an error page. It was caught by
+     * {@code theCanonicalUrlDropsTheQueryString} failing — the canonical tag exists
+     * precisely because those parameters arrive.
+     *
+     * <p>Reading one parameter is also stronger than validating many. No caller
+     * input reaches {@code filters} at all, so {@code ?filter[published][eq]=false}
+     * cannot serve drafts however the schema is later edited — the schema-based
+     * refusal is a rule, this is an absence.
+     *
+     * <p>The consequence to accept: an unsupported parameter is ignored rather than
+     * refused, so a theme author who invents `?sort=name` gets the default order
+     * and no complaint. The day the listing takes real filters, they are read here
+     * by name and passed as arguments — never by handing the whole query string to
+     * the strict parser.
+     */
+    private static String cursorOf(HttpServletRequest request) {
+        return request.getParameter("cursor");
     }
 
     @GetMapping(path = StorefrontRoutes.EXPERIENCES, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -72,12 +99,16 @@ public class StorefrontExperienceListController {
     private StorefrontGlobalsResponse render(HttpServletRequest request, String pathLocale) {
         String handle = tenantHandleResolver.resolve(request.getServerName())
                 .orElseThrow(StorefrontControllers::notFound);
-        StorefrontGlobals globals = getStorefrontGlobals.execute(handle, pathLocale)
+
+        // The tenant is null here on purpose: the adapter scopes to the operator
+        // the host resolved to, so a visitor never names one.
+        StorefrontExperienceListOutput output = getStorefrontExperienceList
+                .execute(handle, pathLocale, cursorOf(request))
                 .orElseThrow(StorefrontControllers::notFound);
 
-        Map<UUID, MediaAsset> assets = StorefrontControllers.assets(globals, mediaAssetBatchQuery);
+        Map<UUID, MediaAsset> assets = StorefrontControllers.assets(output.globals(), mediaAssetBatchQuery);
 
-        return StorefrontGlobalsResponse.experienceList(
-                globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
+        return StorefrontGlobalsResponse.experienceList(output.globals(), output.experiences(),
+                StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }
 }

@@ -81,9 +81,10 @@ deliberate Boot-4 injection). Reference/ui-language plain-array lists are curate
 Known wants, not yet scheduled — deliberate future work, not shortcuts.
 
 - **A cursor-paginated storefront listing indexes only its first page**
-  (2026-08-21, from the design of the experiences listing) — recorded before it is
-  built, because all four conditions that make it bite are absent today and the
-  cause will be invisible once they are not.
+  (2026-08-21, from the design of the experiences listing; **the listing shipped
+  the same day, so this is now live rather than prospective**) — still Backlog,
+  because all four conditions that make it bite are absent and the cause will be
+  invisible once they are not.
 
   `canonicalUrl` is built from the resolved path with the query string **stripped**
   — deliberately, and pinned by `theCanonicalUrlDropsTheQueryString`, because
@@ -105,6 +106,11 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   emits a `<link rel="canonical">` — the field is data for a theme that does not
   exist — no storefront is deployed, and no operator is near twenty experiences. It
   becomes real when all four change at once.
+
+  **What shipped makes it concrete rather than hypothetical.**
+  `/experiences?cursor=…` is a live address today and its `canonicalUrl` really is
+  `/experiences`. The seeded operator has five experiences against a page size of
+  twenty, so page two does not yet exist to be dropped.
 
   The fix is page-number paging on the public listing, or a canonical that carries
   the paging parameter. **Decide it when themes land**, and note the shape of the

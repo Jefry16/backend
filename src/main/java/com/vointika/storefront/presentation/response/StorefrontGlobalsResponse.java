@@ -15,6 +15,8 @@ import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.web.list.CursorPageResponse;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 
 import java.util.ArrayList;
@@ -80,7 +82,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                         List<ExperienceCard> featuredExperiences,
                                         Map<String, Menu> linklists,
                                         Localization localization,
-                                        @JsonInclude(JsonInclude.Include.NON_NULL) Page page) {
+                                        @JsonInclude(JsonInclude.Include.NON_NULL) Page page,
+                                        @JsonInclude(JsonInclude.Include.NON_NULL)
+                                        CursorPageResponse<ExperienceCard> experiences) {
 
     /**
      * Shopify's {@code request.page_type} values, for the addresses that serve
@@ -385,7 +389,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
-        return from(globals, null, PAGE_TYPE_INDEX, null, origin, assets, urls);
+        return from(globals, null, null, PAGE_TYPE_INDEX, null, origin, assets, urls);
     }
 
     /** The same globals, plus the object the route is associated with. */
@@ -394,7 +398,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                     String origin,
                                                     Map<UUID, MediaAsset> assets,
                                                     MediaUrlResolver urls) {
-        return from(globals, page, PAGE_TYPE_PAGE, StorefrontRoutes.PAGES + "/" + page.handle(),
+        return from(globals, page, null, PAGE_TYPE_PAGE, StorefrontRoutes.PAGES + "/" + page.handle(),
                 origin, assets, urls);
     }
 
@@ -410,10 +414,11 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * {@code from} left to reach for — see {@link #index}.
      */
     public static StorefrontGlobalsResponse experienceList(StorefrontGlobals globals,
+                                                           CursorPage<ExperienceCardView> experiences,
                                                            String origin,
                                                            Map<UUID, MediaAsset> assets,
                                                            MediaUrlResolver urls) {
-        return from(globals, null, PAGE_TYPE_EXPERIENCE_LIST, StorefrontRoutes.EXPERIENCES,
+        return from(globals, null, experiences, PAGE_TYPE_EXPERIENCE_LIST, StorefrontRoutes.EXPERIENCES,
                 origin, assets, urls);
     }
 
@@ -429,6 +434,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      */
     private static StorefrontGlobalsResponse from(StorefrontGlobals globals,
                                                   PageView page,
+                                                  CursorPage<ExperienceCardView> experiences,
                                                   String pageType,
                                                   String pathAfterPrefix,
                                                   String origin,
@@ -475,7 +481,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 linklists(globals.menus(), prefix),
                 localization(globals),
                 page == null ? null : new Page(page.id(), page.handle(), page.title(), page.body(),
-                        canonicalPath));
+                        canonicalPath),
+                experiences == null ? null : CursorPageResponse.of(
+                        experiences, card -> card(card, prefix, assets, urls)));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */

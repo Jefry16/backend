@@ -3,8 +3,16 @@ package com.vointika.experience.infrastructure.query;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEntity;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
+import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.Filter;
+import com.vointika.shared.list.FilterOp;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.list.ListSchema;
+import com.vointika.shared.list.SortSpec;
 import com.vointika.shared.port.StorefrontExperienceQuery;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -16,8 +24,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -34,13 +45,15 @@ class StorefrontExperienceQueryImplTest {
 
     private ExperienceJpaRepository experienceRepository;
     private ExperienceTranslationJpaRepository translationRepository;
+    private CriteriaListExecutor listExecutor;
     private StorefrontExperienceQueryImpl query;
 
     @BeforeEach
     void setUp() {
         experienceRepository = mock(ExperienceJpaRepository.class);
         translationRepository = mock(ExperienceTranslationJpaRepository.class);
-        query = new StorefrontExperienceQueryImpl(experienceRepository, translationRepository);
+        listExecutor = mock(CriteriaListExecutor.class);
+        query = new StorefrontExperienceQueryImpl(experienceRepository, translationRepository, listExecutor);
     }
 
     /**
@@ -153,5 +166,100 @@ class StorefrontExperienceQueryImplTest {
     void noIdsReadsNothing() {
         assertThat(query.findPublishedHandles(OPERATOR, java.util.Set.of(), "es")).isEmpty();
         verifyNoInteractions(experienceRepository, translationRepository);
+    }
+
+    // ---- listPublished ------------------------------------------------------
+
+    private static final SortSpec NEWEST_FIRST = SortSpec.parse("-createdAt");
+
+    @SuppressWarnings("unchecked")
+    private ListQuery executedQuery() {
+        ArgumentCaptor<ListQuery> captor = ArgumentCaptor.forClass(ListQuery.class);
+        verify(listExecutor).list(eq(ExperienceJpaEntity.class), any(ListSchema.class),
+                captor.capture(), any());
+        return captor.getValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void executorReturns(CursorPage<ExperienceJpaEntity> page) {
+        when(listExecutor.list(eq(ExperienceJpaEntity.class), any(ListSchema.class),
+                any(ListQuery.class), any()))
+                .thenAnswer(call -> {
+                    java.util.function.Function<ExperienceJpaEntity, Object> f = call.getArgument(3);
+                    return new CursorPage<>(page.data().stream().map(f).toList(), page.nextCursor());
+                });
+    }
+
+    /**
+     * <b>The hole this closes.</b> {@code published} is absent from the schema the
+     * URL is parsed against, so a visitor cannot send it; this asserts the
+     * implementation adds it rather than trusting the caller to.
+     */
+    @Test
+    void theListingIsPublishedOnlyBecauseWeSaySo() {
+        executorReturns(new CursorPage<>(List.of(experience()), null));
+
+        query.listPublished(OPERATOR, "en", null);
+
+        assertThat(executedQuery().filters().filters())
+                .singleElement()
+                .isEqualTo(new Filter("published", FilterOp.EQ, Boolean.TRUE));
+    }
+
+    /**
+     * A visitor never names the tenant. The parser is handed a null id and the
+     * operator resolved from the host is what reaches the executor.
+     */
+    @Test
+    void theTenantIsTheHostsOperatorAndNotTheCallers() {
+        executorReturns(new CursorPage<>(List.of(experience()), null));
+
+        query.listPublished(OPERATOR, "en", null);
+
+        assertThat(executedQuery().tenantId()).isEqualTo(OPERATOR);
+    }
+
+    /** The cursor and sort ride through untouched — paging is the framework's. */
+    @Test
+    void theCursorIsCarriedThrough() {
+        executorReturns(new CursorPage<>(List.of(experience()), "next-page"));
+
+        CursorPage<StorefrontExperienceQuery.ExperienceCardView> page =
+                query.listPublished(OPERATOR, "en", "from-here");
+
+        assertThat(executedQuery().cursor()).isEqualTo("from-here");
+        assertThat(executedQuery().sort()).isEqualTo(NEWEST_FIRST);
+        assertThat(page.nextCursor()).isEqualTo("next-page");
+    }
+
+    /** Same overlay as the featured read, handle included. */
+    @Test
+    void cardsAreOverlaidIntoTheRenderedLocale() {
+        executorReturns(new CursorPage<>(List.of(experience()), null));
+        ExperienceTranslationJpaEntity translation = mock(ExperienceTranslationJpaEntity.class);
+        when(translation.getExperienceId()).thenReturn(ONE);
+        when(translation.getHandle()).thenReturn("paseo-al-atardecer");
+        when(translation.getName()).thenReturn("Paseo al atardecer");
+        when(translationRepository.findByTourOperatorIdAndLocale(OPERATOR, "es"))
+                .thenReturn(List.of(translation));
+
+        var card = query.listPublished(OPERATOR, "es", null).data().getFirst();
+
+        assertThat(card.handle()).isEqualTo("paseo-al-atardecer");
+        assertThat(card.name()).isEqualTo("Paseo al atardecer");
+        // Untranslated falls back rather than blanking.
+        assertThat(card.description()).isEqualTo("Sail into the sunset");
+    }
+
+    /**
+     * An operator with nothing published is an empty listing, not a 404 — and it
+     * costs no translation query, which is the N+1 guard on the cheapest page.
+     */
+    @Test
+    void anEmptyPageReadsNoTranslations() {
+        executorReturns(new CursorPage<>(List.of(), null));
+
+        assertThat(query.listPublished(OPERATOR, "es", null).data()).isEmpty();
+        verifyNoInteractions(translationRepository);
     }
 }

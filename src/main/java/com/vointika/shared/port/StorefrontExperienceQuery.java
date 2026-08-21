@@ -1,5 +1,7 @@
 package com.vointika.shared.port;
 
+import com.vointika.shared.list.CursorPage;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,33 @@ public interface StorefrontExperienceQuery {
      * address.
      */
     Map<UUID, String> findPublishedHandles(UUID tourOperatorId, Set<UUID> experienceIds, String locale);
+
+    /**
+     * A page of the operator's published experiences, newest first.
+     *
+     * <p><b>A cursor and nothing else.</b> The listing takes no filters and no
+     * sorts, so there is no {@link com.vointika.shared.list.ListQuery} to carry —
+     * the implementation builds one, adds {@code published = true} itself and runs
+     * it through the shared list executor. A visitor therefore cannot influence
+     * <em>any</em> predicate: {@code ?filter[published][eq]=false} is not refused,
+     * it is unreachable, which is a stronger property than a schema that declines
+     * to declare the field.
+     *
+     * <p><b>Newest first, and featured-first is not expressible.</b>
+     * {@code SortSpec} is one field plus the id tie-break, so the
+     * "featured, then newest" order {@link #findFeatured} uses needs two keys and
+     * cannot be a default sort. Ordering by {@code createdAt} matches every other
+     * list in the application; changing that is a change to the framework.
+     *
+     * @param locale the locale already chosen by the storefront's locale rule.
+     *               Translations overlay <b>after</b> the page is fetched, which is
+     *               only safe while nothing sorts or filters on a translated
+     *               column: a sort on {@code name} would choose and order the page
+     *               by canonical values and render the translated ones.
+     * @param cursor the opaque keyset cursor from the previous page, or null for
+     *               the first
+     */
+    CursorPage<ExperienceCardView> listPublished(UUID tourOperatorId, String locale, String cursor);
 
     /**
      * @param startingPrice the lowest price across the experience's audiences,
