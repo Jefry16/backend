@@ -52,7 +52,7 @@ Verified 2026-08-16, so you do not have to rediscover it:
 
 ## Read before you start
 
-- `../CONSTITUTION.md` (LAW), and `CLAUDE.md`'s *Open work* — it lists what is
+- `../CONSTITUTION.md` (LAW), and `OPEN-WORK.md` — it lists what is
   already known to be open. Do not present any of it as a discovery.
 - `CLAUDE.md` for the auth model and the test traps, `PATTERNS.md` §4a, §4b and §9
   for the response and documentation-test conventions.
@@ -212,7 +212,7 @@ Write it to `API-DOCS-AUDIT.md`. **The file does not exist between passes** — 
 eleven-context series closed on 2026-08-17 and its report was deleted once its durable
 half reached `PATTERNS.md` §9a. Create it for the pass, commit it on the branch that
 produces it, and delete it in the same PR that lands the fixes. Anything that outlives
-one context belongs in §9a or `CLAUDE.md`'s *Open work*, not in a report nobody
+one context belongs in §9a or `OPEN-WORK.md`, not in a report nobody
 re-reads.
 
 **The report is tracked** — stage explicit paths, `git add -- API-DOCS-AUDIT.md src …`,
