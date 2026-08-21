@@ -129,11 +129,15 @@ port or an event (never a direct import).
 >   the factory that builds it; inferring either from "which objects are present"
 >   makes any object-less route the index by accident. **The experiences listing is
 >   that route** — it has no object of its own, so it would have been the index
->   twice over, and the two fields are passed in rather than derived. Its factory
->   is named `experienceList` rather than a third `from` overload, because that
->   overload would take the same arguments as the index one and a caller reaching
->   for `from` by habit would publish `index` and the home page's canonical while
->   every body assertion still passed.
+>   twice over, and the two fields are passed in rather than derived.
+>
+>   **Every factory is named for the route it builds** — `index`, `cmsPage`,
+>   `experienceList` — and none is called `from`. A generic name is a trap here in
+>   a way it is not elsewhere: these payloads are identical apart from the two
+>   fields that say where the page is, so picking the wrong factory produces a page
+>   claiming to be the home page while every body assertion still passes. Naming
+>   them all makes that a compile error, which is worth more than the tidiness of a
+>   shared name. It was one unnamed `from` until #203 review.
 > - **Metafield values and metaobject entry fields carry per-locale overlays**
 >   (2026-08-13/14). Text types only
 >   (`single_line_text`, `multi_line_text`): a translated `true` is `true`, and a

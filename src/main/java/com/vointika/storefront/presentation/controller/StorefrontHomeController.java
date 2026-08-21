@@ -71,7 +71,7 @@ public class StorefrontHomeController {
 
         Map<UUID, MediaAsset> assets = StorefrontControllers.assets(globals, mediaAssetBatchQuery);
 
-        return StorefrontGlobalsResponse.from(globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
+        return StorefrontGlobalsResponse.index(globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }
 
 }

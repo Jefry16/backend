@@ -90,9 +90,12 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * ({@code origin} is {@code tourOperator.url}, {@code locale} is
      * {@code localization.language}).
      *
-     * <p>Each address names its own, at the {@link #from} overload that builds
-     * it, rather than being inferred from which objects happen to be present. A
-     * route whose object is absent is not automatically the index.
+     * <p>Each address names its own, at the factory that builds it
+     * ({@link #index}, {@link #cmsPage}, {@link #experienceList}), rather than
+     * having it inferred from which objects happen to be present. A route whose
+     * object is absent is not automatically the index — and because every factory
+     * is named for its route, picking the wrong one is a compile error rather than
+     * a silently wrong page.
      */
     public static final String PAGE_TYPE_INDEX = "index";
     public static final String PAGE_TYPE_PAGE = "page";
@@ -378,19 +381,19 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      *               it stays correct behind a proxy, the same reason the tenant is
      *               read from {@code getServerName()}.
      */
-    public static StorefrontGlobalsResponse from(StorefrontGlobals globals,
-                                                 String origin,
-                                                 Map<UUID, MediaAsset> assets,
-                                                 MediaUrlResolver urls) {
+    public static StorefrontGlobalsResponse index(StorefrontGlobals globals,
+                                                  String origin,
+                                                  Map<UUID, MediaAsset> assets,
+                                                  MediaUrlResolver urls) {
         return from(globals, null, PAGE_TYPE_INDEX, null, origin, assets, urls);
     }
 
     /** The same globals, plus the object the route is associated with. */
-    public static StorefrontGlobalsResponse from(StorefrontGlobals globals,
-                                                 PageView page,
-                                                 String origin,
-                                                 Map<UUID, MediaAsset> assets,
-                                                 MediaUrlResolver urls) {
+    public static StorefrontGlobalsResponse cmsPage(StorefrontGlobals globals,
+                                                    PageView page,
+                                                    String origin,
+                                                    Map<UUID, MediaAsset> assets,
+                                                    MediaUrlResolver urls) {
         return from(globals, page, PAGE_TYPE_PAGE, StorefrontRoutes.PAGES + "/" + page.handle(),
                 origin, assets, urls);
     }
@@ -399,12 +402,12 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * The experiences listing: the globals, at their own address, with no object
      * of its own yet.
      *
-     * <p><b>Not a third {@code from} overload</b> — it would take the same four
-     * arguments as the index one and be unresolvable. The name is the
-     * distinguishing part, which is the point: this route serves the same body as
-     * {@code /} and differs only in the two fields that say where it is, so a
-     * caller reaching for {@code from} by habit would silently publish
-     * {@code index} and the home page's canonical.
+     * <p>One of three factories that each name the route they build, for the
+     * reason this one made concrete: its body is identical to the home page's
+     * apart from {@code pageType} and {@code canonicalUrl}, so a caller that
+     * picked the wrong factory would publish a page claiming to be the index and
+     * every body assertion would still pass. There is deliberately no unnamed
+     * {@code from} left to reach for — see {@link #index}.
      */
     public static StorefrontGlobalsResponse experienceList(StorefrontGlobals globals,
                                                            String origin,
