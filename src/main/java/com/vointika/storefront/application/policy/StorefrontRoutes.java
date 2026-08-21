@@ -62,6 +62,19 @@ public final class StorefrontRoutes {
      * it is a route. Non-capturing, because {@code PathPatternParser} refuses a
      * capture group outright.
      */
+    /**
+     * One experience, at the handle the rendered locale publishes. Same constraint
+     * as {@link #PAGE} — and it is a security pattern before it is a route, so the
+     * group stays non-capturing: {@code PathPatternParser} rejects capture groups
+     * in a constraint outright.
+     *
+     * <p>Unlike {@link #PAGES}, {@link #EXPERIENCES} is itself a live route (the
+     * listing), so both it and this stay in {@link #PAGE_ROUTES}.
+     */
+    public static final String EXPERIENCE = EXPERIENCES + "/{handle:[a-z0-9]+(?:-[a-z0-9]+)*}";
+
+    public static final String LOCALIZED_EXPERIENCE = LOCALE + EXPERIENCE;
+
     public static final String PAGE = PAGES + "/{handle:[a-z0-9]+(?:-[a-z0-9]+)*}";
 
     public static final String LOCALIZED_PAGE = LOCALE + PAGE;
@@ -119,6 +132,7 @@ public final class StorefrontRoutes {
     public static final List<String> PAGE_ROUTES = List.of(
             HOME, LOCALE,
             EXPERIENCES, LOCALIZED_EXPERIENCES,
+            EXPERIENCE, LOCALIZED_EXPERIENCE,
             POLICY, LOCALIZED_POLICY,
             PAGE, LOCALIZED_PAGE);
 
