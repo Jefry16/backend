@@ -200,6 +200,20 @@ describes a shape that mostly holds. **Splitting it without the import is the
 failure mode** — the load-bearing half goes unread while every pointer to it still
 reads correctly, which is what #204 review caught before this line existed.
 
+**The split buys structure, not context.** Claude Code's docs are explicit that
+imported files load at launch alongside the file importing them, so *"splitting
+into `@path` imports helps organization but doesn't reduce context"*. The win is
+that this file reads as the shape on its own; the ledger's tokens are still paid
+every session. Do not split anything else expecting to save room — the way to
+spend less is to write less.
+
+**Where you launch decides how this loads.** A `CLAUDE.md` at or above the working
+directory loads in full at launch; one in a *subdirectory* loads on demand when a
+file there is read, and is not re-injected after `/compact`. So this file and its
+import arrive at startup when you run from `backend/`, and lazily when you run from
+the repo root. `/context` lists what actually loaded — that is the check, not
+inference from the file being on disk.
+
 @OPEN-WORK.md
 
 ## Working rhythm
