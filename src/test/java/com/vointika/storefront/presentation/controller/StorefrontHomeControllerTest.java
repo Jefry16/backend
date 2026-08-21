@@ -168,6 +168,7 @@ class StorefrontHomeControllerTest {
         mockMvc.perform(get("/").header("Host", "acme.localhost:8080"))
                 .andExpect(jsonPath("$.page").doesNotExist())
                 .andExpect(jsonPath("$.experiences").doesNotExist())
+                .andExpect(jsonPath("$.experience").doesNotExist())
                 .andExpect(jsonPath("$.featuredExperiences").isArray());
     }
 

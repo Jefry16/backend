@@ -54,9 +54,27 @@ public class StorefrontMetafieldQueryImpl implements StorefrontMetafieldQuery {
 
     @Override
     public List<MetafieldView> findForOperator(UUID tourOperatorId, String locale) {
+        return forOwner(tourOperatorId, MetafieldOwnerType.TOUR_OPERATOR, tourOperatorId, locale);
+    }
+
+    /**
+     * <b>The tenant is a separate argument from the owner, and that is what makes
+     * this safe.</b> Metafield <em>values</em> are owner-generic — a bare
+     * {@code owner_id} with no FK and no tenant column — so an experience id alone
+     * would not scope anything. The definitions are tenant-scoped, and
+     * {@code listForOwnerLocalized} joins through them, so passing the operator
+     * here is what confines the answer to it. Pass an experience id resolved under
+     * a different operator and the result is empty rather than another shop's data.
+     */
+    @Override
+    public List<MetafieldView> findForExperience(UUID tourOperatorId, UUID experienceId, String locale) {
+        return forOwner(tourOperatorId, MetafieldOwnerType.EXPERIENCE, experienceId, locale);
+    }
+
+    private List<MetafieldView> forOwner(UUID tourOperatorId, MetafieldOwnerType ownerType,
+                                         UUID ownerId, String locale) {
         List<MetafieldValueWithDefinition> values = valueRepository
-                .listForOwnerLocalized(tourOperatorId, MetafieldOwnerType.TOUR_OPERATOR,
-                        tourOperatorId, locale);
+                .listForOwnerLocalized(tourOperatorId, ownerType, ownerId, locale);
 
         Map<UUID, MetaobjectView> resolved = resolve(tourOperatorId, referencedEntryIds(values), locale);
 

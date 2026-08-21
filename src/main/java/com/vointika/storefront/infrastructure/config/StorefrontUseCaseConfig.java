@@ -11,6 +11,7 @@ import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontTenantUseCase;
 import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontCmsPageUseCase;
+import com.vointika.storefront.application.usecase.GetStorefrontExperienceUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontExperienceListUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
 import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
@@ -48,6 +49,15 @@ public class StorefrontUseCaseConfig {
             GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase,
             StorefrontExperienceQuery storefrontExperienceQuery) {
         return new GetStorefrontExperienceListUseCase(getStorefrontGlobalsUseCase, storefrontExperienceQuery);
+    }
+
+    @Bean
+    public GetStorefrontExperienceUseCase getStorefrontExperienceUseCase(
+            GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase,
+            StorefrontExperienceQuery storefrontExperienceQuery,
+            StorefrontMetafieldQuery storefrontMetafieldQuery) {
+        return new GetStorefrontExperienceUseCase(getStorefrontGlobalsUseCase,
+                storefrontExperienceQuery, storefrontMetafieldQuery);
     }
 
     @Bean

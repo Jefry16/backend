@@ -160,7 +160,8 @@ class StorefrontExperienceListControllerTest {
                 .andExpect(jsonPath("$.featuredExperiences[0].handle").value("sunset-sail"))
                 .andExpect(jsonPath("$.localization.language.code").value("en"))
                 // No object of its own yet, and NON_NULL keeps it off the wire.
-                .andExpect(jsonPath("$.page").doesNotExist());
+                .andExpect(jsonPath("$.page").doesNotExist())
+                .andExpect(jsonPath("$.experience").doesNotExist());
     }
 
     /**

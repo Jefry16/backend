@@ -60,6 +60,19 @@ public interface StorefrontMetafieldQuery {
     List<MetafieldView> findForOperator(UUID tourOperatorId, String locale);
 
     /**
+     * One experience's custom data, in the rendered locale —
+     * {@code experience.metafields.<namespace>.<key>}, the same addressing
+     * {@code tourOperator.metafields} uses.
+     *
+     * @param tourOperatorId the tenant, which is what scopes the answer: values
+     *                       are owner-generic with no tenant column, so the
+     *                       operator must be passed rather than inferred from the
+     *                       owner. An experience id belonging to someone else
+     *                       returns empty, not their data.
+     */
+    List<MetafieldView> findForExperience(UUID tourOperatorId, UUID experienceId, String locale);
+
+    /**
      * @param type      the type <b>code</b> — our vocabulary, not Shopify's
      *                  ({@code single_line_text}, never
      *                  {@code single_line_text_field}), decided when the context

@@ -3,6 +3,7 @@ package com.vointika.storefront.presentation.controller;
 import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceDetailView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.presentation.response.StorefrontGlobalsResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,7 +54,17 @@ final class StorefrontControllers {
      */
     static Map<UUID, MediaAsset> assets(StorefrontGlobals globals,
                                         MediaAssetBatchQuery mediaAssetBatchQuery) {
-        Set<UUID> mediaIds = StorefrontGlobalsResponse.mediaIds(globals);
+        return fetch(globals, StorefrontGlobalsResponse.mediaIds(globals), mediaAssetBatchQuery);
+    }
+
+    /** The globals' media and the experience's gallery, in the one batch. */
+    static Map<UUID, MediaAsset> assets(StorefrontGlobals globals, ExperienceDetailView experience,
+                                        MediaAssetBatchQuery mediaAssetBatchQuery) {
+        return fetch(globals, StorefrontGlobalsResponse.mediaIds(globals, experience), mediaAssetBatchQuery);
+    }
+
+    private static Map<UUID, MediaAsset> fetch(StorefrontGlobals globals, Set<UUID> mediaIds,
+                                               MediaAssetBatchQuery mediaAssetBatchQuery) {
         return mediaIds.isEmpty()
                 ? Map.of()
                 : mediaAssetBatchQuery.findAssetsByIds(globals.tourOperator().id(), mediaIds);
