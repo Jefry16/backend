@@ -200,12 +200,19 @@ describes a shape that mostly holds. **Splitting it without the import is the
 failure mode** — the load-bearing half goes unread while every pointer to it still
 reads correctly, which is what #204 review caught before this line existed.
 
-**The split buys structure, not context.** Claude Code's docs are explicit that
-imported files load at launch alongside the file importing them, so *"splitting
-into `@path` imports helps organization but doesn't reduce context"*. The win is
-that this file reads as the shape on its own; the ledger's tokens are still paid
-every session. Do not split anything else expecting to save room — the way to
-spend less is to write less.
+**The split buys structure, and costs context.** Claude Code's docs are explicit
+that imported files load at launch alongside the file importing them, so
+*"splitting into `@path` imports helps organization but doesn't reduce context"*.
+Measured here it is worse than a wash: **547 lines before, 627 after** — 236 in
+this file plus 391 imported — **+80**, spent on a header, the pointer section
+and the paragraphs explaining the arrangement. A `backend/` session auto-loads
+**882 lines** across four files: LAW 205, the root `CLAUDE.md` 50, this 236,
+`OPEN-WORK.md` 391.
+
+What was bought is that this file reads as the shape on its own, which is real and
+was the point. What was not bought is room. Do not split anything else expecting
+to save any — the only way to spend less is to write less, which is what LAW §0.3
+means by subtracting from the system first and the docs second.
 
 **Where you launch decides how this loads.** A `CLAUDE.md` at or above the working
 directory loads in full at launch; one in a *subdirectory* loads on demand when a
