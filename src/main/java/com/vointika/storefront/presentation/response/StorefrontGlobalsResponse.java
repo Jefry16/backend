@@ -98,6 +98,16 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
     public static final String PAGE_TYPE_PAGE = "page";
 
     /**
+     * The experiences listing. Named for Shopify's {@code list-collections} —
+     * their value for the page that lists a resource type, against
+     * {@code collection} for one of them — so an experience's own page becomes
+     * {@code experience} when it lands and the pair reads the way a theme author
+     * coming from Liquid expects. Their {@code page_type} vocabulary is lowercase
+     * and hyphenated, which this follows.
+     */
+    public static final String PAGE_TYPE_EXPERIENCE_LIST = "list-experiences";
+
+    /**
      * @param description the meta description, which is what Shopify's
      *                    {@code tourOperator.description} is too — the same value
      *                    {@code pageDescription} carries on a page that has no
@@ -372,7 +382,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                  String origin,
                                                  Map<UUID, MediaAsset> assets,
                                                  MediaUrlResolver urls) {
-        return from(globals, null, PAGE_TYPE_INDEX, origin, assets, urls);
+        return from(globals, null, PAGE_TYPE_INDEX, null, origin, assets, urls);
     }
 
     /** The same globals, plus the object the route is associated with. */
@@ -381,12 +391,43 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                  String origin,
                                                  Map<UUID, MediaAsset> assets,
                                                  MediaUrlResolver urls) {
-        return from(globals, page, PAGE_TYPE_PAGE, origin, assets, urls);
+        return from(globals, page, PAGE_TYPE_PAGE, StorefrontRoutes.PAGES + "/" + page.handle(),
+                origin, assets, urls);
     }
 
+    /**
+     * The experiences listing: the globals, at their own address, with no object
+     * of its own yet.
+     *
+     * <p><b>Not a third {@code from} overload</b> — it would take the same four
+     * arguments as the index one and be unresolvable. The name is the
+     * distinguishing part, which is the point: this route serves the same body as
+     * {@code /} and differs only in the two fields that say where it is, so a
+     * caller reaching for {@code from} by habit would silently publish
+     * {@code index} and the home page's canonical.
+     */
+    public static StorefrontGlobalsResponse experienceList(StorefrontGlobals globals,
+                                                           String origin,
+                                                           Map<UUID, MediaAsset> assets,
+                                                           MediaUrlResolver urls) {
+        return from(globals, null, PAGE_TYPE_EXPERIENCE_LIST, StorefrontRoutes.EXPERIENCES,
+                origin, assets, urls);
+    }
+
+    /**
+     * @param pathAfterPrefix the address this page lives at, after any locale
+     *                        prefix, or null for the operator's root. It is what
+     *                        {@code canonicalUrl} is built from — passed rather
+     *                        than derived from which object is present, so a route
+     *                        without one still has an address of its own. It is
+     *                        also {@code page.url} where a page is served, which is
+     *                        the same string by construction: a page's address and
+     *                        the canonical of the route serving it cannot differ.
+     */
     private static StorefrontGlobalsResponse from(StorefrontGlobals globals,
                                                   PageView page,
                                                   String pageType,
+                                                  String pathAfterPrefix,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
@@ -397,7 +438,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 .toList();
         Image ogImage = image(globals.ogImageMediaId(), assets, urls);
         String root = prefix.isEmpty() ? StorefrontRoutes.HOME : prefix;
-        String pagePath = page == null ? null : prefix + StorefrontRoutes.PAGES + "/" + page.handle();
+        String canonicalPath = pathAfterPrefix == null ? root : prefix + pathAfterPrefix;
 
         return new StorefrontGlobalsResponse(
                 new TourOperator(
@@ -422,7 +463,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 globals.pageTitle(),
                 globals.pageDescription(),
                 ogImage == null ? null : ogImage.url(),
-                origin + (pagePath == null ? root : pagePath),
+                origin + canonicalPath,
                 pageType,
                 new Routes(root, prefix + StorefrontRoutes.EXPERIENCES),
                 globals.featuredExperiences().stream()
@@ -431,7 +472,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 linklists(globals.menus(), prefix),
                 localization(globals),
                 page == null ? null : new Page(page.id(), page.handle(), page.title(), page.body(),
-                        pagePath));
+                        canonicalPath));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */

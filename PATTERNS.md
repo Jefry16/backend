@@ -80,15 +80,21 @@ port or an event (never a direct import).
 ## 2a. The render envelope (a server-rendered page's context object)
 
 > **This is the storefront's data contract, and it is live and served as JSON** —
-> the globals on `/` and `/{locale}`, and the globals plus `page` on
-> `/pages/{handle}`. JSON and not HTML on purpose: the contract is settled before
-> anything is server-rendered again, because a wrong field is visible in a body and
-> invisible under markup nobody reads yet.
+> the globals on `/`, `/{locale}` and both `/experiences` forms, and the globals
+> plus `page` on `/pages/{handle}`. JSON and not HTML on purpose: the contract is
+> settled before anything is server-rendered again, because a wrong field is
+> visible in a body and invisible under markup nobody reads yet.
 >
-> Four addresses still answer a placeholder `{handle, status}`: the experiences
-> listing and the policy page, each with and without a locale prefix. No template
-> exists either, so the theme object model as a *render* context is the part that
-> is still only a plan.
+> **The experiences listing serves the globals and no experiences.** The address
+> went onto the real render path ahead of its query deliberately: a listing is one
+> field on a payload that already resolves media, locale, menus and the gate, and
+> shipping the two apart means the query lands against a route that is already
+> proven rather than alongside one that is not. Its `pageType` is
+> `list-experiences`, after Shopify's `list-collections`.
+>
+> Two addresses still answer a placeholder `{handle, status}`: the policy page,
+> with and without a locale prefix. No template exists either, so the theme object
+> model as a *render* context is the part that is still only a plan.
 >
 > Each rule below carries its own reason:
 >
@@ -119,9 +125,15 @@ port or an event (never a direct import).
 >   so one page in one language has exactly one address. **Build it from the
 >   resolved locale and handle, never off the request URI** — echoing the URI
 >   back repeats the query string, which is the one thing the tag exists to
->   strip. Each route names its own `pageType` at the `from` overload that builds
->   it; inferring it from "which objects are present" makes any future
->   object-less route the index by accident.
+>   strip. Each route names its own `pageType` **and its own canonical path** at
+>   the factory that builds it; inferring either from "which objects are present"
+>   makes any object-less route the index by accident. **The experiences listing is
+>   that route** — it has no object of its own, so it would have been the index
+>   twice over, and the two fields are passed in rather than derived. Its factory
+>   is named `experienceList` rather than a third `from` overload, because that
+>   overload would take the same arguments as the index one and a caller reaching
+>   for `from` by habit would publish `index` and the home page's canonical while
+>   every body assertion still passed.
 > - **Metafield values and metaobject entry fields carry per-locale overlays**
 >   (2026-08-13/14). Text types only
 >   (`single_line_text`, `multi_line_text`): a translated `true` is `true`, and a
