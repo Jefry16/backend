@@ -743,6 +743,77 @@ ON CONFLICT (id) DO UPDATE SET
     seo_description          = EXCLUDED.seo_description,
     category_id              = EXCLUDED.category_id;
 
+-- 10b. Catalogue depth, so the listing has a second page.
+--
+-- The five above are the hand-authored ones and carry the interesting states:
+-- draft, featured, translated, uncategorized, with and without media. These
+-- eighteen exist for the one state those five cannot express — **more published
+-- experiences than fit on a page**. `ListConstants.PAGE_SIZE` is 20 and four of
+-- the five above are published, so without these the storefront listing always
+-- returns `nextCursor: null` and the cursor path is never taken by anything you
+-- can click. 4 + 18 = 22, which is one full page and a short second one.
+--
+-- They also push `featured` past `StorefrontExperienceQuery.FEATURED_LIMIT`:
+-- eleven here plus the two above is 13, so the globals' rail renders its cap
+-- rather than everything that happens to be flagged.
+--
+-- Generated rather than written out, and dated older than all five above so the
+-- newest-first order puts them last and the page boundary lands in a predictable
+-- place. Ids are deterministic — a literal derived from the index, never
+-- gen_random_uuid(), for the reason reference rows use UUIDv3: an id that
+-- differs per environment cannot be referenced from anywhere else (PATTERNS §10).
+--
+-- No media on purpose: a seeded row naming a storage object must ship the object,
+-- and a thin catalogue entry with no photos is a real state anyway.
+INSERT INTO experience.experiences
+    (id, tour_operator_id, created_by, handle, name, description, long_description,
+     featured,
+     media_ids, thumbnail_media_id, booking_cutoff_hours,
+     published, starting_price, seo_title, seo_description, category_id, created_at)
+SELECT
+    ('01900000-0000-7000-8000-000000000' || to_char(900 + i, 'FM000'))::uuid,
+    :'operator_id',
+    :'user_id',
+    'coastal-outing-' || to_char(i, 'FM00'),
+    'Coastal outing ' || i,
+    'A short guided outing along the coast, number ' || i || ' of the catalogue.',
+    'One of the smaller trips on the books. Included so the catalogue is deep '
+        || 'enough to page through; the copy is deliberately plain.',
+    i <= 11,
+    '{}'::uuid[], NULL, 24,
+    TRUE,
+    (20 + i * 5)::numeric(12,2),
+    NULL, NULL,
+    CASE WHEN i % 3 = 0 THEN :'category_sea_id'::uuid
+         WHEN i % 3 = 1 THEN :'category_food_id'::uuid
+         ELSE NULL END,
+    NOW() - INTERVAL '400 days' - (i * INTERVAL '5 days')
+FROM generate_series(1, 18) AS i
+ON CONFLICT (id) DO UPDATE SET
+    handle                   = EXCLUDED.handle,
+    name                     = EXCLUDED.name,
+    description              = EXCLUDED.description,
+    long_description         = EXCLUDED.long_description,
+    featured                 = EXCLUDED.featured,
+    published                = EXCLUDED.published,
+    starting_price           = EXCLUDED.starting_price,
+    category_id              = EXCLUDED.category_id;
+
+-- Three of the eighteen carry an `es` name, so a locale overlay has to be applied
+-- to rows on both sides of the page boundary rather than only to the first few.
+INSERT INTO experience.experience_translations
+    (experience_id, tour_operator_id, locale, name, description, long_description,
+     handle, seo_title, seo_description)
+SELECT
+    ('01900000-0000-7000-8000-000000000' || to_char(900 + i, 'FM000'))::uuid,
+    :'operator_id', 'es',
+    'Salida costera ' || i,
+    NULL, NULL, NULL, NULL, NULL
+FROM generate_series(1, 18) AS i
+WHERE i IN (2, 9, 17)
+ON CONFLICT (experience_id, locale) DO UPDATE SET
+    name = EXCLUDED.name;
+
 -- Two of five carry an `es` overlay, and only one of those localizes its handle
 -- — so the storefront resolves a translated slug on one experience and falls
 -- back to the canonical slug on the other, in the same list.
