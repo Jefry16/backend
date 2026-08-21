@@ -65,6 +65,7 @@ class ExperienceControllerDocumentationTest {
 
     private static final String OP = "019f7f33-1833-7dc1-b008-47e6c68b3ea2";
     private static final String EXP = "aaaaaaaa-0000-4000-8000-000000000001";
+    private static final String CAT = "cccccccc-0000-4000-8000-000000000001";
     private static final String USER = "550e8400-e29b-41d4-a716-446655440000";
 
     private MockMvc mockMvc;
@@ -102,7 +103,7 @@ class ExperienceControllerDocumentationTest {
                 List.of(UUID.fromString("bbbbbbbb-0000-4000-8000-000000000002")),
                 List.of("https://media.staging.vointika.com/1.jpg"),
                 24, false, "Sunset Dive | Acme Tours", "A guided reef dive at dusk, daily.",
-                new BigDecimal("35.00"), Instant.parse("2026-07-21T10:00:00Z"));
+                new BigDecimal("35.00"), UUID.fromString(CAT), Instant.parse("2026-07-21T10:00:00Z"));
     }
 
     /**
@@ -124,7 +125,8 @@ class ExperienceControllerDocumentationTest {
               "bookingCutoffHours": 24,
               "seoTitle": "Sunset Dive | Acme Tours",
               "seoDescription": "A guided reef dive at dusk, daily.",
-              "startingPrice": 45.00
+              "startingPrice": 45.00,
+              "categoryId": "cccccccc-0000-4000-8000-000000000001"
             }""";
 
     @Test
@@ -149,7 +151,8 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"),
                                 fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("SEO title override; a whole replace, so omitting it clears the stored value").optional(),
                                 fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("SEO meta description; cleared the same way").optional(),
-                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet")),
+                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet"),
+                                fieldWithPath("categoryId").type(JsonFieldType.STRING).description("The operator's category this experience is filed under, or null for uncategorized. Must be one of the operator's own categories, else 422. **Omitting it files the experience back to uncategorized** — create and update are whole replaces.").optional()),
                         responseHeaders(headerWithName("Location").description("URI of the created experience"))));
     }
 
@@ -183,6 +186,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("data[].seoTitle").description("Search-engine title override, or null — falls back to the operator's").optional(),
                                 fieldWithPath("data[].seoDescription").description("Meta description override, or null — falls back to the operator's").optional(),
                                 fieldWithPath("data[].startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),
+                                fieldWithPath("data[].categoryId").type(JsonFieldType.STRING).description("The operator category this experience is filed under; null when uncategorized").optional(),
                                 fieldWithPath("data[].createdBy").description("Creator user id"),
                                 fieldWithPath("data[].createdAt").description("When created"),
                                 fieldWithPath("nextCursor").type(JsonFieldType.STRING).description("Opaque cursor; null on the last page"))));
@@ -227,6 +231,7 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("seoTitle").description("Search-engine title override, or null — falls back to the operator's").optional(),
                                 fieldWithPath("seoDescription").description("Meta description override, or null — falls back to the operator's").optional(),
                                 fieldWithPath("startingPrice").description("The operator's advertised \"from\" price. Required and greater than 0 on every experience, drafts included; not derived from slot prices, so it can differ from the cheapest bookable tier."),
+                                fieldWithPath("categoryId").type(JsonFieldType.STRING).description("The operator category this experience is filed under; null when uncategorized").optional(),
                                 fieldWithPath("createdBy").description("Creator user id"),
                                 fieldWithPath("createdAt").description("When created"))));
     }
@@ -255,7 +260,8 @@ class ExperienceControllerDocumentationTest {
                                 fieldWithPath("bookingCutoffHours").description("Advance-notice hours (≥0)"),
                                 fieldWithPath("seoTitle").type(JsonFieldType.STRING).description("SEO title override; a whole replace, so omitting it clears the stored value").optional(),
                                 fieldWithPath("seoDescription").type(JsonFieldType.STRING).description("SEO meta description; cleared the same way").optional(),
-                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet"))));
+                                fieldWithPath("startingPrice").description("**Required.** The storefront's \"from\" figure, per person; 0 means nothing is priced yet"),
+                                fieldWithPath("categoryId").type(JsonFieldType.STRING).description("The operator's category this experience is filed under, or null for uncategorized. Must be one of the operator's own categories, else 422. **Omitting it files the experience back to uncategorized** — create and update are whole replaces.").optional())));
     }
 
     @Test

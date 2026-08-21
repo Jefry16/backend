@@ -6,14 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,8 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 2026-08-19, and the copy had drifted into asserting only one direction.
  */
 public final class MigrationCheckConstraints {
-
-    private static final Pattern VERSION = Pattern.compile("^V(\\d+)__");
 
     private MigrationCheckConstraints() {
     }
@@ -64,15 +60,7 @@ public final class MigrationCheckConstraints {
     static Set<String> allowedValues(Path migrations, String column, String table) throws IOException {
         Pattern check = Pattern.compile("(?<![A-Za-z0-9_])" + column + "\\s+IN\\s*\\(([^)]*)\\)",
                 Pattern.CASE_INSENSITIVE);
-        Pattern owner = Pattern.compile(
-                "(?:CREATE|ALTER)\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Za-z0-9_.\"]+)",
-                Pattern.CASE_INSENSITIVE);
-        List<Path> files;
-        try (Stream<Path> paths = Files.list(migrations)) {
-            files = paths.filter(p -> p.toString().endsWith(".sql"))
-                    .sorted(Comparator.comparingInt(MigrationCheckConstraints::version))
-                    .toList();
-        }
+        List<Path> files = MigrationSql.inVersionOrder(migrations);
 
         Set<String> latest = new LinkedHashSet<>();
         for (Path file : files) {
@@ -80,7 +68,7 @@ public final class MigrationCheckConstraints {
             Matcher matcher = check.matcher(sql);
             List<String> inThisFile = new ArrayList<>();
             while (matcher.find()) {
-                if (table.equalsIgnoreCase(owningTable(sql, matcher.start(), owner))) {
+                if (table.equalsIgnoreCase(MigrationSql.owningTable(sql, matcher.start()))) {
                     inThisFile.add(matcher.group(1));
                 }
             }
@@ -115,7 +103,7 @@ public final class MigrationCheckConstraints {
         // caller passed: a schema-qualified argument rendered as "pass
         // 'touroperator.x', not 'touroperator.touroperator.x'" — the input echoed back
         // as the fix, for the one mistake this line exists to catch.
-        String bare = unqualified(table);
+        String bare = MigrationSql.unqualified(table);
         assertThat(allowed)
                 .withFailMessage("No %s CHECK for table '%s' in %s. Two causes:%n"
                         + "  the table name matches no CREATE/ALTER TABLE in these migrations — it "
@@ -143,49 +131,4 @@ public final class MigrationCheckConstraints {
                 .containsExactlyInAnyOrderElementsOf(declared);
     }
 
-    /**
-     * The table of the nearest {@code CREATE}/{@code ALTER TABLE} above
-     * {@code position}, unqualified — every migration here writes
-     * {@code CREATE TABLE audit.audit_log}, and callers name the bare table.
-     *
-     * <p><b>Nearest-statement-above is textual, so a comment counts.</b> A migration
-     * whose header prose says "ALTER TABLE slots …" above an unrelated CHECK would
-     * attribute that constraint to {@code slots}. No migration does today — checked
-     * across all of them — but explanatory headers are a convention here, so this is a
-     * shape to know rather than a bug to fix now. An unmatched table yields an empty
-     * set, which trips the guard in {@link #assertEnumMatches} rather than asserting
-     * against another table's values.
-     */
-    private static String owningTable(String sql, int position, Pattern owner) {
-        Matcher matcher = owner.matcher(sql);
-        String current = null;
-        while (matcher.find() && matcher.start() < position) {
-            current = unqualified(matcher.group(1).replace("\"", ""));
-        }
-        return current;
-    }
-
-    /**
-     * {@code audit.audit_log} → {@code audit_log}.
-     *
-     * <p>Used by both the comparison and the advice in {@link #assertEnumMatches}'s
-     * failure message, deliberately: when the message built its suggestion separately it
-     * suggested the caller's own qualified input. Sharing the rule keeps the advice true
-     * by construction if the rule ever changes.
-     */
-    private static String unqualified(String name) {
-        return name.substring(name.lastIndexOf('.') + 1);
-    }
-
-    private static int version(Path migration) {
-        String name = migration.getFileName().toString();
-        Matcher matcher = VERSION.matcher(name);
-        if (!matcher.find()) {
-            throw new IllegalStateException(
-                    "Migration '" + name + "' is not V<int>__name.sql, so this test cannot order it "
-                            + "against the others. Teach the parser the new scheme — silently "
-                            + "mis-ordering would let a narrowing constraint through.");
-        }
-        return Integer.parseInt(matcher.group(1));
-    }
 }

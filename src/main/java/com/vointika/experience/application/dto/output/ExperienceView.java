@@ -34,6 +34,7 @@ public record ExperienceView(
         String seoTitle,
         String seoDescription,
         BigDecimal startingPrice,
+        UUID categoryId,
         Instant createdAt) {
 
     /** @param urlsById resolved media id → url (from MediaUrlBatchResolver). */
@@ -52,6 +53,6 @@ public record ExperienceView(
                 e.isPublished(),
                 e.getSeoTitle() == null ? null : e.getSeoTitle().value(),
                 e.getSeoDescription() == null ? null : e.getSeoDescription().value(),
-                e.getStartingPrice().value(), e.getCreatedAt());
+                e.getStartingPrice().value(), e.getCategoryId(), e.getCreatedAt());
     }
 }

@@ -52,6 +52,7 @@ class ApiGuideDocumentsEveryListFieldTest {
     private static final Map<String, String> OPERATIONS = Map.ofEntries(
             Map.entry("ListAudiencesUseCase", "audiences/list"),
             Map.entry("ListAuditLogUseCase", "audit-log/list"),
+            Map.entry("ListCategoriesUseCase", "categories/list"),
             Map.entry("ListContactMessagesUseCase", "contact-messages/list"),
             Map.entry("ListExperiencesUseCase", "experiences/list"),
             Map.entry("ListInvitationsUseCase", "tour-operators/invitations/list"),

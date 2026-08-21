@@ -30,7 +30,8 @@ public record ExperienceInput(
         Integer bookingCutoffHours,
         String seoTitle,
         String seoDescription,
-        BigDecimal startingPrice) {
+        BigDecimal startingPrice,
+        UUID categoryId) {
 
     /** Absent and false are the same thing: an experience is not featured unless it says so. */
     public boolean isFeatured() {

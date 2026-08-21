@@ -1,9 +1,21 @@
 package com.vointika.experience.infrastructure.config;
 
 import com.vointika.experience.application.service.AudiencePricingResolver;
+import com.vointika.experience.application.service.CategoryReferenceValidator;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.application.usecase.CancelSlotUseCase;
+import com.vointika.experience.application.usecase.CreateCategoryUseCase;
 import com.vointika.experience.application.usecase.CreateExperienceUseCase;
+import com.vointika.experience.application.usecase.DeleteCategoryTranslationUseCase;
+import com.vointika.experience.application.usecase.DeleteCategoryUseCase;
+import com.vointika.experience.application.usecase.GetCategoryTranslationUseCase;
+import com.vointika.experience.application.usecase.GetCategoryUseCase;
+import com.vointika.experience.application.usecase.ListCategoriesUseCase;
+import com.vointika.experience.application.usecase.ListCategoryTranslationsUseCase;
+import com.vointika.experience.application.usecase.UpdateCategoryUseCase;
+import com.vointika.experience.application.usecase.UpsertCategoryTranslationUseCase;
+import com.vointika.experience.domain.repository.CategoryRepository;
+import com.vointika.experience.domain.repository.CategoryTranslationRepository;
 import com.vointika.experience.application.usecase.CreateSlotUseCase;
 import com.vointika.experience.application.usecase.CreateSlotsUseCase;
 import com.vointika.experience.application.usecase.GetSlotUseCase;
@@ -44,18 +56,24 @@ public class ExperienceUseCaseConfig {
     }
 
     @Bean
+    public CategoryReferenceValidator categoryReferenceValidator(CategoryRepository categoryRepository) {
+        return new CategoryReferenceValidator(categoryRepository);
+    }
+
+    @Bean
     public CreateExperienceUseCase createExperienceUseCase(
             ExperienceRepository experienceRepository,
             ExperienceTranslationRepository translationRepository,
             MediaReferenceValidator mediaReferenceValidator,
+            CategoryReferenceValidator categoryReferenceValidator,
             TourOperatorMembershipCheck membershipCheck,
             HandleGenerator handleGenerator,
             IdGenerator idGenerator,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new CreateExperienceUseCase(experienceRepository, translationRepository,
-                mediaReferenceValidator, membershipCheck, handleGenerator, idGenerator,
-                transactionRunner, auditTrailPort);
+                mediaReferenceValidator, categoryReferenceValidator, membershipCheck,
+                handleGenerator, idGenerator, transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -79,11 +97,13 @@ public class ExperienceUseCaseConfig {
             ExperienceRepository experienceRepository,
             SlotRepository slotRepository,
             MediaReferenceValidator mediaReferenceValidator,
+            CategoryReferenceValidator categoryReferenceValidator,
             TourOperatorMembershipCheck membershipCheck,
             TransactionRunner transactionRunner,
             AuditTrailPort auditTrailPort) {
         return new UpdateExperienceUseCase(experienceRepository, slotRepository,
-                mediaReferenceValidator, membershipCheck, transactionRunner, auditTrailPort);
+                mediaReferenceValidator, categoryReferenceValidator, membershipCheck,
+                transactionRunner, auditTrailPort);
     }
 
     @Bean
@@ -146,6 +166,92 @@ public class ExperienceUseCaseConfig {
                 membershipCheck, transactionRunner, auditTrailPort);
     }
 
+
+    @Bean
+    public CreateCategoryUseCase createCategoryUseCase(
+            CategoryRepository categoryRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            IdGenerator idGenerator,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new CreateCategoryUseCase(categoryRepository, membershipCheck, idGenerator,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpdateCategoryUseCase updateCategoryUseCase(
+            CategoryRepository categoryRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpdateCategoryUseCase(categoryRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetCategoryUseCase getCategoryUseCase(
+            CategoryRepository categoryRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetCategoryUseCase(categoryRepository, membershipCheck);
+    }
+
+    @Bean
+    public ListCategoriesUseCase listCategoriesUseCase(
+            CategoryRepository categoryRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListCategoriesUseCase(categoryRepository, membershipCheck);
+    }
+
+    @Bean
+    public DeleteCategoryUseCase deleteCategoryUseCase(
+            CategoryRepository categoryRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteCategoryUseCase(categoryRepository, membershipCheck,
+                transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public UpsertCategoryTranslationUseCase upsertCategoryTranslationUseCase(
+            CategoryRepository categoryRepository,
+            CategoryTranslationRepository categoryTranslationRepository,
+            OperatorLocaleCheck operatorLocaleCheck,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new UpsertCategoryTranslationUseCase(categoryRepository, categoryTranslationRepository,
+                operatorLocaleCheck, membershipCheck, transactionRunner, auditTrailPort);
+    }
+
+    @Bean
+    public GetCategoryTranslationUseCase getCategoryTranslationUseCase(
+            CategoryRepository categoryRepository,
+            CategoryTranslationRepository categoryTranslationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new GetCategoryTranslationUseCase(categoryRepository, categoryTranslationRepository,
+                membershipCheck);
+    }
+
+    @Bean
+    public ListCategoryTranslationsUseCase listCategoryTranslationsUseCase(
+            CategoryRepository categoryRepository,
+            CategoryTranslationRepository categoryTranslationRepository,
+            TourOperatorMembershipCheck membershipCheck) {
+        return new ListCategoryTranslationsUseCase(categoryRepository, categoryTranslationRepository,
+                membershipCheck);
+    }
+
+    @Bean
+    public DeleteCategoryTranslationUseCase deleteCategoryTranslationUseCase(
+            CategoryRepository categoryRepository,
+            CategoryTranslationRepository categoryTranslationRepository,
+            TourOperatorMembershipCheck membershipCheck,
+            TransactionRunner transactionRunner,
+            AuditTrailPort auditTrailPort) {
+        return new DeleteCategoryTranslationUseCase(categoryRepository, categoryTranslationRepository,
+                membershipCheck, transactionRunner, auditTrailPort);
+    }
 
     @Bean
     public AudiencePricingResolver audiencePricingResolver(

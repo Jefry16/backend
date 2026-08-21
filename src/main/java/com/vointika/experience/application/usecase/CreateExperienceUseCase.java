@@ -2,6 +2,7 @@ package com.vointika.experience.application.usecase;
 
 import com.vointika.experience.application.dto.input.ExperienceInput;
 import com.vointika.experience.application.service.ExperienceInputMapper;
+import com.vointika.experience.application.service.CategoryReferenceValidator;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
@@ -40,6 +41,7 @@ public class CreateExperienceUseCase {
     private final ExperienceRepository experienceRepository;
     private final ExperienceTranslationRepository translationRepository;
     private final MediaReferenceValidator mediaReferenceValidator;
+    private final CategoryReferenceValidator categoryReferenceValidator;
     private final TourOperatorMembershipCheck membershipCheck;
     private final HandleGenerator handleGenerator;
     private final IdGenerator idGenerator;
@@ -49,6 +51,7 @@ public class CreateExperienceUseCase {
     public CreateExperienceUseCase(ExperienceRepository experienceRepository,
                                    ExperienceTranslationRepository translationRepository,
                                    MediaReferenceValidator mediaReferenceValidator,
+                                   CategoryReferenceValidator categoryReferenceValidator,
                                    TourOperatorMembershipCheck membershipCheck,
                                    HandleGenerator handleGenerator,
                                    IdGenerator idGenerator,
@@ -57,6 +60,7 @@ public class CreateExperienceUseCase {
         this.experienceRepository = experienceRepository;
         this.translationRepository = translationRepository;
         this.mediaReferenceValidator = mediaReferenceValidator;
+        this.categoryReferenceValidator = categoryReferenceValidator;
         this.membershipCheck = membershipCheck;
         this.handleGenerator = handleGenerator;
         this.idGenerator = idGenerator;
@@ -74,6 +78,7 @@ public class CreateExperienceUseCase {
         var cutoff = ExperienceInputMapper.bookingCutoffHours(input);
 
         mediaReferenceValidator.validate(tourOperatorId, mediaIds, input.thumbnailMediaId());
+        categoryReferenceValidator.validate(tourOperatorId, input.categoryId());
 
         Experience saved = null;
         for (int attempt = 0; attempt < MAX_HANDLE_ATTEMPTS; attempt++) {
@@ -85,7 +90,7 @@ public class CreateExperienceUseCase {
                     name, description, longDescription, input.isFeatured(),
                     mediaIds, input.thumbnailMediaId(), cutoff,
                     ExperienceInputMapper.seoTitle(input), ExperienceInputMapper.seoDescription(input),
-                    ExperienceInputMapper.startingPrice(input));
+                    ExperienceInputMapper.startingPrice(input), input.categoryId());
             try {
                 saved = transactionRunner.call(() -> {
                     Experience persisted = experienceRepository.save(experience);

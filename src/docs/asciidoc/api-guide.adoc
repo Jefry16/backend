@@ -1319,6 +1319,149 @@ published set here either.
 
 operation::audience-translations/delete[]
 
+=== Categories
+
+The operator's own classification for its experiences ("Boat tours", "Walking
+tours"). Operator-owned and editable, so it is not Shopify's `product.category`,
+which is one node in a global taxonomy no merchant edits.
+
+An experience references one through its nullable `categoryId`. **Uncategorized is
+a legitimate state**, not a missing value, and it is where every experience starts.
+
+A category has a name and nothing else. There is no handle, because nothing routes
+to a category yet — a handle is a permanent URL and it lands with the page that
+serves one.
+
+[[resources-categories-list]]
+==== List Categories
+
+Any member; non-member → 404. Cursor-paginated, tenant-scoped. Filter by `name`
+and/or `createdAt`; sort by `createdAt` (default, newest first), `name` or `id`;
+page with `cursor`.
+
+operation::categories/list[]
+
+[[resources-categories-list-not-found]]
+==== List Categories — Not a Member
+
+The tenant 404. Identical to the answer for an operator that does not exist, so it
+says nothing about whether the tenant is real.
+
+operation::categories/list-not-found[]
+
+[[resources-categories-get]]
+==== Get a Category
+
+Any member.
+
+operation::categories/get[]
+
+[[resources-categories-get-not-found]]
+==== Get a Category — Unknown Category
+
+Unlike the 404 above, this one is about the category: the caller is a member and
+the id in the URL is not one of this operator's. An id belonging to another
+operator answers the same way.
+
+operation::categories/get-not-found[]
+
+[[resources-categories-create]]
+==== Create a Category
+
+ADMIN+ only. The name is unique per operator, compared case-insensitively → 409.
+
+operation::categories/create[]
+
+[[resources-categories-create-forbidden]]
+==== Create a Category — Forbidden
+
+A STAFF member may list and read categories and may not create one. The membership
+check has passed, so this is 403 rather than the 404 above.
+
+operation::categories/create-forbidden[]
+
+[[resources-categories-create-conflict]]
+==== Create a Category — Name Taken
+
+Unique per operator, compared case-insensitively. Rename answers the same way.
+
+operation::categories/create-conflict[]
+
+[[resources-categories-update]]
+==== Rename a Category
+
+ADMIN+ only. The name is the only editable field, so omitting it makes the call a
+no-op. A rename needs no propagation: experiences reference the category by id, so
+the new name is live everywhere at once.
+
+operation::categories/update[]
+
+[[resources-categories-delete]]
+==== Delete a Category
+
+ADMIN+ only. **The experiences filed under it are not deleted** — they become
+uncategorized, exactly as they were before anyone categorized them. There is no
+refusal while the category is in use and nothing to reassign first.
+
+operation::categories/delete[]
+
+[[resources-category-translations-list]]
+==== List Category Translations
+
+Any member. One row per locale that carries an overlay.
+
+operation::category-translations/list[]
+
+[[resources-category-translations-get]]
+==== Get a Category Translation
+
+Any member. **The locale is not checked against the operator's published set here**
+— only the upsert does that. A locale the operator does not publish returns `200`
+with a null `name`, exactly as an enabled-but-untranslated one does; the two are
+indistinguishable.
+
+operation::category-translations/get[]
+
+[[resources-category-translations-upsert]]
+==== Upsert a Category Translation
+
+ADMIN+ only. Unsupported locale → 422. The name is the only translatable field, so
+**a blank one deletes the overlay** rather than storing a row that falls back for
+everything.
+
+operation::category-translations/upsert[]
+
+[[resources-category-translations-upsert-forbidden]]
+==== Upsert a Category Translation — Forbidden
+
+Reads are member-visible; writing a translation is ADMIN+.
+
+operation::category-translations/upsert-forbidden[]
+
+[[resources-category-translations-upsert-unsupported-locale]]
+==== Upsert a Category Translation — Unsupported Locale
+
+The locale must be one the operator has enabled. This is the only leg of the four
+that checks.
+
+operation::category-translations/upsert-unsupported-locale[]
+
+[[resources-category-translations-upsert-missing-body]]
+==== Upsert a Category Translation — Missing Body
+
+**A 400, not a 422, and it comes from Spring MVC rather than the application.** The
+body is required, so a request without one is rejected before the handler runs.
+
+operation::category-translations/upsert-missing-body[]
+
+[[resources-category-translations-delete]]
+==== Delete a Category Translation
+
+ADMIN+ only, and **idempotent** — deleting a locale with no overlay is `204`, as is
+deleting one the operator does not publish.
+
+operation::category-translations/delete[]
+
 === Pickup Locations
 
 The operator's pickup catalogue. Not yet linked to slots.

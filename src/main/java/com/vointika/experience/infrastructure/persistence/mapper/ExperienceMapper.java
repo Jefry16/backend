@@ -30,6 +30,7 @@ public class ExperienceMapper {
                 e.getSeoTitle() == null ? null : e.getSeoTitle().value(),
                 e.getSeoDescription() == null ? null : e.getSeoDescription().value(),
                 e.getStartingPrice().value(),
+                e.getCategoryId(),
                 e.getCreatedAt());
     }
 
@@ -50,7 +51,8 @@ public class ExperienceMapper {
                 jpa.isPublished(),
                 jpa.getSeoTitle() == null ? null : new SeoTitle(jpa.getSeoTitle()),
                 jpa.getSeoDescription() == null ? null : new SeoDescription(jpa.getSeoDescription()),
-                new Price(jpa.getStartingPrice()));
+                new Price(jpa.getStartingPrice()),
+                jpa.getCategoryId());
     }
 
     private ExperienceMapper() {}
