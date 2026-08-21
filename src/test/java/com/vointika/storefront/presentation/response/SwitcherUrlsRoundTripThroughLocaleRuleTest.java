@@ -15,7 +15,14 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,16 +76,61 @@ class SwitcherUrlsRoundTripThroughLocaleRuleTest {
                 new LocalizedHandles("about-us", Map.of("es", "sobre-nosotros")));
     }
 
-    private static List<Supplier<StorefrontGlobalsResponse>> everyFactory(String current) {
+    /**
+     * Keyed by factory name so {@link #everyFactoryIsCovered()} can check the keys
+     * against the class rather than against this comment. The signatures differ —
+     * one takes a page, one a cursor page, one an experience and its metafields —
+     * so they cannot be invoked generically; the names can still be compared.
+     */
+    private static Map<String, Supplier<StorefrontGlobalsResponse>> byFactory(String current) {
         MediaUrlResolver urls = mock(MediaUrlResolver.class);
         StorefrontGlobals globals = globals(current);
-        return List.of(
-                () -> StorefrontGlobalsResponse.index(globals, "https://acme.test", Map.of(), urls),
-                () -> StorefrontGlobalsResponse.experienceList(globals,
+        return Map.of(
+                "index", () -> StorefrontGlobalsResponse.index(globals, "https://acme.test", Map.of(), urls),
+                "experienceList", () -> StorefrontGlobalsResponse.experienceList(globals,
                         new CursorPage<>(List.of(), null), "https://acme.test", Map.of(), urls),
-                () -> StorefrontGlobalsResponse.cmsPage(globals, page(), "https://acme.test", Map.of(), urls),
-                () -> StorefrontGlobalsResponse.experience(globals, experience(), List.of(),
+                "cmsPage", () -> StorefrontGlobalsResponse.cmsPage(globals, page(),
+                        "https://acme.test", Map.of(), urls),
+                "experience", () -> StorefrontGlobalsResponse.experience(globals, experience(), List.of(),
                         "https://acme.test", Map.of(), urls));
+    }
+
+    private static Collection<Supplier<StorefrontGlobalsResponse>> everyFactory(String current) {
+        return byFactory(current).values();
+    }
+
+    /**
+     * <b>The map above is a claim; this is what keeps it true.</b> Removing the
+     * newest supplier — which is exactly what forgetting to add one looks like —
+     * left the whole suite green, so the route this file exists to cover lost its
+     * round-trip guarantee with no signal. Measured, not assumed.
+     *
+     * <p>Derived rather than hand-kept, which is how every other list of this kind
+     * here works: {@code PAGE_ROUTES} feeds the lock interceptor and the public
+     * routes, {@code ListSchemaScanner} feeds the API-guide and tenant-scoping
+     * guards. A guard whose coverage is a literal covers whatever the literal
+     * happens to say.
+     */
+    @Test
+    void everyFactoryIsCovered() {
+        Set<String> declared = Arrays.stream(StorefrontGlobalsResponse.class.getDeclaredMethods())
+                .filter(m -> Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers()))
+                .filter(m -> m.getReturnType().equals(StorefrontGlobalsResponse.class))
+                .map(Method::getName)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        // A reflection walk that finds nothing passes every set comparison below.
+        assertThat(declared)
+                .withFailMessage("Found no public static factories on StorefrontGlobalsResponse, so this "
+                        + "guard checked nothing. The scan is broken - fix it rather than deleting the test.")
+                .isNotEmpty();
+
+        assertThat(byFactory("en").keySet())
+                .withFailMessage("The round-trip test covers %s but StorefrontGlobalsResponse declares %s. "
+                        + "A factory missing here mints switcher urls nothing checks - add it to "
+                        + "byFactory(...). A name here that no longer exists means the factory was renamed "
+                        + "or removed.", new TreeSet<>(byFactory("en").keySet()), declared)
+                .containsExactlyInAnyOrderElementsOf(declared);
     }
 
     @Test
