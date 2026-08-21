@@ -50,13 +50,23 @@ public final class MigrationForeignKeys {
      * re-add answers {@link #NONE} rather than the stale rule.
      *
      * <p><b>The drop is matched on the constraint name containing the column</b>,
-     * which is Postgres's own {@code <table>_<column>_fkey} convention and what every
-     * drop in this repository uses. A drop under a hand-chosen name that does not
-     * mention the column is not seen, and the previous rule would stand — the one
-     * reach this parser does not have. Widening it to "any DROP CONSTRAINT on this
-     * table" was the alternative and is worse: {@code experience/V9} drops a CHECK on
-     * {@code experiences}, so every caller would fail on a migration that never touched
-     * a foreign key.
+     * which is Postgres's default {@code <table>_<column>_fkey} name. <b>The
+     * repository has no static foreign-key drop to check that convention against</b>
+     * — all five {@code DROP CONSTRAINT} statements in the migrations drop a CHECK
+     * or a primary key, and the one FK drop there is ({@code touroperator/V13}) is
+     * built at runtime from {@code pg_constraint} and executed through
+     * {@code EXECUTE format(…)}, which no static reader can see whatever its
+     * matching rule. So this is a defensible default rather than a verified
+     * convention, and it has two blind spots, both pinned below rather than only
+     * described: {@code aDropUnderAnUnrelatedNameIsNotSeen} and
+     * {@code aDropBuiltAtRuntimeIsNotSeen}. In each the previous rule stands.
+     *
+     * <p>Widening to "any DROP CONSTRAINT on this table" was the alternative and is
+     * worse: {@code experience/V9} drops a CHECK on {@code experiences}, so every
+     * caller would fail on a migration that never touched a foreign key.
+     *
+     * <p><b>This matters most for the second caller.</b> {@code touroperator} is the
+     * obvious one, and its keys are exactly where the invisible drop lives.
      */
     public static String deleteRule(Path migrations, String column, String table) throws IOException {
         Pattern reference = Pattern.compile(
