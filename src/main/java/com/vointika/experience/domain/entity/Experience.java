@@ -45,6 +45,14 @@ public class Experience {
     private UUID thumbnailMediaId;
     private BookingCutoffHours bookingCutoffHours;
     private boolean published;
+    /**
+     * The operator's own classification, or null for uncategorized — which is a
+     * legitimate state, not a missing value, and the one every experience is in
+     * until someone files it. Ownership is checked at the write boundary; the
+     * column is {@code ON DELETE SET NULL}, so deleting the category returns the
+     * experience here rather than taking it with it.
+     */
+    private UUID categoryId;
     /** Optional SEO overrides; null means "no override" and the render falls back. */
     private SeoTitle seoTitle;
     private SeoDescription seoDescription;
@@ -63,11 +71,11 @@ public class Experience {
                                     boolean featured, List<UUID> mediaIds, UUID thumbnailMediaId,
                                     BookingCutoffHours bookingCutoffHours,
                                     SeoTitle seoTitle, SeoDescription seoDescription,
-                                    Price startingPrice) {
+                                    Price startingPrice, UUID categoryId) {
         Experience e = new Experience(id, tourOperatorId, createdBy, handle, Instant.now(),
                 name, description, longDescription, featured,
                 mediaIds, thumbnailMediaId, bookingCutoffHours, false,
-                seoTitle, seoDescription, startingPrice);
+                seoTitle, seoDescription, startingPrice, categoryId);
         e.validateInvariants();
         return e;
     }
@@ -78,7 +86,7 @@ public class Experience {
                       boolean featured, List<UUID> mediaIds, UUID thumbnailMediaId,
                       BookingCutoffHours bookingCutoffHours,
                       boolean published, SeoTitle seoTitle, SeoDescription seoDescription,
-                      Price startingPrice) {
+                      Price startingPrice, UUID categoryId) {
         this.id = id;
         this.tourOperatorId = tourOperatorId;
         this.createdBy = createdBy;
@@ -95,6 +103,7 @@ public class Experience {
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
         this.startingPrice = startingPrice;
+        this.categoryId = categoryId;
     }
 
     /** Replaces the editable fields (everything but id/operator/handle/status/createdAt). */
@@ -102,7 +111,7 @@ public class Experience {
                        boolean featured, List<UUID> mediaIds, UUID thumbnailMediaId,
                        BookingCutoffHours bookingCutoffHours,
                        SeoTitle seoTitle, SeoDescription seoDescription,
-                       Price startingPrice) {
+                       Price startingPrice, UUID categoryId) {
         this.name = name;
         this.description = description;
         this.longDescription = longDescription;
@@ -113,6 +122,7 @@ public class Experience {
         this.seoTitle = seoTitle;
         this.seoDescription = seoDescription;
         this.startingPrice = startingPrice;
+        this.categoryId = categoryId;
         validateInvariants();
     }
 
@@ -166,6 +176,7 @@ public class Experience {
         snapshot.put("thumbnailMediaId", thumbnailMediaId == null ? null : thumbnailMediaId.toString());
         snapshot.put("bookingCutoffHours", bookingCutoffHours.value());
         snapshot.put("startingPrice", startingPrice.value().toPlainString());
+        snapshot.put("categoryId", categoryId == null ? null : categoryId.toString());
         snapshot.put("published", published);
         return snapshot;
     }
@@ -184,4 +195,5 @@ public class Experience {
     public SeoTitle getSeoTitle() { return seoTitle; }
     public SeoDescription getSeoDescription() { return seoDescription; }
     public Price getStartingPrice() { return startingPrice; }
+    public UUID getCategoryId() { return categoryId; }
 }

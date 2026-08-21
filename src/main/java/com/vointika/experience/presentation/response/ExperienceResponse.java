@@ -31,6 +31,7 @@ public record ExperienceResponse(
         String seoTitle,
         String seoDescription,
         BigDecimal startingPrice,
+        UUID categoryId,
         UUID createdBy,
         Instant createdAt) {
 
@@ -41,6 +42,6 @@ public record ExperienceResponse(
                 v.thumbnailMediaId(), v.thumbnailUrl(), v.mediaIds(), v.galleryUrls(),
                 v.bookingCutoffHours(),
                 v.published(), v.seoTitle(), v.seoDescription(),
-                v.startingPrice(), v.createdBy(), v.createdAt());
+                v.startingPrice(), v.categoryId(), v.createdBy(), v.createdAt());
     }
 }

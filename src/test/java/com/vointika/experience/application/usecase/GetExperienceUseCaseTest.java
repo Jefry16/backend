@@ -59,7 +59,7 @@ class GetExperienceUseCaseTest {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Dive"), new Description("d"), new LongDescription("l"),
                 false,
-                List.of(media1, media2), media1, new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
+                List.of(media1, media2), media1, new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")), null);
     }
 
     @Test

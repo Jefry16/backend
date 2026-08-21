@@ -51,6 +51,8 @@ rm -rf /tmp/scratch/be/target/classes /tmp/scratch/be/target/test-classes
 
 That second line matters: `rsync -a` preserves mtimes, so a stale compiled class can look newer than the source that replaced it and Maven silently skips recompiling — producing a **false test failure against code you already fixed**. Clear the classes whenever you re-sync.
 
+**The same staleness fails the other way, which is worse, and it does not need rsync.** Change a method's signature in `src/main` and `./mvnw test-compile` can answer `BUILD SUCCESS` while every call site in `src/test` still passes the old arity — the incremental compiler does not always notice that a changed main class invalidates test classes. A false *pass* is not a wasted hour like the false failure above; it is a green build you report as green. Widening `Experience.create` by one parameter did exactly this: fifteen breakages, reported as success, until `rm -rf target/test-classes target/classes` forced the issue. **After changing a signature anything else calls, clear the classes before believing a compile.**
+
 ## Where this stands
 
 Clean rebuild. **Thirteen contexts** are built — identity · notification · reference · touroperator · media · experience · audience · pickup · audit · page · metafield · contact · storefront — on the `shared` kernel. Trunk is `main`; every PR merges with the full suite green, and the `docker compose up` runtime gate is the user's to run.
@@ -82,7 +84,7 @@ The context set is **designed as we go**, not ported wholesale — each earns it
 | `pickup` | Pickup locations **catalog only** (name unique per operator case-insensitive + local meeting time). 5 CRUD endpoints under `.../pickup-locations` (partial PATCH; `context:"pickup-locations"`). **A standalone catalog is the finished state, not a stepping stone** — slots know nothing about pickups and nothing is waiting to wire them up. The relationship shipped in #49 (synced snapshots) and was **removed entirely in #50**; `experience` V6 drops the never-populated V5 table. | Built + merged (catalog); relationship unwired by decision |
 | `audit` | Platform-wide **append-only audit trail** (#54). Every operator-facing mutation (29 use cases wholesale) appends via `shared/port/AuditTrailPort` **inside the business tx** — "no unaudited mutation" (entry rolls back with the action); S3-backed mutations append after the write instead. `actor_name` frozen at write (filter-only, not sortable); `request_id` via the correlation filter; actors USER/SYSTEM (SYSTEM has no emitter yet, by decision). Read: `GET .../audit-log` (cursor list) + `/{entryId}`, member-visible. | Built + merged |
 | `reference` (languages) | + `reference.languages` master list (`GET /api/languages`, seeded en/es/fr/it/pt/de) — the content-language allowlist operators validate against. | Built + merged |
-| `experience` | The operator's sellable product. CRUD + publish/unpublish under `/api/tour-operators/{id}/experiences`; member-read/admin-write; media validated-on-write (`MediaAssetBatchQuery`) and resolved-on-read; handle per-operator unique and **immutable**; `published` and `featured` booleans. **Per-locale translations**: nullable overlay fields + an optional localized handle, validated against `OperatorLocalesQuery`. **Canonical and localized handles are one namespace** (PATTERNS §4d) — the derived canonical handle suffixes past both, an explicit localized handle 409s against both. **`starting_price`** (`NUMERIC(12,2) NOT NULL DEFAULT 0`) is the storefront's "from" figure, operator-set since #119; the admin does not send it yet. **SEO overrides** on the experience and its overlay, authored through the existing create/update and translation-upsert paths — no use case of their own. It implements `StorefrontExperienceQuery`: `findFeatured` for the globals' cards and `findPublishedHandles` for menu links, both in the rendered locale. **What is absent is a read *by handle*** — this port has no `findByHandle` where `StorefrontPageQuery` does, and the experiences listing is still a placeholder, so nothing resolves an experience handle to a page and a §4d shadowing handle stays unobservable until the detail page lands. Slots and pricing are the row below; a pickup link and delete are still out. | Built + merged |
+| `experience` | The operator's sellable product. CRUD + publish/unpublish under `/api/tour-operators/{id}/experiences`; member-read/admin-write; media validated-on-write (`MediaAssetBatchQuery`) and resolved-on-read; handle per-operator unique and **immutable**; `published` and `featured` booleans. **Per-locale translations**: nullable overlay fields + an optional localized handle, validated against `OperatorLocalesQuery`. **Canonical and localized handles are one namespace** (PATTERNS §4d) — the derived canonical handle suffixes past both, an explicit localized handle 409s against both. **`starting_price`** (`NUMERIC(12,2) NOT NULL DEFAULT 0`) is the storefront's "from" figure, operator-set since #119; the admin does not send it yet. **SEO overrides** on the experience and its overlay, authored through the existing create/update and translation-upsert paths — no use case of their own. It implements `StorefrontExperienceQuery`: `findFeatured` for the globals' cards and `findPublishedHandles` for menu links, both in the rendered locale. **What is absent is a read *by handle*** — this port has no `findByHandle` where `StorefrontPageQuery` does, and the experiences listing is still a placeholder, so nothing resolves an experience handle to a page and a §4d shadowing handle stays unobservable until the detail page lands. Slots and pricing are the row below; a pickup link and delete are still out. **Categories** (V14/V15) are a module in this context, not a context of their own — a category only classifies experiences, so it earns no boundary (LAW §2.2) and `experiences.category_id` is a plain intra-schema FK rather than a shared port. Operator-owned and CRUD'd, so **not Shopify's `product.category`** (a global taxonomy nobody edits) — closer to their free-text `product.type` with a stable id behind it. Flat, no tree: name only, unique per operator case-insensitively (409), **no handle** because nothing routes to a category yet. 5 CRUD endpoints + 4 translations, audited, entity type `CATEGORY`. **`category_id` is nullable and uncategorized is a state, not a gap** — `ON DELETE SET NULL`, so deleting a category leaves its experiences behind rather than refusing or taking them. The reference is validated **422** at the experience write boundary (`CategoryReferenceValidator`), not 404, because on a PATCH the experience does exist and it is the body that is wrong. The experience PATCH is a whole replace, so **an omitted `categoryId` clears it** — the trap the SEO pair fell into before #145. Nothing on the storefront reads a category yet. | Built + merged |
 | `media` | Operator media library. Upload (multipart, ADMIN+) / list (cursor, member) / get (member) / **describe** (`PATCH .../media/{id}`, ADMIN+) / delete (ADMIN+) under `/api/tour-operators/{id}/media`. Member-read / admin-write; storage_key only (URLs resolved at read); allowlist images+PDF ≤25MB (SVG excluded by decision — script injection); ships the **`MediaAssetBatchQuery`** cross-context seam (renamed from `MediaKeyBatchQuery` in #100 when it began carrying alt and dimensions rather than a bare key), consumed by `UpdateBrandUseCase`, experience's `MediaReferenceValidator` and `shared.media.MediaUrlBatchResolver`. **Dimensions are measured at upload (#109)** through `ImageDimensionsPort` — a port because `javax.imageio` is not `java.*` — reading the header only and answering empty for a PDF, an unknown format or a damaged header, so it can never fail an upload. **`alt` is written afterwards**, since only the uploader knows it. Rows predating #109 keep null dimensions; nothing backfills. | Built + merged |
 | `page` | **CMS content pages** (#56) — merchant-authored About/Contact/FAQ/policy content, served at `/pages/{handle}`. Title + an **operator-chosen handle** (unique per operator; collision = **409, never auto-suffixed** — it is the permanent URL), raw-HTML body (≤256 KiB, stored verbatim, NUL rejected — escaping is a render concern), SEO overrides (Shopify's admin limits), a `published` **boolean** (**no scheduling**, by decision) — it was a DRAFT/PUBLISHED status enum until #142 swapped it for experiences' shape, on the wire as well as in the column, because the storefront asks both the same question and a menu item can point at either. **Rename is its own endpoint** — changing a permanent URL is a deliberate act. Per-locale translations mirror experience's (nullable overlay + localized-handle rules: explicit → 409, derived-with-probing, absent → canonical serves the locale). 12 endpoints (8 + 4 translation); audited from day one. Ships `PageOwnershipQuery` **and `StorefrontPageQuery`** (`findPublishedHandles` for menu links, `findByHandle` for the page itself, both in the rendered locale), implemented in `infrastructure/query`. That seam was deleted 2026-08-02 with the serving side and **rebuilt**; `/pages/{handle}` and `/{locale}/pages/{handle}` are live routes on `StorefrontCmsPageController`, not a plan. | Built + merged |
 | `metafield` | **Custom data — the operator's own schema**, both halves in one context (metaobjects did not earn their own). **Metafields**: namespace.key definitions per (operator, owner type) over an 8-type catalogue using **our own type codes**, not Shopify's `*_field` forms; ownerType/namespace/key/type are **immutable** and delete cascades values. Values are **owner-generic** — `MetafieldOwnerType {EXPERIENCE, PAGE, TOUR_OPERATOR}`, reaching owners through `ExperienceOwnershipQuery`/`PageOwnershipQuery`. `TOUR_OPERATOR` needs no seam at all: the owner *is* the tenant, so `ensureOwned` is an equality, and its mount carries **no owner id in the path**. **The price of owner-generic is a bare `owner_id` with no FK**, so the database cannot cascade: **any owner that can be deleted must call `MetafieldValueCleanup` inside its delete transaction** (`page` does; experiences have no delete yet). **Metaobjects**: custom content types — definitions with ordered, renameable fields (the last one is not removable) + entries with an operator-chosen handle, row-per-field values and a `published` boolean. **`metaobject_reference` wires them together**: a reference-typed definition pins one metaobject type, values validate type+ownership, deleting a referenced entry **clears the pointing values in the same tx**, and a pinned type cannot be deleted while targeted (409). 45 endpoints, audited day-one. **The line to hold: a metafield is content the storefront renders and nothing else understands.** Anything with behaviour — hours that decide bookability — needs real columns and domain rules; "just make it a metafield" is how a schema quietly stops being able to answer questions. | Built + merged |
@@ -279,12 +281,12 @@ Known wants, not yet scheduled (deliberate future work, not shortcuts):
   a **product question**, and the field it would need is one boolean added the
   day a badge renders. Parked with the storefront either way.
 
-- **Experience `type` and `category`** (2026-08-12, decided by the user during
-  the `shop`-object comparison — **both are wanted, neither is scheduled**). An
-  experience carries no classification at all today: `tags` was dropped in V10,
-  and `audience` is who a slot is priced for, not what kind of thing an
-  experience is. That is why `shop.types` was filed as "nothing to expose"
-  rather than as a contract gap — there is no column behind it.
+- **Experience `type`** (2026-08-12; `category` shipped 2026-08-21, see *Decided*
+  below — **`type` is still wanted and still unscheduled**). Before categories an
+  experience carried no classification at all: `tags` was dropped in V10, and
+  `audience` is who a slot is priced for, not what kind of thing an experience is.
+  That is why `shop.types` was filed as "nothing to expose" rather than as a
+  contract gap — there is still no column behind it.
   **They are different in kind, which is why Shopify keeps both.**
   `product.type` is **free text the merchant types** — flat, unvalidated,
   per-store, and it drifts ("Boat tour" / "boat tours" / "Boat Tours" become
@@ -293,12 +295,14 @@ Known wants, not yet scheduled (deliberate future work, not shortcuts):
   `name`, and `ancestors` for a breadcrumb. There is deliberately **no
   `shop.categories`** — the taxonomy is the same for every store, so only the
   per-store invention is worth enumerating.
-  **So they are two slices, not one.** `type` is a nullable column on
-  `experience` plus one `SELECT DISTINCT` behind `tourOperator.types`. `category` is a
-  `reference` slice first — a curated tree with stable ids and localized names —
-  and only then a FK on `experience`. Same line the address slice drew between
-  country (closed set → reference table) and city (open set → free text on the
-  row). Neither blocks the storefront contract; both change it when they land.
+  **So they were two slices, not one, and only one has landed.** `type` is a
+  nullable column on `experience` plus one `SELECT DISTINCT` behind
+  `tourOperator.types` — still unbuilt. What shipped as `category` is **not** the
+  curated `reference` tree this entry proposed; see *Decided* below for what was
+  built instead and why. **Whether a global curated taxonomy is still wanted
+  alongside it is genuinely open** — nothing here needs one until marketplace
+  sync or a cross-operator search does, and neither exists. `type` does not block
+  the storefront contract; it changes it when it lands.
 
 - **Member notification-subscriptions** — `/me/notification-subscriptions`,
   personal per-alert-type prefs (was briefly "next slice" before the booking
@@ -403,6 +407,38 @@ Known wants, not yet scheduled (deliberate future work, not shortcuts):
   dated, so a naive MIN would quote a cancelled or past one. It is operator-set
   since #119, so nothing derives it today. The next departure is a separate
   question and stays out.
+- **Categories are the operator's, not the platform's** (2026-08-21) — the four
+  calls that shaped the slice, recorded because each one was a fork and the
+  Shopify research pointed the other way on the first.
+
+  **Operator-owned with full CRUD**, not a curated `reference` taxonomy. The
+  backlog entry above proposed the latter, from Shopify's model. Shopify's three
+  reasons for a global taxonomy — tax rates, marketplace sync, and unlocking
+  category attributes — **are all absent here**: no tax engine, no channels, and
+  our metafields are operator-authored rather than derived from a category. So a
+  curated tree would have been a large slice buying navigation alone, and their
+  data does not transfer anyway (it classifies goods; Travel & Leisure is
+  transport tickets, not "sunset kayak tour").
+
+  **Flat, not a tree.** `ancestors` only earns its keep once something renders a
+  breadcrumb, and nothing does.
+
+  **Delete sets the reference null** rather than refusing while in use or
+  cascading. An uncategorized experience is the state it was in before anyone
+  filed it, so the classification is the only thing a delete destroys. Verified
+  against the live database, not reasoned: deleting a seeded category left all
+  five experiences present and moved two to uncategorized.
+
+  **Inside `experience`, not its own context.** A category has no lifecycle apart
+  from the experiences it classifies. Being in the same context is what makes the
+  FK a plain intra-schema one and costs no shared port — the mirror of why
+  `audience` *did* earn a boundary (it is reused across slots, and `experience`
+  reaches it through `AudienceOwnershipQuery`).
+
+  **No handle, deliberately.** A handle is a permanent URL and nothing routes to a
+  category. It lands with the storefront page that serves one — and walks into the
+  handle-history/301 gap already carried above when it does.
+
 - **Invitation model** (2026-07-20) — invitations key on **email** (invitee may
   have no account). Raw token only in the emailed link; **SHA-256 hash at rest**
   (`token_hash` unique). 7-day expiry judged **lazily** on access (no job). At most

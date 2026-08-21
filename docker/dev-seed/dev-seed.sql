@@ -95,6 +95,10 @@
 \set pickup_hotel_id    '01900000-0000-7000-8000-000000000017'
 \set pickup_station_id  '01900000-0000-7000-8000-000000000018'
 
+\set category_sea_id    '01900000-0000-7000-8000-00000000001a'
+\set category_food_id   '01900000-0000-7000-8000-00000000001b'
+\set category_diving_id '01900000-0000-7000-8000-00000000001c'
+
 \set experience_a_id    '01900000-0000-7000-8000-000000000020'
 \set experience_b_id    '01900000-0000-7000-8000-000000000021'
 \set experience_c_id    '01900000-0000-7000-8000-000000000022'
@@ -628,6 +632,27 @@ ON CONFLICT (id) DO UPDATE SET
     name                     = EXCLUDED.name,
     "time"                   = EXCLUDED."time";
 
+-- 9b. Categories — the operator's own classification for its experiences. Three,
+-- one of which nothing is filed under, so the admin shows an empty category as
+-- well as populated ones. One carries an `es` overlay and two do not, which is
+-- what makes the translations tab show both a translated and an untranslated row.
+--
+-- Authored content, so DO UPDATE: editing a name here has to reach an existing
+-- database, or the fixture goes stale silently (PATTERNS §10).
+INSERT INTO experience.categories (id, tour_operator_id, name, created_at)
+VALUES
+    (:'category_sea_id',    :'operator_id', 'Sea trips',    NOW() - INTERVAL '390 days'),
+    (:'category_food_id',   :'operator_id', 'Food & drink', NOW() - INTERVAL '380 days'),
+    (:'category_diving_id', :'operator_id', 'Diving',       NOW() - INTERVAL '40 days')
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name;
+
+INSERT INTO experience.category_translations (category_id, tour_operator_id, locale, name)
+VALUES
+    (:'category_sea_id', :'operator_id', 'es', 'Salidas al mar')
+ON CONFLICT (category_id, locale) DO UPDATE SET
+    name = EXCLUDED.name;
+
 -- 10. Experiences. Four published and one draft, so the list has both states and
 -- the storefront has something to hide. Galleries and thumbnails point at the
 -- seeded media; the draft has none, which is what a half-written experience
@@ -647,7 +672,7 @@ INSERT INTO experience.experiences
     (id, tour_operator_id, created_by, handle, name, description, long_description,
      featured,
      media_ids, thumbnail_media_id, booking_cutoff_hours,
-     published, starting_price, seo_title, seo_description, created_at)
+     published, starting_price, seo_title, seo_description, category_id, created_at)
 VALUES
     (:'experience_a_id', :'operator_id', :'user_id', 'sunset-sailing-tour',
      'Sunset Sailing Tour', 'Golden-hour cruise along the coast with a local skipper.',
@@ -657,6 +682,7 @@ VALUES
      :'media_sunset1_id', 12, TRUE, 35.00,
      'Sunset sailing in Madrid — small groups',
      'A two-and-a-half hour golden-hour sail with a local skipper. Drinks on board, swim stop when the sea allows.',
+     :'category_sea_id',
      NOW() - INTERVAL '380 days'),
     (:'experience_b_id', :'operator_id', :'user_id', 'old-town-food-walk',
      'Old Town Food Walk', 'Tastings across the historic quarter with a local guide.',
@@ -665,6 +691,7 @@ VALUES
      ARRAY[:'media_food1_id', :'media_food2_id']::uuid[],
      :'media_food1_id', 24, TRUE, 55.00,
      NULL, NULL,
+     :'category_food_id',
      NOW() - INTERVAL '300 days'),
     (:'experience_c_id', :'operator_id', :'user_id', 'kayak-cave-adventure',
      'Kayak Cave Adventure', 'Paddle into sea caves only reachable from the water.',
@@ -679,6 +706,7 @@ VALUES
      -- so these two are separated by the id tie-break and nothing else. Give
      -- them different dates and the fixture stops exercising it, and a listing
      -- that reorders between requests would render correctly here anyway.
+     :'category_sea_id',
      NOW() - INTERVAL '380 days'),
     (:'experience_d_id', :'operator_id', :'user_sofia_id', 'blue-cave-diving',
      'Blue Cave Diving', 'A guided two-tank dive on the cave wall.',
@@ -687,6 +715,10 @@ VALUES
      ARRAY[:'media_diving_id']::uuid[],
      :'media_diving_id', 48, TRUE, 110.00,
      NULL, NULL,
+     -- Uncategorized on purpose, and note the `Diving` category exists and is
+     -- empty: an operator creating a category before filing anything under it is
+     -- the ordinary case, and both states have to be visible somewhere.
+     NULL,
      NOW() - INTERVAL '30 days'),
     (:'experience_e_id', :'operator_id', :'user_sofia_id', 'winter-whale-watching',
      'Winter Whale Watching', 'Half-day offshore trip in the migration season.',
@@ -694,6 +726,7 @@ VALUES
      FALSE,
      '{}'::uuid[], NULL, 48, FALSE, 95.00,
      NULL, NULL,
+     NULL,
      NOW() - INTERVAL '4 days')
 ON CONFLICT (id) DO UPDATE SET
     handle                   = EXCLUDED.handle,
@@ -707,7 +740,8 @@ ON CONFLICT (id) DO UPDATE SET
     published                = EXCLUDED.published,
     starting_price           = EXCLUDED.starting_price,
     seo_title                = EXCLUDED.seo_title,
-    seo_description          = EXCLUDED.seo_description;
+    seo_description          = EXCLUDED.seo_description,
+    category_id              = EXCLUDED.category_id;
 
 -- Two of five carry an `es` overlay, and only one of those localizes its handle
 -- — so the storefront resolves a translated slug on one experience and falls

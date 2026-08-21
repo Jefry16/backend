@@ -660,7 +660,7 @@ never to an empty string. A row overlays; it does not replace. Translating a
 title and not a body is a Spanish title over an English body, which is the
 realistic partial-translation case and the one fallback bugs hide in.
 
-**Eight tables do this**, in **two shapes**. Six are *column-shaped* — nullable
+**Nine tables do this**, in **two shapes**. Seven are *column-shaped* — nullable
 columns falling back per field:
 
 | | owner key | content columns | overlaid by | clearing |
@@ -671,6 +671,7 @@ columns falling back per field:
 | `page_translations` | single id | 5, nullable | `StorefrontPageQueryImpl` | blank → null |
 | `menu_item_translations` | single id | 1, **NOT NULL** | `StorefrontMenuQueryImpl` | **blank → 422** |
 | `audience_translations` | single id | 1, nullable | **nothing** | blank → **delete** |
+| `category_translations` | single id | 1, nullable | **nothing** | blank → **delete** |
 
 Two are *row-shaped*, added by the metafield translation slices (#151, #152):
 
@@ -686,9 +687,11 @@ the fallback instead, which is why `value` is `NOT NULL` and clearing is a
 `LEFT JOIN` — rather than in Java, because the fallback is per row and the query
 can express it.
 
-**Only `audience_translations` is never resolved to a locale**, because audiences
-are not on the storefront — full admin CRUD, no reader. That is what "the write
-half shipped first" looks like. The admin deliberately returns *every* locale
+**Two are never resolved to a locale** — `audience_translations` and
+`category_translations` — because neither is on the storefront yet: full admin
+CRUD, no reader. That is what "the write half shipped first" looks like, twice.
+A category is the newer of the two and the more likely to gain a reader, since a
+storefront category page is what would give it a URL. The admin deliberately returns *every* locale
 rather than a resolved one — `GetMenuUseCase` hands back a locale→title map —
 which is what an editor needs.
 
@@ -724,7 +727,7 @@ written.** Its items are not editable individually: the whole tree is POSTed and
 rebuilt with fresh ids. So translations ride inline in that payload, have no
 endpoints of their own, and are cleared by being left out.
 
-**Three of the eight carry no `tour_operator_id`, and all three for the same
+**Three of the nine carry no `tour_operator_id`, and all three for the same
 reason: their parent has none either.** `menu_item_translations` hangs off
 `menu_items`, which is reached through its `menus` row and takes the tenant from
 there. The two row-shaped metafield overlays hang off `metafield_values` /
@@ -739,8 +742,10 @@ being true when #151/#152 added the two metafield overlays — and it was then
 noticing: a sentence can be reworded long after it goes false.
 
 **Still not generalising, and the arithmetic is now the reason rather than the
-excuse.** The column-shaped six each overlay in their own storefront query
-adapter with the same byte-identical helper:
+excuse.** Five of the seven column-shaped tables have a reader — the audience and
+category overlays have none — and they resolve through **four** adapters, because
+`tour_operator_translations` and `tour_operator_policy_translations` share one.
+Each adapter carries the same byte-identical helper:
 
 ```java
 private static String overlay(String translated, String canonical) {

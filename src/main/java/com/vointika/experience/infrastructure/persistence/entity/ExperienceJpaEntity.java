@@ -69,6 +69,9 @@ public class ExperienceJpaEntity {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal startingPrice;
 
+    @Column
+    private UUID categoryId;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 }

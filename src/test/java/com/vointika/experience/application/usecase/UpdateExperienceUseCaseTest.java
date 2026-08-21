@@ -3,6 +3,7 @@ package com.vointika.experience.application.usecase;
 import java.math.BigDecimal;
 import com.vointika.experience.domain.valueobject.Price;
 import com.vointika.experience.application.dto.input.ExperienceInput;
+import com.vointika.experience.application.service.CategoryReferenceValidator;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -45,6 +47,7 @@ class UpdateExperienceUseCaseTest {
     private ExperienceRepository repository;
     private SlotRepository slotRepository;
     private MediaReferenceValidator mediaValidator;
+    private CategoryReferenceValidator categoryValidator;
     private TourOperatorMembershipCheck membershipCheck;
     private TransactionRunner transactionRunner;
     private UpdateExperienceUseCase useCase;
@@ -61,6 +64,7 @@ class UpdateExperienceUseCaseTest {
         doCallRealMethod().when(repository).requireByIdAndTourOperatorId(any(), any());
         slotRepository = mock(SlotRepository.class);
         mediaValidator = mock(MediaReferenceValidator.class);
+        categoryValidator = mock(CategoryReferenceValidator.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         transactionRunner = mock(TransactionRunner.class);
         doAnswer(i -> {
@@ -68,7 +72,7 @@ class UpdateExperienceUseCaseTest {
             return null;
         }).when(transactionRunner).run(any());
         useCase = new UpdateExperienceUseCase(repository, slotRepository,
-                mediaValidator, membershipCheck, transactionRunner, auditTrailPort);
+                mediaValidator, categoryValidator, membershipCheck, transactionRunner, auditTrailPort);
         when(repository.save(any())).thenAnswer(a -> a.getArgument(0));
     }
 
@@ -76,12 +80,12 @@ class UpdateExperienceUseCaseTest {
         return Experience.create(experienceId, operatorId, UUID.randomUUID(), new Handle("dive"),
                 new ExperienceName("Old"), new Description("d"), new LongDescription("l"),
                 false,
-                List.of(), null, new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")));
+                List.of(), null, new BookingCutoffHours(0), null, null, new Price(new BigDecimal("35.00")), null);
     }
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "new desc", "new long", true,
-                List.of(), null, 12, null, null, new BigDecimal("35.00"));
+                List.of(), null, 12, null, null, new BigDecimal("35.00"), null);
     }
 
     @Test
@@ -135,11 +139,42 @@ class UpdateExperienceUseCaseTest {
         when(repository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.of(existing()));
         // Same name + description as `existing()`; other fields may change freely.
         ExperienceInput unchanged = new ExperienceInput("Old", "d", "new long", true,
-                List.of(), null, 12, null, null, new BigDecimal("35.00"));
+                List.of(), null, 12, null, null, new BigDecimal("35.00"), null);
 
         useCase.execute(operatorId, experienceId, callerId, unchanged);
 
         verify(repository).save(any());
         verifyNoInteractions(slotRepository);
+    }
+
+    @Test
+    void aForeignCategoryIs422AndNothingIsSaved() {
+        when(repository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.of(existing()));
+        doThrow(new InvalidFieldException("bad category")).when(categoryValidator).validate(any(), any());
+
+        assertThrows(InvalidFieldException.class,
+                () -> useCase.execute(operatorId, experienceId, callerId, input("New Name")));
+        verify(repository, never()).save(any());
+    }
+
+    /**
+     * The PATCH verb is a replace here, so an omitted categoryId files the
+     * experience back to uncategorized rather than leaving it where it was. Pinned
+     * because it is the trap the SEO pair fell into before #145.
+     */
+    @Test
+    void anOmittedCategoryClearsTheExistingOne() {
+        UUID categoryId = UUID.randomUUID();
+        Experience categorised = Experience.create(experienceId, operatorId, UUID.randomUUID(),
+                new Handle("dive"), new ExperienceName("Old"), new Description("d"),
+                new LongDescription("l"), false, List.of(), null, new BookingCutoffHours(0),
+                null, null, new Price(new BigDecimal("35.00")), categoryId);
+        when(repository.findByIdAndTourOperatorId(experienceId, operatorId)).thenReturn(Optional.of(categorised));
+
+        useCase.execute(operatorId, experienceId, callerId, input("New Name"));
+
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        assertNull(saved.getValue().getCategoryId());
     }
 }

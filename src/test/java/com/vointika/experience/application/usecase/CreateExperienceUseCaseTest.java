@@ -2,6 +2,7 @@ package com.vointika.experience.application.usecase;
 
 import java.math.BigDecimal;
 import com.vointika.experience.application.dto.input.ExperienceInput;
+import com.vointika.experience.application.service.CategoryReferenceValidator;
 import com.vointika.experience.application.service.MediaReferenceValidator;
 import com.vointika.experience.domain.entity.Experience;
 import com.vointika.experience.domain.repository.ExperienceRepository;
@@ -38,6 +39,7 @@ class CreateExperienceUseCaseTest {
     private ExperienceRepository repository;
     private ExperienceTranslationRepository translationRepository;
     private MediaReferenceValidator mediaValidator;
+    private CategoryReferenceValidator categoryValidator;
     private TourOperatorMembershipCheck membershipCheck;
     private CreateExperienceUseCase useCase;
 
@@ -50,6 +52,7 @@ class CreateExperienceUseCaseTest {
         repository = mock(ExperienceRepository.class);
         translationRepository = mock(ExperienceTranslationRepository.class);
         mediaValidator = mock(MediaReferenceValidator.class);
+        categoryValidator = mock(CategoryReferenceValidator.class);
         membershipCheck = mock(TourOperatorMembershipCheck.class);
         IdGenerator idGenerator = mock(IdGenerator.class);
         when(idGenerator.newId()).thenReturn(newId);
@@ -60,12 +63,12 @@ class CreateExperienceUseCaseTest {
             @Override public void run(Runnable work) { work.run(); }
         };
         useCase = new CreateExperienceUseCase(repository, translationRepository, mediaValidator,
-                membershipCheck, new HandleGenerator(), idGenerator, tx, auditTrailPort);
+                categoryValidator, membershipCheck, new HandleGenerator(), idGenerator, tx, auditTrailPort);
     }
 
     private ExperienceInput input(String name) {
         return new ExperienceInput(name, "A dive", "Long description", false,
-                List.of(), null, 24, null, null, new BigDecimal("35.00"));
+                List.of(), null, 24, null, null, new BigDecimal("35.00"), null);
     }
 
     @Test
@@ -86,7 +89,7 @@ class CreateExperienceUseCaseTest {
     @Test
     void anOmittedStartingPriceIs422() {
         ExperienceInput noPrice = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
-                List.of(), null, 24, null, null, null);
+                List.of(), null, 24, null, null, null, null);
 
         assertThrows(InvalidFieldException.class,
                 () -> useCase.execute(operatorId, callerId, noPrice));
@@ -97,7 +100,7 @@ class CreateExperienceUseCaseTest {
     void aZeroStartingPriceIs422() {
         ExperienceInput free = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
                 List.of(), null, 24, null, null,
-                BigDecimal.ZERO);
+                BigDecimal.ZERO, null);
 
         assertThrows(InvalidFieldException.class,
                 () -> useCase.execute(operatorId, callerId, free));
@@ -108,7 +111,7 @@ class CreateExperienceUseCaseTest {
     void aStartingPriceIsStoredAsGiven() {
         ExperienceInput priced = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
                 List.of(), null, 24, null, null,
-                new BigDecimal("35.5"));
+                new BigDecimal("35.5"), null);
 
         useCase.execute(operatorId, callerId, priced);
 
@@ -149,5 +152,37 @@ class CreateExperienceUseCaseTest {
         doThrow(new InvalidFieldException("bad media")).when(mediaValidator).validate(any(), any(), any());
         assertThrows(InvalidFieldException.class, () -> useCase.execute(operatorId, callerId, input("Dive Trip")));
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void foreignCategoryIs422() {
+        doThrow(new InvalidFieldException("bad category")).when(categoryValidator).validate(any(), any());
+        assertThrows(InvalidFieldException.class, () -> useCase.execute(operatorId, callerId, input("Dive Trip")));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void theCategoryIsCheckedAgainstThisOperatorAndStored() {
+        UUID categoryId = UUID.randomUUID();
+        ExperienceInput categorised = new ExperienceInput("Dive Trip", "A dive", "Long description", false,
+                List.of(), null, 24, null, null, new BigDecimal("35.00"), categoryId);
+
+        useCase.execute(operatorId, callerId, categorised);
+
+        verify(categoryValidator).validate(operatorId, categoryId);
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        assertEquals(categoryId, saved.getValue().getCategoryId());
+    }
+
+    /** Uncategorized is the state every experience starts in, and it is valid. */
+    @Test
+    void anAbsentCategoryStoresNull() {
+        useCase.execute(operatorId, callerId, input("Dive Trip"));
+
+        verify(categoryValidator).validate(operatorId, null);
+        ArgumentCaptor<Experience> saved = ArgumentCaptor.forClass(Experience.class);
+        verify(repository).save(saved.capture());
+        org.junit.jupiter.api.Assertions.assertNull(saved.getValue().getCategoryId());
     }
 }
