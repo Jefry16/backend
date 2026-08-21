@@ -4,6 +4,13 @@ import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEn
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
+import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
+import com.vointika.shared.list.CursorPage;
+import com.vointika.shared.list.Filter;
+import com.vointika.shared.list.FilterOp;
+import com.vointika.shared.list.FilterSpec;
+import com.vointika.shared.list.ListQuery;
+import com.vointika.shared.list.ListSchema;
 import com.vointika.shared.port.StorefrontExperienceQuery;
 import org.springframework.stereotype.Component;
 
@@ -28,13 +35,63 @@ import java.util.UUID;
 @Component
 public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery {
 
+    /**
+     * The listing's schema. It declares {@code published} because the executor
+     * needs the field's type to build the predicate — <b>not</b> because a caller
+     * may set it. Nothing parses a request against this: the port takes a cursor,
+     * so no visitor input reaches a filter at all.
+     */
+    public static final ListSchema SCHEMA = ListSchema.builder()
+            .tenantScoped()
+            .bool("published")
+            .sortable("createdAt")
+            .defaultSort("-createdAt")
+            .build();
+
     private final ExperienceJpaRepository experienceRepository;
     private final ExperienceTranslationJpaRepository translationRepository;
+    private final CriteriaListExecutor listExecutor;
 
     public StorefrontExperienceQueryImpl(ExperienceJpaRepository experienceRepository,
-                                         ExperienceTranslationJpaRepository translationRepository) {
+                                         ExperienceTranslationJpaRepository translationRepository,
+                                         CriteriaListExecutor listExecutor) {
         this.experienceRepository = experienceRepository;
         this.translationRepository = translationRepository;
+        this.listExecutor = listExecutor;
+    }
+
+    /**
+     * A page of published experiences, newest first, overlaid into {@code locale}.
+     *
+     * <p><b>The whole query is built here.</b> The port takes a cursor, so
+     * {@code published = true} is the only filter that exists and no caller input
+     * reaches one — unreachable rather than refused.
+     *
+     * <p><b>The overlay runs after the page is fetched</b>, which is correct only
+     * because nothing sorts or filters on a translated column — the public schema
+     * declares no filters and one sort, on {@code createdAt}. Add a sort on
+     * {@code name} and this becomes wrong in a way no test here would catch: the
+     * page would be chosen and ordered by canonical values and rendered with
+     * translated ones.
+     */
+    @Override
+    public CursorPage<ExperienceCardView> listPublished(UUID tourOperatorId, String locale, String cursor) {
+        ListQuery query = new ListQuery(
+                tourOperatorId,
+                new FilterSpec(List.of(new Filter("published", FilterOp.EQ, Boolean.TRUE))),
+                SCHEMA.defaultSort(),
+                cursor);
+
+        CursorPage<ExperienceJpaEntity> page = listExecutor.list(
+                ExperienceJpaEntity.class, StorefrontExperienceQueryImpl.SCHEMA, query, e -> e);
+        if (page.data().isEmpty()) {
+            return new CursorPage<>(List.of(), page.nextCursor());
+        }
+
+        Map<UUID, ExperienceTranslationJpaEntity> translations = translationsFor(tourOperatorId, locale);
+        return new CursorPage<>(
+                page.data().stream().map(experience -> card(experience, translations.get(experience.getId()))).toList(),
+                page.nextCursor());
     }
 
     @Override
@@ -45,22 +102,37 @@ public class StorefrontExperienceQueryImpl implements StorefrontExperienceQuery 
             return List.of();
         }
 
+        Map<UUID, ExperienceTranslationJpaEntity> translations = translationsFor(tourOperatorId, locale);
+        return featured.stream()
+                .map(experience -> card(experience, translations.get(experience.getId())))
+                .toList();
+    }
+
+    /**
+     * Every translation for the locale in one query, keyed by experience.
+     *
+     * <p>One lookup per card is the N+1 this exists to prevent, and the listing
+     * makes it twenty rather than twelve.
+     */
+    private Map<UUID, ExperienceTranslationJpaEntity> translationsFor(UUID tourOperatorId, String locale) {
         Map<UUID, ExperienceTranslationJpaEntity> translations = new HashMap<>();
         for (ExperienceTranslationJpaEntity translation
                 : translationRepository.findByTourOperatorIdAndLocale(tourOperatorId, locale)) {
             translations.put(translation.getExperienceId(), translation);
         }
+        return translations;
+    }
 
-        return featured.stream().map(experience -> {
-            ExperienceTranslationJpaEntity translation = translations.get(experience.getId());
-            return new ExperienceCardView(
-                    experience.getId(),
-                    overlay(translation == null ? null : translation.getHandle(), experience.getHandle()),
-                    overlay(translation == null ? null : translation.getName(), experience.getName()),
-                    overlay(translation == null ? null : translation.getDescription(), experience.getDescription()),
-                    experience.getStartingPrice(),
-                    experience.getThumbnailMediaId());
-        }).toList();
+    /** Nullable-wins-canonical on all three, the handle included. */
+    private static ExperienceCardView card(ExperienceJpaEntity experience,
+                                           ExperienceTranslationJpaEntity translation) {
+        return new ExperienceCardView(
+                experience.getId(),
+                overlay(translation == null ? null : translation.getHandle(), experience.getHandle()),
+                overlay(translation == null ? null : translation.getName(), experience.getName()),
+                overlay(translation == null ? null : translation.getDescription(), experience.getDescription()),
+                experience.getStartingPrice(),
+                experience.getThumbnailMediaId());
     }
 
     /**

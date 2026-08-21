@@ -11,6 +11,7 @@ import com.vointika.shared.port.StorefrontTourOperatorQuery.ColorView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.SocialLinkView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
+import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.web.security.SecurityConfig;
 import com.vointika.storefront.application.dto.output.MenuData;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
@@ -19,7 +20,8 @@ import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
-import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
+import com.vointika.storefront.application.dto.output.StorefrontExperienceListOutput;
+import com.vointika.storefront.application.usecase.GetStorefrontExperienceListUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +38,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -84,7 +88,7 @@ class StorefrontExperienceListControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private TenantHandleResolver tenantHandleResolver;
-    @MockitoBean private GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase;
+    @MockitoBean private GetStorefrontExperienceListUseCase getStorefrontExperienceListUseCase;
     @MockitoBean private MediaAssetBatchQuery mediaAssetBatchQuery;
     @MockitoBean private MediaUrlResolver mediaUrlResolver;
     @MockitoBean private AccessTokenValidatorPort accessTokenValidator;
@@ -125,7 +129,18 @@ class StorefrontExperienceListControllerTest {
     }
 
     private void served(String pathLocale, StorefrontGlobals globals) {
-        when(getStorefrontGlobalsUseCase.execute("acme", pathLocale)).thenReturn(Optional.of(globals));
+        served(pathLocale, globals, new CursorPage<>(List.of(card()), null));
+    }
+
+    private void served(String pathLocale, StorefrontGlobals globals,
+                        CursorPage<ExperienceCardView> experiences) {
+        when(getStorefrontExperienceListUseCase.execute(eq("acme"), eq(pathLocale), any()))
+                .thenReturn(Optional.of(new StorefrontExperienceListOutput(globals, experiences)));
+    }
+
+    private static ExperienceCardView card() {
+        return new ExperienceCardView(EXPERIENCE, "sunset-sail", "Sunset sail",
+                "Sail into the sunset", new BigDecimal("95.00"), THUMB);
     }
 
     /**
@@ -206,7 +221,8 @@ class StorefrontExperienceListControllerTest {
     /** Indistinguishable from the miss above, so neither says which one it was. */
     @Test
     void aLocaleTheShopDoesNotPublishIs404() throws Exception {
-        when(getStorefrontGlobalsUseCase.execute("acme", "fr")).thenReturn(Optional.empty());
+        when(getStorefrontExperienceListUseCase.execute(eq("acme"), eq("fr"), any()))
+                .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/fr/experiences").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isNotFound())
@@ -242,5 +258,109 @@ class StorefrontExperienceListControllerTest {
 
         mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
                 .andExpect(status().is3xxRedirection());
+    }
+
+    /** The listing's own object, in the shape every other paginated read uses. */
+    @Test
+    void theExperiencesRideInADataAndCursorEnvelope() throws Exception {
+        served(null, globals("en", "en", List.of("en")),
+                new CursorPage<>(List.of(card()), "eyJzb3J0IjoiLWNyZWF0ZWRBdCJ9"));
+
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experiences.data[0].handle").value("sunset-sail"))
+                .andExpect(jsonPath("$.experiences.data[0].name").value("Sunset sail"))
+                .andExpect(jsonPath("$.experiences.data[0].startingPrice").value("95.00"))
+                .andExpect(jsonPath("$.experiences.data[0].url").value("/experiences/sunset-sail"))
+                .andExpect(jsonPath("$.experiences.nextCursor").value("eyJzb3J0IjoiLWNyZWF0ZWRBdCJ9"));
+    }
+
+    /** Null on the last page, exactly as the admin lists answer. */
+    @Test
+    void theLastPageCarriesANullCursor() throws Exception {
+        served(null, globals("en", "en", List.of("en")), new CursorPage<>(List.of(card()), null));
+
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.experiences.nextCursor").doesNotExist());
+    }
+
+    /**
+     * An operator with nothing published gets a listing with nothing on it — an
+     * empty array, not a 404. A catalogue page exists before the catalogue does.
+     */
+    @Test
+    void anOperatorWithNothingPublishedGetsAnEmptyList() throws Exception {
+        served(null, globals("en", "en", List.of("en")), new CursorPage<>(List.of(), null));
+
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experiences.data").isArray())
+                .andExpect(jsonPath("$.experiences.data").isEmpty());
+    }
+
+    /** Card thumbnails ride the same media batch as the brand images. */
+    @Test
+    void cardThumbnailsAreResolvedToUrls() throws Exception {
+        served(null, globals("en", "en", List.of("en")));
+
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.experiences.data[0].thumbnail.url")
+                        .value("https://media.vointika.test/acme/sunset.png"))
+                .andExpect(jsonPath("$.experiences.data[0].thumbnail.alt").value("A boat at sunset"));
+    }
+
+    /** Locale-prefixed cards link to the prefixed address. */
+    @Test
+    void cardUrlsCarryTheLocalePrefix() throws Exception {
+        served("es", globals("es", "en", List.of("en", "es")));
+
+        mockMvc.perform(get("/es/experiences").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.experiences.data[0].url").value("/es/experiences/sunset-sail"));
+    }
+
+    /**
+     * <b>A public URL carries junk, and junk must not be an error.</b> The admin's
+     * ListQueryParser answers 422 to any parameter it does not recognise, which is
+     * right for an API and would turn every newsletter and ad click into an error
+     * page. The listing reads `cursor` and ignores the rest.
+     */
+    @Test
+    void trackingParametersAreIgnoredRatherThanRefused() throws Exception {
+        served(null, globals("en", "en", List.of("en")));
+
+        for (String junk : new String[]{"?utm_source=newsletter&utm_medium=email", "?fbclid=abc123", "?gclid=xyz"}) {
+            mockMvc.perform(get(StorefrontRoutes.EXPERIENCES + junk).header("Host", "acme.localhost:8080"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.experiences.data[0].handle").value("sunset-sail"));
+        }
+    }
+
+    /**
+     * <b>The drafts hole, from the outside.</b> No caller input reaches the filters
+     * at all, so this is served as a normal listing rather than refused — and what
+     * matters is that the use case is asked for the same thing either way.
+     */
+    @Test
+    void aVisitorCannotAskForUnpublishedExperiences() throws Exception {
+        served(null, globals("en", "en", List.of("en")));
+
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES + "?filter[published][eq]=false")
+                        .header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk());
+
+        // Only a cursor crosses the boundary, so there is no filter to smuggle.
+        verify(getStorefrontExperienceListUseCase).execute("acme", null, null);
+    }
+
+    /** The cursor is the one parameter that does reach the query. */
+    @Test
+    void theCursorReachesTheUseCase() throws Exception {
+        served(null, globals("en", "en", List.of("en")));
+
+        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES + "?cursor=abc123")
+                        .header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk());
+
+        verify(getStorefrontExperienceListUseCase).execute("acme", null, "abc123");
     }
 }

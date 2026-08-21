@@ -104,7 +104,10 @@ class StorefrontCmsPageControllerTest {
                 .andExpect(jsonPath("$.page.handle").value("about-us"))
                 .andExpect(jsonPath("$.page.title").value("About us"))
                 .andExpect(jsonPath("$.page.body").value("<p>Since 2011.</p>"))
-                .andExpect(jsonPath("$.page.url").value("/pages/about-us"));
+                .andExpect(jsonPath("$.page.url").value("/pages/about-us"))
+                // The listing's object belongs to the listing — a page gets the
+                // globals plus its own object, and no other route's.
+                .andExpect(jsonPath("$.experiences").doesNotExist());
     }
 
     /**

@@ -67,6 +67,25 @@ class ApiGuideDocumentsEveryListFieldTest {
             Map.entry("ListPoliciesUseCase", "tour-operators/policies/list"),
             Map.entry("ListSlotsUseCase", "slots/list"));
 
+    /**
+     * Lists with no operation in the guide because they are not in the guide at
+     * all. Named one by one, never a pattern: an exemption that matched a shape
+     * would silently swallow the next admin list somebody forgets to document.
+     *
+     * <p>{@code StorefrontExperienceQueryImpl} is the experiences listing on the
+     * public storefront. The guide documents the admin surface, which is what REST
+     * Docs generates snippets for; `storefront` was excluded from the API-docs
+     * series by decision, because it is unauthenticated page routes rather than an
+     * API and has no documentation tests to emit an operation. Its schema declares
+     * no filters and one sort, and nothing parses a request against it — the port
+     * takes a cursor — so there is no query contract for a guide table to state.
+     *
+     * <p><b>If the storefront ever gains a documented surface this belongs in
+     * OPERATIONS instead.</b> The other two schema guards cover it either way;
+     * only the guide check does not apply.
+     */
+    private static final Set<String> NOT_IN_THE_GUIDE = Set.of("StorefrontExperienceQueryImpl");
+
     private static final Pattern SCHEMA_BLOCK =
             Pattern.compile("SCHEMA\\s*=\\s*ListSchema\\.builder\\(\\)(.*?)\\.build\\(\\)", Pattern.DOTALL);
     private static final Pattern FILTER =
@@ -96,6 +115,7 @@ class ApiGuideDocumentsEveryListFieldTest {
         // test forgot to look at is indistinguishable from one it approved.
         Set<String> onlyInCode = new TreeSet<>(schemas.keySet());
         onlyInCode.removeAll(OPERATIONS.keySet());
+        onlyInCode.removeAll(NOT_IN_THE_GUIDE);
         Set<String> onlyInMap = new TreeSet<>(OPERATIONS.keySet());
         onlyInMap.removeAll(schemas.keySet());
 
@@ -106,6 +126,17 @@ class ApiGuideDocumentsEveryListFieldTest {
                         %s
                         Add the use case → operation mapping, and write the section it points at.""",
                         bullets(onlyInCode))
+                .isEmpty();
+
+        // An exemption naming a class that declares no schema is an exemption
+        // covering nothing — or covering the wrong thing after a rename. Same rule
+        // the OPERATIONS check below applies to itself.
+        Set<String> staleExemptions = new TreeSet<>(NOT_IN_THE_GUIDE);
+        staleExemptions.removeAll(schemas.keySet());
+        assertThat(staleExemptions)
+                .withFailMessage("NOT_IN_THE_GUIDE names %s, which declares no ListSchema this test "
+                        + "can find. Either it was renamed or removed - update the exemption - or the "
+                        + "scan broke and the exemption is hiding a list nobody checks.", staleExemptions)
                 .isEmpty();
 
         assertThat(onlyInMap)
@@ -120,6 +151,9 @@ class ApiGuideDocumentsEveryListFieldTest {
 
         Map<String, Set<String>> wrong = new TreeMap<>();
         schemas.forEach((useCase, schema) -> {
+            if (NOT_IN_THE_GUIDE.contains(useCase)) {
+                return;
+            }
             String operation = OPERATIONS.get(useCase);
             String section = sectionFor(guide, operation);
             String filterClause = clause(FILTER_CLAUSE, section, operation, "filter by");

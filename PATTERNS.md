@@ -85,12 +85,11 @@ port or an event (never a direct import).
 > settled before anything is server-rendered again, because a wrong field is
 > visible in a body and invisible under markup nobody reads yet.
 >
-> **The experiences listing serves the globals and no experiences.** The address
-> went onto the real render path ahead of its query deliberately: a listing is one
-> field on a payload that already resolves media, locale, menus and the gate, and
-> shipping the two apart means the query lands against a route that is already
-> proven rather than alongside one that is not. Its `pageType` is
-> `list-experiences`, after Shopify's `list-collections`.
+> **The experiences listing serves its own page of experiences** under
+> `experiences: {data, nextCursor}`, keyset-paginated by the same executor every
+> admin list uses. Its `pageType` is `list-experiences`, after Shopify's
+> `list-collections`. The address went onto the render path one slice before its
+> query, deliberately, so the query landed against a route already proven.
 >
 > Two addresses still answer a placeholder `{handle, status}`: the policy page,
 > with and without a locale prefix. No template exists either, so the theme object
@@ -194,6 +193,23 @@ port or an event (never a direct import).
 >   The link carries `{title, type, url, levels, links}`: no `handle` (no column
 >   behind it) and none of Shopify's `active`/`current` family, which are the
 >   first fields whose value would depend on which address was asked for.
+> - **The listing's page is `{data, nextCursor}`, not a bare array**
+>   (2026-08-21). Shopify keeps the list on the page's object
+>   (`collection.products`) and pagination in a separate `paginate` object their
+>   `{% paginate %}` tag provides. We have no tag, so the envelope every admin list
+>   already uses is the shape — one pagination vocabulary in the application rather
+>   than a second invented for the public side.
+>
+>   **A cursor and nothing else crosses the port.** The listing declares no filters
+>   and no sorts, so there is no `ListQuery` to carry, and `published = true` is
+>   added by the adapter. A visitor cannot influence a predicate at all — that is
+>   an absence rather than a refusal, and it is stronger: no future edit to a
+>   schema can open it.
+>
+>   **Newest first, because featured-first is not expressible.** `SortSpec` is one
+>   field plus the id tie-break, so the "featured, then newest" order
+>   `findFeatured` uses needs two keys and cannot be a default sort. Changing that
+>   is a change to the list framework, not to the storefront.
 > - **A page route is the globals plus one object, and that object is absent
 >   elsewhere.** `/pages/{handle}` adds `page`, serialized `NON_NULL`, so the home
 >   page simply does not carry it. That is Liquid's model: a template gets the
@@ -243,6 +259,8 @@ tourOperator  id, name, address, phone, email, url, description, passwordMessage
               currency { code, symbol }, timezone { name, city }
 (top level)   pageTitle, pageDescription, ogImageUrl, canonicalUrl, pageType
 page          id, handle, title, body, url   -- /pages/{handle} only, NON_NULL
+experiences   { data [ { id, handle, name, description, startingPrice, url,
+                         thumbnail } ], nextCursor }   -- /experiences only, NON_NULL
 routes        root, experiences
 localization  language, languages [ { code, name, endonymName, primary, url } ]
 ```
