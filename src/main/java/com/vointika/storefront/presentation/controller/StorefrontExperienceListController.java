@@ -18,48 +18,54 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The home page, which for now is the globals and nothing else — the same shape
- * Shopify's index template gets, since that template has no object of its own.
+ * The experiences listing. <b>It serves the globals and nothing else today</b> —
+ * the same body as the home page, differing only in {@code pageType}
+ * ({@code list-experiences}) and {@code canonicalUrl}.
  *
- * <p><b>Two mappings rather than one with an optional path variable.</b> The
- * bare path and the locale-prefixed one are separate patterns, and a
- * {@code @PathVariable} that exists in only one of them is a behaviour worth not
- * depending on when two three-line methods say it plainly.
+ * <p><b>That is the point of shipping it in this shape.</b> The listing's own
+ * query is a separate piece of work; establishing the address on the real render
+ * path first means the thing that lands next is a field on a payload that already
+ * works, rather than a route, a locale rule, a gate interaction and a query all
+ * at once. It left {@code StorefrontPlaceholderController} for the same reason
+ * the home page did.
  *
- * <p><b>Every media reference in the response is resolved in one call</b>, which
- * is why {@link StorefrontGlobalsResponse#mediaIds} exists: brand images and the
- * page image are four or five ids, and resolving them one at a time is four or
- * five round trips per page. Same rule as the experience galleries.
+ * <p><b>The render is deliberately a copy of the home controller's, and it is
+ * about to stop being one.</b> The listing query arrives here and nowhere else,
+ * so extracting the shared eight lines now would be undone by the next slice —
+ * §4c's rule for DTOs applied to a method: a copy that is about to diverge is not
+ * the same thing as a copy that insulates nothing. What the two genuinely share
+ * already lives in {@link StorefrontControllers}.
  *
  * <p><b>Both failures are one 404</b>: a handle no operator owns and a locale the
  * operator does not publish answer identically, so an anonymous visitor learns
  * nothing about which operators exist or which languages they have.
  */
 @RestController
-public class StorefrontHomeController {
+public class StorefrontExperienceListController {
 
     private final TenantHandleResolver tenantHandleResolver;
     private final GetStorefrontGlobalsUseCase getStorefrontGlobals;
     private final MediaAssetBatchQuery mediaAssetBatchQuery;
     private final MediaUrlResolver mediaUrlResolver;
 
-    public StorefrontHomeController(TenantHandleResolver tenantHandleResolver,
-                                    GetStorefrontGlobalsUseCase getStorefrontGlobals,
-                                    MediaAssetBatchQuery mediaAssetBatchQuery,
-                                    MediaUrlResolver mediaUrlResolver) {
+    public StorefrontExperienceListController(TenantHandleResolver tenantHandleResolver,
+                                              GetStorefrontGlobalsUseCase getStorefrontGlobals,
+                                              MediaAssetBatchQuery mediaAssetBatchQuery,
+                                              MediaUrlResolver mediaUrlResolver) {
         this.tenantHandleResolver = tenantHandleResolver;
         this.getStorefrontGlobals = getStorefrontGlobals;
         this.mediaAssetBatchQuery = mediaAssetBatchQuery;
         this.mediaUrlResolver = mediaUrlResolver;
     }
 
-    @GetMapping(path = StorefrontRoutes.HOME, produces = MediaType.APPLICATION_JSON_VALUE)
-    public StorefrontGlobalsResponse home(HttpServletRequest request) {
+    @GetMapping(path = StorefrontRoutes.EXPERIENCES, produces = MediaType.APPLICATION_JSON_VALUE)
+    public StorefrontGlobalsResponse experiences(HttpServletRequest request) {
         return render(request, null);
     }
 
-    @GetMapping(path = StorefrontRoutes.LOCALE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public StorefrontGlobalsResponse localizedHome(@PathVariable String locale, HttpServletRequest request) {
+    @GetMapping(path = StorefrontRoutes.LOCALIZED_EXPERIENCES, produces = MediaType.APPLICATION_JSON_VALUE)
+    public StorefrontGlobalsResponse localizedExperiences(@PathVariable String locale,
+                                                          HttpServletRequest request) {
         return render(request, locale);
     }
 
@@ -71,7 +77,7 @@ public class StorefrontHomeController {
 
         Map<UUID, MediaAsset> assets = StorefrontControllers.assets(globals, mediaAssetBatchQuery);
 
-        return StorefrontGlobalsResponse.index(globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
+        return StorefrontGlobalsResponse.experienceList(
+                globals, StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }
-
 }

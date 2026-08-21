@@ -48,7 +48,7 @@ final class StorefrontControllers {
      * has uploaded nothing would otherwise issue a batch query for an empty set on
      * every request, and that guard is exactly what a third copy of these four
      * lines quietly drops. {@code mediaIds()} lives beside
-     * {@code StorefrontGlobalsResponse.from} so the two cannot drift; this keeps
+     * {@code StorefrontGlobalsResponse}'s factories so the two cannot drift; this keeps
      * its one caller shape in one place too.
      */
     static Map<UUID, MediaAsset> assets(StorefrontGlobals globals,

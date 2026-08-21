@@ -65,7 +65,7 @@ public class StorefrontCmsPageController {
         Map<UUID, MediaAsset> assets =
                 StorefrontControllers.assets(output.globals(), mediaAssetBatchQuery);
 
-        return StorefrontGlobalsResponse.from(output.globals(), output.page(),
+        return StorefrontGlobalsResponse.cmsPage(output.globals(), output.page(),
                 StorefrontControllers.origin(request), assets, mediaUrlResolver);
     }
 }

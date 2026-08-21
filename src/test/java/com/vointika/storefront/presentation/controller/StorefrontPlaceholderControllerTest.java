@@ -2,7 +2,6 @@ package com.vointika.storefront.presentation.controller;
 
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.web.security.SecurityConfig;
-import com.vointika.storefront.application.policy.StorefrontRoutes;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
@@ -38,17 +37,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * survived the cutback — the host still decides whether there is a storefront
  * here at all.
  *
- * <p><b>The home addresses are no longer here.</b> {@code /} and {@code /{locale}}
- * moved to {@code StorefrontHomeController} when the globals landed; what is left
- * is the routes that still have no page.
+ * <p><b>Two sets of addresses have left.</b> {@code /} and {@code /{locale}} moved
+ * to {@code StorefrontHomeController} when the globals landed, and
+ * {@code /experiences} with them to {@code StorefrontExperienceListController}.
+ * The policy page is what is left, so this file empties as that route gains one.
+ *
+ * <p>{@code EVERY_ADDRESS} is named wider than it reaches and always was: it walks
+ * this controller's addresses, not the storefront's. The other five live in the
+ * home, experiences and CMS tests, each of which pins its own GET and HEAD.
  */
 @WebMvcTest(StorefrontPlaceholderController.class)
 @Import({SecurityConfig.class, StorefrontPublicRoutes.class})
 class StorefrontPlaceholderControllerTest {
 
-    private static final String[] EVERY_ADDRESS = {
-            StorefrontRoutes.EXPERIENCES, "/es/experiences",
-            "/policies/terms", "/es/policies/cancellation"};
+    private static final String POLICY = "/policies/terms";
+
+    private static final String[] EVERY_ADDRESS = {POLICY, "/es/policies/cancellation"};
 
     @Autowired private MockMvc mockMvc;
 
@@ -87,7 +91,7 @@ class StorefrontPlaceholderControllerTest {
     void servesThePlaceholderForARealTenant() throws Exception {
         tenantIs("acme.localhost", "acme", true);
 
-        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "acme.localhost:8080"))
+        mockMvc.perform(get(POLICY).header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.handle").value("acme"))
@@ -104,7 +108,7 @@ class StorefrontPlaceholderControllerTest {
     void aHandleNoOperatorOwnsIs404() throws Exception {
         tenantIs("nope.localhost", "nope", false);
 
-        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "nope.localhost:8080"))
+        mockMvc.perform(get(POLICY).header("Host", "nope.localhost:8080"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("There is no storefront at this address"));
@@ -115,7 +119,7 @@ class StorefrontPlaceholderControllerTest {
     void theApexIs404() throws Exception {
         when(tenantHandleResolver.resolve("localhost")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get(StorefrontRoutes.EXPERIENCES).header("Host", "localhost:8080"))
+        mockMvc.perform(get(POLICY).header("Host", "localhost:8080"))
                 .andExpect(status().isNotFound());
     }
 

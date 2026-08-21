@@ -90,12 +90,25 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * ({@code origin} is {@code tourOperator.url}, {@code locale} is
      * {@code localization.language}).
      *
-     * <p>Each address names its own, at the {@link #from} overload that builds
-     * it, rather than being inferred from which objects happen to be present. A
-     * route whose object is absent is not automatically the index.
+     * <p>Each address names its own, at the factory that builds it
+     * ({@link #index}, {@link #cmsPage}, {@link #experienceList}), rather than
+     * having it inferred from which objects happen to be present. A route whose
+     * object is absent is not automatically the index — and because every factory
+     * is named for its route, picking the wrong one is a compile error rather than
+     * a silently wrong page.
      */
     public static final String PAGE_TYPE_INDEX = "index";
     public static final String PAGE_TYPE_PAGE = "page";
+
+    /**
+     * The experiences listing. Named for Shopify's {@code list-collections} —
+     * their value for the page that lists a resource type, against
+     * {@code collection} for one of them — so an experience's own page becomes
+     * {@code experience} when it lands and the pair reads the way a theme author
+     * coming from Liquid expects. Their {@code page_type} vocabulary is lowercase
+     * and hyphenated, which this follows.
+     */
+    public static final String PAGE_TYPE_EXPERIENCE_LIST = "list-experiences";
 
     /**
      * @param description the meta description, which is what Shopify's
@@ -368,25 +381,56 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      *               it stays correct behind a proxy, the same reason the tenant is
      *               read from {@code getServerName()}.
      */
-    public static StorefrontGlobalsResponse from(StorefrontGlobals globals,
-                                                 String origin,
-                                                 Map<UUID, MediaAsset> assets,
-                                                 MediaUrlResolver urls) {
-        return from(globals, null, PAGE_TYPE_INDEX, origin, assets, urls);
+    public static StorefrontGlobalsResponse index(StorefrontGlobals globals,
+                                                  String origin,
+                                                  Map<UUID, MediaAsset> assets,
+                                                  MediaUrlResolver urls) {
+        return from(globals, null, PAGE_TYPE_INDEX, null, origin, assets, urls);
     }
 
     /** The same globals, plus the object the route is associated with. */
-    public static StorefrontGlobalsResponse from(StorefrontGlobals globals,
-                                                 PageView page,
-                                                 String origin,
-                                                 Map<UUID, MediaAsset> assets,
-                                                 MediaUrlResolver urls) {
-        return from(globals, page, PAGE_TYPE_PAGE, origin, assets, urls);
+    public static StorefrontGlobalsResponse cmsPage(StorefrontGlobals globals,
+                                                    PageView page,
+                                                    String origin,
+                                                    Map<UUID, MediaAsset> assets,
+                                                    MediaUrlResolver urls) {
+        return from(globals, page, PAGE_TYPE_PAGE, StorefrontRoutes.PAGES + "/" + page.handle(),
+                origin, assets, urls);
     }
 
+    /**
+     * The experiences listing: the globals, at their own address, with no object
+     * of its own yet.
+     *
+     * <p>One of three factories that each name the route they build, for the
+     * reason this one made concrete: its body is identical to the home page's
+     * apart from {@code pageType} and {@code canonicalUrl}, so a caller that
+     * picked the wrong factory would publish a page claiming to be the index and
+     * every body assertion would still pass. There is deliberately no unnamed
+     * {@code from} left to reach for — see {@link #index}.
+     */
+    public static StorefrontGlobalsResponse experienceList(StorefrontGlobals globals,
+                                                           String origin,
+                                                           Map<UUID, MediaAsset> assets,
+                                                           MediaUrlResolver urls) {
+        return from(globals, null, PAGE_TYPE_EXPERIENCE_LIST, StorefrontRoutes.EXPERIENCES,
+                origin, assets, urls);
+    }
+
+    /**
+     * @param pathAfterPrefix the address this page lives at, after any locale
+     *                        prefix, or null for the operator's root. It is what
+     *                        {@code canonicalUrl} is built from — passed rather
+     *                        than derived from which object is present, so a route
+     *                        without one still has an address of its own. It is
+     *                        also {@code page.url} where a page is served, which is
+     *                        the same string by construction: a page's address and
+     *                        the canonical of the route serving it cannot differ.
+     */
     private static StorefrontGlobalsResponse from(StorefrontGlobals globals,
                                                   PageView page,
                                                   String pageType,
+                                                  String pathAfterPrefix,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
@@ -397,7 +441,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 .toList();
         Image ogImage = image(globals.ogImageMediaId(), assets, urls);
         String root = prefix.isEmpty() ? StorefrontRoutes.HOME : prefix;
-        String pagePath = page == null ? null : prefix + StorefrontRoutes.PAGES + "/" + page.handle();
+        String canonicalPath = pathAfterPrefix == null ? root : prefix + pathAfterPrefix;
 
         return new StorefrontGlobalsResponse(
                 new TourOperator(
@@ -422,7 +466,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 globals.pageTitle(),
                 globals.pageDescription(),
                 ogImage == null ? null : ogImage.url(),
-                origin + (pagePath == null ? root : pagePath),
+                origin + canonicalPath,
                 pageType,
                 new Routes(root, prefix + StorefrontRoutes.EXPERIENCES),
                 globals.featuredExperiences().stream()
@@ -431,7 +475,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 linklists(globals.menus(), prefix),
                 localization(globals),
                 page == null ? null : new Page(page.id(), page.handle(), page.title(), page.body(),
-                        pagePath));
+                        canonicalPath));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */

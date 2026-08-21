@@ -11,13 +11,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The storefront addresses that do not have a page yet: experiences and
- * policies, bare and locale-prefixed. A real tenant gets a JSON placeholder and
- * anything else gets a 404.
+ * The storefront addresses that do not have a page yet: the policy page, bare and
+ * locale-prefixed. A real tenant gets a JSON placeholder and anything else gets a
+ * 404.
  *
- * <p><b>The home page left this controller</b> when the globals landed — see
- * {@code StorefrontHomeController}. What is still here answers the tenant
- * question and nothing more, and each route leaves as its own page arrives.
+ * <p><b>Two contexts have left this controller</b> — the home page when the
+ * globals landed ({@code StorefrontHomeController}), and the experiences listing
+ * after it ({@code StorefrontExperienceListController}), which serves those same
+ * globals at its own address. What is still here answers the tenant question and
+ * nothing more, and each route leaves as its own page arrives. The policy page is
+ * the last one, so this class goes with it.
  *
  * <p><b>Tenant resolution is the part that survived the cutback</b>, and it is
  * the reason this is not a static file. The host still names a tenant
@@ -65,8 +68,6 @@ public class StorefrontPlaceholderController {
      * for two pages.
      */
     @GetMapping(path = {
-            StorefrontRoutes.EXPERIENCES,
-            StorefrontRoutes.LOCALIZED_EXPERIENCES,
             StorefrontRoutes.POLICY,
             StorefrontRoutes.LOCALIZED_POLICY
     }, produces = MediaType.APPLICATION_JSON_VALUE)
