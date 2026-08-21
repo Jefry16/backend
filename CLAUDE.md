@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **LAW** | `../CONSTITUTION.md` (the parent directory — its own git repo) | The rules. Short, read whole, every session. |
 | **PATTERNS** | `PATTERNS.md` (in repo) | The recipes. Before building anything, find the matching one — don't reverse-engineer existing code. |
 | **STACK** | `STACK.md` (in repo) | Every pinned dependency → its version → its official docs URL. |
+| **OPEN-WORK** | `OPEN-WORK.md` (in repo) | What is owed, wanted, settled and still open. Split out of this file 2026-08-21 — it is the half that moves every slice. **Imported by this file**, so unlike the rows above it arrives on its own (LAW §3). |
 | **API-DOCS-SYNC** | `API-DOCS-SYNC.md` (in repo) | The playbook for checking one context's API against the REST Docs guide, for a context built from here on. The eleven-context series it was written for closed 2026-08-17 (`storefront` excluded by decision); what it settled is `PATTERNS.md` §9a. |
 
 LAW §4 is absolute and worth restating: **never assume — verify or ask.** Version-specific behavior goes to the pinned version's docs, never to recall (Boot 4 differs from Boot 3 in ways that cost real debugging time — see `STACK.md` gotchas). And a claim that something is unused or removable is produced by deleting it and running the suite, not by reading it.
@@ -184,364 +185,52 @@ The working rules are LAW: §2.4 never over-engineer · §3 the landing ritual �
   has a hole" or "that test is fake". Both are wrong, drawn from a command that silently
   did nothing. One `grep -c` between the edit and the run removes the whole class of
   error. A guard that passes vacuously is worse than no guard.
-- **A commit body is rarer than it looks** (LAW §6.2). The durable *why* belongs in the doc that owns the rule — `PATTERNS.md` for a recipe, *Open work* below for a decision; the reviewer's context belongs in the PR description; the diff belongs in git. A message that repeats all three is paying three times.
+- **A commit body is rarer than it looks** (LAW §6.2). The durable *why* belongs in the doc that owns the rule — `PATTERNS.md` for a recipe, `OPEN-WORK.md` for a decision; the reviewer's context belongs in the PR description; the diff belongs in git. A message that repeats all three is paying three times.
 
 ## Open work
 
-Carried forward when `MAP.md` was deleted (2026-08-20). Debt is owed; Backlog is
-wanted but unscheduled; the standing decisions below are settled and are not to be
-re-litigated without a reason.
+Debt, backlog, settled decisions and the open ones live in `OPEN-WORK.md`, which is
+**imported below, so it is in context from the first message of every session** —
+the same mechanism the root uses for LAW. LAW §3 requires that: a repo may split
+its state across files, and every one of them must be auto-loaded, because
+auto-loading is the property that matters and not the filename.
 
-### Debt
+It left this file because it is the half that changes every slice while the rest
+describes a shape that mostly holds. **Splitting it without the import is the
+failure mode** — the load-bearing half goes unread while every pointer to it still
+reads correctly, which is what #204 review caught before this line existed.
 
-- **No way to search a list, so the admin drains it** (2026-08-14, found by the
-  frontend audit) — `ListConstants.PAGE_SIZE` is a fixed **20** and `ListQuery` has
-  no limit field, so a picker that needs every row walks the cursor. An operator
-  with 300 experiences waits on 15 chained requests before the availability dialog
-  is usable, and four call sites do this (experiences ×2, pages, metaobject
-  entries). The fix is a server-side search/typeahead endpoint. It belongs with the
-  **body-returning endpoints that document no field table**, which is **closed as of
-  2026-08-17**: the count went 20 → 0 across the API-docs series, `metafield` taking
-  the last one. The scan that keeps it true is in `backend/PATTERNS.md` §9a. The
-  frontend's own three findings from that audit stay in its repo.
+**The split buys structure, and costs context.** Claude Code's docs are explicit
+that imported files load at launch alongside the file importing them, so
+*"splitting into `@path` imports helps organization but doesn't reduce context"*.
+Measured here it is worse than a wash: **547 lines before, 627 after** — 236 in
+this file plus 391 imported — **+80**, spent on a header, the pointer section
+and the paragraphs explaining the arrangement. A `backend/` session auto-loads
+**882 lines** across four files: LAW 205, the root `CLAUDE.md` 50, this 236,
+`OPEN-WORK.md` 391.
 
-- **The §4d cross-namespace guard is a pre-check, not a constraint** (2026-08-01,
-  from the review of the `experience` fix) — affects `page` and `experience`
-  equally. Uniqueness *within* a namespace has a unique index behind it, so a lost
-  race is rejected; nothing spans `experiences.handle` and
-  `experience_translations.handle` (or the page pair), and nothing can without a
-  trigger. Two concurrent writes, one per namespace, can still land on the same
-  value and shadow. Narrow window, no known occurrence, and the alternatives
-  (trigger, or a shared handle table) are both larger than the exposure — recorded
-  so the guards are not mistaken for completeness. PATTERNS §4d now says so.
-- **`experience` upsert has no named 409 on a lost handle race** (2026-08-01, from
-  the §4d fix). `page`'s translation upsert wraps its transaction in
-  `catch (UniqueConstraintViolationException)` to name the conflict. Experience's
-  does not, despite having the same partial unique index
-  (`uq_experience_translations_operator_locale_handle`). **Cosmetic, not a status
-  bug**: uncaught, the exception already maps to 409, so the only difference is
-  the message ("A concurrent write already created this record" vs an
-  operation-specific one). Left out of the §4d fix under LAW §6.4 rather than
-  widened into it.
-- **A slot date-range filter is not expressible** (2026-07-31, from the `shared`
-  audit) — `ListSlotsUseCase` makes `startAt` **sortable but not filterable**, and
-  `ListSchema` has no builder for `LocalDateTime` — the filter kinds are `text`,
-  `set`, `number`, `bool`, `time`→`LocalTime` and `instant`→`Instant`, and the
-  unused `date`→`LocalDate` one was deleted.
-  So "slots in August" cannot be asked for — the single most obvious filter on a
-  departures list. Needs a `localDateTime(...)` filter kind wired to the existing
-  comparable predicate, which `ValueCoercion` already parses. Add it when a
-  screen asks; do not re-add a filter kind nothing declares. It used to be half
-  of a pair with the contact unread filter — **that half was dissolved in #130**
-  by deleting read-state, so a null operator on the shared framework now has no
-  caller asking for it.
-- **The per-resource metafields read is an unbounded array** (2026-07-31, from the
-  `metafield` audit; **scope widened 2026-08-15**) — **three endpoints**, not the two
-  this entry named until the audit recounted them: `GET .../experiences/{id}/metafields`,
-  `.../pages/{id}/metafields`, and `.../tour-operators/{id}/metafields`, the last added
-  with the `TOUR_OPERATOR` owner type in #139. Each returns a bare
-  `List<MetafieldValueResponse>` while the other three lists in the context all use
-  the shared cursor framework. Its size is bounded only by how many definitions the
-  operator has created for that owner type, and definitions are themselves
-  cursor-paginated, so the bound is "whatever the operator built". Not fixed in the
-  audit because it is a **wire-contract decision**, not a defect: the admin editor
-  overlays every value onto the definitions form in one render, so paginating it
-  makes the editor page. Either cap + paginate it, or record the exemption the way
-  the reference lists have one.
+What was bought is that this file reads as the shape on its own, which is real and
+was the point. What was not bought is room. Do not split anything else expecting
+to save any — the only way to spend less is to write less, which is what LAW §0.3
+means by subtracting from the system first and the docs second.
 
-*Audited 2026-07-21: no TODO/FIXME/HACK/stub markers, no orphan fallback code, no
-dead code, no hidden `@SuppressWarnings` hacks (the Kafka raw-type ones are the
-deliberate Boot-4 injection). Reference/ui-language plain-array lists are curated
-& bounded — intentionally exempt from §4b, not debt.*
+**Where you launch decides how this loads.** A `CLAUDE.md` at or above the working
+directory loads in full at launch; one in a *subdirectory* loads on demand when a
+file there is read, and is not re-injected after `/compact`. So this file and its
+import arrive at startup when you run from `backend/`, and lazily when you run from
+the repo root. `/context` lists what actually loaded — that is the check, not
+inference from the file being on disk.
 
-### Backlog
-
-Known wants, not yet scheduled — deliberate future work, not shortcuts.
-
-Known wants, not yet scheduled (deliberate future work, not shortcuts):
-
-- **Where per-page-type SEO text lives** (2026-08-03, #92 — **was filed as Debt
-  until 2026-08-11**) — every storefront page falls back to the operator's
-  `seo_title`/`seo_description`, and the experiences listing has no entity of its
-  own to carry one. The home page is fine (the shop *is* its subject); a listing
-  sharing the shop's title is already duplicate-ish, and every further page type —
-  a collection, a search — inherits it. **Nothing was invented for it in #92 on
-  purpose: a schema decided by a template is the wrong order.** The options are a
-  `page`-like row per page type, theme settings, or nothing. **Settle it before
-  the experience detail page ships its own answer**, which is the first thing
-  that would force one — so it is parked with the storefront, and unparks with
-  it.
-- **Should a storefront card show that an experience is featured?** (2026-08-03,
-  #92. **Filed as Debt until 2026-08-11, where it did not belong.**) `featured`
-  already orders the listing, featured rows first. The page just says nothing about
-  it, so a visitor cannot tell which ones the operator promoted.
-  Nothing is owed and nothing is half-built: the card component that carried the
-  flag was **dropped in review** under LAW §2.4 rather than parked in a shared
-  port waiting for an answer, precisely because nothing read it. What is open is
-  a **product question**, and the field it would need is one boolean added the
-  day a badge renders. Parked with the storefront either way.
-
-- **Experience `type`** (2026-08-12; `category` shipped 2026-08-21, see *Decided*
-  below — **`type` is still wanted and still unscheduled**). Before categories an
-  experience carried no classification at all: `tags` was dropped in V10, and
-  `audience` is who a slot is priced for, not what kind of thing an experience is.
-  That is why `shop.types` was filed as "nothing to expose" rather than as a
-  contract gap — there is still no column behind it.
-  **They are different in kind, which is why Shopify keeps both.**
-  `product.type` is **free text the merchant types** — flat, unvalidated,
-  per-store, and it drifts ("Boat tour" / "boat tours" / "Boat Tours" become
-  three). `product.category` is a node in a **published taxonomy**:
-  `taxonomy_category` carries a hierarchical id (`hb-1-9-6`), a **localized**
-  `name`, and `ancestors` for a breadcrumb. There is deliberately **no
-  `shop.categories`** — the taxonomy is the same for every store, so only the
-  per-store invention is worth enumerating.
-  **So they were two slices, not one, and only one has landed.** `type` is a
-  nullable column on `experience` plus one `SELECT DISTINCT` behind
-  `tourOperator.types` — still unbuilt. What shipped as `category` is **not** the
-  curated `reference` tree this entry proposed; see *Decided* below for what was
-  built instead and why. **Whether a global curated taxonomy is still wanted
-  alongside it is genuinely open** — nothing here needs one until marketplace
-  sync or a cross-operator search does, and neither exists. `type` does not block
-  the storefront contract; it changes it when it lands.
-
-- **Member notification-subscriptions** — `/me/notification-subscriptions`,
-  personal per-alert-type prefs (was briefly "next slice" before the booking
-  loop took priority).
-- **List-my-pending invitations** — a `/me` view of invitations addressed to
-  the caller, cross-operator (SPA onboarding; distinct from the operator-scoped
-  list already shipped).
-- **Handle history + 301s** — renaming an experience handle or a page handle makes the
-  old URL 404. Deferred once at #36 and again at #56, and the storefront has now
-  made it externally visible: shared links and indexed results break silently.
-  Needs a history table and a redirect on miss.
-- **Metafield v2** — per-definition validations and choice lists, plus the
-  `list.*` and `rich_text` types. Scoped while #57–#60 were built and never
-  scheduled; the operator-level owner type and storefront read access were part of
-  it and have both since shipped.
-- **Locale `is_published`** — `tour_operator_locales` shipped without it (#32),
-  deferring the question "to the storefront". The storefront exists now and treats
-  every *supported* locale as published, so the idea is either dead or a real gap:
-  today an operator cannot prepare a translation without exposing it. Decide.
-- **Structured JSON logging** — today logging is plain text → stdout with MDC
-  correlation (`requestId`/`userId`, propagated across the Kafka hop). For prod
-  log aggregation, add a JSON encoder (e.g. a `logback-spring.xml` with an
-  ECS/logstash encoder) behind a profile, preserving the correlation fields; keep
-  dev human-readable. Non-urgent.
-- **Country flag assets** — `country.flag_key` exists (**nullable since reference/V6**, `flags/{iso2}.svg`)
-  and resolves to `flagUrl`. **The bucket question is settled and three flags
-  exist**: ES/US/DO ship in `docker/dev-seed/flags/` and `minio-init` uploads them
-  to `avatars/flags/`, the same public base media uses (#146). What is left is the
-  other 246 — a full SVG set, a production upload path (`minio-init` is dev only),
-  and then one `UPDATE reference.country SET flag_key = 'flags/' || lower(code) ||
-  '.svg'` plus a re-tightening `SET NOT NULL`. Still its own small slice.
-
-### Decided
-
-- **Repo shape** (2026-07-19) — **separate repo per project**: backend, admin,
-  storefront (and themes) each own their own git repo, as before. *Not* a
-  mono-repo. LAW therefore lives at `/home/jefrycayo/vointika/` root — the
-  cross-repo spine, mirroring the archived `CONTEXT.md` precedent. **Amended
-  2026-07-31:** that root is itself a git repo (the three project repos are
-  `.gitignore`d, so the separate-repo-per-project decision is untouched). It had no
-  history, no diff and no backup, and LAW §0.4 requires an amendment to be
-  accounted for "in the commit" — impossible while nothing tracked it. **Amended
-  2026-08-20:** it tracked LAW *and* MAP until MAP was deleted; per-repo state now
-  lives in each repo's own `CLAUDE.md`, which is what the section above is.
-- **Events on Kafka** (2026-07-19) — the `EventPublisherPort` seam is backed by a
-  Kafka producer; contexts produce/consume over Kafka, never direct imports.
-  **Topic convention:** `<producing-context>.<event-kebab>`, one topic per event,
-  keyed by recipient email. Kafka client fenced to `shared.infrastructure.kafka` +
-  the notification consumer (ArchUnit).
-- **The dev stack's shape** (2026-07-19) — Kafka is KRaft single-node, no
-  Zookeeper. SES runs against **`aws-ses-v2-local`**. LocalStack was rejected: its SESv2
-  `SendEmail` retrieval is broken (`/_aws/ses` KeyError 'Source') and paywalled.
-  Reading the sent mail is the whole point, since the verify and reset tokens leave
-  only by email. Versions and endpoints are in `backend/STACK.md`. Without AWS
-  credentials the async send logs a failure and the flow still completes.
-- **Email locale rides the event** (2026-07-20) — identity emails are sent in the
-  recipient's language. Each identity event carries a `locale` (set from
-  `User.language` at publish); the notification consumers pass it to
-  `SendNotificationUseCase` (exact→subtag→en fallback). notification never queries
-  identity. Templates ship per-locale on the classpath (en + es), tracking
-  `app.identity.ui-languages`. **Register captures the language** as an optional
-  **body field** (`POST /register {language}` — the FE's Paraglide locale),
-  validated against the allowlist, stored on the new user; unsupported/absent →
-  `en` (never fails a signup). Not a header — only register captures; it's a
-  persisted attribute.
-- **UI languages are not reference data** (2026-07-20) — a UI language is a
-  locale code, not a row with attributes. Model = `User.language` (the choice) +
-  `app.identity.ui-languages` config allowlist (validation) + **authenticated**
-  `GET /api/ui-languages` (the picker's single source of truth; codes only,
-  labels via `Intl.DisplayNames`). **`reference.languages` is a different list** —
-  it is the *content*-language allowlist an operator publishes in, not the admin
-  UI's. Grow a
-  language = add the yml code + ship the FE catalog + **ship the email templates
-  and add the code to `ClasspathTemplateCatalog.LOCALES`**; no migration.
-  **Corrected 2026-08-01** (the `notification` audit): this entry, PATTERNS §8 and
-  two Javadocs all said "zero code", and email was the exception nobody had
-  counted — a language on the allowlist with no templates sends in English rather
-  than failing. `TemplateLocalesTrackUiLanguagesTest` now fails the build on
-  divergence.
-
-- **A column lands with the feature that reads it** (2026-07-20) — the rule the
-  `tour_operators` row was created under, and the reason it still has **no `status`
-  or fee field**: a lifecycle column arrives with whatever reasons about it. The row
-  has grown a great deal since (brand, locales, the password gate, a structured
-  address) and every one of those came with its reader.
-  **The welcome email is sent through the standard path** — event → notification
-  consumer → SES, in the creator's UI language — which is why a `touroperator` event
-  exists at all; it was deferred while nothing consumed it. Recipient
-  email/name/language is resolved at publish time via `UserAccountQuery.findContact`
-  and rides the event, so the consumer never queries identity.
-  A generic `TourOperatorCreated` event for storefront initialization is still **not**
-  built: the storefront context exists now, but nothing in it needs to react to a
-  new operator.
-
-- **What an experience's "from" price means** (2026-08-01) — `starting_price`
-  (experience/V7) sits on the row the card already loads, because rendering may not
-  fan out to per-slot prices. Two rules are decided: **nothing scheduled → 0**, and
-  the figure is **per person**, not per `paxPerUnit`. Free tiers are excluded, which
-  is what makes 0 safe rather than a lie — a real starting price is never 0, so 0
-  means "nothing priced yet" and the card hides the badge. **Which slots count is
-  still open**: `slots.status` is AVAILABLE/SOLD_OUT/CANCELLED and departures are
-  dated, so a naive MIN would quote a cancelled or past one. It is operator-set
-  since #119, so nothing derives it today. The next departure is a separate
-  question and stays out.
-- **Categories are the operator's, not the platform's** (2026-08-21) — the four
-  calls that shaped the slice, recorded because each one was a fork and the
-  Shopify research pointed the other way on the first.
-
-  **Operator-owned with full CRUD**, not a curated `reference` taxonomy. The
-  backlog entry above proposed the latter, from Shopify's model. Shopify's three
-  reasons for a global taxonomy — tax rates, marketplace sync, and unlocking
-  category attributes — **are all absent here**: no tax engine, no channels, and
-  our metafields are operator-authored rather than derived from a category. So a
-  curated tree would have been a large slice buying navigation alone, and their
-  data does not transfer anyway (it classifies goods; Travel & Leisure is
-  transport tickets, not "sunset kayak tour").
-
-  **Flat, not a tree.** `ancestors` only earns its keep once something renders a
-  breadcrumb, and nothing does.
-
-  **Delete sets the reference null** rather than refusing while in use or
-  cascading. An uncategorized experience is the state it was in before anyone
-  filed it, so the classification is the only thing a delete destroys. Verified
-  against the live database, not reasoned: deleting a seeded category left all
-  five experiences present and moved two to uncategorized.
-
-  **Inside `experience`, not its own context.** A category has no lifecycle apart
-  from the experiences it classifies. Being in the same context is what makes the
-  FK a plain intra-schema one and costs no shared port — the mirror of why
-  `audience` *did* earn a boundary (it is reused across slots, and `experience`
-  reaches it through `AudienceOwnershipQuery`).
-
-  **No handle, deliberately.** A handle is a permanent URL and nothing routes to a
-  category. It lands with the storefront page that serves one — and walks into the
-  handle-history/301 gap already carried above when it does.
-
-- **Invitation model** (2026-07-20) — invitations key on **email** (invitee may
-  have no account). Raw token only in the emailed link; **SHA-256 hash at rest**
-  (`token_hash` unique). 7-day expiry judged **lazily** on access (no job). At most
-  one PENDING per (operator, email) — DB partial unique index. Invite = ADMIN+;
-  invitable roles = ADMIN/STAFF only (**OWNER is transfer-only**, 422). Accept is
-  **public** (token is the capability); anonymous accept provisions a
-  **verified-from-birth** user via `InvitedUserProvisioning` + issues a session
-  (auto-login), and **fails closed 409** if the email already has an account
-  (pre-registered-email attack). Invite email sent in the **inviter's** UI language
-  (invitee has none yet). **All four invitation actions are audited**, entity type
-  `INVITATION` — `member.invited` (not `invitation.created`; the invite is a team
-  action), `invitation.accepted`, `invitation.resent`, `invitation.revoked`. This
-  entry said audit was "subtracted (no audit context yet)", written six days before
-  #54 built one and swept these in with the other 28.
-
-- **An operator may change their timezone, and departures keep their wall-clock
-  hour** (2026-08-08, #108) — **asked for by clients**, so it is a requirement
-  rather than a tolerated side effect.
-  Slots store operator-LOCAL wall-clock times (`LocalDateTime`, no zone), so
-  changing the zone leaves every stored departure at the hour it was authored: a
-  10:00 sailing stays a 10:00 sailing, and only its absolute instant moves.
-  **That is the right behaviour for the case that actually happens** — an
-  operator correcting a timezone they set wrongly, or one whose business moved.
-  Their tours always ran at 10am local; the zone was the thing that was wrong.
-  Rewriting the rows to preserve the absolute instant would do the opposite,
-  moving every departure to a time nobody scheduled.
-  So **nothing migrates the slots, by design**, and this is deliberately not
-  carried as debt. Two things follow, recorded so they are not rediscovered as
-  bugs: `CreateSlotUseCase`'s past-date guard starts judging against a different
-  today, and the change is audited with the before/after zone. Revisit only if
-  bookings ever need the absolute instant preserved for an already-sold
-  departure — which cannot arise yet, since the transaction half is unbuilt.
-
-### Open decisions
-
-Coordination-critical and unresolved. Record the outcome under *Decided* when closed.
-
-Coordination-critical and unresolved. Resolve deliberately; record the outcome
-in **Decided** above when closed.
-
-1. **Context collapse.** Which of the old ~19 contexts survive, merge, or die.
-   **Still to place: cart · theme · payment · sales** — and none of them can be
-   settled before the transaction arc exists, so this decision is only as open as
-   that work is unbuilt.
-
-   Thirteen are placed and built: identity · notification · reference ·
-   touroperator · media · experience · audience · pickup · audit · page ·
-   metafield · contact · storefront, on the `shared` kernel. Three of those
-   placements were close calls and are the precedent for the four remaining:
-   **metaobjects did not earn a context.** They live inside `metafield` as one
-   custom-data context rather than becoming a fifteenth. **`menus` and the
-   storefront password went into `touroperator`**, because one storefront per
-   operator makes the operator the scope. And **`storefront` did earn one**
-   (2026-08-03), on lifecycle: it is public, unauthenticated and eventually HTML,
-   against `touroperator`'s authenticated JSON admin surface. One context owning
-   both audiences is the thing to avoid. The decisive point there was that the
-   ArchUnit fence is the *feature*: `storefront` cannot import `touroperator`,
-   which forces the read seam.
-2. **Shopify OS 2.0 scope.** Ground in fresh research before any theme work
-   (decision from the rebuild conversation). It was parked as downstream of the
-   render path — **that block is gone**: the render path is decided (Mustache,
-   in-process). So this is no longer blocked, it is simply not started, and it is
-   the first thing to settle when theme work begins. What it has to answer is
-   bounded by what Mustache can express — logic-less templates, and no custom
-   tags, which forces a section's schema out of its template. **That constraint,
-   and what is still open under it, is `backend/PATTERNS.md` §2b.**
-
-3. **Where a platform-level security event goes.** A refresh-token *reuse* — a
-   replayed refresh token, i.e. a probable theft — is detected in
-   `RefreshAccessTokenUseCase`, revokes the whole token family
-   (`revokeAllByFamilyId`), answers 401, and is reported **only** through
-   `diagnosticLog.warn(...)` → SLF4J. Verified 2026-08-11: no `AuditTrailPort` in
-   that class, and nothing in `src/main` calls `AuditActor.system()`.
-
-   **This sat in Debt until 2026-08-11 and did not belong there.** Nothing is
-   owed: detection works, revocation works, the attacker is locked out. The
-   security *control* is complete. What is missing is the ability to answer a
-   question afterwards — "was anyone's session stolen last month?" — and there is
-   no asker, because nothing is deployed. It also has no action behind it, only a
-   question, which is the tell: every real Debt entry names a thing to do.
-
-   **The tenant audit trail cannot take it as it stands.**
-   `audit_log.tour_operator_id` is NOT NULL and `NewAuditEntry` requires it; this
-   event happens in `identity` and has **no** tour operator (a user may belong to
-   zero, one or several). The surface is also tenant-scoped by construction:
-   `ListAuditLogUseCase.SCHEMA` is `.tenantScoped()`, and the controller sits under
-   `/api/tour-operators/{id}/audit-log` behind the membership gate. So an invented
-   tenant would file a platform security event in one customer's activity feed,
-   readable by their staff and invisible to us.
-
-   Note the rule does **not** force this: §8b audits every *operator-facing*
-   mutation, and revoking a token family is not one.
-
-   **Not forced until there is a deployment with real users** — which is also
-   when the cheapest answer might turn out to be "the host already retains and
-   searches the app log," costing no code at all. The alternative, if it is not,
-   is a non-tenant home for security events; **what must not happen is making
-   `tour_operator_id` nullable because a backlog list said to.**
+@OPEN-WORK.md
 
 ## Working rhythm
 
 Trunk is `main`; no direct commits. Every slice gets a short-lived branch (`feat/…`, `fix/…`, `chore/…`, `docs/…`) → PR → **merge only when the user says so**. A slice is done when the full suite is green *and* the change has been verified live against the running stack.
 
-End any session that changed something with the landing ritual (LAW §3): make this file, `PATTERNS.md`, `STACK.md` and any saved memory true. A version trap goes in `STACK.md`, a pattern that has now repeated twice in `PATTERNS.md`, a decision or a piece of owed work in *Open work* above, and the per-context row in *What each context owns*. If a fact moved, delete the old copy rather than leave it to drift.
+End any session that changed something with the landing ritual (LAW §3): make this file, `OPEN-WORK.md`, `PATTERNS.md`, `STACK.md` and any saved memory true. A version trap goes in `STACK.md`, a pattern that has now repeated twice in `PATTERNS.md`, a decision or a piece of owed work in `OPEN-WORK.md`, and the per-context row in *What each context owns*. If a fact moved, delete the old copy rather than leave it to drift.
 
-**This file is the only reason the next session knows where things stand.** It took that job from `MAP.md`, deleted 2026-08-20 — so a claim here about what is built, owed or decided is load-bearing in a way the rest of the file is not, and goes stale the same way MAP's did. Grep the claim, not the file you happen to be reading.
+**This file and `OPEN-WORK.md` are the only reason the next session knows where things stand.** They took that job from `MAP.md`, deleted 2026-08-20 — *what is built* here, *what is owed or decided* there — so a claim in either is load-bearing in a way the rest of the prose is not, and goes stale the same way MAP's did. Grep the claim, not the file you happen to be reading.
+
+**A move falsifies more than the pointers into it.** This paragraph said "this file is the only reason" and named *owed or decided* as its own, and both halves stopped being true the moment the ledger left — while the sweep for stale references correctly found nothing, because a claim about what a file is *complete for* leaves no link behind to grep. So when something moves out of a doc, re-read what the doc says about itself, not only what points at it.
+
+**And re-read what the docs above it say about it.** LAW §3 named this file as the home for decisions and gave auto-loading as the reason, so the split falsified LAW too — in a different git repo, where no grep of this one reaches. That took a LAW amendment (v0.6.1) and the import above, not a wording fix here. The rule that generalises: a doc's scope is asserted in three places — in itself, in what points at it, and in whatever governs it — and only the middle one is greppable from where you are standing.
