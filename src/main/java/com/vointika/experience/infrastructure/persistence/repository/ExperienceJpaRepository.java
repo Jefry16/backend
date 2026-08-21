@@ -14,6 +14,13 @@ public interface ExperienceJpaRepository extends JpaRepository<ExperienceJpaEnti
 
     boolean existsByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
+    /**
+     * The storefront's canonical-handle read. The published filter is in the
+     * method name so it cannot be forgotten at a call site, the same shape
+     * {@code page} uses.
+     */
+    Optional<ExperienceJpaEntity> findByTourOperatorIdAndHandleAndPublishedTrue(UUID tourOperatorId, String handle);
+
     boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 
     boolean existsByTourOperatorIdAndHandleAndIdNot(UUID tourOperatorId, String handle, UUID excludeExperienceId);

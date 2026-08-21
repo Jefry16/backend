@@ -2,9 +2,12 @@ package com.vointika.shared.port;
 
 import com.vointika.shared.list.CursorPage;
 
+import java.time.Instant;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -78,6 +81,61 @@ public interface StorefrontExperienceQuery {
      *               the first
      */
     CursorPage<ExperienceCardView> listPublished(UUID tourOperatorId, String locale, String cursor);
+
+    /**
+     * One published experience, at the handle the rendered locale publishes.
+     *
+     * <p><b>Two ways in, and the second has a guard</b> — the same shape
+     * {@code StorefrontPageQuery.findByHandle} uses, for the same reason. A
+     * localized handle is looked up first; falling through to the canonical one is
+     * right only when this locale does not rename the experience, otherwise the
+     * canonical would be a second address for something that already has one here.
+     * A locale that renames it makes the canonical handle a <b>404</b> there.
+     *
+     * <p><b>This is the read that makes a §4d shadowing handle observable.</b> The
+     * write guards have been in place since 2026-08-01 with nothing consulting the
+     * two namespaces in precedence order; this does. A canonical handle that some
+     * other experience also publishes as a localized handle resolves to the wrong
+     * experience here, silently — which is the defect those guards exist to
+     * prevent and, until now, nothing could surface.
+     *
+     * @param locale the locale already chosen by the storefront's locale rule
+     */
+    Optional<ExperienceDetailView> findByHandle(UUID tourOperatorId, String handle, String locale);
+
+    /**
+     * One experience, as the storefront renders it.
+     *
+     * <p>Every field has a column (§2a: expose what the row has, invent nothing),
+     * including the three that no theme may render yet — {@code featured},
+     * {@code bookingCutoffHours}, {@code createdAt}. A field added after operators
+     * author themes is a breaking change; a field added now is a record component.
+     *
+     * @param handles this experience's address in every locale that renames it,
+     *                plus the canonical — the language switcher's input. Without
+     *                it a switcher can only offer the current handle under another
+     *                prefix, which is an English prefix on a Spanish slug: a 404.
+     * @param category null when uncategorized, which is a legitimate state and not
+     *                 a missing value
+     */
+    record ExperienceDetailView(UUID id,
+                                String handle,
+                                String name,
+                                String description,
+                                String longDescription,
+                                BigDecimal startingPrice,
+                                UUID thumbnailMediaId,
+                                List<UUID> mediaIds,
+                                String seoTitle,
+                                String seoDescription,
+                                boolean featured,
+                                int bookingCutoffHours,
+                                Instant createdAt,
+                                CategoryView category,
+                                LocalizedHandles handles) {}
+
+    /** An experience's category, with its name in the rendered locale. */
+    record CategoryView(UUID id, String name) {}
 
     /**
      * @param startingPrice the lowest price across the experience's audiences,

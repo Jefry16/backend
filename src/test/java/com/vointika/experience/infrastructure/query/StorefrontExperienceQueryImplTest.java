@@ -2,6 +2,8 @@ package com.vointika.experience.infrastructure.query;
 
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceJpaEntity;
 import com.vointika.experience.infrastructure.persistence.entity.ExperienceTranslationJpaEntity;
+import com.vointika.experience.infrastructure.persistence.repository.CategoryJpaRepository;
+import com.vointika.experience.infrastructure.persistence.repository.CategoryTranslationJpaRepository;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceJpaRepository;
 import com.vointika.shared.infrastructure.list.CriteriaListExecutor;
 import com.vointika.experience.infrastructure.persistence.repository.ExperienceTranslationJpaRepository;
@@ -53,7 +55,8 @@ class StorefrontExperienceQueryImplTest {
         experienceRepository = mock(ExperienceJpaRepository.class);
         translationRepository = mock(ExperienceTranslationJpaRepository.class);
         listExecutor = mock(CriteriaListExecutor.class);
-        query = new StorefrontExperienceQueryImpl(experienceRepository, translationRepository, listExecutor);
+        query = new StorefrontExperienceQueryImpl(experienceRepository, translationRepository,
+                mock(CategoryJpaRepository.class), mock(CategoryTranslationJpaRepository.class), listExecutor);
     }
 
     /**

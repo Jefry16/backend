@@ -24,5 +24,13 @@ public interface ExperienceTranslationJpaRepository
     boolean existsByTourOperatorIdAndLocaleAndHandleAndExperienceIdNot(
             UUID tourOperatorId, String locale, String handle, UUID experienceId);
 
-    boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
+/**
+     * The storefront's localized-handle read. At most one row: the partial unique
+     * index {@code uq_experience_translations_operator_locale_handle} covers
+     * {@code (tour_operator_id, locale, handle) WHERE handle IS NOT NULL}.
+     */
+    Optional<ExperienceTranslationJpaEntity> findByTourOperatorIdAndLocaleAndHandle(
+            UUID tourOperatorId, String locale, String handle);
+
+        boolean existsByTourOperatorIdAndHandle(UUID tourOperatorId, String handle);
 }

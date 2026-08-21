@@ -3,7 +3,9 @@ package com.vointika.storefront.presentation.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
+import com.vointika.shared.port.StorefrontExperienceQuery.CategoryView;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceCardView;
+import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceDetailView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetafieldView;
 import com.vointika.shared.port.StorefrontMetafieldQuery.MetaobjectView;
 import com.vointika.storefront.application.dto.output.MenuData;
@@ -13,12 +15,14 @@ import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.ColorView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
+import com.vointika.shared.port.LocalizedHandles;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.web.list.CursorPageResponse;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -84,7 +88,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                         Localization localization,
                                         @JsonInclude(JsonInclude.Include.NON_NULL) Page page,
                                         @JsonInclude(JsonInclude.Include.NON_NULL)
-                                        CursorPageResponse<ExperienceCard> experiences) {
+                                        CursorPageResponse<ExperienceCard> experiences,
+                                        @JsonInclude(JsonInclude.Include.NON_NULL)
+                                        Experience experience) {
 
     /**
      * Shopify's {@code request.page_type} values, for the addresses that serve
@@ -113,6 +119,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * and hyphenated, which this follows.
      */
     public static final String PAGE_TYPE_EXPERIENCE_LIST = "list-experiences";
+
+    /** One experience, against Shopify's {@code product}. */
+    public static final String PAGE_TYPE_EXPERIENCE = "experience";
 
     /**
      * @param description the meta description, which is what Shopify's
@@ -334,6 +343,42 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * handle a reader, and it is recorded as a known gap rather than left to
      * surprise someone.
      */
+    /**
+     * One experience, as its own page renders it.
+     *
+     * <p><b>Media is given resolved, never as ids.</b> {@code gallery} follows the
+     * stored order and drops anything that no longer resolves, the same
+     * self-healing the admin read does; {@code thumbnail} is null when none is set
+     * rather than an {@code Image} with a null url, because a template guards on
+     * the object.
+     *
+     * <p>{@code featured}, {@code bookingCutoffHours} and {@code createdAt} have
+     * columns and no renderer yet. §2a puts them in anyway: a field added after
+     * operators author themes is a breaking change, and one added now is a record
+     * component.
+     *
+     * @param category null when uncategorized — a state, not a missing value
+     * @param metafields the operator's own schema for this experience, nested by
+     *                   namespace exactly as {@code tourOperator.metafields} is
+     */
+    public record Experience(UUID id,
+                             String handle,
+                             String name,
+                             String description,
+                             String longDescription,
+                             String startingPrice,
+                             String url,
+                             Image thumbnail,
+                             List<Image> gallery,
+                             boolean featured,
+                             int bookingCutoffHours,
+                             Instant createdAt,
+                             Category category,
+                             Map<String, Map<String, Metafield>> metafields) {}
+
+    /** An experience's category, named in the rendered locale. There is no url: nothing routes to one. */
+    public record Category(UUID id, String name) {}
+
     public record ExperienceCard(UUID id,
                                  String handle,
                                  String name,
@@ -380,6 +425,24 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
     }
 
     /**
+     * The globals' media plus one experience's gallery, for the detail page.
+     *
+     * <p><b>The gallery has to join the same batch or it renders empty</b>, not
+     * broken: {@code image(...)} answers null for an id the batch never fetched,
+     * and the gallery drops nulls by design — so a missed id looks like an
+     * experience with no photos rather than an error. Twenty ids resolved one at a
+     * time is the other way to get this wrong.
+     */
+    public static Set<UUID> mediaIds(StorefrontGlobals globals, ExperienceDetailView experience) {
+        Set<UUID> ids = mediaIds(globals);
+        add(ids, experience.thumbnailMediaId());
+        for (UUID mediaId : experience.mediaIds()) {
+            add(ids, mediaId);
+        }
+        return ids;
+    }
+
+    /**
      * @param origin scheme and host of the request, which is what {@code tourOperator.url}
      *               is. Taken from the request rather than from configuration so
      *               it stays correct behind a proxy, the same reason the tenant is
@@ -389,7 +452,8 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
-        return from(globals, null, null, PAGE_TYPE_INDEX, null, origin, assets, urls);
+        return from(globals, null, null, null, null, PAGE_TYPE_INDEX,
+                everyLocale(globals, ""), origin, assets, urls);
     }
 
     /** The same globals, plus the object the route is associated with. */
@@ -398,8 +462,8 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                     String origin,
                                                     Map<UUID, MediaAsset> assets,
                                                     MediaUrlResolver urls) {
-        return from(globals, page, null, PAGE_TYPE_PAGE, StorefrontRoutes.PAGES + "/" + page.handle(),
-                origin, assets, urls);
+        return from(globals, page, null, null, null, PAGE_TYPE_PAGE,
+                byHandle(globals, StorefrontRoutes.PAGES, page.handles()), origin, assets, urls);
     }
 
     /**
@@ -413,30 +477,43 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * every body assertion would still pass. There is deliberately no unnamed
      * {@code from} left to reach for — see {@link #index}.
      */
+    /** One experience's page: the globals plus the experience, at its own address. */
+    public static StorefrontGlobalsResponse experience(StorefrontGlobals globals,
+                                                       ExperienceDetailView experience,
+                                                       List<MetafieldView> experienceMetafields,
+                                                       String origin,
+                                                       Map<UUID, MediaAsset> assets,
+                                                       MediaUrlResolver urls) {
+        return from(globals, null, null, experience, experienceMetafields, PAGE_TYPE_EXPERIENCE,
+                byHandle(globals, StorefrontRoutes.EXPERIENCES, experience.handles()), origin, assets, urls);
+    }
+
     public static StorefrontGlobalsResponse experienceList(StorefrontGlobals globals,
                                                            CursorPage<ExperienceCardView> experiences,
                                                            String origin,
                                                            Map<UUID, MediaAsset> assets,
                                                            MediaUrlResolver urls) {
-        return from(globals, null, experiences, PAGE_TYPE_EXPERIENCE_LIST, StorefrontRoutes.EXPERIENCES,
-                origin, assets, urls);
+        return from(globals, null, experiences, null, null, PAGE_TYPE_EXPERIENCE_LIST,
+                everyLocale(globals, StorefrontRoutes.EXPERIENCES), origin, assets, urls);
     }
 
     /**
-     * @param pathAfterPrefix the address this page lives at, after any locale
-     *                        prefix, or null for the operator's root. It is what
-     *                        {@code canonicalUrl} is built from — passed rather
-     *                        than derived from which object is present, so a route
-     *                        without one still has an address of its own. It is
-     *                        also {@code page.url} where a page is served, which is
-     *                        the same string by construction: a page's address and
-     *                        the canonical of the route serving it cannot differ.
+     * @param urlByLocale this page's address in every language the operator
+     *                    publishes. It is the switcher's input <b>and</b> the
+     *                    source of {@code canonicalUrl}, which is read back off
+     *                    the current language's entry rather than computed beside
+     *                    it — one expression, so they cannot drift. {@code page.url}
+     *                    and {@code experience.url} are the same string for the
+     *                    same reason: a resource's address and the canonical of
+     *                    the route serving it cannot differ.
      */
     private static StorefrontGlobalsResponse from(StorefrontGlobals globals,
                                                   PageView page,
                                                   CursorPage<ExperienceCardView> experiences,
+                                                  ExperienceDetailView experience,
+                                                  List<MetafieldView> experienceMetafields,
                                                   String pageType,
-                                                  String pathAfterPrefix,
+                                                  Map<String, String> urlByLocale,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
@@ -446,8 +523,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 .map(p -> policy(p, prefix))
                 .toList();
         Image ogImage = image(globals.ogImageMediaId(), assets, urls);
-        String root = prefix.isEmpty() ? StorefrontRoutes.HOME : prefix;
-        String canonicalPath = pathAfterPrefix == null ? root : prefix + pathAfterPrefix;
+        Localization localization = localization(globals, urlByLocale);
+        String canonicalPath = localization.language().url();
+        String root = url(prefix, "");
 
         return new StorefrontGlobalsResponse(
                 new TourOperator(
@@ -479,11 +557,13 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                         .map(card -> card(card, prefix, assets, urls))
                         .toList(),
                 linklists(globals.menus(), prefix),
-                localization(globals),
+                localization,
                 page == null ? null : new Page(page.id(), page.handle(), page.title(), page.body(),
                         canonicalPath),
                 experiences == null ? null : CursorPageResponse.of(
-                        experiences, card -> card(card, prefix, assets, urls)));
+                        experiences, card -> card(card, prefix, assets, urls)),
+                experience == null ? null
+                        : experience(experience, experienceMetafields, canonicalPath, assets, urls));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */
@@ -520,6 +600,42 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
 
     private static int depth(List<Link> children) {
         return children.stream().mapToInt(child -> 1 + child.levels()).max().orElse(0);
+    }
+
+    /**
+     * @param canonicalPath this page's own address — {@code url} and the route's
+     *                      canonical are the same string by construction, so they
+     *                      cannot disagree
+     */
+    private static Experience experience(ExperienceDetailView view, List<MetafieldView> metafields,
+                                         String canonicalPath, Map<UUID, MediaAsset> assets,
+                                         MediaUrlResolver urls) {
+        List<Image> gallery = new ArrayList<>();
+        for (UUID mediaId : view.mediaIds()) {
+            Image resolved = image(mediaId, assets, urls);
+            if (resolved != null) {
+                gallery.add(resolved);
+            }
+        }
+        return new Experience(
+                view.id(),
+                view.handle(),
+                view.name(),
+                view.description(),
+                view.longDescription(),
+                view.startingPrice() == null ? null : view.startingPrice().toPlainString(),
+                canonicalPath,
+                image(view.thumbnailMediaId(), assets, urls),
+                List.copyOf(gallery),
+                view.featured(),
+                view.bookingCutoffHours(),
+                view.createdAt(),
+                category(view.category()),
+                metafields(metafields == null ? List.of() : metafields));
+    }
+
+    private static Category category(CategoryView category) {
+        return category == null ? null : new Category(category.id(), category.name());
     }
 
     private static ExperienceCard card(ExperienceCardView card, String prefix,
@@ -620,17 +736,76 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * each locale's root, so it is built here; the first route whose path varies
      * per page is the one that has to pass its own.
      */
-    private static Localization localization(StorefrontGlobals globals) {
+    /**
+     * The switcher needs "this page in that language", so it is handed the page's
+     * address in each one rather than computing a root.
+     *
+     * <p><b>Every {@code url} used to be {@code /} or {@code /{code}}</b>, which
+     * made switching language from any deep page land on the home page — and on
+     * the listing, whose path does not even vary by handle. That was recorded as a
+     * live gap on a shipped route until the detail page gave it a real caller.
+     *
+     * <p>The current language's entry is not merely one of the list: the route's
+     * {@code canonicalUrl} is read back off it, so the two cannot disagree.
+     */
+    private static Localization localization(StorefrontGlobals globals, Map<String, String> urlByLocale) {
         StorefrontGlobals.LocalizationData data = globals.localization();
         List<Language> languages = new ArrayList<>();
         for (String code : data.supported()) {
-            languages.add(language(code, data.primary(), data.primary().equals(code) ? "/" : "/" + code));
+            languages.add(language(code, data.primary(), urlByLocale.get(code)));
         }
         Language current = languages.stream()
                 .filter(l -> l.code().equals(data.current()))
                 .findFirst()
-                .orElse(null);
+                // Unreachable: LocaleRule resolves `current` out of `supported`.
+                // It throws rather than returning null because the canonical is
+                // read off this entry — a null would surface as a null canonical
+                // somewhere downstream instead of here, where the reason is known.
+                .orElseThrow(() -> new IllegalStateException(
+                        "Serving locale '" + data.current() + "', which is not in " + data.supported()));
         return new Localization(current, List.copyOf(languages));
+    }
+
+    /**
+     * The same address in every language — for routes whose path carries no
+     * handle. Not a root: the listing lives at {@code /experiences} in every
+     * locale, and answering {@code /en} there was the bug.
+     */
+    private static Map<String, String> everyLocale(StorefrontGlobals globals, String pathAfterPrefix) {
+        Map<String, String> urls = new LinkedHashMap<>();
+        for (String code : globals.localization().supported()) {
+            urls.put(code, url(prefix(code, globals.localization().primary()), pathAfterPrefix));
+        }
+        return urls;
+    }
+
+    /**
+     * One resource, addressed by the handle each language publishes.
+     *
+     * <p>{@link LocalizedHandles#in} supplies the canonical for any locale that
+     * does not rename it. Repeating the <em>current</em> handle under every prefix
+     * is the mistake this exists to prevent: an English prefix on a Spanish slug
+     * is a 404, because a locale that renames a resource makes the canonical a 404
+     * there.
+     */
+    private static Map<String, String> byHandle(StorefrontGlobals globals, String routePrefix,
+                                                LocalizedHandles handles) {
+        Map<String, String> urls = new LinkedHashMap<>();
+        for (String code : globals.localization().supported()) {
+            urls.put(code, url(prefix(code, globals.localization().primary()),
+                    routePrefix + "/" + handles.in(code)));
+        }
+        return urls;
+    }
+
+    private static String prefix(String code, String primaryLocale) {
+        return code.equals(primaryLocale) ? "" : "/" + code;
+    }
+
+    /** The home page's path is empty, and an empty address is {@code /}. */
+    private static String url(String prefix, String pathAfterPrefix) {
+        String path = prefix + pathAfterPrefix;
+        return path.isEmpty() ? StorefrontRoutes.HOME : path;
     }
 
     /**
