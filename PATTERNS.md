@@ -516,6 +516,23 @@ of them to notice.
    `.tenantScoped()` (scopes to the entity's `tourOperatorId`), `.set/text/number/
    instant(...)` for each filterable field, `.sortable(...)` + `.defaultSort(...)`.
 
+   **`.tenantScoped()` is not optional and its absence is not an error.**
+   `CriteriaListExecutor` adds the tenant predicate only when the schema says to,
+   and the builder's field is a plain boolean — so a schema that never calls it
+   compiles and returns every operator's rows. Deleting the line from a list leaves
+   the whole suite green, measured on two of them.
+
+   Asserting the tenant id on the executed `ListQuery` does **not** catch it, which
+   is the part that misleads: the query carries the right id either way, and
+   whether anything *uses* it is the flag. Every use-case test mocks the executor,
+   so no test that mocks it can ever exercise the flag. The fact lives in the
+   builder chain, so `EveryListSchemaIsTenantScopedTest` reads the builder chain.
+
+   It became worth a guard when the first **unauthenticated** schema landed — the
+   storefront experiences listing. The sixteen before it leak between authenticated
+   members; that one would serve every operator's catalogue to anyone with the URL.
+   Same omission, different blast radius.
+
    **A `.sortable(...)` field must map to a `NOT NULL` column.** The cursor is a
    keyset on that column. In SQL a `NULL` comparison is *unknown* rather than
    false, so a row with a null sort value matches neither the `>`/`<` nor the `id`
