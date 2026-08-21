@@ -1238,6 +1238,29 @@ was true; the check that appeared to refute it was the sloppy one, and acting on
 have rewritten a correct statement into a wrong one. Match on something only the target
 has (here: `status` *and* `error` *and* `timestamp` together).
 
+**The sentence that says a thing was verified is itself a claim, and it is the one
+that goes unchecked.** Two rounds of the category-FK review landed here rather than on
+the design, which is what makes it a pattern and not an anecdote. First a javadoc said
+a constraint-naming convention was "what every drop in this repository uses" — there
+were five drops, none of them a foreign key, so the corpus held no instance of the case
+at all. Then the sentence written to correct that one said "each mutation alone leaves
+all ten green", when one of the two mutations was caught on its own — and the very next
+clause said so.
+
+Both were supporting evidence for a judgement that was right. That is the tell: the
+design gets argued and re-read, while the *"I checked"* clause beside it is written
+last, from memory of a run rather than from its output, and reads as authority
+afterwards. **A claim about a corpus states the count and what it is a count of; a claim
+about a mutation names which mutation and what failed.** If a sentence generalises over
+runs — "each", "every", "always" — either it was measured per case or it is a guess
+wearing a measurement's clothes. This is `PATTERNS.md` §9a's own rule ("count before
+believing any number, including these") applied one layer up, to the prose that reports
+the count.
+
+The exposure is specific to this codebase: much of the safety here rests on javadoc
+explaining *why* a guard is shaped as it is, and a reader who trusts that prose will not
+re-run the check behind it.
+
 **A message whose sameness is load-bearing gets written once and guarded.**
 `"Tour operator not found"` was 20 literals in `src/main` and 16 in tests, said by
 four different causes on purpose. `TenantNotFoundMessageIsWrittenOnceTest` is the

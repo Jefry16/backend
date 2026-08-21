@@ -155,14 +155,17 @@ class MigrationForeignKeysTest {
      * <p>It is why the javadoc on {@code deleteRule} calls the name convention a
      * default rather than a checked one: the repository's only FK drop is this shape.
      *
-     * <p><b>Two mechanisms hide this drop, so no single mutation makes this fail —
-     * measured, not assumed.</b> {@code %I} is not an identifier token, so the drop
-     * pattern does not match it at all; and even when widened to accept one, the
-     * placeholder name does not contain the column, so the name filter skips it.
-     * Each mutation alone leaves all ten green; applying both fails this test and
-     * {@code aDropUnderAnUnrelatedNameIsNotSeen} together. So read this as a
-     * <em>documentation</em> test that records a shape, not as a guard that bites on
-     * the next edit — the sibling below is the one with single-mutation reach.
+     * <p><b>Two mechanisms hide this drop, so only both mutations together make this
+     * one fail.</b> {@code %I} is not an identifier token, so the drop pattern does
+     * not match it at all; and even when widened to accept one, the placeholder name
+     * does not contain the column, so the name filter skips it. Measured, one at a
+     * time: widening the pattern alone leaves all ten green, removing the name filter
+     * alone is caught on its own by {@code aDropUnderAnUnrelatedNameIsNotSeen}, and
+     * both together fail that test and this one.
+     *
+     * <p>So read <em>this</em> test as a documentation test recording a shape rather
+     * than a guard that bites on the next edit. The sibling below is the one with
+     * single-mutation reach, and between them the pair covers both mutations.
      */
     @Test
     void aDropBuiltAtRuntimeIsNotSeen() throws IOException {
