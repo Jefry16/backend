@@ -125,10 +125,16 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   sharing the shop's title is already duplicate-ish, and every further page type —
   a collection, a search — inherits it. **Nothing was invented for it in #92 on
   purpose: a schema decided by a template is the wrong order.** The options are a
-  `page`-like row per page type, theme settings, or nothing. **Settle it before
-  the experience detail page ships its own answer**, which is the first thing
-  that would force one — so it is parked with the storefront, and unparks with
-  it.
+  `page`-like row per page type, theme settings, or nothing.
+
+  **Corrected 2026-08-21.** This entry said to settle it *"before the experience
+  detail page ships its own answer, which is the first thing that would force
+  one."* The detail page shipped and forced nothing: `experiences` and their
+  overlay have carried `seo_title`/`seo_description` since experience/V8, so it
+  uses the same `SeoText` chain a CMS page does. The entry's real subject is page
+  types with **no entity to carry SEO** — the listing, which already shipped
+  without an answer, and whatever comes next. It no longer has a slice attached to
+  unpark it.
 - **Should a storefront card show that an experience is featured?** (2026-08-03,
   #92. **Filed as Debt until 2026-08-11, where it did not belong.**) `featured`
   already orders the listing, featured rows first. The page just says nothing about
@@ -136,8 +142,12 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   Nothing is owed and nothing is half-built: the card component that carried the
   flag was **dropped in review** under LAW §2.4 rather than parked in a shared
   port waiting for an answer, precisely because nothing read it. What is open is
-  a **product question**, and the field it would need is one boolean added the
-  day a badge renders. Parked with the storefront either way.
+  a **product question**.
+
+  **Narrowed 2026-08-21.** The detail page serves `experience.featured`, so the
+  backend half is done and the field is no longer hypothetical. What remains is
+  purely whether a theme renders a badge, and whether the *card* on the listing
+  needs the flag too — the card still does not carry it.
 
 - **Experience `type`** (2026-08-12; `category` shipped 2026-08-21, see *Decided*
   below — **`type` is still wanted and still unscheduled**). Before categories an

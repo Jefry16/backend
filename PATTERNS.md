@@ -259,6 +259,10 @@ tourOperator  id, name, address, phone, email, url, description, passwordMessage
               currency { code, symbol }, timezone { name, city }
 (top level)   pageTitle, pageDescription, ogImageUrl, canonicalUrl, pageType
 page          id, handle, title, body, url   -- /pages/{handle} only, NON_NULL
+experience    id, handle, name, description, longDescription, startingPrice, url,
+              thumbnail, gallery [Image], featured, bookingCutoffHours, createdAt,
+              category { id, name }, metafields
+                                             -- /experiences/{handle} only, NON_NULL
 experiences   { data [ { id, handle, name, description, startingPrice, url,
                          thumbnail } ], nextCursor }   -- /experiences only, NON_NULL
 routes        root, experiences
@@ -342,20 +346,37 @@ a `Map`. Do not build it before the sections that need it.
 
 **Where a URL that varies per page is built:** `application` says *where* a thing
 lives (the locale code, and whether it is the one that serves bare), `presentation`
-says *what its URL is*. **The language switcher does not do this yet, and that is a
-live gap on a shipped route.** Every `Language.url` is built as `/` or `/{code}`
-in `StorefrontGlobalsResponse`. So switching language from `/pages/about` sends
-the visitor to the home page, not to that page in that language.
+says *what its URL is*. **The language switcher was a live gap on a shipped route
+until the experience detail page landed** — every `Language.url` was `/` or
+`/{code}`, so switching language from `/pages/about` went to the home page, and so
+did switching from `/experiences`, whose path does not even vary by handle.
 
-**The blocker is the data, not the plumbing.** A page's handle is translated, so
-the switcher needs that page's handle *in each locale*, and no query answers that:
-`StorefrontPageQuery.findByHandle` resolves one handle in one locale, and
-`StorefrontExperienceQuery` is the same shape. **Do not capture the current page's
-handle and repeat it under every prefix** — English prefix, Spanish slug, 404.
+**The blocker was the data, not the plumbing**, and it is answered like this:
 
-So it lands with the experience detail page: decide how per-locale handles arrive
-(all locales on the detail query, or one call per language), then build the URL
-from the resolved handle. One slice, a real caller.
+- **Per-locale handles cross the port** as `LocalizedHandles(canonical, byLocale)`
+  with `in(locale)`. **Sparse on purpose** — a locale appears only when it renames
+  the resource, because the adapter cannot see the operator's locale list. `in()`
+  writes the canonical fallback once, so a caller reaching for `.get()` cannot
+  build `/pages/null`.
+- **One read for every locale**, not one per language: the adapters use
+  `findByPageId` / `findByExperienceId` and take the column overlay, the rename
+  guard and the map from the same rows. The switcher's cost does not grow with the
+  operator's locale list.
+- **`from(...)` takes `Map<String,String> urlByLocale`.** A map and not a
+  function, because a map can *omit* a locale — which is what `is_published` will
+  need — while a function can only return null for every reader to check.
+  `everyLocale(...)` serves routes with no handle, `byHandle(...)` those with one.
+- **The canonical is read back off the switcher**: `localization.language().url()`.
+  One expression, so `canonicalUrl`, `page.url`, `experience.url` and the current
+  language's entry cannot drift. That also makes `orElse(null)` on the current
+  language wrong — it is `orElseThrow`, because a null would now surface as a null
+  canonical rather than a missing switcher entry.
+
+**Do not capture the current page's handle and repeat it under every prefix** —
+English prefix, Spanish slug, 404. That is the one mutation with a named test
+(`theSwitcherOffersEachLanguageItsOwnHandle`), and `LocaleRule` round-trips every
+minted URL over every factory: a URL a switcher offers must resolve back to the
+language it was offered for.
 
 **Renaming a component here is a breaking change** once operators author themes.
 Decide the shape while there are four records to change, not forty templates.

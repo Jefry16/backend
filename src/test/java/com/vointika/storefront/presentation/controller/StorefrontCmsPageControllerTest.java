@@ -3,6 +3,7 @@ package com.vointika.storefront.presentation.controller;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.port.AccessTokenValidatorPort;
 import com.vointika.shared.port.MediaAssetBatchQuery;
+import com.vointika.shared.port.LocalizedHandles;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
@@ -81,9 +82,15 @@ class StorefrontCmsPageControllerTest {
                 List.of());
         StorefrontGlobals globals = new StorefrontGlobals(operator, title, "About this operator", null,
                 List.of(), List.of(), List.of(),
-                new LocalizationData(current, primary, List.of(primary)));
+                // The served locale has to be one the operator publishes. It was
+                // List.of(primary) — so every localized case here declared a
+                // locale it did not support, which orElse(null) quietly absorbed
+                // and the switcher's orElseThrow now refuses.
+                new LocalizationData(current, primary,
+                        current.equals(primary) ? List.of(primary) : List.of(primary, current)));
         return new StorefrontPageOutput(globals,
-                new PageView(PAGE, handle, title, "<p>Since 2011.</p>", null, null));
+                new PageView(PAGE, handle, title, "<p>Since 2011.</p>", null, null,
+                        new LocalizedHandles(handle, Map.of())));
     }
 
     private void served(String pathLocale, String handle, StorefrontPageOutput output) {
@@ -121,6 +128,31 @@ class StorefrontCmsPageControllerTest {
 
         mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
                 .andExpect(jsonPath("$.pageTitle").value("About us"));
+    }
+
+    /**
+     * <b>The switcher offers each language its own slug, not this one under a
+     * different prefix.</b> That mistake — English prefix, Spanish slug — is a
+     * 404, because a locale that renames a page makes the canonical a 404 there.
+     * It was the shape of the bug for as long as every url was `/` or `/{code}`.
+     */
+    @Test
+    void theSwitcherOffersEachLanguageItsOwnHandle() throws Exception {
+        StorefrontPageOutput out = output("en", "en", "about-us", "About us");
+        StorefrontPageOutput renamed = new StorefrontPageOutput(
+                new StorefrontGlobals(out.globals().tourOperator(), "About us", "About this operator", null,
+                        List.of(), List.of(), List.of(),
+                        new LocalizationData("en", "en", List.of("en", "es"))),
+                new PageView(PAGE, "about-us", "About us", "<p>Since 2011.</p>", null, null,
+                        new LocalizedHandles("about-us", Map.of("es", "sobre-nosotros"))));
+        served(null, "about-us", renamed);
+
+        mockMvc.perform(get("/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.localization.languages[0].url").value("/pages/about-us"))
+                .andExpect(jsonPath("$.localization.languages[1].url").value("/es/pages/sobre-nosotros"))
+                // The current language's entry and the canonical are one string.
+                .andExpect(jsonPath("$.localization.language.url").value("/pages/about-us"))
+                .andExpect(jsonPath("$.canonicalUrl").value("http://acme.localhost:8080/pages/about-us"));
     }
 
     /** A localized address carries its prefix into the page's own url. */

@@ -188,6 +188,21 @@ class StorefrontExperienceListControllerTest {
                 .andExpect(jsonPath("$.routes.experiences").value("/experiences"));
     }
 
+    /**
+     * <b>A live bug this fixes.</b> The listing's path carries no handle, but it is
+     * not the root either — every url used to be `/` or `/{code}`, so switching
+     * language here sent a visitor to the home page.
+     */
+    @Test
+    void theSwitcherOffersTheListingInEachLanguage() throws Exception {
+        served("es", globals("es", "en", List.of("en", "es")));
+
+        mockMvc.perform(get("/es/experiences").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.localization.languages[0].url").value("/experiences"))
+                .andExpect(jsonPath("$.localization.languages[1].url").value("/es/experiences"))
+                .andExpect(jsonPath("$.localization.language.url").value("/es/experiences"));
+    }
+
     @Test
     void theCanonicalUrlAndRoutesCarryTheLocalePrefix() throws Exception {
         served("es", globals("es", "en", List.of("en", "es")));

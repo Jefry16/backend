@@ -211,6 +211,25 @@ class StorefrontExperienceDetailControllerTest {
     }
 
     /**
+     * The reason this slice is where the switcher landed: an experience is the
+     * first thing whose address <em>differs</em> per language, so a switcher that
+     * repeats the current handle under another prefix produces a 404 rather than
+     * merely the wrong page.
+     */
+    @Test
+    void theSwitcherOffersEachLanguageItsOwnHandle() throws Exception {
+        served(null, "sunset-sail");
+
+        mockMvc.perform(get("/experiences/sunset-sail").header("Host", "acme.localhost:8080"))
+                .andExpect(jsonPath("$.localization.languages[0].url").value("/experiences/sunset-sail"))
+                .andExpect(jsonPath("$.localization.languages[1].url")
+                        .value("/es/experiences/paseo-al-atardecer"))
+                .andExpect(jsonPath("$.localization.language.url").value("/experiences/sunset-sail"))
+                .andExpect(jsonPath("$.canonicalUrl")
+                        .value("http://acme.localhost:8080/experiences/sunset-sail"));
+    }
+
+    /**
      * Five different misses, one answer. A handle nothing answers to, a draft, an
      * unpublished locale, an unknown host, and the canonical handle of an
      * experience this locale renames all look identical from outside.

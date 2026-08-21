@@ -37,6 +37,11 @@ public interface StorefrontPageQuery {
     Optional<PageView> findByHandle(UUID tourOperatorId, String handle, String locale);
 
     /**
+     * @param handles this page's address in every locale that renames it, plus the
+     *                canonical — the language switcher's input. Without it a
+     *                switcher can only repeat the current handle under another
+     *                prefix, and a locale that renames the page makes the canonical
+     *                a 404 there: an English prefix on a Spanish slug.
      * @param body raw HTML the operator authored. <b>It is rendered unescaped</b>
      *             when a template exists — our template rendering their content,
      *             the same trust boundary the policy page sits on, and a
@@ -48,5 +53,6 @@ public interface StorefrontPageQuery {
                     String title,
                     String body,
                     String seoTitle,
-                    String seoDescription) {}
+                    String seoDescription,
+                    LocalizedHandles handles) {}
 }

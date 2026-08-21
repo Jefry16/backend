@@ -4,6 +4,7 @@ import com.vointika.page.infrastructure.persistence.entity.PageJpaEntity;
 import com.vointika.page.infrastructure.persistence.entity.PageTranslationJpaEntity;
 import com.vointika.page.infrastructure.persistence.repository.PageJpaRepository;
 import com.vointika.page.infrastructure.persistence.repository.PageTranslationJpaRepository;
+import com.vointika.shared.port.LocalizedHandles;
 import com.vointika.shared.port.StorefrontPageQuery;
 import org.springframework.stereotype.Component;
 
@@ -92,15 +93,34 @@ public class StorefrontPageQueryImpl implements StorefrontPageQuery {
                 });
     }
 
+    /**
+     * Every locale that renames this page, in one read.
+     *
+     * <p>Sparse: a row with a null handle is not a rename, so it is left out and
+     * {@link LocalizedHandles#in} falls back to the canonical. One query for all
+     * locales rather than one per language — the switcher's cost must not grow
+     * with the operator's locale list.
+     */
+    private LocalizedHandles handles(PageJpaEntity page) {
+        Map<String, String> byLocale = new HashMap<>();
+        for (PageTranslationJpaEntity translation : translationRepository.findByPageId(page.getId())) {
+            if (translation.getHandle() != null) {
+                byLocale.put(translation.getLocale(), translation.getHandle());
+            }
+        }
+        return new LocalizedHandles(page.getHandle(), byLocale);
+    }
+
     /** Nullable-wins-canonical on every column, the overlay every translated read uses. */
-    private static PageView view(PageJpaEntity page, PageTranslationJpaEntity translation, String handle) {
+    private PageView view(PageJpaEntity page, PageTranslationJpaEntity translation, String handle) {
         return new PageView(
                 page.getId(),
                 handle,
                 overlay(translation == null ? null : translation.getTitle(), page.getTitle()),
                 overlay(translation == null ? null : translation.getBody(), page.getBody()),
                 overlay(translation == null ? null : translation.getSeoTitle(), page.getSeoTitle()),
-                overlay(translation == null ? null : translation.getSeoDescription(), page.getSeoDescription()));
+                overlay(translation == null ? null : translation.getSeoDescription(), page.getSeoDescription()),
+                handles(page));
     }
 
     private static String overlay(String translated, String canonical) {
