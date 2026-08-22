@@ -1251,6 +1251,12 @@ port takes the calling class, so log names still point at the reporter.
   the constant someone was looking at; the composition is what nobody is looking
   at. Wherever constants compose, guard the composition, not the parts.
 
+  **`LOCALIZED_EXPERIENCES` is the sharpest case**: it is `LOCALE + EXPERIENCES`,
+  and `EXPERIENCES` is a bare literal — so its *only* path variable is inherited.
+  There is nothing local to guard, which means nobody would ever have written a
+  per-constant guard for it. It is covered because the invariant walks
+  compositions rather than authors' intentions.
+
   **The tell that you are at this fork**: you are about to copy a guard, or to add
   a name to a list inside one. Both mean the guard's subject is a *set* and it is
   enumerating members. Derive the set — from reflection, from the package
