@@ -199,6 +199,30 @@ public class StorefrontTourOperatorQueryImpl implements StorefrontTourOperatorQu
                 socialLinks);
     }
 
+    /**
+     * <b>The unknown slug and the unwritten policy are one answer.</b>
+     * {@code PolicyType.from} rejects a name no enum constant has, and a real type
+     * the operator never wrote finds no row — both empty, so a visitor cannot
+     * enumerate which of the four an operator has by watching status codes.
+     */
+    @Override
+    public Optional<PolicyDetailView> findPolicy(UUID tourOperatorId, String typeName, String locale) {
+        return PolicyType.from(typeName)
+                .flatMap(type -> policyRepository.findByTourOperatorIdAndType(tourOperatorId, type)
+                        .map(policy -> {
+                            TourOperatorPolicyTranslationJpaEntity translation = policyTranslationRepository
+                                    .findByTourOperatorIdAndTypeAndLocale(tourOperatorId, type, locale)
+                                    .orElse(null);
+                            return new PolicyDetailView(
+                                    policy.getId(),
+                                    policy.getType().name(),
+                                    overlay(translation == null ? null : translation.getTitle(),
+                                            policy.getTitle()),
+                                    overlay(translation == null ? null : translation.getBody(),
+                                            policy.getBody()));
+                        }));
+    }
+
     private List<PolicyView> policies(UUID tourOperatorId, String locale) {
         Map<PolicyType, String> translatedTitles = new EnumMap<>(PolicyType.class);
         for (TourOperatorPolicyTranslationJpaEntity t :

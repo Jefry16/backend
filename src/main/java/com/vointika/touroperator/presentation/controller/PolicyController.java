@@ -43,9 +43,11 @@ import java.util.UUID;
  *
  * <p>The enum name ({@code LEGAL_NOTICE}) is what the body carries, matching how
  * this context writes {@code linkType} and {@code role}. The hyphenated slug
- * ({@code legal-notice}) is a public-URL concern that belonged to the
- * storefront's {@code PolicySlug}, deleted with the placeholder cutback — the
- * split is the point, and it returns with the public pages.
+ * ({@code legal-notice}) is a public-URL concern and lives in the storefront's
+ * {@code PolicySlug}, which owns the transform both ways. <b>The split is the
+ * point</b>: this API never speaks the slug, and the storefront never speaks the
+ * enum — it cannot, since it may not import {@code PolicyType}, which is why an
+ * unknown slug becomes a name no constant has rather than a validation error.
  */
 @RestController
 @RequestMapping("/api/tour-operators/{tourOperatorId}/policies")

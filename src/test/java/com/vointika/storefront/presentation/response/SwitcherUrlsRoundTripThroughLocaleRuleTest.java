@@ -7,6 +7,7 @@ import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceDetailView;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyDetailView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals.LocalizationData;
@@ -71,6 +72,15 @@ class SwitcherUrlsRoundTripThroughLocaleRuleTest {
                 Instant.parse("2026-07-21T10:00:00Z"), null, HANDLES);
     }
 
+    /**
+     * A multi-word type, because the slug is where a policy url can go wrong: the
+     * switcher offers the same slug under every prefix, so a transform that
+     * differed per call would show up as a url that does not round trip.
+     */
+    private static PolicyDetailView policy() {
+        return new PolicyDetailView(ID, "LEGAL_NOTICE", "Legal notice", "<p>x</p>");
+    }
+
     private static PageView page() {
         return new PageView(ID, "about-us", "About", "<p>x</p>", null, null,
                 new LocalizedHandles("about-us", Map.of("es", "sobre-nosotros")));
@@ -92,6 +102,8 @@ class SwitcherUrlsRoundTripThroughLocaleRuleTest {
                 "cmsPage", () -> StorefrontGlobalsResponse.cmsPage(globals, page(),
                         "https://acme.test", Map.of(), urls),
                 "experience", () -> StorefrontGlobalsResponse.experience(globals, experience(), List.of(),
+                        "https://acme.test", Map.of(), urls),
+                "policy", () -> StorefrontGlobalsResponse.policy(globals, policy(),
                         "https://acme.test", Map.of(), urls));
     }
 

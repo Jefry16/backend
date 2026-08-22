@@ -135,6 +135,16 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   types with **no entity to carry SEO** — the listing, which already shipped
   without an answer, and whatever comes next. It no longer has a slice attached to
   unpark it.
+
+  **A third case appeared 2026-08-22 with the policy page, and it is the cheap
+  one.** A policy *has* an entity and a translatable title, but no SEO columns —
+  so `SeoText.title(null, policy.title(), …)` gives it a real per-page title with
+  no schema at all, and only the description falls through to the operator's.
+  That is deliberately where it was left: a policy document's own first paragraph
+  is not a meta description, and inventing `seo_description` on
+  `tour_operator_policies` would be a column added for a template. Worth noting
+  because it narrows the open question to page types with **neither an entity nor
+  a title** — which today is exactly one, the experiences listing.
 - **Should a storefront card show that an experience is featured?** (2026-08-03,
   #92. **Filed as Debt until 2026-08-11, where it did not belong.**) `featured`
   already orders the listing, featured rows first. The page just says nothing about

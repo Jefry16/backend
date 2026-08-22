@@ -75,15 +75,21 @@ port or an event (never a direct import).
 - `presentation/{controller,request,response}`, plus `presentation/view` where a
   context server-renders: a template's context object is not a serialized JSON
   response, and calling it one would mislead. There is no live example while the
-  storefront is a placeholder — §2a records the shape to rebuild.
+  storefront serves that object as JSON — §2a records the shape to render into.
 
 ## 2a. The render envelope (a server-rendered page's context object)
 
-> **This is the storefront's data contract, and it is live and served as JSON** —
-> the globals on `/`, `/{locale}` and both `/experiences` forms, and the globals
-> plus `page` on `/pages/{handle}`. JSON and not HTML on purpose: the contract is
-> settled before anything is server-rendered again, because a wrong field is
-> visible in a body and invisible under markup nobody reads yet.
+> **This is the storefront's data contract, it is live and served as JSON, and
+> every address now serves its own document.** The globals go out on every route;
+> `/pages/{handle}` adds `page`, `/experiences` adds `experiences`,
+> `/experiences/{handle}` adds `experience` and `/policies/{type}` adds `policy`
+> — each with and without a locale prefix. JSON and not HTML on purpose: the
+> contract is settled before anything is server-rendered again, because a wrong
+> field is visible in a body and invisible under markup nobody reads yet.
+>
+> **No template exists**, so the theme object model as a *render* context is the
+> part that is still only a plan. What is no longer a plan is which objects a
+> template will be handed.
 >
 > **The experiences listing serves its own page of experiences** under
 > `experiences: {data, nextCursor}`, keyset-paginated by the same executor every
@@ -91,9 +97,15 @@ port or an event (never a direct import).
 > `list-collections`. The address went onto the render path one slice before its
 > query, deliberately, so the query landed against a route already proven.
 >
-> Two addresses still answer a placeholder `{handle, status}`: the policy page,
-> with and without a locale prefix. No template exists either, so the theme object
-> model as a *render* context is the part that is still only a plan.
+> **A policy is addressed by a slug the enum never speaks.** `PolicyType.TERMS`
+> is `/policies/terms` and `LEGAL_NOTICE` is `/policies/legal-notice`; the
+> transform lives in `storefront.application.policy.PolicySlug`, both directions
+> in one class because the globals mint the url and the route has to answer at
+> it. It **cannot validate** — `storefront` may not import `PolicyType` — so an
+> unknown slug maps to a name no constant has and the read answers empty. An
+> unwritten policy and a slug that is not a policy type are therefore the same
+> 404, which is what a visitor should see either way. Its `pageType` is `policy`,
+> Shopify's own value.
 >
 > Each rule below carries its own reason:
 >
@@ -265,6 +277,7 @@ experience    id, handle, name, description, longDescription, startingPrice, url
                                              -- /experiences/{handle} only, NON_NULL
 experiences   { data [ { id, handle, name, description, startingPrice, url,
                          thumbnail } ], nextCursor }   -- /experiences only, NON_NULL
+policy        id, type, title, body, url  -- /policies/{type} only, NON_NULL
 routes        root, experiences
 localization  language, languages [ { code, name, endonymName, primary, url } ]
 ```
@@ -281,6 +294,13 @@ booking form wants, without comparing type strings. It is **null** when the
 operator has not written that policy, so a template guards on the object. The four
 names are not derived from the type: `TERMS` is `termsOfService`, because that is
 what a theme author coming from Shopify types.
+
+**None of them carries the body** — a footer link needs a title and a url, and
+four policy documents on every page of the site is a payload nobody asked for.
+The body arrives only on the policy page itself, as the top-level `policy` object,
+which is why the port has a second read (`findPolicy`) rather than a fuller
+`PolicyView`. It is raw HTML the operator authored and **is rendered unescaped**,
+the same trust boundary the CMS page sits on.
 
 **Anything a theme renders as an `<img>` is one shared `Image`** —
 `{ url, alt, width, height, aspectRatio }`. `aspectRatio` is **derived**

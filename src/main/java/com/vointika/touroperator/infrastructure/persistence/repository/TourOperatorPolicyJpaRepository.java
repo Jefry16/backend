@@ -25,5 +25,8 @@ public interface TourOperatorPolicyJpaRepository
     /** Tenant-scoped by construction: an id alone is never enough to read a policy. */
     Optional<TourOperatorPolicyJpaEntity> findByIdAndTourOperatorId(UUID id, UUID tourOperatorId);
 
+    /** The storefront's read: one operator's policy of one type. */
+    Optional<TourOperatorPolicyJpaEntity> findByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type);
+
     boolean existsByTourOperatorIdAndType(UUID tourOperatorId, PolicyType type);
 }

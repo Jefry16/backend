@@ -14,12 +14,13 @@ import java.util.List;
  * {@code infrastructure} may not see each other and both consumers sit in one of
  * the two (PATTERNS §1).
  *
- * <p><b>These addresses no longer all serve the same thing.</b> {@link #HOME} and
- * {@link #LOCALE} serve the globals contract; {@link #PAGE} and
- * {@link #LOCALIZED_PAGE} serve a CMS page; only the experiences and policies
- * routes still answer the {@code {handle,status}} placeholder. The addresses were
+ * <p><b>Every address here now serves its own document.</b> Each pairs the
+ * globals contract with the object that page is about, and names its own
+ * {@code pageType}; none of them answers a stand-in any more. The addresses were
  * always the expensive part to get right — the lessons are recorded in
- * {@code StorefrontPublicRoutes} — and they are what the remaining pages hang off.
+ * {@code StorefrontPublicRoutes} — and getting them settled first is what let
+ * each page land as a payload field rather than as a route, a locale rule, a gate
+ * interaction and a query at once.
  */
 public final class StorefrontRoutes {
 
@@ -41,9 +42,11 @@ public final class StorefrontRoutes {
      * <p>It must stay at least as wide as {@code reference.languages}, or an
      * operator publishes a locale the storefront 404s with nothing failing —
      * pinned by {@code LocalePathTemplateTest}, which reads the real migrations.
-     * <b>Which locales are actually published is no longer checked here</b>: that
-     * needed the operator's locale list, which is a query, so the placeholder
-     * accepts any locale-shaped segment and the rule returns with the pages.
+     * <b>Which locales are actually published is deliberately not checked here</b>,
+     * and never will be: the operator's locale list is a query, and a route
+     * pattern cannot run one. The pattern admits any locale-shaped segment and
+     * {@link LocaleRule} decides — an unpublished locale is a 404 from the use
+     * case, indistinguishable from an unknown handle.
      */
     public static final String LOCALE = "/{locale:[a-z]{2}(?:-[a-z0-9]{2,4})?}";
 

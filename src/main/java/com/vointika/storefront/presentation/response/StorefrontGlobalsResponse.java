@@ -13,6 +13,7 @@ import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.ColorView;
+import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyDetailView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
 import com.vointika.shared.port.LocalizedHandles;
@@ -20,6 +21,7 @@ import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.web.list.CursorPageResponse;
+import com.vointika.storefront.application.policy.PolicySlug;
 import com.vointika.storefront.application.policy.StorefrontRoutes;
 
 import java.time.Instant;
@@ -90,7 +92,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                         @JsonInclude(JsonInclude.Include.NON_NULL)
                                         CursorPageResponse<ExperienceCard> experiences,
                                         @JsonInclude(JsonInclude.Include.NON_NULL)
-                                        Experience experience) {
+                                        Experience experience,
+                                        @JsonInclude(JsonInclude.Include.NON_NULL)
+                                        PolicyPage policy) {
 
     /**
      * Shopify's {@code request.page_type} values, for the addresses that serve
@@ -122,6 +126,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
 
     /** One experience, against Shopify's {@code product}. */
     public static final String PAGE_TYPE_EXPERIENCE = "experience";
+
+    /** One policy. Shopify's own value, spelled the same. */
+    public static final String PAGE_TYPE_POLICY = "policy";
 
     /**
      * @param description the meta description, which is what Shopify's
@@ -376,6 +383,20 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                              Category category,
                              Map<String, Map<String, Metafield>> metafields) {}
 
+    /**
+     * One policy's page.
+     *
+     * <p><b>Named {@code PolicyPage} because {@code Policy} is taken</b> — by the
+     * link in {@code tourOperator.policies}, which is a different thing: that one
+     * carries a title and a url so a footer can list four of them, this one
+     * carries the document. On the wire the field is {@code policy}, matching
+     * Shopify, and the two never appear at the same level.
+     *
+     * @param body raw HTML the operator authored, rendered unescaped when a
+     *             template exists — the same trust boundary a CMS page sits on
+     */
+    public record PolicyPage(UUID id, String type, String title, String body, String url) {}
+
     /** An experience's category, named in the rendered locale. There is no url: nothing routes to one. */
     public record Category(UUID id, String name) {}
 
@@ -452,7 +473,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
-        return from(globals, null, null, null, null, PAGE_TYPE_INDEX,
+        return from(globals, null, null, null, null, null, PAGE_TYPE_INDEX,
                 everyLocale(globals, ""), origin, assets, urls);
     }
 
@@ -462,7 +483,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                     String origin,
                                                     Map<UUID, MediaAsset> assets,
                                                     MediaUrlResolver urls) {
-        return from(globals, page, null, null, null, PAGE_TYPE_PAGE,
+        return from(globals, page, null, null, null, null, PAGE_TYPE_PAGE,
                 byHandle(globals, StorefrontRoutes.PAGES, page.handles()), origin, assets, urls);
     }
 
@@ -477,6 +498,17 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      * every body assertion would still pass. There is deliberately no unnamed
      * {@code from} left to reach for — see {@link #index}.
      */
+    /** One policy's page: the globals plus the policy document. */
+    public static StorefrontGlobalsResponse policy(StorefrontGlobals globals,
+                                                   PolicyDetailView policy,
+                                                   String origin,
+                                                   Map<UUID, MediaAsset> assets,
+                                                   MediaUrlResolver urls) {
+        return from(globals, null, null, null, null, policy, PAGE_TYPE_POLICY,
+                everyLocale(globals, StorefrontRoutes.POLICIES + "/" + PolicySlug.of(policy.type())),
+                origin, assets, urls);
+    }
+
     /** One experience's page: the globals plus the experience, at its own address. */
     public static StorefrontGlobalsResponse experience(StorefrontGlobals globals,
                                                        ExperienceDetailView experience,
@@ -484,7 +516,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                        String origin,
                                                        Map<UUID, MediaAsset> assets,
                                                        MediaUrlResolver urls) {
-        return from(globals, null, null, experience, experienceMetafields, PAGE_TYPE_EXPERIENCE,
+        return from(globals, null, null, experience, experienceMetafields, null, PAGE_TYPE_EXPERIENCE,
                 byHandle(globals, StorefrontRoutes.EXPERIENCES, experience.handles()), origin, assets, urls);
     }
 
@@ -493,7 +525,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                            String origin,
                                                            Map<UUID, MediaAsset> assets,
                                                            MediaUrlResolver urls) {
-        return from(globals, null, experiences, null, null, PAGE_TYPE_EXPERIENCE_LIST,
+        return from(globals, null, experiences, null, null, null, PAGE_TYPE_EXPERIENCE_LIST,
                 everyLocale(globals, StorefrontRoutes.EXPERIENCES), origin, assets, urls);
     }
 
@@ -512,6 +544,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                   CursorPage<ExperienceCardView> experiences,
                                                   ExperienceDetailView experience,
                                                   List<MetafieldView> experienceMetafields,
+                                                  PolicyDetailView policy,
                                                   String pageType,
                                                   Map<String, String> urlByLocale,
                                                   String origin,
@@ -563,7 +596,10 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                 experiences == null ? null : CursorPageResponse.of(
                         experiences, card -> card(card, prefix, assets, urls)),
                 experience == null ? null
-                        : experience(experience, experienceMetafields, canonicalPath, assets, urls));
+                        : experience(experience, experienceMetafields, canonicalPath, assets, urls),
+                policy == null ? null
+                        : new PolicyPage(policy.id(), policy.type(), policy.title(), policy.body(),
+                                canonicalPath));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */
@@ -698,9 +734,8 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
     }
 
     private static Policy policy(PolicyView view, String prefix) {
-        String slug = view.type().toLowerCase(Locale.ROOT).replace('_', '-');
         return new Policy(view.id(), view.type(), view.title(),
-                prefix + StorefrontRoutes.POLICIES + "/" + slug);
+                prefix + StorefrontRoutes.POLICIES + "/" + PolicySlug.of(view.type()));
     }
 
     /**
