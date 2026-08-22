@@ -54,6 +54,18 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 + ",\"timestamp\":\"" + Instant.now() + "\"}");
     }
 
+    /**
+     * <b>Quotes and backslashes only, and that is sufficient rather than
+     * incomplete.</b> Every message reaching here is a constant — this one and
+     * {@code StorefrontNotFound.MESSAGE} — and
+     * {@link UnauthenticatedRequestPolicy#notFoundMessage} makes that the
+     * contract, with the measurement behind it. A control character would still
+     * produce a body Jackson refuses; escaping one nothing sends would be code
+     * for a caller that does not exist.
+     *
+     * <p>Order matters: backslashes first, or the backslash this method adds for
+     * a quote is escaped again on the second pass.
+     */
     private static String escape(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }

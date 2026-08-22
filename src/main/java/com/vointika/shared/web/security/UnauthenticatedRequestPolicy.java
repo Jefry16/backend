@@ -39,6 +39,26 @@ public interface UnauthenticatedRequestPolicy {
      * <p>Returning a message is a claim that the caller could never have
      * authenticated here anyway — the surface is public, so "you are not
      * authenticated" is not a true statement about why the request failed.
+     *
+     * <p><b>Return a constant. Never text derived from the request.</b> This runs
+     * before MVC and its message converters exist, so
+     * {@link RestAuthenticationEntryPoint} assembles the JSON body by hand and
+     * escapes quotes and backslashes — enough for a constant, and not enough for
+     * arbitrary text. Measured with a policy returning
+     * {@code "no storefront at " + request.getServerName()} and a {@code Host} of
+     * {@code evil\n"host}: the quote is escaped, the newline is not, and a raw
+     * control character is not legal inside a JSON string — Jackson rejects the
+     * body with {@code JsonParseException}.
+     *
+     * <p>The bound is worth knowing, because it is narrower than it sounds: the
+     * same probe with a {@code Host} of {@code evil"}, "admin":true, "x":{"y}
+     * <b>parses correctly</b> and stays one string value. So an implementer
+     * cannot forge fields into the body — the failure is an unreadable response,
+     * not a forged one.
+     *
+     * <p>The escaping is deliberately not completed, because nothing needs it:
+     * that would be code for a caller that does not exist (LAW §2.4). This
+     * sentence is the contract instead.
      */
     Optional<String> notFoundMessage(HttpServletRequest request);
 }
