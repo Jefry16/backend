@@ -39,7 +39,14 @@ import java.util.List;
  * constrained, because a bare {@code /{locale}} would {@code permitAll} every
  * single-segment path in the application — {@code /error} today, and whatever
  * {@code /health} or {@code /metrics} arrives later, with nothing failing to say
- * so. Pinned by {@code StorefrontPlaceholderControllerTest}.
+ * so. Pinned by {@code LocalePathTemplateTest}, which asserts the constraint
+ * matches every seeded language code and <b>none</b> of the storefront's own
+ * literal segments — {@code experiences}, {@code password} — so a route cannot
+ * quietly become a locale.
+ *
+ * <p>This line named {@code StorefrontPlaceholderControllerTest} until that class
+ * was deleted with the policy page, and it was wrong before then: that test used
+ * these routes but asserted nothing about the constraint.
  */
 @Component
 public class StorefrontPublicRoutes implements PublicRouteRegistrar {

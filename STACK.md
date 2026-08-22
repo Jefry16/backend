@@ -163,6 +163,5 @@ for: the next session reads it instead of re-discovering it.
   and wrote the rendered string itself rather than returning a view name.
 
   **Every jmustache entry above is a finding without a live renderer behind it.** The
-  storefront answers JSON while it is a placeholder, so only
-  `StorefrontMustacheConfig` and its test survive. These traps are here for the day
-  the themes bring templates back.
+  storefront answers JSON until themes exist, so only `StorefrontMustacheConfig` and
+  its test survive. These traps are here for the day the themes bring templates back.

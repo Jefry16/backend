@@ -71,6 +71,31 @@ block coordination.
   makes the editor page. Either cap + paginate it, or record the exemption the way
   the reference lists have one.
 
+- **A malformed storefront URL answers `401 Authentication required`**
+  (2026-08-22, found live while verifying the policy page) — on a site with no
+  authentication at all. Every storefront route constrains its path variable
+  (`/policies/{type:[a-z-]+}`, the `Handle` shape on pages and experiences), and a
+  path that fails the constraint matches no `PublicRoute`, so Spring Security
+  rejects it at the filter chain before MVC ever sees it. Measured across four
+  routes, all identical: `/policies/legal_notice`, `/pages/About_Us`,
+  `/experiences/Sunset_Sail`, `/experiences/A` → **401**, in the JSON error shape.
+  A well-formed miss (`/policies/refunds`, `/pages/does-not-exist`) correctly
+  answers the shared 404.
+
+  **It predates the policy page and belongs to no slice** — that page just made it
+  visible, because a slug with an underscore is the obvious typo for an enum named
+  `LEGAL_NOTICE`. It is **the same mechanism** as the HEAD trap already recorded in
+  `CLAUDE.md`: anything the `PublicRoute` list does not match is a 401, and on a
+  public page that is both wrong and a small leak — an anonymous visitor learns
+  there is an auth system to fail. The generalisation worth keeping: *a
+  `PublicRoute` is an allowlist, so every way of missing it fails closed, and
+  "fails closed" on a public page means the wrong answer.*
+
+  The fix is a storefront-scoped fallback that turns an unmatched path under a
+  resolved tenant host into the same 404 every other miss gets. Not urgent — no
+  crawler constructs these, and the body is our error shape rather than a stack
+  trace — but it should not survive the first deployment.
+
 *Audited 2026-07-21: no TODO/FIXME/HACK/stub markers, no orphan fallback code, no
 dead code, no hidden `@SuppressWarnings` hacks (the Kafka raw-type ones are the
 deliberate Boot-4 injection). Reference/ui-language plain-array lists are curated
@@ -135,6 +160,16 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   types with **no entity to carry SEO** — the listing, which already shipped
   without an answer, and whatever comes next. It no longer has a slice attached to
   unpark it.
+
+  **A third case appeared 2026-08-22 with the policy page, and it is the cheap
+  one.** A policy *has* an entity and a translatable title, but no SEO columns —
+  so `SeoText.title(null, policy.title(), …)` gives it a real per-page title with
+  no schema at all, and only the description falls through to the operator's.
+  That is deliberately where it was left: a policy document's own first paragraph
+  is not a meta description, and inventing `seo_description` on
+  `tour_operator_policies` would be a column added for a template. Worth noting
+  because it narrows the open question to page types with **neither an entity nor
+  a title** — which today is exactly one, the experiences listing.
 - **Should a storefront card show that an experience is featured?** (2026-08-03,
   #92. **Filed as Debt until 2026-08-11, where it did not belong.**) `featured`
   already orders the listing, featured rows first. The page just says nothing about

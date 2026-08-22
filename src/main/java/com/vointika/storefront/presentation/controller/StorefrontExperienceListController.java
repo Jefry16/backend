@@ -26,8 +26,9 @@ import java.util.UUID;
  * query is a separate piece of work; establishing the address on the real render
  * path first means the thing that lands next is a field on a payload that already
  * works, rather than a route, a locale rule, a gate interaction and a query all
- * at once. It left {@code StorefrontPlaceholderController} for the same reason
- * the home page did.
+ * at once. It left the placeholder controller for the same reason the home page
+ * did, and that controller is gone now — the policy page took its last two
+ * routes.
  *
  * <p><b>The render is deliberately a copy of the home controller's, and it is
  * about to stop being one.</b> The listing query arrives here and nowhere else,

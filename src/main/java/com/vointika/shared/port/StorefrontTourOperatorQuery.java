@@ -31,8 +31,10 @@ public interface StorefrontTourOperatorQuery {
 
     /**
      * Stage one: does a storefront live at this handle, and what may it render?
-     * Empty when no operator owns the handle — which is the 404, and the only
-     * thing the placeholder routes need.
+     * Empty when no operator owns the handle — which is the 404.
+     *
+     * <p>It is the locale list and nothing else, because it is read before the
+     * locale is known: every richer read below takes a locale to overlay with.
      */
     Optional<LocalesView> findLocales(String handle);
 
@@ -132,9 +134,37 @@ public interface StorefrontTourOperatorQuery {
                        String countryCode,
                        String countryName) {}
 
+    /**
+     * One policy of this operator's, in the rendered locale, or empty.
+     *
+     * <p>Empty covers both misses and does not distinguish them: a type no
+     * operator could have (an unknown slug) and a policy this operator simply has
+     * not written. There is no published flag — a policy row exists or it does
+     * not.
+     *
+     * @param typeName the {@code PolicyType} name, which the caller derives from
+     *                 the slug in the URL. It is not validated against the enum on
+     *                 the way in; an unrecognised name matches no row.
+     */
+    Optional<PolicyDetailView> findPolicy(UUID tourOperatorId, String typeName, String locale);
+
     record ColorView(String background, String foreground) {}
 
     record SocialLinkView(String platform, String url) {}
 
     record PolicyView(UUID id, String type, String title) {}
+
+    /**
+     * One policy, with the body the globals deliberately leave out.
+     *
+     * <p><b>A separate read, not a fatter {@link PolicyView}.</b> The globals list
+     * every policy on every page so a theme can render a footer; giving that list
+     * a body would put four documents into every response to serve the one page
+     * that needs one.
+     *
+     * @param type the {@code PolicyType} name, as a string — {@code storefront}
+     *             cannot see the enum, and the slug it is addressed by is
+     *             {@code PolicySlug.of(type)}
+     */
+    record PolicyDetailView(UUID id, String type, String title, String body) {}
 }

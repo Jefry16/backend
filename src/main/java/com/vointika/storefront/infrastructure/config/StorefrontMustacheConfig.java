@@ -13,9 +13,9 @@ import org.springframework.context.annotation.Configuration;
  * {@code MustacheResourceTemplateLoader} is kept — it is exactly the
  * {@code classpath:/templates/*.mustache} loader this slice wants.
  *
- * <p><b>Nothing compiles a template today</b>: the storefront answers JSON while
- * its pages are a placeholder, so this bean and the settings on it are here for
- * the themes rather than for a caller. That is a deliberate exception to "no
+ * <p><b>Nothing compiles a template today</b>: the storefront answers JSON until
+ * themes exist, so this bean and the settings on it are here for the themes
+ * rather than for a caller. That is a deliberate exception to "no
  * abstraction before its second caller" and it is cheap to justify — each
  * setting below was arrived at by reverting it and watching what broke, the
  * findings are recorded as version traps in {@code STACK.md}, and
