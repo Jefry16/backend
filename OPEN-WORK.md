@@ -342,10 +342,30 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
 
 ## Open decisions
 
-Coordination-critical and unresolved. Record the outcome under *Decided* when closed.
-
 Coordination-critical and unresolved. Resolve deliberately; record the outcome
 in **Decided** above when closed.
+
+### The order the storefront is being built in
+
+Stated 2026-08-22, and it is what makes decisions 2, 4 and 5 legible together:
+**the data contract first, then rendering, then formatting** — objects, then
+templates, then money and dates. Every storefront slice so far has been the first
+of those, which is why it serves JSON and not HTML.
+
+Alongside them sit filtering and AJAX. **AJAX is three problems and must not be
+planned as one**, because they have different security postures:
+
+- **read-side** — facets, search-suggest, pagination without a reload. Same data,
+  different transport; nearly free if the contract is right, and it is what forces
+  the cursor-versus-page-number question filed in Backlog.
+- **the cart** — stateful, cookie-identified, and the first *public writes* this
+  application has ever had. Decision 5 is its prerequisite.
+- **checkout** — payments, a different risk class again, and where §7a's
+  "critical-event delivery — decided, unbuilt" finally gets its trigger.
+
+**The cart comes after rendering, not before.** A cart with no page to sit on is a
+JSON API for nobody, and its shape depends on what a theme's add-to-cart form
+actually posts.
 
 1. **Context collapse.** Which of the old ~19 contexts survive, merge, or die.
    **Still to place: cart · theme · payment · sales** — and none of them can be
@@ -405,3 +425,74 @@ in **Decided** above when closed.
    searches the app log," costing no code at all. The alternative, if it is not,
    is a non-tenant home for security events; **what must not happen is making
    `tour_operator_id` nullable because a backlog list said to.**
+
+4. **Is the storefront's JSON a published API, or only a render context?**
+   (2026-08-22) — **cheap to answer now and a breaking change to answer later**,
+   which is the whole reason it is here rather than in Backlog.
+
+   Everything the storefront serves today is JSON, and `PATTERNS.md` §2a treats it
+   as the theme object model: the shape a Mustache template will be handed. That
+   was the right call for getting the contract right — a wrong field is visible in
+   a body and invisible under markup nobody reads.
+
+   **Shopify keeps the two apart.** `/products/sunset-sail` is HTML;
+   `/products/sunset-sail.js` is JSON; and **they are not the same shape**. We have
+   one payload doing both jobs and no decision about which it becomes when
+   templates land. Three outcomes, and they are not equivalent:
+
+   - **Render context only.** The JSON disappears behind templates. Cheapest, and
+     any AJAX surface is then designed on purpose rather than inherited.
+   - **Both, same shape.** Whatever a template gets, a script can fetch. Tempting,
+     and it welds the theme model to a wire format: §2a already says renaming a
+     component is breaking once operators author themes, and this would make it
+     breaking for scripts too — two audiences upgrading at different speeds, one
+     contract.
+   - **Both, separate shapes.** Shopify's answer, and the most work.
+
+   **Settle it before the first template renders**, because after that every field
+   name is load-bearing twice.
+
+5. **The cart's cookie has to join the CSRF posture, or depart from it on
+   purpose.** (2026-08-22) — nothing is owed; the point is that the answer must
+   exist before the first cart write ships, not after.
+
+   **The posture today is coherent, and it is not the one it looks like.**
+   `SecurityConfig` calls `csrf(AbstractHttpConfigurer::disable)`, which reads as
+   "no CSRF defence" — but a cookie-authenticated write already exists.
+   `POST /api/auth/refresh` is a **public** route that reads the refresh token
+   from a `@CookieValue`, and a browser attaches cookies to cross-site requests.
+   (`/logout` reads the same cookie but is *not* public, so a bearer token gates
+   it — the distinction is the whole point, and it is one route not two.) What
+   defends refresh is the cookie, not the framework:
+   `same-site: Strict` (application.yml, default), plus `httpOnly`, `secure`, and
+   a path scoped to `/api/auth`. **Disabled CSRF and `SameSite=Strict` are a
+   deliberate pair, not an omission** — which is worth writing down, because the
+   next person to read `csrf().disable()` will otherwise conclude the opposite.
+
+   So the cart question is narrower than "does the storefront need CSRF": **can a
+   cart cookie be `SameSite=Strict` too?** For a theme's own JavaScript posting to
+   its own storefront host, yes. Two things to check before assuming it:
+
+   - **A return from a third party is not same-site.** A payment provider
+     redirecting back to the storefront will not carry a `Strict` cookie on that
+     first request, which is the classic way a `Strict` session appears to vanish
+     at exactly the wrong moment. `Lax` fixes the redirect and weakens the
+     defence; a checkout that keeps its own token does not need the cookie on that
+     hop at all. Decide it with checkout, not before — but know it is coming.
+   - **The storefront is a different registrable domain from the admin** in the
+     candidate mapping (`vointika.com` versus `{handle}.myvointika.com`,
+     `PATTERNS.md` §2b), and that split exists for cookie isolation. Whatever the
+     cart cookie's attributes are, they are about the storefront's domain, not the
+     admin's.
+
+   Two smaller things ride along and are worth deciding at the same time:
+
+   - **A cart cookie is a third cookie concept**, beside identity's refresh cookie
+     and the storefront's unlock cookie. Three is where a convention is worth
+     having rather than three ad-hoc ones — and the unlock cookie is the nearer
+     precedent, being the storefront's own.
+   - **§8b does not cover it.** "Every operator-facing mutation appends to the
+     audit trail" is about the operator's own actions; a visitor adding to a cart
+     is not one. Saying so explicitly is what stops someone filing visitor traffic
+     into a tenant's activity feed — and it re-opens the `STOREFRONT` actor
+     question `contact` already parked once.
