@@ -484,6 +484,20 @@ actually posts.
      `PATTERNS.md` §2b), and that split exists for cookie isolation. Whatever the
      cart cookie's attributes are, they are about the storefront's domain, not the
      admin's.
+   - **`Strict` on the refresh cookie is already a deployment constraint, today.**
+     A `Strict` cookie is not sent on a cross-**site** fetch either, so the admin
+     SPA and the API must stay on one registrable domain or
+     `POST /api/auth/refresh` silently stops working — no error to read, just a
+     session that will not renew. Same *origin* is not the requirement and is not
+     the case: CORS allows `localhost:3000` against an API on `:8080`, which is a
+     different origin and the same site, so `Strict` is unaffected. Splitting them
+     across registrable domains is what would break it.
+
+     That is the other half of the fact above: **`Lax` on the storefront buys
+     inbound navigation and pays in defence; `Strict` on `/api/auth` buys defence
+     and pays in topology.** Both prices come due in §2b, which is where the
+     domains get chosen — so choose them knowing the cookies already have
+     opinions.
 
    Two smaller things ride along and are worth deciding at the same time:
 
