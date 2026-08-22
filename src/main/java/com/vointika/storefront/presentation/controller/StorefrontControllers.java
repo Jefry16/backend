@@ -4,6 +4,7 @@ import com.vointika.shared.exception.ResourceNotFoundException;
 import com.vointika.shared.port.MediaAssetBatchQuery;
 import com.vointika.shared.port.MediaAssetBatchQuery.MediaAsset;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceDetailView;
+import com.vointika.storefront.application.policy.StorefrontNotFound;
 import com.vointika.storefront.application.dto.output.StorefrontGlobals;
 import com.vointika.storefront.presentation.response.StorefrontGlobalsResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,15 +16,13 @@ import java.util.UUID;
 /**
  * The two things every storefront controller does the same way.
  *
- * <p><b>The 404 message is shared deliberately.</b> An unknown operator, a locale it
- * does not publish, a handle nothing answers to and a draft all answer
- * identically, and that only holds while every route says the same words —
- * copied into each controller, it is one edit away from telling a visitor which
- * kind of miss they hit.
+ * <p><b>The 404 message is shared deliberately</b> — an unknown operator, a locale
+ * it does not publish, a handle nothing answers to and a draft all answer
+ * identically. It moved to {@link StorefrontNotFound} when the security layer
+ * began producing the same 404 for a path that never reaches MVC: that class says
+ * why {@code application} is the only place both layers can read it from.
  */
 final class StorefrontControllers {
-
-    private static final String NOT_FOUND = "There is no storefront at this address";
 
     private StorefrontControllers() {
     }
@@ -71,6 +70,6 @@ final class StorefrontControllers {
     }
 
     static ResourceNotFoundException notFound() {
-        return new ResourceNotFoundException(NOT_FOUND);
+        return new ResourceNotFoundException(StorefrontNotFound.MESSAGE);
     }
 }

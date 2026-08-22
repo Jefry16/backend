@@ -17,6 +17,7 @@ import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
 import com.vointika.storefront.application.usecase.GetStorefrontCmsPageUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
+import com.vointika.storefront.infrastructure.security.StorefrontUnauthenticatedRequests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -48,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * before this slice.
  */
 @WebMvcTest(StorefrontCmsPageController.class)
-@Import({SecurityConfig.class, StorefrontPublicRoutes.class})
+@Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontUnauthenticatedRequests.class})
 class StorefrontCmsPageControllerTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
@@ -240,14 +242,69 @@ class StorefrontCmsPageControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /** The localized form is a route of its own, so it needs its own HEAD entry. */
+    @Test
+    void servesHeadAsWellAsGetOnTheLocalizedForm() throws Exception {
+        served("en", "about-us", output("en", "es", "about-us", "About us"));
+
+        mockMvc.perform(head("/en/pages/about-us").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk());
+    }
+
     /**
-     * The handle variable is constrained to the {@code Handle} shape, so a
-     * segment that is not handle-shaped is not this route at all — 401 is the
-     * pass condition, the same way {@code /error} is for the locale pattern.
+     * The handle variable is constrained to the {@code Handle} shape, so a segment
+     * that is not handle-shaped is not this route at all.
+     *
+     * <p><b>The status no longer proves that, and that is the fix rather than a
+     * regression.</b> It used to be a 401 — Spring Security refusing a path that
+     * matched no {@code PublicRoute}, on a site with no authentication. Now
+     * {@code StorefrontUnauthenticatedRequests} reshapes it into the storefront's
+     * own 404, so a visitor's typo is indistinguishable from a page that does not
+     * exist, which is what a visitor should see either way.
+     *
+     * <p>So the proof moved to the use case: <b>it is never invoked</b>. If the
+     * constraint were dropped, the route would match and the page would be looked
+     * up — a 404 either way on the wire, and the difference is only visible here.
+     * The constraint's <em>presence</em> is guarded separately and mechanically by
+     * {@code StorefrontRouteRegistriesTest
+     * .everyPathVariableInEveryRouteConstantIsConstrained}; this one guards its
+     * <em>shape</em>.
      */
     @Test
     void aSegmentThatIsNotHandleShapedIsNotAPageRoute() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+
         mockMvc.perform(get("/pages/Not_A_Handle").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("There is no storefront at this address"));
+
+        verifyNoInteractions(getStorefrontCmsPageUseCase);
+    }
+
+    /**
+     * <b>A path under no storefront namespace at all gets the same answer</b>, which
+     * is the part a namespace-by-namespace fix would have missed. The storefront
+     * owns the host, not a list of prefixes.
+     */
+    @Test
+    void aPathTheStorefrontDoesNotServeIsAlsoTheStorefrontsOwn404() throws Exception {
+        when(tenantHandleResolver.resolve("acme.localhost")).thenReturn(Optional.of("acme"));
+
+        mockMvc.perform(get("/wp-admin").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("There is no storefront at this address"));
+    }
+
+    /**
+     * <b>The reshape is scoped to a tenant host.</b> On a host addressing no
+     * storefront the 401 stands, because there the answer is true: the only thing
+     * served is the authenticated admin API.
+     */
+    @Test
+    void anUnmatchedPathOnANonTenantHostIsStillUnauthorized() throws Exception {
+        when(tenantHandleResolver.resolve("localhost")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/pages/Not_A_Handle").header("Host", "localhost:8080"))
                 .andExpect(status().isUnauthorized());
     }
 }

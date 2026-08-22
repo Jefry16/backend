@@ -5,6 +5,10 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.Architectures;
+import com.vointika.shared.web.security.PublicRouteRegistrar;
+import com.vointika.shared.web.security.RateLimitRuleRegistrar;
+import com.vointika.shared.web.security.UnauthenticatedRequestPolicy;
+import org.springframework.stereotype.Component;
 
 import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
@@ -35,6 +39,42 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 )
 @SuppressWarnings("unused") // @ArchTest fields are discovered reflectively by ArchUnit's JUnit engine
 public class ArchitectureTest {
+
+    // Web-security SPIs
+
+    /**
+     * <b>Every implementation of a web-security SPI is a Spring bean, or the
+     * security layer never sees it.</b>
+     *
+     * <p>{@code SecurityConfig} collects each SPI as a {@code List<...>}, and Spring
+     * injects an <b>empty list</b> when nothing implements it — no error, no warning.
+     * So dropping {@code @Component} from one of these does not break a build, it
+     * silently removes the rule it declares: a context's public routes stop being
+     * public, its rate limits stop being enforced, or its 404 reshape stops
+     * happening.
+     *
+     * <p><b>It is written here because a slice test structurally cannot catch it.</b>
+     * {@code @Import(Foo.class)} registers the bean whether or not it is annotated,
+     * so every {@code @WebMvcTest} that names one of these keeps passing. Measured:
+     * removing {@code @Component} from {@code StorefrontUnauthenticatedRequests} left
+     * {@code StorefrontCmsPageControllerTest} and {@code RestAuthenticationEntryPointTest}
+     * <b>fully green</b>, with the production behaviour gone.
+     *
+     * <p>Component scanning is the wiring here rather than an explicit {@code @Bean},
+     * which is the deliberate exception to "use cases are hand-wired": these are
+     * adapters declaring a policy, not use cases, and the registrar pattern exists
+     * precisely so no central config has to know the list.
+     */
+    @ArchTest
+    static final ArchRule web_security_spi_implementations_are_components =
+            classes().that().implement(PublicRouteRegistrar.class)
+                    .or().implement(RateLimitRuleRegistrar.class)
+                    .or().implement(UnauthenticatedRequestPolicy.class)
+                    .should().beAnnotatedWith(Component.class)
+                    .because("SecurityConfig collects these as a List and Spring injects an empty one "
+                            + "when nothing implements the SPI - so an unannotated implementation "
+                            + "removes its rule silently, and no slice test can see it because "
+                            + "@Import registers the bean regardless");
 
     // Cross-context boundaries
 

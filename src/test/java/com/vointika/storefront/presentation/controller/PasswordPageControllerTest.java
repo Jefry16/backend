@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -140,6 +141,22 @@ class PasswordPageControllerTest {
         mockMvc.perform(post("/password").header("Host", "acme.localhost:8080"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").value(true));
+    }
+
+    /**
+     * <b>The gate is a public page, so it needs HEAD like every other one.</b>
+     * Spring MVC serves HEAD from a {@code @GetMapping} for free; Spring Security
+     * does not, so the {@code PublicRoute} list has to carry it — and this is the
+     * one route whose three methods are listed by hand rather than looped, which
+     * is exactly where an entry goes missing.
+     *
+     * <p>It is also the route an uptime monitor is most likely to hit, since a
+     * locked store redirects everything else here.
+     */
+    @Test
+    void servesHeadAsWellAsGet() throws Exception {
+        mockMvc.perform(head("/password").header("Host", "acme.localhost:8080"))
+                .andExpect(status().isOk());
     }
 
     @Test
