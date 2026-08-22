@@ -64,7 +64,17 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
      * for a caller that does not exist.
      *
      * <p>Order matters: backslashes first, or the backslash this method adds for
-     * a quote is escaped again on the second pass.
+     * a quote is escaped again on the second pass. Pinned by
+     * {@code aQuoteInTheMessageDoesNotBreakTheBody}, which fails if the two calls
+     * are swapped.
+     *
+     * <p><b>It is a no-op on every input it actually sees</b> — the two live
+     * messages are {@code "Authentication required"} and
+     * {@code StorefrontNotFound.MESSAGE}, and neither contains either character.
+     * Recorded so this does not read as dead code and get deleted: it is the
+     * enforcement half of the contract above, and it costs one line to keep
+     * against the day a context returns a message with an apostrophe-heavy
+     * translation or a Windows path in it.
      */
     private static String escape(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
