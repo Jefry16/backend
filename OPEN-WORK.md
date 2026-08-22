@@ -71,6 +71,29 @@ block coordination.
   makes the editor page. Either cap + paginate it, or record the exemption the way
   the reference lists have one.
 
+- **On an `ERROR` dispatch the security chain answers 401, not the error**
+  (2026-08-22, found while sweeping the admin API from a tenant host) — Boot
+  registers the security filter for `ASYNC, ERROR, REQUEST`, so a request the
+  container refuses before MVC is error-dispatched to `/error` and runs the whole
+  chain a second time. `/error` is in no `PublicRoute`, so an unauthenticated
+  caller gets `401 Authentication required` in place of whatever actually went
+  wrong. `/api/tour-operators//experiences` is a live example: the double slash is
+  refused, and the caller is told they are unauthenticated.
+
+  **Pre-existing and unrelated to the storefront**, which is why it is filed rather
+  than fixed in the slice that found it. `StorefrontUnauthenticatedRequests`
+  deliberately declines non-`REQUEST` dispatches so it does not *change* this — an
+  error response belongs to whatever produced it — but declining restores the 401
+  rather than improving on it.
+
+  **Not urgent, and the reason is worth stating**: an MVC-handled error is
+  unaffected (`GlobalExceptionHandler` writes its own body — a malformed cursor
+  still answers a real 500), so this only bites requests rejected in the filter
+  chain, which today means malformed URIs. The fix is either a `PublicRoute` for
+  `/error` or narrowing `spring.security.filter.dispatcher-types` to `REQUEST`,
+  and the second needs checking against what else the chain does on those
+  dispatches before it is taken.
+
 *Audited 2026-07-21: no TODO/FIXME/HACK/stub markers, no orphan fallback code, no
 dead code, no hidden `@SuppressWarnings` hacks (the Kafka raw-type ones are the
 deliberate Boot-4 injection). Reference/ui-language plain-array lists are curated
