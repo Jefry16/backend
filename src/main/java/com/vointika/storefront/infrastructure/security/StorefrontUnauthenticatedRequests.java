@@ -3,6 +3,7 @@ package com.vointika.storefront.infrastructure.security;
 import com.vointika.shared.web.security.UnauthenticatedRequestPolicy;
 import com.vointika.storefront.application.policy.StorefrontNotFound;
 import com.vointika.storefront.application.policy.TenantHandleResolver;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -40,15 +41,27 @@ import java.util.Optional;
  * operator) while {@code /pages/About_Us} 401s — and it is left alone because the
  * apex serves the admin API, where a 401 is the honest answer.
  *
- * <p><b>It cannot swallow a server error, and that is structural rather than
- * lucky.</b> This runs only from {@code AuthenticationEntryPoint.commence}, which
- * Spring Security invokes only when authentication has failed — a 500 never
- * reaches it, and neither does anything MVC handled. The obvious worry is
- * {@code /error}: a direct request to it on a tenant host does now answer the
- * storefront's 404 (it did answer 401 before, which was no better), while a
- * genuine failure still renders its own 500. Verified live rather than reasoned:
- * a malformed cursor on {@code /experiences} answers
- * {@code 500 "An unexpected error occurred"} on a tenant host, unchanged.
+ * <p><b>Only the {@code REQUEST} dispatch is claimed, and that correction cost a
+ * live sweep to find.</b> An earlier version of this javadoc argued the policy
+ * "cannot swallow a server error" because the entry point runs only when
+ * authentication failed. That reasoning is right about MVC-handled errors — a
+ * malformed cursor on {@code /experiences} still answers its own
+ * {@code 500 "An unexpected error occurred"} — and <b>wrong about everything
+ * rejected before MVC</b>. Boot registers the security filter for
+ * {@code ASYNC, ERROR, REQUEST}, so a request the container refuses is
+ * error-dispatched to {@code /error}, runs the chain a second time with that URI,
+ * and was claimed here: {@code /api/tour-operators//experiences} on a tenant host
+ * answered the storefront's 404 while the same path on the apex answered 401.
+ *
+ * <p>So the dispatch type is checked rather than argued about. An error response
+ * belongs to whatever produced it. A <em>direct</em> {@code GET /error} is a
+ * {@code REQUEST} and is still claimed, which is correct — it is a path the
+ * storefront does not serve.
+ *
+ * <p>What this does not fix, and is not ours: on the {@code ERROR} dispatch the
+ * chain answers {@code 401} rather than the error, because {@code /error} is in no
+ * {@code PublicRoute}. That predates this class and is recorded in
+ * {@code OPEN-WORK.md}; declining here restores it rather than inventing it.
  *
  * <p>{@code ObjectProvider} for the same reason {@code StorefrontLockInterceptor}
  * uses one: a {@code @WebMvcTest} slice loads the security config without the
@@ -58,7 +71,8 @@ import java.util.Optional;
 @Component
 public class StorefrontUnauthenticatedRequests implements UnauthenticatedRequestPolicy {
 
-    private static final String ADMIN_API_PREFIX = "/api/";
+    private static final String ADMIN_API_SEGMENT = "/api";
+    private static final String ADMIN_API_PREFIX = ADMIN_API_SEGMENT + "/";
 
     private final ObjectProvider<TenantHandleResolver> tenantHandleResolver;
 
@@ -68,11 +82,22 @@ public class StorefrontUnauthenticatedRequests implements UnauthenticatedRequest
 
     @Override
     public Optional<String> notFoundMessage(HttpServletRequest request) {
-        if (request.getRequestURI().startsWith(ADMIN_API_PREFIX)) {
+        if (request.getDispatcherType() != DispatcherType.REQUEST || isAdminApi(request.getRequestURI())) {
             return Optional.empty();
         }
         return Optional.ofNullable(tenantHandleResolver.getIfAvailable())
                 .flatMap(resolver -> resolver.resolve(request.getServerName()))
                 .map(handle -> StorefrontNotFound.MESSAGE);
+    }
+
+    /**
+     * {@code /api} is the admin API as much as {@code /api/anything} is.
+     *
+     * <p>A bare {@code startsWith("/api/")} misses the segment on its own, and
+     * {@code GET /api} on a tenant host answered the storefront's 404 while every
+     * path under it correctly answered 401 — found by a live sweep, not by a test.
+     */
+    private static boolean isAdminApi(String uri) {
+        return uri.equals(ADMIN_API_SEGMENT) || uri.startsWith(ADMIN_API_PREFIX);
     }
 }
