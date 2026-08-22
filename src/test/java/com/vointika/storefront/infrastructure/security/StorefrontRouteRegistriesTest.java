@@ -102,10 +102,15 @@ class StorefrontRouteRegistriesTest {
      * hand-written guards could not.
      *
      * <p><b>Brace depth, not a regex.</b> {@code LOCALE} is
-     * {@code {locale:[a-z]{2}(?:-[a-z0-9]{2,4})?}} — the constraint contains
-     * braces of its own, so matching {@code \{[^}]*\}} finds
-     * {@code {locale:[a-z]{2}} and reports the variable as constrained by
-     * accident while reading it wrongly.
+     * {@code {locale:[a-z]{2}(?:-[a-z0-9]{2,4})?}} — the constraint carries braces
+     * of its own, so a non-greedy brace match stops at the first inner closing
+     * brace and reads the variable as {@code locale:[a-z]} plus a stray {@code 2}.
+     *
+     * <p>The subtle part is that this still <em>passes</em>: the truncated text
+     * contains a colon, so the verdict is right for the wrong reason. What breaks
+     * is the <b>count</b> — and the count is what the anti-vacuity assertion below
+     * hangs on. A parser that miscounts is a poor thing to base "did this scan
+     * anything" on, which is what the extra ten lines buy.
      */
     @Test
     void everyPathVariableInEveryRouteConstantIsConstrained() throws Exception {
@@ -137,7 +142,11 @@ class StorefrontRouteRegistriesTest {
                 .withFailMessage("""
                         These route constants carry an unconstrained path variable:
                           %s
-                        A route constant is a PublicRoute pattern before it is a route, so an                         unconstrained variable permitAlls every path of that shape — not just the                         addresses the route means to serve. Constrain it, and keep the group                         non-capturing: PathPatternParser rejects capture groups outright.""",
+                        A route constant is a PublicRoute pattern before it is a route, so an \
+                        unconstrained variable permitAlls every path of that shape — not just the \
+                        addresses the route means to serve. Constrain it; do not widen the pattern \
+                        to make this pass. Keep the group non-capturing: PathPatternParser rejects \
+                        capture groups outright.""",
                         String.join("\n  ", unconstrained))
                 .isEmpty();
     }

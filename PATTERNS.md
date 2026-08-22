@@ -1240,8 +1240,16 @@ port takes the calling class, so log names still point at the reporter.
   happened to need. `EXPERIENCE` had none: unconstraining it left **1450 tests, 0
   failures** while both experience routes began `permitAll`ing every path of that
   shape. Measured, then reverted. The invariant — *every path variable in every
-  route constant is constrained* — covers all four, every derived constant
-  (`LOCALIZED_*`), and the constant nobody has written yet.
+  route constant is constrained* — covers all four and the constant nobody has
+  written yet.
+
+  **The decisive part is the derived constants, and it is the one an instance
+  guard structurally cannot reach.** `LOCALIZED_EXPERIENCE` is `LOCALE +
+  EXPERIENCE`, so it inherits a hole punched in either half without anyone editing
+  it — one mutation of `EXPERIENCE` is reported against both, and one of `LOCALE`
+  against all five constants built on it. A per-constant guard is written against
+  the constant someone was looking at; the composition is what nobody is looking
+  at. Wherever constants compose, guard the composition, not the parts.
 
   **The tell that you are at this fork**: you are about to copy a guard, or to add
   a name to a list inside one. Both mean the guard's subject is a *set* and it is
