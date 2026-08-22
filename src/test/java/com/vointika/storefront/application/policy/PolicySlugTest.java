@@ -80,8 +80,15 @@ class PolicySlugTest {
      * <p><b>An unconstrained variable fails loudly rather than matching
      * everything</b>, which is the failure mode a naive extraction has: no colon
      * would otherwise yield "anything goes" and this guard would pass on a route
-     * that had lost its constraint entirely — the one change most worth catching,
-     * since the pattern is a {@code PublicRoute} entry before it is a route.
+     * that had lost its constraint entirely.
+     *
+     * <p>That case is now also covered as an invariant, over every constant at
+     * once, by {@code StorefrontRouteRegistriesTest
+     * .everyPathVariableInEveryRouteConstantIsConstrained} — which is where the
+     * security property belongs, since it is a {@code PublicRoute} concern rather
+     * than a slug one. The check stays here as a <b>precondition</b>: without it,
+     * a template with no colon yields a nonsense regex compiled from the whole
+     * path, and this test fails somewhere confusing instead of saying why.
      */
     private static Pattern typeConstraint() {
         String template = StorefrontRoutes.POLICY;

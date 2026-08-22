@@ -1224,6 +1224,40 @@ port takes the calling class, so log names still point at the reporter.
   `createdAt`'s immutability is its own decision rather than a statement about
   the domain. Mutation-check it in the direction the slice moves.
 
+- **When a guard needs a second instance, write the invariant instead of the
+  second instance.** Recorded 2026-08-22, after the move paid off twice in three
+  slices — and both times the invariant version immediately caught something the
+  instance version could not have.
+
+  **#206, the switcher factories.** `SwitcherUrlsRoundTripThroughLocaleRuleTest`
+  kept a hand-written list of the factories minting locale urls. Replacing the list
+  with a reflection walk over `StorefrontGlobalsResponse`'s public static factories
+  made "a new factory that mints switcher urls is covered" the property. The next
+  slice added `policy(...)` and the build failed before anyone thought to add it.
+
+  **#208, the route constraints.** Four `StorefrontRoutes` constants carry a path
+  variable, and three had a guard — each by accident of what some other test
+  happened to need. `EXPERIENCE` had none: unconstraining it left **1450 tests, 0
+  failures** while both experience routes began `permitAll`ing every path of that
+  shape. Measured, then reverted. The invariant — *every path variable in every
+  route constant is constrained* — covers all four, every derived constant
+  (`LOCALIZED_*`), and the constant nobody has written yet.
+
+  **The tell that you are at this fork**: you are about to copy a guard, or to add
+  a name to a list inside one. Both mean the guard's subject is a *set* and it is
+  enumerating members. Derive the set — from reflection, from the package
+  structure, from a constant the production code already owns.
+
+  **Two things the derived form still needs.** An **anti-vacuity check**, because a
+  walk that finds nothing passes every assertion after it: assert the count is
+  plausible, and say in the message that a broken scan is to be fixed rather than
+  deleted. And a **stated blind spot** where the derivation is scoped — the
+  factory scan reads one class, so a factory written elsewhere is invisible to it.
+  Reach worth naming, not exposure worth widening for.
+
+  This is the same subtraction LAW §0.2 asks for, applied to tests: the invariant
+  replaces N hand-written guards *and* covers N+1.
+
 - **ArchUnit** — **do not add a per-context isolation rule.** This line used to say
   to add one; it was stale. `contexts_do_not_depend_on_each_other` derives the
   slices from the package structure, so a context is fenced the day its package
