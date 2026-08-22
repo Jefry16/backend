@@ -12,6 +12,8 @@ import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontCmsPageUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontExperienceUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontPolicyUseCase;
+import com.vointika.shared.port.StorefrontContactQuery;
+import com.vointika.storefront.application.usecase.GetStorefrontContactUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontExperienceListUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
 import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
@@ -51,6 +53,13 @@ public class StorefrontUseCaseConfig {
             GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase,
             StorefrontExperienceQuery storefrontExperienceQuery) {
         return new GetStorefrontExperienceListUseCase(getStorefrontGlobalsUseCase, storefrontExperienceQuery);
+    }
+
+    @Bean
+    public GetStorefrontContactUseCase getStorefrontContactUseCase(
+            GetStorefrontGlobalsUseCase getStorefrontGlobalsUseCase,
+            StorefrontContactQuery storefrontContactQuery) {
+        return new GetStorefrontContactUseCase(getStorefrontGlobalsUseCase, storefrontContactQuery);
     }
 
     @Bean
