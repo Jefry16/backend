@@ -40,6 +40,16 @@ import java.util.Optional;
  * operator) while {@code /pages/About_Us} 401s — and it is left alone because the
  * apex serves the admin API, where a 401 is the honest answer.
  *
+ * <p><b>It cannot swallow a server error, and that is structural rather than
+ * lucky.</b> This runs only from {@code AuthenticationEntryPoint.commence}, which
+ * Spring Security invokes only when authentication has failed — a 500 never
+ * reaches it, and neither does anything MVC handled. The obvious worry is
+ * {@code /error}: a direct request to it on a tenant host does now answer the
+ * storefront's 404 (it did answer 401 before, which was no better), while a
+ * genuine failure still renders its own 500. Verified live rather than reasoned:
+ * a malformed cursor on {@code /experiences} answers
+ * {@code 500 "An unexpected error occurred"} on a tenant host, unchanged.
+ *
  * <p>{@code ObjectProvider} for the same reason {@code StorefrontLockInterceptor}
  * uses one: a {@code @WebMvcTest} slice loads the security config without the
  * storefront's own beans, and this must not fail the context in that case. No
