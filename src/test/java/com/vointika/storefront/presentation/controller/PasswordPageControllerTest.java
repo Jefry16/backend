@@ -13,6 +13,7 @@ import com.vointika.storefront.application.usecase.GetPasswordPageUseCase;
 import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
 import com.vointika.storefront.application.usecase.UnlockStorefrontUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
+import com.vointika.storefront.infrastructure.security.StorefrontUnauthenticatedRequests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * assertions is about which of them answers {@code /password} at all.
  */
 @WebMvcTest({PasswordPageController.class, StorefrontHomeController.class})
-@Import({SecurityConfig.class, StorefrontPublicRoutes.class})
+@Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontUnauthenticatedRequests.class})
 class PasswordPageControllerTest {
 
     @Autowired private MockMvc mockMvc;

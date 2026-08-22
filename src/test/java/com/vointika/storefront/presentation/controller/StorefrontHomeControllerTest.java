@@ -25,6 +25,7 @@ import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
 import com.vointika.storefront.application.usecase.GetStorefrontGlobalsUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
+import com.vointika.storefront.infrastructure.security.StorefrontUnauthenticatedRequests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * without testing anything (PATTERNS §8c).
  */
 @WebMvcTest(StorefrontHomeController.class)
-@Import({SecurityConfig.class, StorefrontPublicRoutes.class})
+@Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontUnauthenticatedRequests.class})
 class StorefrontHomeControllerTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");

@@ -17,6 +17,7 @@ import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase;
 import com.vointika.storefront.application.usecase.CheckStorefrontLockUseCase.LockState;
 import com.vointika.storefront.application.usecase.GetStorefrontContactUseCase;
 import com.vointika.storefront.infrastructure.security.StorefrontPublicRoutes;
+import com.vointika.storefront.infrastructure.security.StorefrontUnauthenticatedRequests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -47,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * for every operator, so the single 404 here is the host or the locale.
  */
 @WebMvcTest(StorefrontContactController.class)
-@Import({SecurityConfig.class, StorefrontPublicRoutes.class})
+@Import({SecurityConfig.class, StorefrontPublicRoutes.class, StorefrontUnauthenticatedRequests.class})
 class StorefrontContactControllerTest {
 
     private static final UUID OPERATOR = UUID.fromString("019f7f33-1833-7dc1-b008-47e6c68b3ea2");
@@ -142,11 +144,26 @@ class StorefrontContactControllerTest {
                 .andExpect(jsonPath("$.contactForm.action").doesNotExist());
     }
 
-    /** And the page accepts nothing — the route is GET/HEAD, so a submission is refused. */
+    /**
+     * <b>The page accepts nothing.</b> The route is GET and HEAD, so a submission
+     * matches no {@code PublicRoute} and never reaches this controller — which is
+     * the honest state while intake is deleted.
+     *
+     * <p>It answers the storefront's ordinary 404, not a 401, because
+     * {@code StorefrontUnauthenticatedRequests} reshapes an unmatched path on a
+     * tenant host. <b>That bean is imported here deliberately.</b> Written without
+     * it this test asserted {@code isUnauthorized()} and passed, while the running
+     * stack answered 404 — a test slice describing a world production does not
+     * live in. Found by curling the rebuilt stack, one slice after the same
+     * mistake was fixed in {@code StorefrontCmsPageControllerTest}.
+     */
     @Test
     void thePageDoesNotAcceptASubmission() throws Exception {
         mockMvc.perform(post("/contact").header("Host", "acme.localhost:8080"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("There is no storefront at this address"));
+
+        verifyNoInteractions(getStorefrontContactUseCase);
     }
 
     @Test

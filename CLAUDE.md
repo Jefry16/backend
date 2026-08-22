@@ -175,6 +175,7 @@ Unit tests (JUnit 5 + Mockito, no Spring) for value objects, entity behavior, an
 
 1. A `@WebMvcTest` whose context loads `WebConfig` needs a `@MockitoBean TourOperatorMembershipCheck`, or every request 500s.
 2. **Any storefront `@WebMvcTest` needs a `@MockitoBean CheckStorefrontLockUseCase`**, for the same reason. `StorefrontWebConfig` is a `WebMvcConfigurer`, so every slice registers the gate's interceptor, which resolves that use case per request.
+2b. **And it must `@Import` `StorefrontUnauthenticatedRequests`** if it loads `SecurityConfig`. Production always wires it, and without it the slice answers **401** where the running stack answers the storefront's **404** — so any assertion about a path the routes do not match pins behaviour that does not exist, and passes. It happened twice in two slices, both caught by curling the rebuilt stack rather than by the suite; `StorefrontSlicesWireTheSecurityProductionWiresTest` is the guard.
 3. A public-route test that omits its `PublicRouteRegistrar` 401s everything. The assertions then pass without testing anything.
 4. Mockito's, and it bit three times in one day: a test helper that stubs a mock must be called *before* the `when(...)` it feeds, never inside `thenReturn(helper())`. Mockito reads the nested `when()` as unfinished and fails with `UnfinishedStubbing`, pointing at the helper rather than at the caller.
 
