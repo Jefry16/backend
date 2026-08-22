@@ -487,10 +487,28 @@ actually posts.
 
    Two smaller things ride along and are worth deciding at the same time:
 
-   - **A cart cookie is a third cookie concept**, beside identity's refresh cookie
-     and the storefront's unlock cookie. Three is where a convention is worth
-     having rather than three ad-hoc ones — and the unlock cookie is the nearer
-     precedent, being the storefront's own.
+   - **A cart cookie is a third cookie concept**, and the storefront's own
+     unlock cookie has already answered most of this question — in the other
+     direction. `PasswordPageController.unlockCookie` is `httpOnly(true)`,
+     `secure(request.isSecure())`, **`sameSite("Lax")`** and `path("/")`. So the
+     storefront domain does not run "csrf disabled + `Strict`"; it runs "csrf
+     disabled + `Lax`", and a cart joining "the posture" has to say which posture.
+
+     **`Lax` there is the same trade this entry files under checkout, already
+     taken.** A `Strict` cookie is not sent on a top-level cross-site navigation,
+     so a visitor following an inbound link into a store they had unlocked would
+     be shown the gate again. That is the payment-redirect problem in a cheaper
+     costume, and it was settled in code before it was written down anywhere —
+     `unlockCookie`'s javadoc gives reasons for `secure` and for the session
+     lifetime and **none for `Lax`**, which is why this reads as an open question
+     rather than a precedent.
+
+     The other two attributes differ from the refresh cookie as well, and a
+     convention has to reconcile them rather than pick a third variant:
+     `secure(request.isSecure())` against a configured `secure`, and `path("/")`
+     against `/api/auth`. A cart cookie scoped to `/cart` would be the third
+     answer to a question already answered twice — which is the argument for a
+     convention, not against one.
    - **§8b does not cover it.** "Every operator-facing mutation appends to the
      audit trail" is about the operator's own actions; a visitor adding to a cart
      is not one. Saying so explicitly is what stops someone filing visitor traffic

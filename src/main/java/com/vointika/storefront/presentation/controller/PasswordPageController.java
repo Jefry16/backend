@@ -87,6 +87,16 @@ public class PasswordPageController {
      * rather than a config flag, so dev over plain HTTP works and production over
      * TLS is marked; the cookie is host-scoped either way, so one tenant's unlock
      * never reaches another's.
+     *
+     * <p><b>{@code Lax} and not {@code Strict}, which is the one attribute this
+     * comment used to leave unexplained.</b> A {@code Strict} cookie is not sent
+     * on a top-level cross-site navigation, so a visitor arriving from an inbound
+     * link — a search result, a shared URL, the operator's own social post — would
+     * be shown the gate again on a store they had already unlocked. That is the
+     * same trade a cart cookie faces the day a payment provider redirects back
+     * (`OPEN-WORK.md`, open decision 5), and it is worth knowing it was taken here
+     * first: the identity refresh cookie is {@code Strict} because nothing
+     * navigates to {@code /api/auth}.
      */
     private static ResponseCookie unlockCookie(String token, HttpServletRequest request) {
         return ResponseCookie.from(UnlockTokenPort.COOKIE_NAME, token)
