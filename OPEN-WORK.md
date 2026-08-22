@@ -493,6 +493,13 @@ actually posts.
      different origin and the same site, so `Strict` is unaffected. Splitting them
      across registrable domains is what would break it.
 
+     The mechanism has a second dependency worth naming, because it reads as
+     background until it is missing: the cookie only rides that cross-origin fetch
+     at all because `CorsConfig` sets `setAllowCredentials(true)` — Spring's
+     default is `false` and no config key turns it on. Without it the cookie would
+     not be sent whatever `SameSite` said, and the paragraph above would be right
+     about the conclusion and wrong about the reason.
+
      That is the other half of the fact above: **`Lax` on the storefront buys
      inbound navigation and pays in defence; `Strict` on `/api/auth` buys defence
      and pays in topology.** Both prices come due in §2b, which is where the
