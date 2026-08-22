@@ -97,6 +97,24 @@ port or an event (never a direct import).
 > `list-collections`. The address went onto the render path one slice before its
 > query, deliberately, so the query landed against a route already proven.
 >
+> **The contact page is a route of ours, not of Shopify's.** They have no
+> `/contact` page: a merchant assigns the `page.contact` template to an ordinary
+> CMS page, the URL stays `/pages/<handle>`, and only the form's *submission* goes
+> to `/contact`. We serve `/contact` and `/{locale}/contact` with
+> `pageType: "contact"` — a value Shopify has no equivalent for, which is the
+> honest consequence of the divergence rather than a gap in the parity. **The cost
+> to know: an operator can also author a CMS page at `/pages/contact`, and several
+> have. Two addresses, one subject, neither aware of the other.**
+>
+> `contactForm` carries **what the inbox accepts, not a form**: four fields with
+> their limits, read off `contact`'s domain value objects through
+> `StorefrontContactQuery` so the page and the validation cannot disagree. Field
+> names are the wire names (`summary`, not `subject`) — a visitor-facing label has
+> to be translated, and the theme is what holds translations. **There is no
+> `action`**: intake is deleted, so there is nowhere to post, and naming an address
+> nothing serves is the one thing a contract must not do. Adding it later is
+> additive.
+>
 > **A policy is addressed by a slug the enum never speaks.** `PolicyType.TERMS`
 > is `/policies/terms` and `LEGAL_NOTICE` is `/policies/legal-notice`; the
 > transform lives in `storefront.application.policy.PolicySlug`, both directions
@@ -278,6 +296,7 @@ experience    id, handle, name, description, longDescription, startingPrice, url
 experiences   { data [ { id, handle, name, description, startingPrice, url,
                          thumbnail } ], nextCursor }   -- /experiences only, NON_NULL
 policy        id, type, title, body, url  -- /policies/{type} only, NON_NULL
+contactForm   { fields [ { name, required, maxLength } ] }  -- /contact only, NON_NULL
 routes        root, experiences
 localization  language, languages [ { code, name, endonymName, primary, url } ]
 ```

@@ -13,6 +13,7 @@ import com.vointika.storefront.application.dto.output.MenuData.MenuLinkData;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.BrandView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.ColorView;
+import com.vointika.shared.port.StorefrontContactQuery.ContactFormView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyDetailView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.PolicyView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.TourOperatorView;
@@ -94,7 +95,9 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                         @JsonInclude(JsonInclude.Include.NON_NULL)
                                         Experience experience,
                                         @JsonInclude(JsonInclude.Include.NON_NULL)
-                                        PolicyPage policy) {
+                                        PolicyPage policy,
+                                        @JsonInclude(JsonInclude.Include.NON_NULL)
+                                        ContactForm contactForm) {
 
     /**
      * Shopify's {@code request.page_type} values, for the addresses that serve
@@ -129,6 +132,17 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
 
     /** One policy. Shopify's own value, spelled the same. */
     public static final String PAGE_TYPE_POLICY = "policy";
+
+    /**
+     * The contact page.
+     *
+     * <p><b>Shopify has no such value</b>, because they have no such route — their
+     * contact page is a CMS page carrying the {@code page.contact} template, so
+     * its {@code request.page_type} is {@code page}. Ours is a route, so it needs
+     * a type, and inventing one is the honest consequence of that choice rather
+     * than a gap in the parity.
+     */
+    public static final String PAGE_TYPE_CONTACT = "contact";
 
     /**
      * @param description the meta description, which is what Shopify's
@@ -397,6 +411,19 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
      */
     public record PolicyPage(UUID id, String type, String title, String body, String url) {}
 
+    /**
+     * What the inbox accepts, so a theme can render the form without knowing the
+     * contact domain. Field names are the wire names the message is stored under;
+     * labels are a theme's job, because they need translating.
+     *
+     * <p><b>No {@code action}.</b> Intake is deleted, so there is nowhere to post;
+     * publishing an address nothing serves would make the contract lie. It is an
+     * additive change when intake returns.
+     */
+    public record ContactForm(List<Field> fields) {}
+
+    public record Field(String name, boolean required, int maxLength) {}
+
     /** An experience's category, named in the rendered locale. There is no url: nothing routes to one. */
     public record Category(UUID id, String name) {}
 
@@ -473,7 +500,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                   String origin,
                                                   Map<UUID, MediaAsset> assets,
                                                   MediaUrlResolver urls) {
-        return from(globals, null, null, null, null, null, PAGE_TYPE_INDEX,
+        return from(globals, null, null, null, null, null, null, PAGE_TYPE_INDEX,
                 everyLocale(globals, ""), origin, assets, urls);
     }
 
@@ -483,7 +510,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                     String origin,
                                                     Map<UUID, MediaAsset> assets,
                                                     MediaUrlResolver urls) {
-        return from(globals, page, null, null, null, null, PAGE_TYPE_PAGE,
+        return from(globals, page, null, null, null, null, null, PAGE_TYPE_PAGE,
                 byHandle(globals, StorefrontRoutes.PAGES, page.handles()), origin, assets, urls);
     }
 
@@ -504,9 +531,26 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                    String origin,
                                                    Map<UUID, MediaAsset> assets,
                                                    MediaUrlResolver urls) {
-        return from(globals, null, null, null, null, policy, PAGE_TYPE_POLICY,
+        return from(globals, null, null, null, null, policy, null, PAGE_TYPE_POLICY,
                 everyLocale(globals, StorefrontRoutes.POLICIES + "/" + PolicySlug.of(policy.type())),
                 origin, assets, urls);
+    }
+
+    /**
+     * The contact page: the globals plus what the inbox accepts.
+     *
+     * <p>It has <b>no entity and no title of its own</b>, so its SEO falls all the
+     * way through to the operator's — the second page type in that position after
+     * the experiences listing, and the open question is carried in
+     * {@code OPEN-WORK.md} rather than answered by inventing a column here.
+     */
+    public static StorefrontGlobalsResponse contact(StorefrontGlobals globals,
+                                                    ContactFormView contactForm,
+                                                    String origin,
+                                                    Map<UUID, MediaAsset> assets,
+                                                    MediaUrlResolver urls) {
+        return from(globals, null, null, null, null, null, contactForm, PAGE_TYPE_CONTACT,
+                everyLocale(globals, StorefrontRoutes.CONTACT), origin, assets, urls);
     }
 
     /** One experience's page: the globals plus the experience, at its own address. */
@@ -516,7 +560,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                        String origin,
                                                        Map<UUID, MediaAsset> assets,
                                                        MediaUrlResolver urls) {
-        return from(globals, null, null, experience, experienceMetafields, null, PAGE_TYPE_EXPERIENCE,
+        return from(globals, null, null, experience, experienceMetafields, null, null, PAGE_TYPE_EXPERIENCE,
                 byHandle(globals, StorefrontRoutes.EXPERIENCES, experience.handles()), origin, assets, urls);
     }
 
@@ -525,7 +569,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                            String origin,
                                                            Map<UUID, MediaAsset> assets,
                                                            MediaUrlResolver urls) {
-        return from(globals, null, experiences, null, null, null, PAGE_TYPE_EXPERIENCE_LIST,
+        return from(globals, null, experiences, null, null, null, null, PAGE_TYPE_EXPERIENCE_LIST,
                 everyLocale(globals, StorefrontRoutes.EXPERIENCES), origin, assets, urls);
     }
 
@@ -545,6 +589,7 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                                                   ExperienceDetailView experience,
                                                   List<MetafieldView> experienceMetafields,
                                                   PolicyDetailView policy,
+                                                  ContactFormView contactForm,
                                                   String pageType,
                                                   Map<String, String> urlByLocale,
                                                   String origin,
@@ -599,7 +644,11 @@ public record StorefrontGlobalsResponse(TourOperator tourOperator,
                         : experience(experience, experienceMetafields, canonicalPath, assets, urls),
                 policy == null ? null
                         : new PolicyPage(policy.id(), policy.type(), policy.title(), policy.body(),
-                                canonicalPath));
+                                canonicalPath),
+                contactForm == null ? null
+                        : new ContactForm(contactForm.fields().stream()
+                                .map(f -> new Field(f.name(), f.required(), f.maxLength()))
+                                .toList()));
     }
 
     /** Keyed by handle, insertion-ordered on the query's handle ordering. */

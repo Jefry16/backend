@@ -12,7 +12,12 @@ import com.vointika.shared.exception.InvalidFieldException;
  */
 public record ContactEmail(String value) {
 
-    private static final int MAX_LENGTH = 320;
+    /**
+     * Public because the storefront's contact form renders a {@code maxlength}
+     * from it, through {@code StorefrontContactQuery}. The domain owns the
+     * number; a form that retyped it would drift the day this one moved.
+     */
+    public static final int MAX_LENGTH = 320;
 
     public ContactEmail {
         if (value == null || value.isBlank()) {

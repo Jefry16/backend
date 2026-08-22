@@ -3,6 +3,8 @@ package com.vointika.storefront.presentation.response;
 import com.vointika.shared.media.MediaUrlResolver;
 import com.vointika.shared.list.CursorPage;
 import com.vointika.shared.port.LocalizedHandles;
+import com.vointika.shared.port.StorefrontContactQuery.ContactFormView;
+import com.vointika.shared.port.StorefrontContactQuery.FieldView;
 import com.vointika.shared.port.StorefrontExperienceQuery.ExperienceDetailView;
 import com.vointika.shared.port.StorefrontPageQuery.PageView;
 import com.vointika.shared.port.StorefrontTourOperatorQuery.AddressView;
@@ -104,6 +106,9 @@ class SwitcherUrlsRoundTripThroughLocaleRuleTest {
                 "experience", () -> StorefrontGlobalsResponse.experience(globals, experience(), List.of(),
                         "https://acme.test", Map.of(), urls),
                 "policy", () -> StorefrontGlobalsResponse.policy(globals, policy(),
+                        "https://acme.test", Map.of(), urls),
+                "contact", () -> StorefrontGlobalsResponse.contact(globals,
+                        new ContactFormView(List.of(new FieldView("name", true, 120))),
                         "https://acme.test", Map.of(), urls));
     }
 

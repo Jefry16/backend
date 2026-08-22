@@ -167,7 +167,15 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   is not a meta description, and inventing `seo_description` on
   `tour_operator_policies` would be a column added for a template. Worth noting
   because it narrows the open question to page types with **neither an entity nor
-  a title** — which today is exactly one, the experiences listing.
+  a title**.
+
+  **That set is now two**: the experiences listing, and the contact page
+  (2026-08-22). Contact makes the shape plainer than the listing did — a page
+  whose whole subject is one word, which nobody can hardcode because "Contact"
+  is English and the storefront serves several languages. So it takes the
+  operator's title, and the first storefront with two published locales will show
+  the same `pageTitle` on the shop, the listing and the contact page. That is the
+  cost, stated rather than discovered.
 - **Should a storefront card show that an experience is featured?** (2026-08-03,
   #92. **Filed as Debt until 2026-08-11, where it did not belong.**) `featured`
   already orders the listing, featured rows first. The page just says nothing about
@@ -361,6 +369,30 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
 
   This closed open decision 4. It does **not** decide what §2a's contract looks
   like — only who it is for.
+
+- **The contact page is a route, not a Shopify-style page template** (2026-08-22,
+  chosen by Jefry against the recommendation, which is why the alternative is
+  written down here rather than lost).
+
+  **Shopify has no `/contact` page.** A merchant creates an ordinary CMS page and
+  assigns it the `page.contact` template; the URL stays `/pages/<handle>`, and
+  only the form's *submission* goes to `/contact`. The template-marker version of
+  this would have been a nullable `template` column on `page.pages` surfaced as
+  `page.template`, keeping one contact page with the operator's own authored copy
+  above the form — and generalising to any future custom template.
+
+  **What was chosen instead**: `/contact` and `/{locale}/contact` as a sixth route
+  shape with `pageType: "contact"`. No migration, no admin write path, and the
+  storefront gains a page without `page` gaining a concept.
+
+  **The consequence to know, because it is already real**: the seeded operator has
+  a published CMS page at `/pages/contact` whose body is exactly the copy that
+  would sit above a form — *"Get in touch. Email hello@acme.test or find us at the
+  Old Port kiosk from 9:00."* That page still exists and still serves. So an
+  operator has two contact addresses and no way to say which is canonical, and the
+  authored copy is stranded on the one without the form. If that becomes a
+  complaint, the fix is the template marker above, and `/contact` would then be
+  either a redirect or a deletion.
 
 - **Invitation model** (2026-07-20) — invitations key on **email** (invitee may
   have no account). Raw token only in the emailed link; **SHA-256 hash at rest**

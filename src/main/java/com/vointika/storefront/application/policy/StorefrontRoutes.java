@@ -112,6 +112,27 @@ public final class StorefrontRoutes {
      * prefers the literal, so it works — but every top-level literal route added
      * later inherits the same collision, and it is asserted rather than assumed.
      */
+    /**
+     * The contact page.
+     *
+     * <p><b>A route of its own rather than Shopify's model</b>, which has no
+     * {@code /contact} page: there, a merchant assigns the {@code page.contact}
+     * template to an ordinary CMS page and the URL stays {@code /pages/<handle>};
+     * only the form's <em>submission</em> goes to {@code /contact}. Chosen
+     * deliberately here — the trade recorded in {@code OPEN-WORK.md} — because it
+     * needs no template marker on {@code page}, and the cost is that an operator
+     * can also author a CMS page at {@code /pages/contact}, which several already
+     * have. Two addresses, one subject.
+     *
+     * <p>It is a top-level literal, so it inherits {@link #PASSWORD}'s collision
+     * with {@link #LOCALE}: seven characters do not match two, and
+     * {@code LocalePathTemplateTest} asserts that for every literal rather than
+     * trusting it.
+     */
+    public static final String CONTACT = "/contact";
+
+    public static final String LOCALIZED_CONTACT = LOCALE + CONTACT;
+
     public static final String PASSWORD = "/password";
 
     /**
@@ -137,7 +158,8 @@ public final class StorefrontRoutes {
             EXPERIENCES, LOCALIZED_EXPERIENCES,
             EXPERIENCE, LOCALIZED_EXPERIENCE,
             POLICY, LOCALIZED_POLICY,
-            PAGE, LOCALIZED_PAGE);
+            PAGE, LOCALIZED_PAGE,
+            CONTACT, LOCALIZED_CONTACT);
 
     private StorefrontRoutes() {
     }
