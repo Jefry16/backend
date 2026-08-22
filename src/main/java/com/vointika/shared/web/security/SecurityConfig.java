@@ -24,15 +24,18 @@ public class SecurityConfig {
 
     private final AccessTokenValidatorPort accessTokenValidator;
     private final List<PublicRouteRegistrar> publicRouteRegistrars;
+    private final List<UnauthenticatedRequestPolicy> unauthenticatedRequestPolicies;
     private final ObjectProvider<RateLimiterPort> rateLimiterProvider;
     private final boolean rateLimitEnabled;
 
     public SecurityConfig(AccessTokenValidatorPort accessTokenValidator,
                           List<PublicRouteRegistrar> publicRouteRegistrars,
+                          List<UnauthenticatedRequestPolicy> unauthenticatedRequestPolicies,
                           ObjectProvider<RateLimiterPort> rateLimiterProvider,
                           @Value("${app.rate-limit.enabled:true}") boolean rateLimitEnabled) {
         this.accessTokenValidator = accessTokenValidator;
         this.publicRouteRegistrars = publicRouteRegistrars;
+        this.unauthenticatedRequestPolicies = unauthenticatedRequestPolicies;
         this.rateLimiterProvider = rateLimiterProvider;
         this.rateLimitEnabled = rateLimitEnabled;
     }
@@ -45,7 +48,8 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new RestAuthenticationEntryPoint()))
+                        .authenticationEntryPoint(
+                                new RestAuthenticationEntryPoint(unauthenticatedRequestPolicies)))
                 .authorizeHttpRequests(auth -> {
                     for (PublicRouteRegistrar registrar : publicRouteRegistrars) {
                         for (PublicRoute route : registrar.publicRoutes()) {

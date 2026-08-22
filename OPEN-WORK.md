@@ -71,30 +71,28 @@ block coordination.
   makes the editor page. Either cap + paginate it, or record the exemption the way
   the reference lists have one.
 
-- **A malformed storefront URL answers `401 Authentication required`**
-  (2026-08-22, found live while verifying the policy page) — on a site with no
-  authentication at all. Every storefront route constrains its path variable
-  (`/policies/{type:[a-z-]+}`, the `Handle` shape on pages and experiences), and a
-  path that fails the constraint matches no `PublicRoute`, so Spring Security
-  rejects it at the filter chain before MVC ever sees it. Measured across four
-  routes, all identical: `/policies/legal_notice`, `/pages/About_Us`,
-  `/experiences/Sunset_Sail`, `/experiences/A` → **401**, in the JSON error shape.
-  A well-formed miss (`/policies/refunds`, `/pages/does-not-exist`) correctly
-  answers the shared 404.
+- **On an `ERROR` dispatch the security chain answers 401, not the error**
+  (2026-08-22, found while sweeping the admin API from a tenant host) — Boot
+  registers the security filter for `ASYNC, ERROR, REQUEST`, so a request the
+  container refuses before MVC is error-dispatched to `/error` and runs the whole
+  chain a second time. `/error` is in no `PublicRoute`, so an unauthenticated
+  caller gets `401 Authentication required` in place of whatever actually went
+  wrong. `/api/tour-operators//experiences` is a live example: the double slash is
+  refused, and the caller is told they are unauthenticated.
 
-  **It predates the policy page and belongs to no slice** — that page just made it
-  visible, because a slug with an underscore is the obvious typo for an enum named
-  `LEGAL_NOTICE`. It is **the same mechanism** as the HEAD trap already recorded in
-  `CLAUDE.md`: anything the `PublicRoute` list does not match is a 401, and on a
-  public page that is both wrong and a small leak — an anonymous visitor learns
-  there is an auth system to fail. The generalisation worth keeping: *a
-  `PublicRoute` is an allowlist, so every way of missing it fails closed, and
-  "fails closed" on a public page means the wrong answer.*
+  **Pre-existing and unrelated to the storefront**, which is why it is filed rather
+  than fixed in the slice that found it. `StorefrontUnauthenticatedRequests`
+  deliberately declines non-`REQUEST` dispatches so it does not *change* this — an
+  error response belongs to whatever produced it — but declining restores the 401
+  rather than improving on it.
 
-  The fix is a storefront-scoped fallback that turns an unmatched path under a
-  resolved tenant host into the same 404 every other miss gets. Not urgent — no
-  crawler constructs these, and the body is our error shape rather than a stack
-  trace — but it should not survive the first deployment.
+  **Not urgent, and the reason is worth stating**: an MVC-handled error is
+  unaffected (`GlobalExceptionHandler` writes its own body — a malformed cursor
+  still answers a real 500), so this only bites requests rejected in the filter
+  chain, which today means malformed URIs. The fix is either a `PublicRoute` for
+  `/error` or narrowing `spring.security.filter.dispatcher-types` to `REQUEST`,
+  and the second needs checking against what else the chain does on those
+  dispatches before it is taken.
 
 *Audited 2026-07-21: no TODO/FIXME/HACK/stub markers, no orphan fallback code, no
 dead code, no hidden `@SuppressWarnings` hacks (the Kafka raw-type ones are the
@@ -342,6 +340,28 @@ Known wants, not yet scheduled — deliberate future work, not shortcuts.
   category. It lands with the storefront page that serves one — and walks into the
   handle-history/301 gap already carried above when it does.
 
+- **The storefront's JSON is a render context, not a published API** (2026-08-22,
+  answered by Jefry the day it was asked) — **it is not an open API**. The JSON
+  exists so the data can be read and debugged quickly while the contract is being
+  got right; it is the object model a Mustache template will be handed, and
+  nothing else.
+
+  Three consequences, and the first is why answering early was worth it:
+
+  - **A field rename is not a breaking change to anyone.** There is no second
+    audience upgrading on its own schedule. §2a's warning — that renaming a
+    component is breaking once operators author themes — starts applying when
+    **themes** exist, not now, so the contract can still be corrected freely.
+  - **Any AJAX surface is designed on purpose rather than inherited.** The cart,
+    search-suggest and paging endpoints get shapes chosen for them, which is what
+    the storefront-order section means by AJAX being three problems. Shopify keeps
+    `/products/x` and `/products/x.js` as *different shapes* for this reason.
+  - **The JSON has no compatibility claim on it**, so it may stay as a debugging
+    view alongside templates, or go, without that being a decision anyone owes.
+
+  This closed open decision 4. It does **not** decide what §2a's contract looks
+  like — only who it is for.
+
 - **Invitation model** (2026-07-20) — invitations key on **email** (invitee may
   have no account). Raw token only in the emailed link; **SHA-256 hash at rest**
   (`token_hash` unique). 7-day expiry judged **lazily** on access (no job). At most
@@ -382,10 +402,16 @@ in **Decided** above when closed.
 
 ### The order the storefront is being built in
 
-Stated 2026-08-22, and it is what makes decisions 2, 4 and 5 legible together:
-**the data contract first, then rendering, then formatting** — objects, then
-templates, then money and dates. Every storefront slice so far has been the first
-of those, which is why it serves JSON and not HTML.
+Stated 2026-08-22, and it is what makes the *Shopify OS 2.0 scope* and *cart
+cookie* decisions legible together: **the data contract first, then rendering,
+then formatting** — objects, then templates, then money and dates. Every
+storefront slice so far has been the first of those, which is why it serves JSON
+and not HTML — and **that JSON is a render context, not an API**, settled the same
+day and recorded under *Decided*.
+
+(Referenced by name, not by number. The numbered list below renumbers whenever an
+entry closes, and it has already done so once — the *published API* question was 4
+until it was answered, which silently made two pointers here wrong.)
 
 Alongside them sit filtering and AJAX. **AJAX is three problems and must not be
 planned as one**, because they have different security postures:
@@ -394,7 +420,8 @@ planned as one**, because they have different security postures:
   different transport; nearly free if the contract is right, and it is what forces
   the cursor-versus-page-number question filed in Backlog.
 - **the cart** — stateful, cookie-identified, and the first *public writes* this
-  application has ever had. Decision 5 is its prerequisite.
+  application has ever had. The *cart cookie / CSRF posture* decision below is
+  its prerequisite.
 - **checkout** — payments, a different risk class again, and where §7a's
   "critical-event delivery — decided, unbuilt" finally gets its trigger.
 
@@ -461,33 +488,7 @@ actually posts.
    is a non-tenant home for security events; **what must not happen is making
    `tour_operator_id` nullable because a backlog list said to.**
 
-4. **Is the storefront's JSON a published API, or only a render context?**
-   (2026-08-22) — **cheap to answer now and a breaking change to answer later**,
-   which is the whole reason it is here rather than in Backlog.
-
-   Everything the storefront serves today is JSON, and `PATTERNS.md` §2a treats it
-   as the theme object model: the shape a Mustache template will be handed. That
-   was the right call for getting the contract right — a wrong field is visible in
-   a body and invisible under markup nobody reads.
-
-   **Shopify keeps the two apart.** `/products/sunset-sail` is HTML;
-   `/products/sunset-sail.js` is JSON; and **they are not the same shape**. We have
-   one payload doing both jobs and no decision about which it becomes when
-   templates land. Three outcomes, and they are not equivalent:
-
-   - **Render context only.** The JSON disappears behind templates. Cheapest, and
-     any AJAX surface is then designed on purpose rather than inherited.
-   - **Both, same shape.** Whatever a template gets, a script can fetch. Tempting,
-     and it welds the theme model to a wire format: §2a already says renaming a
-     component is breaking once operators author themes, and this would make it
-     breaking for scripts too — two audiences upgrading at different speeds, one
-     contract.
-   - **Both, separate shapes.** Shopify's answer, and the most work.
-
-   **Settle it before the first template renders**, because after that every field
-   name is load-bearing twice.
-
-5. **The cart's cookie has to join the CSRF posture, or depart from it on
+4. **The cart's cookie has to join the CSRF posture, or depart from it on
    purpose.** (2026-08-22) — nothing is owed; the point is that the answer must
    exist before the first cart write ships, not after.
 
